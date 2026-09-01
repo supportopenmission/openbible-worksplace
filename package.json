@@ -1,0 +1,40 @@
+{
+  "name": "with-svelte",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "check-types": "turbo run check-types",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "3.9.6",
+    "prettier-plugin-svelte": "catalog:sveltejs",
+    "turbo": "^2.10.12"
+  },
+  "engines": {
+    "node": ">=24.19.0"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "bun",
+      "version": "1.4.0"
+    }
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "catalogs": {
+    "sveltejs": {
+      "@sveltejs/adapter-auto": "7.0.1",
+      "@sveltejs/kit": "2.70.2",
+      "@sveltejs/vite-plugin-svelte": "7.3.0",
+      "eslint-plugin-svelte": "3.23.0",
+      "prettier-plugin-svelte": "4.1.1",
+      "svelte": "5.56.9"
+    }
+  }
+}

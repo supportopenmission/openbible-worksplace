@@ -1,0 +1,18 @@
+---
+description: Orquestra o planejador Specsfy e o implementador Composer/Luna, com logs no ai-memory.
+alwaysApply: true
+---
+
+# Dois agentes Specsfy
+
+O orquestrador (esta conversa) não mistura planejamento com implementação.
+
+- Planejar, arquitetar, backlog, spec, validate, tasks ou TDD/BDD: delegue a `/specsfy-planner`.
+- Implementar, codar ou entregar a seção `14. Tarefas`: delegue a `/specsfy-implementer`.
+- Fatia Effort 1–6: o implementador já usa `composer-2.5[]`.
+- Fatia Effort 7–10, ambígua ou de alto risco: lance o implementador com `gpt-5.6-luna[effort=xhigh]`.
+- Arquivos `.svelte`: o implementador deve usar `svelte-file-editor`.
+
+Antes de planejar ou implementar, consulte ai-memory (`memory_query`, `memory_handoff_accept`). Depois de decisão, gotcha, handoff ou fatia fechada, grave página durável (`memory_write_page`) e, se o bastão muda de agente, `memory_handoff_begin`. Hooks já capturam o rotineiro; não duplique log operacional.
+
+`spec.md` continua a única fonte normativa. Não crie `plan.md` nem `tasks.md`.

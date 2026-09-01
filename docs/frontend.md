@@ -1,0 +1,44 @@
+# Frontend e design system
+
+<!-- specsfy:documentator:start -->
+## Superfícies observadas
+
+- Componentes, páginas ou views: 19.
+- Tailwind: detectado.
+- Tokens CSS: --tw-translate-x, --tw-translate-y, --tw-translate-z, --tw-rotate-x, --tw-rotate-y, --tw-rotate-z, --tw-skew-x, --tw-skew-y, --tw-border-style, --tw-leading, --tw-font-weight, --tw-tracking, --tw-ordinal, --tw-slashed-zero, --tw-numeric-figure, --tw-numeric-spacing, --tw-numeric-fraction, --tw-shadow, --tw-shadow-color, --tw-shadow-alpha, --tw-inset-shadow, --tw-inset-shadow-color, --tw-inset-shadow-alpha, --tw-ring-color, --tw-ring-shadow, --tw-inset-ring-color, --tw-inset-ring-shadow, --tw-ring-inset, --tw-ring-offset-width, --tw-ring-offset-color, --tw-ring-offset-shadow, --tw-outline-style, --tw-blur, --tw-brightness, --tw-contrast, --tw-grayscale, --tw-hue-rotate, --tw-invert, --tw-opacity, --tw-saturate, --tw-sepia, --tw-drop-shadow, --tw-drop-shadow-color, --tw-drop-shadow-alpha, --tw-drop-shadow-size, --tw-duration, --tw-ease, --tw-content, --font-sans, --font-mono, --color-black, --spacing, --container-xs, --container-sm, --container-lg, --text-xs, --text-xs--line-height, --text-sm, --text-sm--line-height, --text-base, --text-base--line-height, --font-weight-normal, --font-weight-medium, --font-weight-semibold, --tracking-widest, --leading-snug, --leading-normal, --radius-md, --radius, --ease-in-out, --animate-pulse, --default-transition-duration, --default-transition-timing-function, --default-font-family, --default-mono-font-family, --default-font-feature-settings, --default-font-variation-settings, --default-mono-font-feature-settings, --default-mono-font-variation-settings, --bits-dropdown-menu-anchor-width, --sidebar-width, --skeleton-width, --bits-tooltip-content-transform-origin, --border, --input, --sidebar-border, --background, --destructive, --foreground, --muted, --popover, --primary, --secondary, --sidebar, --muted-foreground, --popover-foreground, --primary-foreground, --secondary-foreground, --sidebar-foreground, --sidebar-ring, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to, --accent-foreground, --sidebar-width-icon, --sidebar-accent-foreground, --sidebar-accent, --accent, --ring, --card, --card-foreground, --chart-1, --chart-2, --chart-3, --chart-4, --chart-5, --sidebar-primary, --sidebar-primary-foreground, --lightningcss-light, --lightningcss-dark, --color-background, --color-foreground, --color-card, --color-card-foreground, --color-popover, --color-popover-foreground, --color-primary, --color-primary-foreground, --color-secondary, --color-secondary-foreground, --color-muted, --color-muted-foreground, --color-accent, --color-accent-foreground, --color-destructive, --color-border, --color-input, --color-ring, --color-chart-1, --color-chart-2, --color-chart-3, --color-chart-4, --color-chart-5, --color-sidebar, --color-sidebar-foreground, --color-sidebar-primary, --color-sidebar-primary-foreground, --color-sidebar-accent, --color-sidebar-accent-foreground, --color-sidebar-border, --color-sidebar-ring, --radius-sm, --radius-lg, --radius-xl.
+
+| Arquivo |
+| --- |
+| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/0.BFYRkY_r.css |
+| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/2.oNqf7eEs.css |
+| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/3.BRs61Nlq.css |
+| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/4.B14rjrdO.css |
+| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/InitialScreenPicker.Cijolvsu.css |
+| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/ProductPage.Bt54Nk6E.css |
+| apps/web/.svelte-kit/output/client/_app/immutable/assets/0.BFYRkY_r.css |
+| apps/web/.svelte-kit/output/client/_app/immutable/assets/2.oNqf7eEs.css |
+| apps/web/.svelte-kit/output/client/_app/immutable/assets/3.BRs61Nlq.css |
+| apps/web/.svelte-kit/output/client/_app/immutable/assets/4.B14rjrdO.css |
+| apps/web/.svelte-kit/output/client/_app/immutable/assets/InitialScreenPicker.Cijolvsu.css |
+| apps/web/.svelte-kit/output/client/_app/immutable/assets/ProductPage.Bt54Nk6E.css |
+| apps/web/.svelte-kit/output/server/_app/immutable/assets/InitialScreenPicker.Cijolvsu.css |
+| apps/web/.svelte-kit/output/server/_app/immutable/assets/ProductPage.Bt54Nk6E.css |
+| apps/web/.svelte-kit/output/server/_app/immutable/assets/_layout.QZBCPXCb.css |
+| apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.B14rjrdO.css |
+| apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.BRs61Nlq.css |
+| apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.oNqf7eEs.css |
+| apps/web/src/app.css |
+<!-- specsfy:documentator:end -->
+
+## Contexto confirmado
+
+- Framework de interface: SvelteKit 2.70.2 e Svelte 5.56.9.
+- Componentes de produto vivem em `apps/web/src/lib/`; primitives shadcn-svelte
+  em `apps/web/src/lib/components/ui/`.
+- `shadcn-svelte` foi materializado localmente como base de primitives `Item` e
+  `Sidebar`, com estilo Nova e tokens em `apps/web/src/app.css`. A referência é
+  https://github.com/huntabyte/shadcn-svelte.
+- Não há React, shadcn/ui ou ReUI configurados.
+- A jornada implementada nesta fatia inclui seletor inicial, configuração da
+  preferência, shell responsivo e superfícies mínimas para Bíblia, Sermões e
+  Estudos; os módulos funcionais continuam planejados.

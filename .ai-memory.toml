@@ -1,0 +1,16 @@
+# Isola o wiki deste checkout. O servidor local escuta em 127.0.0.1:49375.
+workspace = "default"
+project = "openbible-worksplace"
+project_strategy = "repo-root"
+
+[briefing]
+inject_on_session_start = "true"
+max_chars = 4000
+
+[capture]
+ignore_paths = [
+  ".env",
+  ".env.*",
+  "*.pem",
+  "*.key",
+]

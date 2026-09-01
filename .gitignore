@@ -1,0 +1,51 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# testing
+coverage
+test-results
+
+# svelte
+.svelte-kit
+
+# misc
+*.pem
+.DS_Store
+.netlify
+.output
+.vercel
+.wrangler
+Thumbs.db
+build/
+package/
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+!.env.test
+
+# turbo
+.turbo/
+
+dist/
+
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws

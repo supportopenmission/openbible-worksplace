@@ -1,0 +1,49 @@
+{
+  "name": "web",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "svelte-kit sync && vite build",
+    "preview": "bun run build && wrangler dev --local",
+    "check-types": "svelte-kit sync && tsc --noEmit",
+    "check": "svelte-kit sync && tsc --noEmit",
+    "check:watch": "svelte-kit sync && tsc --noEmit --watch",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test:unit": "vitest run",
+    "test:tdd": "vitest run"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "sql.js": "^1.14.2",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@internationalized/date": "^3.12.0",
+    "@lucide/svelte": "^1.39.0",
+    "@playwright/test": "1.62.1",
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
+    "@sveltejs/adapter-cloudflare": "^7.2.9",
+    "@sveltejs/kit": "catalog:sveltejs",
+    "@sveltejs/vite-plugin-svelte": "catalog:sveltejs",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "26.2.0",
+    "@types/sql.js": "^1.4.11",
+    "@vitest/browser-playwright": "4.1.10",
+    "bits-ui": "^2.16.3",
+    "eslint": "10.8.1",
+    "prettier-plugin-svelte": "catalog:sveltejs",
+    "svelte": "catalog:sveltejs",
+    "tailwind-variants": "^3.3.0",
+    "tailwindcss": "^4.3.3",
+    "tslib": "2.8.1",
+    "typescript": "7.0.2",
+    "vite": "8.2.1",
+    "vitest": "4.1.10",
+    "vitest-browser-svelte": "3.0.0",
+    "wrangler": "^4.127.1"
+  }
+}

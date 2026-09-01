@@ -1,0 +1,45 @@
+{
+	"version": 1,
+	"hooks": {
+		"sessionStart": [
+			{
+				"command": ".cursor/hooks/ai-memory-session-start.sh"
+			}
+		],
+		"sessionEnd": [
+			{
+				"command": ".cursor/hooks/ai-memory-session-end.sh"
+			}
+		],
+		"beforeSubmitPrompt": [
+			{
+				"command": ".cursor/hooks/ai-memory-user-prompt-submit.sh"
+			}
+		],
+		"preToolUse": [
+			{
+				"command": ".cursor/hooks/ai-memory-pre-tool-use.sh"
+			}
+		],
+		"postToolUse": [
+			{
+				"command": ".cursor/hooks/ai-memory-post-tool-use.sh"
+			}
+		],
+		"postToolUseFailure": [
+			{
+				"command": ".cursor/hooks/ai-memory-post-tool-use.sh"
+			}
+		],
+		"preCompact": [
+			{
+				"command": ".cursor/hooks/ai-memory-pre-compact.sh"
+			}
+		],
+		"stop": [
+			{
+				"command": ".cursor/hooks/ai-memory-stop.sh"
+			}
+		]
+	}
+}

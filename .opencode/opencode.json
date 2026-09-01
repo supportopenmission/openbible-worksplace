@@ -1,0 +1,4 @@
+{
+	"plugin": ["@sveltejs/opencode"],
+	"$schema": "https://opencode.ai/config.json"
+}

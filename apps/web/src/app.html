@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+	<head>
+		<title>OpenBible</title>
+		<meta charset="utf-8" />
+		<link rel="icon" href="%sveltekit.assets%/icon-192.png" />
+		<link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
+		<meta name="theme-color" content="#ffffff" />
+		<meta name="mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-title" content="OpenBible" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+		<script>
+			try {
+				const theme = localStorage.getItem('openbible.theme');
+				if (theme === 'dark') document.documentElement.classList.add('dark');
+				document.documentElement.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
+			} catch {
+				// Private browsing may deny localStorage; the light theme remains usable.
+			}
+		</script>
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>
