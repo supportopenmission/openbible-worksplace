@@ -8,6 +8,7 @@
 | npm | desenvolvimento | prettier | 3.9.6 | Prettier is an opinionated code formatter | prettier/prettier |
 | npm | desenvolvimento | prettier-plugin-svelte | catalog:sveltejs | Svelte plugin for prettier | https://github.com/sveltejs/prettier-plugin-svelte |
 | npm | desenvolvimento | turbo | ^2.10.12 | Turborepo is the build system for coding agents. | https://github.com/vercel/turborepo |
+| npm | produção | @friendofsvelte/tipex | 0.2.0 | Finalidade não descrita nos metadados locais. | https://github.com/friendofsvelte/tipex |
 | npm | produção | clsx | ^2.1.1 | A tiny (239B) utility for constructing className strings conditionally. | lukeed/clsx |
 | npm | produção | sql.js | ^1.14.2 | SQLite library with support for opening and writing databases, prepared statements, and more. This SQLite library is in pure javascript (compiled with emscripten). | http://github.com/sql-js/sql.js |
 | npm | produção | tailwind-merge | ^3.6.0 | Merge Tailwind CSS classes without style conflicts | https://github.com/dcastil/tailwind-merge |

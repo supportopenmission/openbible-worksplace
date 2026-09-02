@@ -8,13 +8,19 @@ como fontes locais somente leitura; o índice do workspace permanece auxiliar.
 <!-- specsfy:database:start -->
 | Fonte | Tecnologia/forma | Evidência |
 | --- | --- | --- |
-| A confirmar | Nenhuma estrutura reconhecida | A confirmar |
+| Workspace local | Markdown + YAML (`notes/<noteId>.md`, `trash/`) | `apps/web/src/lib/features/notes/notes-repository.ts` |
+| Workspace local | SQLite auxiliar (`.openbible/index.sqlite`) | `apps/web/src/lib/features/notes/note-verse-index.ts` |
+| Workspace local | SQLite somente leitura (`bibles/*.sqlite`) | `apps/web/src/lib/features/bible/bible-reader.ts` |
+| Navegador | IndexedDB (`openbible-workspace`) | `apps/web/src/lib/features/workspace/` |
+| Navegador | `localStorage` (cache de primeiro paint) | `.openbible/preferences.json` espelhado |
 
 ## Estruturas detectadas
 
 | Estrutura | Tipo | Campos | Relações | Fonte |
 | --- | --- | --- | --- | --- |
-| A confirmar | A confirmar | A confirmar | A confirmar | A confirmar |
+| `note_verse_ref` | Tabela SQLite auxiliar | `id`, `note_path`, `block_index`, `version_id`, `book_id`, `book_name`, `chapter`, `verse_start`, `verse_end` | N..1 nota (`note_path`); espelha fences `:::verse`; índices em `(note_path)` e `(version_id, book_id, chapter)` | `note-verse-index.ts` |
+| `book` | Tabela SQLite OpenLP | `id`, `name`, `abbreviation`, `testament_id` | 1 arquivo `bibles/*.sqlite` contém N livros | `bible-reader.ts` |
+| `verse` | Tabela SQLite OpenLP | `book_id`, `chapter`, `verse`, `text` | `verse.book_id` → `book.id` | `bible-reader.ts` |
 <!-- specsfy:database:end -->
 
 ## Estruturas de leitura bíblica
@@ -25,7 +31,9 @@ como fontes locais somente leitura; o índice do workspace permanece auxiliar.
 | `bibles/*.sqlite` | `verse`                      | `book_id`, `chapter`, `verse`, `text`                   | `verse.book_id` referencia `book.id`; consultas de capítulo e busca são parametrizadas |
 | `bibles/*.sqlite` | `metadata` (opcional)        | `key`, `value`                                          | `key = 'name'` fornece o nome da versão; o nome do arquivo é o fallback                |
 | Pasta/OPFS        | `.openbible/preferences.json` | `theme`, `initialRoute`, `readerSelection`             | Fonte File Over Apps das preferências; `localStorage` é cache para o primeiro paint   |
-| Pasta/OPFS        | `.openbible/index.sqlite`     | SQLite válido, sem tabelas de domínio                  | Artefato reservado; arquivo vazio de 0 bytes é reparado na preparação                 |
+| Pasta/OPFS        | `.openbible/index.sqlite`     | `note_verse_ref` e índices auxiliares                  | Espelha referências de blocos `:::verse`; reindexado ao salvar; removido ao mover nota para `trash/`; **não** substitui o Markdown |
+| Pasta/OPFS        | `notes/<noteId>.md`           | frontmatter YAML + corpo Markdown                      | Fonte File Over Apps das notas; H1 sincronizado com `title`; fences `:::verse` com snapshot no corpo                               |
+| Pasta/OPFS        | `trash/<noteId>.md`           | mesmo formato de `notes/`                              | Lixeira; arquivo original preservado até remoção manual futura                                                                      |
 | IndexedDB         | `openbible-workspace`         | handle da pasta                                        | Só no modo `local`; permissão `readwrite` é revalidada a cada visita                  |
 
 ## Decisões, ownership e retenção
@@ -40,9 +48,13 @@ como fontes locais somente leitura; o índice do workspace permanece auxiliar.
 - Bancos SQLite bíblicos poderão ser importados por arrastar e soltar quando
   seguirem o padrão do OpenLP, ou acessados por uma URL de distribuição como
   Cloudflare R2.
-- O `.openbible/index.sqlite` é um SQLite válido sem schema de domínio. Um
-  arquivo de 0 bytes legado é reparado na preparação. O leitor não o abre; usa
-  `sql.js` nos SQLite importados em `bibles/` e fecha cada instância após a consulta.
+- O `.openbible/index.sqlite` é um SQLite válido. Um arquivo de 0 bytes legado é
+  reparado na preparação. A tabela auxiliar `note_verse_ref` é criada
+  idempotentemente na primeira operação de notas (`CREATE TABLE IF NOT EXISTS`).
+  O índice espelha fences `:::verse` do Markdown e é reindexado após cada save;
+  refs são removidas ao mover a nota para `trash/`. O leitor bíblico **não**
+  abre `index.sqlite` para texto; usa `sql.js` nos SQLite importados em `bibles/`
+  (somente leitura, nunca alterados por notas) e fecha cada instância após a consulta.
 - A validação funcional do leitor exige as tabelas `book` e `verse` e as colunas
   mínimas listadas acima; arquivos incompatíveis são diagnosticados sem remover
   fontes válidas nem modificar qualquer SQLite.

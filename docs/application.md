@@ -9,7 +9,7 @@ Relação: relaciona cada arquivo observado à sua superfície.
 
 | Categoria | Arquivo | Símbolos |
 | --- | --- | --- |
-| Outras fontes | apps/web/.svelte-kit/ambient.d.ts | AGENT_TRANSCRIPTS, ALL_PROXY, BAT_THEME, BROWSER, BUNDLE_PATH, BUN_INSTALL_CACHE_DIR, CARGO_TARGET_DIR, CCACHE_DIR |
+| Outras fontes | apps/web/.svelte-kit/ambient.d.ts | AGENT_TRANSCRIPTS, BAT_THEME, BROWSER, BUNDLE_PATH, BUN_INSTALL_CACHE_DIR, CARGO_TARGET_DIR, CCACHE_DIR, COMPOSER_HOME |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/0.BFYRkY_r.css | — |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/2.oNqf7eEs.css | — |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/3.BRs61Nlq.css | — |
@@ -66,6 +66,8 @@ Relação: relaciona cada arquivo observado à sua superfície.
 | Outras fontes | apps/web/.svelte-kit/generated/client/nodes/4.js | — |
 | Outras fontes | apps/web/.svelte-kit/generated/client/nodes/5.js | — |
 | Outras fontes | apps/web/.svelte-kit/generated/client/nodes/6.js | — |
+| Outras fontes | apps/web/.svelte-kit/generated/client/nodes/7.js | — |
+| Outras fontes | apps/web/.svelte-kit/generated/client/nodes/8.js | — |
 | Outras fontes | apps/web/.svelte-kit/generated/client-optimized/app.js | — |
 | Outras fontes | apps/web/.svelte-kit/generated/client-optimized/matchers.js | — |
 | Outras fontes | apps/web/.svelte-kit/generated/client-optimized/nodes/0.js | — |
@@ -173,6 +175,8 @@ Relação: relaciona cada arquivo observado à sua superfície.
 | Rotas e APIs | apps/web/.svelte-kit/types/src/routes/$types.d.ts | — |
 | Rotas e APIs | apps/web/.svelte-kit/types/src/routes/bible/$types.d.ts | — |
 | Rotas e APIs | apps/web/.svelte-kit/types/src/routes/config/$types.d.ts | — |
+| Rotas e APIs | apps/web/.svelte-kit/types/src/routes/notes/$types.d.ts | — |
+| Rotas e APIs | apps/web/.svelte-kit/types/src/routes/notes/[id]/$types.d.ts | — |
 | Rotas e APIs | apps/web/.svelte-kit/types/src/routes/sermons/$types.d.ts | — |
 | Rotas e APIs | apps/web/.svelte-kit/types/src/routes/study/$types.d.ts | — |
 | Outras fontes | apps/web/eslint.config.js | — |
@@ -200,6 +204,20 @@ Relação: relaciona cada arquivo observado à sua superfície.
 | Testes | apps/web/src/lib/features/bible/reader-preference.test.ts | createStorage |
 | Outras fontes | apps/web/src/lib/features/bible/reader-preference.ts | READER_SELECTION_STORAGE_KEY, ReaderSelection, browserStorage, isSelectionShape, readReaderPreference, saveReaderPreference, isReaderSelectionValid |
 | Testes | apps/web/src/lib/features/navigation/sidebar.test.ts | — |
+| Outras fontes | apps/web/src/lib/features/notes/note-editor-service.ts | H1_PATTERN, DEBOUNCE_MS, titleFromBody, verseRefsFromMarkdown, NoteEditorServiceOptions, createNoteEditorService, setStatus, persist |
+| Testes | apps/web/src/lib/features/notes/note-markdown.test.ts | TEMPLATE |
+| Outras fontes | apps/web/src/lib/features/notes/note-markdown.ts | FRONTMATTER, H1, yamlValue, quote, parseFrontmatter, metaFrom, parseNoteFile, serializeNoteFile |
+| Outras fontes | apps/web/src/lib/features/notes/note-types.ts | NoteMeta, Note, VerseBlockAttrs, NoteFile |
+| Testes | apps/web/src/lib/features/notes/note-verse-index.test.ts | — |
+| Outras fontes | apps/web/src/lib/features/notes/note-verse-index.ts | NoteVerseRef, VerseReferenceInput, SqlDatabase, noteVerseIndexSchema, normalizedRef, reindexNoteVerses, deleteNoteVerseRefs, getMemoryNoteVerseRefs |
+| Testes | apps/web/src/lib/features/notes/notes-repository.test.ts | — |
+| Outras fontes | apps/web/src/lib/features/notes/notes-repository.ts | TEMPLATE, MemoryStorage, resolveStorage, toNote, noteFile, readNoteArgs, listNotes, createNote |
+| Testes | apps/web/src/lib/features/notes/slash-verse-command.test.ts | — |
+| Outras fontes | apps/web/src/lib/features/notes/slash-verse-command.ts | VERSE_COMMANDS, SlashVerseResult, openVerseSelectorFromSlash, isSlashVerseTrigger |
+| Testes | apps/web/src/lib/features/notes/verse-block-extension.test.ts | FENCE |
+| Outras fontes | apps/web/src/lib/features/notes/verse-block-extension.ts | VerseFenceAttrs, ParsedVerseFence, FENCE_OPEN, ATTR_PATTERN, parseAttrs, parseVerseFence, renderVerseFence, versePreviewUsesSnapshotOnly |
+| Testes | apps/web/src/lib/features/notes/verse-selector.test.ts | — |
+| Outras fontes | apps/web/src/lib/features/notes/verse-selector.ts | VerseRangeInput, VerseSelectionState, validateVerseRange, prefillFromReaderSelection, confirmVerseSelection, formatVerseSnapshot, verseRangeLabel |
 | Outras fontes | apps/web/src/lib/features/onboarding/onboarding-copy.ts | — |
 | Outras fontes | apps/web/src/lib/features/workspace/workspace-state.svelte.ts | WORKSPACE_KEY, WorkspaceState, setWorkspaceState, getWorkspaceState |
 | Outras fontes | apps/web/src/lib/hooks/is-mobile.svelte.ts | DEFAULT_MOBILE_BREAKPOINT, IsMobile |
@@ -215,6 +233,7 @@ Relação: relaciona cada arquivo observado à sua superfície.
 | Rotas e APIs | apps/web/src/routes/bible-reader.svelte.spec.ts | SQL, createStorage |
 | Rotas e APIs | apps/web/src/routes/config.svelte.spec.ts | — |
 | Rotas e APIs | apps/web/src/routes/navigation.svelte.spec.ts | — |
+| Rotas e APIs | apps/web/src/routes/notes-editor.svelte.spec.ts | — |
 | Rotas e APIs | apps/web/src/routes/onboarding.svelte.spec.ts | createStorage |
 | Rotas e APIs | apps/web/src/routes/page.svelte.spec.ts | — |
 | Rotas e APIs | apps/web/src/routes/theme.svelte.spec.ts | — |
