@@ -2,7 +2,6 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
-	import PageHeader from '$lib/features/navigation/PageHeader.svelte';
 	import NoteCanvasEditor from '$lib/features/notes/NoteCanvasEditor.svelte';
 	import { createNote, readNote } from '$lib/features/notes/notes-repository';
 	import { serializeNoteFile } from '$lib/features/notes/note-markdown';
@@ -121,10 +120,8 @@
 	{#if loading}
 		<p class="state-message" role="status">Carregando nota…</p>
 	{:else if error || !note || !activeStorage}
-		<PageHeader title="Nota não encontrada" description="A nota solicitada não existe ou foi movida." />
 		<p class="state-message error" role="alert">{error || 'Nota não encontrada'}</p>
 	{:else}
-		<PageHeader title={note.title || 'Sem título'} />
 		<NoteCanvasEditor {note} storage={activeStorage} onSaved={handleSaved} />
 	{/if}
 </div>
@@ -154,12 +151,6 @@
 	.breadcrumb a:hover {
 		text-decoration: underline;
 		text-underline-offset: 3px;
-	}
-
-	:global(.note-page .page-header) {
-		max-width: 760px;
-		margin: 0 auto;
-		padding: 0 clamp(16px, 4vw, 24px);
 	}
 
 	.state-message {
