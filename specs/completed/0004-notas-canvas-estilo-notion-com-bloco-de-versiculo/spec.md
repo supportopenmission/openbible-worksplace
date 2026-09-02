@@ -28,7 +28,7 @@ A pessoa usuária não consegue elaborar notas pessoais em um canvas contínuo, 
 
 #### Resultado desejado
 
-A pessoa acessa **Notas** na navegação principal, gerencia notas em DataTable no desktop ou cards no mobile e escreve cada nota em um canvas que ocupa toda a área útil. O slash menu compacto permanece inteiramente visível e rolável junto ao cursor, o título é salvo sem marcadores Markdown e os blocos de versículo e highlights multicores sobrevivem ao roundtrip do arquivo.
+A pessoa acessa **Notas** na navegação principal, gerencia notas em DataTable no desktop ou cards no mobile e escreve cada nota em um canvas que ocupa toda a área útil. O slash menu compacto permanece inteiramente visível e rolável junto ao cursor, `Enter` aplica o bloco ativo sem criar uma linha extra, a barra de formatação nunca sai da viewport e cada bloco de topo pode ser selecionado e reordenado por arrastar e soltar ou pelo teclado. O título é salvo sem marcadores Markdown e os blocos de versículo e highlights multicores sobrevivem ao roundtrip do arquivo.
 
 #### Métricas de sucesso
 
@@ -43,6 +43,7 @@ A pessoa acessa **Notas** na navegação principal, gerencia notas em DataTable 
 - **R-001** [critical] Roundtrip Markdown do Tipex com bloco customizado `:::verse` — Verdict: verified — Confidence: high — Evidence: research/tipex-markdown.md#fence-verse-proposto — Budget: 1/1.
 - **R-002** [high] Índice auxiliar `note_verse_ref` em `.openbible/index.sqlite` — Verdict: verified — Confidence: high — Evidence: research/notes-index-sqlite.md#tabela-proposta-note_verse_ref — Budget: 1/1.
 - **R-003** [high] Compatibilidade `@tiptap/markdown` com TipTap 2 usado pelo Tipex 0.2.0 — Verdict: verified — Confidence: medium — Evidence: research/tipex-markdown.md#markdown-tiptapmarkdown — Budget: 1/1. Mitigação: serialização manual do fence na camada File Over Apps se a extensão oficial falhar nos testes RED.
+- **R-004** [high] Padrão de seleção/reordenação de blocos no Edra e compatibilidade com TipTap 2 — Verdict: verified — Confidence: high — Evidence: research/edra-drag-handle-and-tiptap-keyboard-2026-09-02.md — Budget: 1/1. Mitigação: extensão local pequena em vez da extensão Drag Handle atual, incompatível com o major do Tipex 0.2.0.
 
 #### Fontes e contexto consultados
 
@@ -58,13 +59,17 @@ A pessoa acessa **Notas** na navegação principal, gerencia notas em DataTable 
 - Tipex 0.2.0, https://tipex.pages.dev/ e https://www.npmjs.com/package/@friendofsvelte/tipex, acesso em 2026-09-01 — props `focal`, `controlComponent`, extensões e snippets.
 - TipTap Markdown, https://tiptap.dev/docs/editor/markdown, acesso em 2026-09-01 — `parseMarkdown`, `renderMarkdown`, `markdownTokenizer`, `createBlockMarkdownSpec`.
 - Vercel Design Guidelines, https://vercel.com/design.md — hierarquia tipográfica, superfícies contínuas e estados semânticos.
+- Edra, https://github.com/Tsuzat/Edra e https://edra.tsuzat.com/, acesso em 2026-09-02 — padrão visual e comportamental de alça flutuante para blocos; código não incorporado.
+- TipTap Drag Handle, https://tiptap.dev/docs/editor/extensions/functionality/drag-handle, acesso em 2026-09-02 — referência de seleção do nó e posicionamento; extensão atual não instalada por incompatibilidade com TipTap 2.
+- Svelte 5 via `bunx @sveltejs/mcp@latest get-documentation`, acesso em 2026-09-02 — eventos, `bind:this`, `tick`, window e testes browser.
 
 #### Artefatos de pesquisa armazenados
 
-- `specs/draft/0004-notas-canvas-estilo-notion-com-bloco-de-versiculo/research/tipex-markdown.md` — canvas full-bleed, extensões, fence `:::verse` e sync H1↔YAML.
-- `specs/draft/0004-notas-canvas-estilo-notion-com-bloco-de-versiculo/research/notes-index-sqlite.md` — schema `note_verse_ref`, reindexação e consulta inversa futura.
-- `specs/in-progress/0004-notas-canvas-estilo-notion-com-bloco-de-versiculo/research/vercel-design-notes-2026-09-02.md` — princípios oficiais consultados para DataTable, hierarquia, responsividade e acessibilidade, sem adoção da identidade Vercel.
-- `specs/in-progress/0004-notas-canvas-estilo-notion-com-bloco-de-versiculo/research/svelte-mcp-ui-notes-2026-09-02.md` — APIs Svelte 5 consultadas via MCP oficial para estado, viewport, listas e estilos globais locais.
+- `specs/completed/0004-notas-canvas-estilo-notion-com-bloco-de-versiculo/research/tipex-markdown.md` — canvas full-bleed, extensões, fence `:::verse` e sync H1↔YAML.
+- `specs/completed/0004-notas-canvas-estilo-notion-com-bloco-de-versiculo/research/notes-index-sqlite.md` — schema `note_verse_ref`, reindexação e consulta inversa futura.
+- `specs/completed/0004-notas-canvas-estilo-notion-com-bloco-de-versiculo/research/vercel-design-notes-2026-09-02.md` — princípios oficiais consultados para DataTable, hierarquia, responsividade e acessibilidade, sem adoção da identidade Vercel.
+- `specs/completed/0004-notas-canvas-estilo-notion-com-bloco-de-versiculo/research/svelte-mcp-ui-notes-2026-09-02.md` — APIs Svelte 5 consultadas via MCP oficial para estado, viewport, listas e estilos globais locais.
+- `specs/completed/0004-notas-canvas-estilo-notion-com-bloco-de-versiculo/research/edra-drag-handle-and-tiptap-keyboard-2026-09-02.md` — referência Edra/TipTap, compatibilidade de versões e estratégia local de seleção, drag e teclado.
 
 #### Dúvidas respondidas
 
@@ -77,6 +82,7 @@ A pessoa acessa **Notas** na navegação principal, gerencia notas em DataTable 
 - **Q7: versão por bloco?** → **A:** cada bloco guarda `versionId` próprio; `readerSelection` preenche apenas o valor inicial do seletor.
 - **Q8: inserção no canvas?** → **A:** slash-command (`/`, `/versiculo`, `/verse`) e botão visível/focável; mesmo seletor e mesmo fence; canvas full-bleed sem moldura.
 - **Q9: título da nota?** → **A:** primeiro bloco editável é H1; sync bidirecional H1 ↔ `title` no YAML; template com `title: ""` e `# Nova nota`.
+- **Q10: revisão de 2026-09-02?** → **A:** o botão de inserir versículo continua removido; a barra flutuante deve ficar na viewport; `Enter` deve aplicar o slash command; blocos de topo devem ser selecionáveis e reordenáveis por drag ou teclado.
 
 #### Dúvidas abertas
 
@@ -92,7 +98,9 @@ A pessoa acessa **Notas** na navegação principal, gerencia notas em DataTable 
 - Sync bidirecional H1 ↔ `title` no YAML frontmatter.
 - Bloco custom `:::verse` com atributos `versionId`, `bookId`, `book`, `chapter`, `verseStart`, `verseEnd` e snapshot no corpo.
 - Seletor de versículo com Dialog (desktop) / Sheet (mobile), preview em callout e validação de intervalo no mesmo capítulo.
-- Slash-command e botão acessível para abrir o mesmo seletor.
+- Slash-command para abrir o seletor; sem botão de inserção no final do canvas.
+- Seleção de blocos de topo por alça e reordenação por arrastar e soltar, com alternativa por teclado.
+- Barra de formatação e menu `/` inteiramente contidos na viewport.
 - Índice auxiliar `note_verse_ref` em `.openbible/index.sqlite`, reindexado ao salvar.
 - Persistência em `notes/<noteId>.md` (arquivos planos sob `notes/`).
 
@@ -397,15 +405,64 @@ Feature: Lista de notas responsiva
     And criar, abrir e apagar continuam acessíveis por teclado e toque
 ```
 
+#### AC-016 — Manter a barra de formatação dentro da viewport
+
+**Cobre**: US-002, US-003, FR-002, FR-005, FR-010, NFR-001
+
+```gherkin
+@US-002 @US-003 @FR-002 @FR-005 @FR-010 @NFR-001 @AC-016
+Feature: Posicionamento da barra de formatação
+
+  Scenario: Selecionar texto próximo às bordas
+    Given que existe texto selecionável no início, meio ou fim do canvas
+    When a pessoa seleciona um trecho próximo a qualquer borda da viewport
+    Then a barra de formatação mede sua largura real após renderizar
+    And escolhe a posição acima ou abaixo com espaço disponível
+    And seus limites permanecem a pelo menos 8 pixels das bordas visíveis
+```
+
+#### AC-017 — Aplicar o item ativo do slash menu com Enter
+
+**Cobre**: US-002, US-003, FR-002, FR-005, NFR-001
+
+```gherkin
+@US-002 @US-003 @FR-002 @FR-005 @NFR-001 @AC-017
+Feature: Confirmação do slash command
+
+  Scenario: Transformar o bloco pelo teclado
+    Given que o menu de blocos está aberto e um item está ativo
+    When a pessoa pressiona Enter
+    Then o evento é consumido antes do keymap padrão do editor
+    And o token slash é removido
+    And o bloco ativo é aplicado exatamente uma vez sem criar linha extra
+```
+
+#### AC-018 — Selecionar e reordenar blocos
+
+**Cobre**: US-002, US-003, FR-002, FR-005, NFR-001
+
+```gherkin
+@US-002 @US-003 @FR-002 @FR-005 @NFR-001 @AC-018
+Feature: Organização dos blocos do canvas
+
+  Scenario: Mover um bloco de topo
+    Given que a nota possui ao menos três blocos de topo
+    When a pessoa aponta a margem esquerda e ativa a alça de um bloco
+    Then o bloco é selecionado visualmente
+    When a pessoa arrasta a alça antes ou depois de outro bloco
+    Then o documento move o bloco preservando seu conteúdo e formatação
+    And a mesma reordenação está disponível com Alt e seta para cima ou para baixo
+```
+
 ### 7. Requisitos
 
 #### Funcionais
 
 - **FR-001**: O sistema deve listar notas ativas em `/notes`, permitir criar, abrir e mover para `trash/` com confirmação, persistindo arquivos planos em `notes/<noteId>.md` e removendo da listagem ativa após exclusão.
-- **FR-002**: O sistema deve renderizar o editor em canvas full-bleed (sem moldura em volta do ProseMirror), com primeiro bloco editável como H1 e sync bidirecional entre o texto do H1 e `title` no YAML ao carregar e salvar.
+- **FR-002**: O sistema deve renderizar o editor em canvas full-bleed (sem moldura em volta do ProseMirror), com primeiro bloco editável como H1 e sync bidirecional entre o texto do H1 e `title` no YAML ao carregar e salvar; cada bloco de topo deve ser selecionável por uma alça discreta e reordenável por arrastar e soltar ou por `Alt+ArrowUp/ArrowDown`.
 - **FR-003**: O sistema deve serializar blocos de versículo como fence `:::verse` com atributos `versionId`, `bookId`, `book`, `chapter`, `verseStart`, `verseEnd` e snapshot textual no corpo; a preview lê o snapshot e só consulta `bibles/` ao inserir ou alterar o bloco.
 - **FR-004**: O sistema deve oferecer seletor de versículo com versão, livro, capítulo, versículo inicial e final, preview em callout, validação de intervalo no mesmo capítulo e superfície Dialog no desktop ou Sheet no mobile.
-- **FR-005**: O sistema deve permitir inserir blocos de versículo pelo menu de blocos aberto com `/` e diretamente pelos atalhos `/versiculo` e `/verse`; não deve exibir um botão “Inserir versículo” no final do canvas.
+- **FR-005**: O sistema deve permitir inserir blocos de versículo pelo menu de blocos aberto com `/` e diretamente pelos atalhos `/versiculo` e `/verse`; `Enter` deve aplicar exatamente uma vez o item ativo antes do comportamento padrão do editor, e não deve existir botão “Inserir versículo” no final do canvas.
 - **FR-006**: O sistema deve manter tabela auxiliar `note_verse_ref` em `.openbible/index.sqlite`, reindexando referências ao salvar cada nota sem substituir o Markdown como fonte.
 - **FR-007**: O sistema deve normalizar o título removendo marcadores Markdown e espaços excedentes antes de gravar `title` no YAML, mantendo exatamente um H1 canônico no corpo.
 - **FR-008**: O sistema deve reconstruir cada nó `verseBlock` com todos os atributos e o snapshot ao converter o fence `:::verse` salvo para o documento TipTap.
@@ -414,7 +471,7 @@ Feature: Lista de notas responsiva
 
 #### Não funcionais
 
-- **NFR-001**: A interface de notas deve ser operável por teclado, com foco visível, labels/nomes acessíveis, suporte a tema claro/escuro, `prefers-reduced-motion` e layouts responsivos em 320px e 1440px sem overflow horizontal. O canvas ocupa 100% da área útil e mantém rolagem da página; overlays medem a viewport, reposicionam-se nas bordas e limitam sua altura com rolagem interna. **Verificação**: testes Vitest Browser/Playwright e checklist manual de acessibilidade na seção 10.
+- **NFR-001**: A interface de notas deve ser operável por teclado, com foco visível, labels/nomes acessíveis, suporte a tema claro/escuro, `prefers-reduced-motion` e layouts responsivos em 320px e 1440px sem overflow horizontal. O canvas ocupa 100% da área útil e mantém rolagem da página; overlays medem a si próprios e a viewport após renderizar, reposicionam-se nas bordas e limitam sua altura com rolagem interna. A alça de bloco deve ter nome acessível, alvo mínimo de 28 px e alternativa de reordenação por teclado. **Verificação**: testes Vitest Browser/Playwright e checklist manual de acessibilidade na seção 10.
 - **NFR-002**: O conteúdo completo de cada nota e snapshot bíblico deve permanecer no workspace local, sem `fetch` de conteúdo editorial para serviços remotos. **Verificação**: testes de integração com storage fake e inspeção de que a preview pós-salvamento não abre SQLite.
 
 #### Erros e casos-limite
@@ -425,6 +482,8 @@ Feature: Lista de notas responsiva
 - `title` no YAML divergente do H1 ao abrir → atualizar H1 para coincidir com `title` antes da edição.
 - Intervalo com `verseEnd < verseStart` ou capítulos diferentes → bloquear confirmação com explicação.
 - Arquivo Markdown corrompido ou fence malformado → estado de erro na nota com opção de recuperar texto bruto sem perder o arquivo.
+- Bloco arrastado sobre si mesmo ou para posição inválida → não alterar o documento; manter a seleção atual.
+- Barra maior que a largura disponível → limitar a largura, permitir rolagem horizontal interna dos controles e nunca deslocar a página.
 
 ## Ato II — Projetar e provar
 
@@ -435,12 +494,13 @@ Feature: Lista de notas responsiva
 - Monorepo Bun com `apps/web` em SvelteKit 2 / Svelte 5, Vitest, shadcn-svelte local, Geist Sans/Mono e storage abstrato (`WorkspaceStorage`) entregue pela SPEC-0001.
 - Navegação e shell da SPEC-0002 com `AppSidebar` e barra mobile; leitor bíblico da SPEC-0003 com `bible-reader.ts`, `readerSelection` e padrão Dialog/Sheet.
 - Template `templates/note.md` com frontmatter (`title`, `createdAt`, `updatedAt`, `type`) e corpo `# Nova nota`.
-- Tipex 0.2.0 ainda não instalado; pesquisa local confirma viabilidade com nó custom e possível serialização manual.
+- Tipex 0.2.0 já instalado; o editor atual possui nó custom e serialização manual, mas o Enter do slash menu ocorre tarde no `window` e a barra flutuante não mede a própria largura.
 
 #### Arquitetura e módulos
 
 - **Domínio `notes/`**: repositório File Over Apps (`list`, `create`, `read`, `save`, `trash`), parser/sync de frontmatter e H1, parser de fences `:::verse`, reindexação SQLite.
-- **Editor `NoteCanvasEditor`**: encapsula Tipex com extensões padrão + `VerseBlock` + slash suggestions; expõe eventos de save debounced.
+- **Editor `NoteCanvasEditor`**: encapsula Tipex com extensões padrão + `VerseBlock` + extensão local `NoteBlockInteractions`; mede overlays após `tick`, intercepta o teclado do slash no ProseMirror e expõe save debounced.
+- **Interações `note-block-interactions.ts`**: calcula posições seguras de overlays, seleciona o bloco de topo, fornece drag handle e move o nó mantendo seleção; não altera o schema persistente.
 - **UI `VerseSelector`**: composição Svelte reutilizando consultas de `bible-reader.ts` e padrão responsivo Dialog/Sheet.
 - **Rotas**: `/notes` lista; `/notes/[id]` carrega storage, sincroniza título e monta editor.
 - **Índice**: `note-verse-index.ts` cria schema se ausente e sincroniza refs por `note_path`.
@@ -465,7 +525,7 @@ Feature: Lista de notas responsiva
 #### Views e experiência
 
 - **`NotesList.svelte`**: listagem, estado vazio, ação criar, confirmar exclusão.
-- **`NoteCanvasEditor.svelte`**: Tipex full-bleed, inserção de versículo somente pelo menu `/`, estados salvando/erro.
+- **`NoteCanvasEditor.svelte`**: Tipex full-bleed, inserção de versículo somente pelo menu `/`, barra medida dentro da viewport, alça flutuante de bloco e estados salvando/erro.
 - **`VerseBlockView.svelte`**: callout com referência humanizada e snapshot.
 - **`VerseSelector.svelte`**: formulário versão/livro/capítulo/versículos + preview.
 
@@ -493,6 +553,8 @@ apps/web/src/lib/features/notes/
   note-markdown.ts
   note-verse-index.ts
   note-editor-service.ts
+  note-block-interactions.ts
+  note-block-interactions.test.ts
   verse-block-extension.ts
   NotesList.svelte
   NoteCanvasEditor.svelte
@@ -569,12 +631,13 @@ apps/web/src/lib/features/navigation/
 | Barra mobile inferior | Configuração | `/config` | uso local | ícone + rótulo |
 
 - Destacar rota ativa com `aria-current="page"` quando em `/notes` ou `/notes/[id]`.
-- Não há menu secundário dentro do editor; ações de inserir versículo ficam no canvas.
+- O menu `/` fica dentro do editor; a barra de formatação surge somente para seleção textual e a alça surge na margem esquerda do bloco sob o ponteiro.
 
 #### Formulários e ações
 
 - Lista: botão primário **Nova nota**; por item, ações **Abrir** (linha clicável) e **Apagar** com `AlertDialog` de confirmação.
 - Editor: slash menu ao digitar `/`; atalhos `/versiculo` e `/verse`; sem botão de inserção no rodapé.
+- Editor: `Enter` confirma o item ativo antes do keymap padrão; a alça **Selecionar e mover bloco** seleciona por clique, arrasta por ponteiro e move por `Alt+ArrowUp/ArrowDown` quando focada.
 - Seletor: campos `Versão`, `Livro`, `Capítulo`, `Versículo inicial`, `Versículo final`; ações **Cancelar** e **Inserir**; preview em callout acima da confirmação.
 
 #### Composição e disposição
@@ -582,6 +645,8 @@ apps/web/src/lib/features/navigation/
 - Lista: header do shell com título **Notas** e ação **Nova nota**; conteúdo sem PageHeader duplicado, ocupado por DataTable shadcn-svelte em largura total no desktop e cards no mobile.
 - Editor: canvas full-bleed ocupando 100% da área útil disponível, H1 como primeiro bloco e rolagem natural da página; sem card, toolbar fixa ou botão de inserção no rodapé.
 - Slash menu: superfície compacta inspirada no padrão funcional da imagem fornecida, com itens de uma linha, altura máxima baseada na viewport, rolagem interna e posicionamento acima/abaixo e ajuste horizontal conforme o espaço disponível.
+- Barra de formatação: superfície de largura limitada, rolável horizontalmente se necessário, medida após render e ancorada acima ou abaixo da seleção sem cruzar 8 px das bordas.
+- Alça de bloco: botão de 28 px na margem esquerda, opacidade discreta em repouso, foco visível e indicador de inserção durante drag; sem card ou cor ornamental.
 - Callout de versículo: tipografia serifada ou mono para referência, cor semântica de citação, padding generoso, borda lateral sutil — sem gradientes ou sombras decorativas.
 
 #### Blocos React e componentes selecionados
@@ -602,6 +667,7 @@ apps/web/src/lib/features/navigation/
 - Editor: salvando (indicador discreto), salvo, erro de gravação com retry; Tipex mantém foco visível com `focal={false}` mas respeita `:focus-visible` do design system.
 - Seletor: carregando catálogo, versão ausente, intervalo inválido, preview disponível.
 - Teclado: ordem lógica header → criar → itens; no editor, slash menu navegável por setas, Enter e Escape, com item ativo mantido visível dentro da rolagem.
+- Teclado: `Enter` do slash é consumido antes do editor; a alça seleciona com Enter/Espaço e reordena com `Alt+ArrowUp/ArrowDown`, anunciando o nome do controle.
 - Leitor de tela: título da nota em `h1`, referência do versículo no callout, `aria-live` para status de salvamento.
 
 #### Contrato CRUD
@@ -629,6 +695,8 @@ apps/web/src/lib/features/navigation/
 
 - Tipex 0.2.0 — props, extensões e estilos (`research/tipex-markdown.md`).
 - TipTap Markdown — serialização customizada de blocos (`research/tipex-markdown.md`).
+- Edra e TipTap Drag Handle — padrão de alça e compatibilidade de versão (`research/edra-drag-handle-and-tiptap-keyboard-2026-09-02.md`).
+- Svelte 5 — eventos, medição após `tick`, bindings DOM e testes, consultados via MCP oficial (`research/edra-drag-handle-and-tiptap-keyboard-2026-09-02.md`).
 
 #### Eventos e outros contratos
 
@@ -649,9 +717,9 @@ apps/web/src/lib/features/navigation/
 
 - **Unidade**: parser/sync Markdown+YAML, serialização `:::verse`, validação de intervalo, reindex `note_verse_ref`, geração de `noteId`.
 - **Integração/contrato**: storage fake com `notes/` e `trash/`, roundtrip editor ↔ arquivo, isolamento de lookup na preview.
-- **BDD/aceite**: AC-001 a AC-010 orientam casos TDD sem arquivos `.feature`.
+- **BDD/aceite**: AC-001 a AC-018 orientam casos TDD sem arquivos `.feature`.
 - **Runner TDD**: Vitest em `apps/web/package.json#test:tdd` (Bun/npm conforme monorepo).
-- **E2E**: Vitest Browser Mode com Playwright para lista, editor, slash menu, seletor responsivo e callout.
+- **E2E**: Vitest Browser Mode com Playwright para lista, editor, slash menu, barra medida, alça de bloco, reordenação, seletor responsivo e callout.
 - **Verificação manual**: inspeção visual do canvas full-bleed e callout em claro/escuro — inevitável para julgar densidade tipográfica.
 
 #### Evidência RED-GREEN-REFACTOR
@@ -674,39 +742,49 @@ apps/web/src/lib/features/navigation/
 | US-003, FR-003, FR-008, NFR-002, AC-007, AC-008, AC-013 | AC-013 na seção 6 | `apps/web/src/lib/features/notes/verse-block-extension.test.ts` | 2026-09-02 — RED: HTML não transporta `snapshotBody` para hidratação TipTap | 2026-09-02 — GREEN: snapshot explícito hidratado e múltiplos fences preservados | Regressão completa 92/92 |
 | US-002, FR-002, FR-010, NFR-001, NFR-002, AC-014 | AC-014 na seção 6 | `apps/web/src/lib/features/notes/verse-block-extension.test.ts` | 2026-09-02 — RED: marcador de cor aparece como texto e a cor é descartada | 2026-09-02 — GREEN: amarelo, verde, azul e rosa serializam com fallback compatível | Regressão completa 92/92; claro/escuro inspecionados |
 | US-001, US-004, FR-001, FR-009, NFR-001, AC-001, AC-002, AC-015 | AC-015 na seção 6 | `apps/web/src/routes/notes-list.svelte.spec.ts` | 2026-09-02 — RED: PageHeader duplicado e ausência de DataTable/cards | 2026-09-02 — GREEN: DataTable desktop e cards mobile equivalentes | Regressão completa 92/92; 1440×900 e 390×844 inspecionados |
+| US-002, US-003, FR-002, FR-005, FR-010, NFR-001, AC-016 | AC-016 na seção 6 | `apps/web/src/lib/features/notes/note-block-interactions.test.ts` e `apps/web/src/routes/notes-editor.svelte.spec.ts` | 2026-09-02 — RED: módulo de geometria ausente; barra existente só passa no viewport largo do runner | 2026-09-02 — GREEN: barra real medida e limitada a 8 px da viewport; testes focais 8/8 | Função pura separa geometria de CSS; Passed |
+| US-002, US-003, FR-002, FR-005, NFR-001, AC-017 | AC-017 na seção 6 | `apps/web/src/routes/notes-editor.svelte.spec.ts` | 2026-09-02 — RED: `/h2` permanece texto e Enter cria parágrafo extra | 2026-09-02 — GREEN: `Enter` transforma `/h2` no heading ativo sem parágrafo extra | Reprodução real no Chromium; Passed |
+| US-002, US-003, FR-002, FR-005, NFR-001, AC-018 | AC-018 na seção 6 | `apps/web/src/lib/features/notes/note-block-interactions.test.ts` e `apps/web/src/routes/notes-editor.svelte.spec.ts` | 2026-09-02 — RED: módulo e botão acessível inexistentes | 2026-09-02 — GREEN: seleção, drag/drop e `Alt+Arrow` preservam conteúdo e H1 canônico | Movimento unitário + interação browser; Passed |
 
 ### 12. Plano de testes e rastreabilidade
 
 | Requisito | Cenário BDD | Nível | Arquivo/comando esperado | Evidência |
 | --- | --- | --- | --- | --- |
-| FR-001 | AC-001, AC-002, AC-003 | Unidade/integração | `apps/web/src/lib/features/notes/notes-repository.test.ts`; `bun run --cwd apps/web test:tdd` | GREEN — 3 testes; regressão T024 77/77 |
-| FR-002 | AC-003, AC-005 | Unidade/browser | `apps/web/src/lib/features/notes/note-markdown.test.ts`; `apps/web/src/routes/notes-editor.svelte.spec.ts` | GREEN — markdown + browser spec |
-| FR-003 | AC-004, AC-007, AC-008, AC-010 | Unidade | `apps/web/src/lib/features/notes/verse-block-extension.test.ts`; `note-markdown.test.ts` | GREEN — 2 testes extensão |
-| FR-004 | AC-006, AC-009, AC-010 | Unidade/integração | `apps/web/src/lib/features/notes/verse-selector.test.ts` | GREEN — 2 testes |
-| FR-005 | AC-004, AC-005, AC-009 | Browser | `apps/web/src/routes/notes-editor.svelte.spec.ts` | GREEN — 1 teste browser |
-| FR-006 | AC-002, AC-008, AC-010 | Unidade | `apps/web/src/lib/features/notes/note-verse-index.test.ts` | GREEN — 1 teste |
-| NFR-001 | AC-003, AC-004, AC-005, AC-006, AC-009 | Browser/inspeção | `notes-editor.svelte.spec.ts`; viewports 320px/1440px | GREEN testes; inspeção visual T024 |
-| NFR-002 | AC-001, AC-007, AC-008, AC-010 | Unidade/integração | `verse-block-extension.test.ts`; `notes-repository.test.ts` | GREEN — snapshot offline verificado |
+| FR-001 | AC-001, AC-002, AC-003 | Unidade/integração | `apps/web/src/lib/features/notes/notes-repository.test.ts`; `bun run --cwd apps/web test:tdd` | Passed — GREEN; regressão final 97/97 |
+| FR-002 | AC-003, AC-005 | Unidade/browser | `apps/web/src/lib/features/notes/note-markdown.test.ts`; `apps/web/src/routes/notes-editor.svelte.spec.ts` | Passed — GREEN; markdown + browser spec |
+| FR-003 | AC-004, AC-007, AC-008, AC-010 | Unidade | `apps/web/src/lib/features/notes/verse-block-extension.test.ts`; `note-markdown.test.ts` | Passed — GREEN; extensão coberta |
+| FR-004 | AC-006, AC-009, AC-010 | Unidade/integração | `apps/web/src/lib/features/notes/verse-selector.test.ts` | Passed — GREEN; seletor coberto |
+| FR-005 | AC-004, AC-005, AC-009 | Browser | `apps/web/src/routes/notes-editor.svelte.spec.ts` | Passed — GREEN; interação browser |
+| FR-006 | AC-002, AC-008, AC-010 | Unidade | `apps/web/src/lib/features/notes/note-verse-index.test.ts` | Passed — GREEN; índice coberto |
+| NFR-001 | AC-003, AC-004, AC-005, AC-006, AC-009 | Browser/inspeção | `notes-editor.svelte.spec.ts`; viewports 320px/1440px | Passed — GREEN; testes e inspeção visual |
+| NFR-002 | AC-001, AC-007, AC-008, AC-010 | Unidade/integração | `verse-block-extension.test.ts`; `notes-repository.test.ts` | Passed — GREEN; snapshot offline verificado |
+| FR-001, FR-002, FR-007 | AC-011, AC-012 | Unidade/browser | `notes-repository.test.ts`; `note-markdown.test.ts`; `notes-editor.svelte.spec.ts` | Passed — GREEN; título canônico sem marcadores |
+| FR-003, FR-008 | AC-013 | Unidade | `verse-block-extension.test.ts`; `note-markdown.test.ts` | Passed — GREEN; bloco de versículo reidratado |
+| FR-002, FR-010, NFR-001 | AC-014 | Unidade/browser | `verse-block-extension.test.ts`; `notes-editor.svelte.spec.ts` | Passed — GREEN; highlights multicores persistentes |
+| FR-001, FR-009, NFR-001 | AC-015 | Browser | `notes-list.svelte.spec.ts` | Passed — GREEN; DataTable desktop e cards mobile |
+| FR-002, FR-005, FR-010, NFR-001 | AC-016 | Unidade/browser | `note-block-interactions.test.ts`; `notes-editor.svelte.spec.ts` | Passed — GREEN; clamp em 320×568 e medição Chromium |
+| FR-002, FR-005, NFR-001 | AC-017 | Browser | `notes-editor.svelte.spec.ts` | Passed — GREEN; `Enter` aplica o item ativo |
+| FR-002, FR-005, NFR-001 | AC-018 | Unidade/browser | `note-block-interactions.test.ts`; `notes-editor.svelte.spec.ts` | Passed — GREEN; seleção, drag/drop e `Alt+Arrow` |
 
 ### 13. Validações
 
 #### Gate do Ato I — Definição
 
-- **Resultado**: Passed — revalidado em 2026-09-02 após DEC-007.
-- **Comando**: `node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/in-progress/0004-notas-canvas-estilo-notion-com-bloco-de-versiculo/spec.md --allow-draft`; `review_findings.mjs`.
-- **Achados**: VALID DRAFT e Reviews PASSED; 4 US, 10 FR, 2 NFR e 15 AC com cobertura mínima de 3 AC por US/FR/NFR; evidências locais do guideline Vercel e do MCP Svelte indexadas; nenhum BLOCKER semântico.
+- **Resultado**: Passed — revalidado em 2026-09-02 após DEC-008.
+- **Comando**: `validate_spec.mjs ... --allow-draft` e `review_findings.mjs`.
+- **Achados**: VALID DRAFT e Reviews PASSED; AC-016–AC-018 descrevem geometria, ordem do teclado e movimento observáveis; pesquisa Edra/TipTap/Svelte indexada; nenhum BLOCKER semântico.
 
 #### Gate do Ato II — Plano
 
-- **Resultado**: Passed — revalidado em 2026-09-02 após DEC-007.
-- **Comando**: `validate_tasks.mjs ... --allow-draft`; `validate_interface_tasks.mjs`; `check_traceability.mjs`.
-- **Achados**: 41 tarefas totais, 36 concluídas após materializar os novos REDs, 22 TDD no conjunto; 31/31 IDs cobertos em 26 arquivos de teste; tarefas de interface OK; T030–T034 permanecem prontas para implementação.
+- **Resultado**: Passed — revalidado em 2026-09-02 após DEC-008.
+- **Comando**: `validate_tasks.mjs ... --allow-draft` e `validate_interface_tasks.mjs`.
+- **Achados**: 47 tarefas totais, 44 concluídas após T042–T044; 25 TDD; 34/34 IDs cobertos; T045–T047 prontas e dependências válidas.
 
 #### Gate do Ato III — Entrega
 
-- **Resultado**: Passed — 2026-09-02.
-- **Comando**: `bun run --cwd apps/web test:tdd` (92/92); `bun run --cwd apps/web build`; `validate_tasks.mjs`; `check_traceability.mjs`; `build_documentation.mjs --check`; `monitor_context.mjs --check`.
-- **Achados**: 15/15 AC com evidência GREEN; 41/41 tarefas concluídas; suíte completa e build passam; revisão visual em 1440×900 e 390×844, claro/escuro, confirmou DataTable/cards e menu `/` com rolagem e sem corte. `bun run check` conserva somente seis erros preexistentes nos barrels shadcn `button/index.ts` e `tabs/index.ts`; lint global mantém débitos preexistentes fora da fatia.
+- **Resultado**: Passed — revalidado em 2026-09-02 após DEC-008.
+- **Comando**: `bun run --cwd apps/web test:tdd` (97/97); `bun run --cwd apps/web build`; `validate_tasks.mjs`; `check_traceability.mjs`; `verify_acceptance.mjs`; `build_documentation.mjs --check`; `monitor_context.mjs --check`.
+- **Achados**: AC-001–AC-018 com evidência Passed; testes e build exit 0; `check` mantém seis erros preexistentes nos barrels shadcn `button`/`tabs`, sem erro nos arquivos alterados.
 
 ### 14. Tarefas
 
@@ -1096,12 +1174,73 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
   - [x] **IMPROVE**: Registrar melhoria final aplicada: barra de formatação presa a 8 px no mobile para não cortar os swatches.
 <!-- specsfy:evidence {"task":"T034","refs":["US-001","US-002","US-003","US-004","FR-001","FR-002","FR-003","FR-004","FR-005","FR-006","FR-007","FR-008","FR-009","FR-010","NFR-001","NFR-002","AC-001","AC-002","AC-003","AC-004","AC-005","AC-006","AC-007","AC-008","AC-009","AC-010","AC-011","AC-012","AC-013","AC-014","AC-015"],"files":["specs/completed/0004-notas-canvas-estilo-notion-com-bloco-de-versiculo/spec.md"],"commands":[{"run":"bun run --cwd apps/web test:tdd","exit":0},{"run":"bun run --cwd apps/web build","exit":0},{"run":"bun run --cwd apps/web check","exit":1}]} -->
 
+#### Fase 6 — RED TDD da revisão DEC-008
+
+- [x] T042 [TEST] [TDD] [US-002] Derivar do AC-016 testes de geometria e browser para manter a barra de formatação na viewport em `apps/web/src/lib/features/notes/note-block-interactions.test.ts` e `apps/web/src/routes/notes-editor.svelte.spec.ts` — Refs: US-002, US-003, FR-002, FR-005, FR-010, NFR-001, AC-016 — Depends: none
+  - [x] **PREP**: Confirmada a captura fornecida, limites de 8 px, posições acima/abaixo e viewports 320px/1440px.
+  - [x] **EXECUTE**: Criados casos Vitest com marcador `SPECSFY:` para clamp e barra renderizada.
+  - [x] **VERIFY**: RED válido: `note-block-interactions.ts` inexistente; barra atual não possui geometria medida.
+  - [x] **VISUAL**: Captura registra barra cortada e baseline de bordas, espaçamentos, margens, padding e tipografia; correção pertence à T045.
+  - [x] **EVIDENCE**: `bun run --cwd apps/web test:tdd -- note-block-interactions.test.ts` exit 1 por módulo ausente.
+  - [x] **IMPROVE**: Geometria extraída no contrato de função pura para não acoplar o teste ao CSS.
+
+- [x] T043 [TEST] [TDD] [US-002] Derivar do AC-017 teste browser de confirmação do slash command por `Enter` em `apps/web/src/routes/notes-editor.svelte.spec.ts` — Refs: US-002, US-003, FR-002, FR-005, NFR-001, AC-017 — Depends: none
+  - [x] **PREP**: Confirmado que o evento atual chega ao `window` após o keymap padrão do ProseMirror.
+  - [x] **EXECUTE**: Caso browser digita `/h2`, pressiona Enter e verifica tipo de bloco e ausência de linha extra.
+  - [x] **VERIFY**: RED reproduzível: `/h2` permanece em um parágrafo e outro parágrafo vazio é criado.
+  - [x] **VISUAL**: Não aplicável à tarefa RED; comportamento visual permanece o menu existente.
+  - [x] **EVIDENCE**: `bun run --cwd apps/web test:tdd -- notes-editor.svelte.spec.ts` exit 1, falha AC-017 no Chromium.
+  - [x] **IMPROVE**: Fluxo usa somente teclado, sem mascarar a falha com clique.
+
+- [x] T044 [TEST] [TDD] [US-002] Derivar do AC-018 testes unitários/browser de seleção e reordenação de blocos em `apps/web/src/lib/features/notes/note-block-interactions.test.ts` e `apps/web/src/routes/notes-editor.svelte.spec.ts` — Refs: US-002, US-003, FR-002, FR-005, NFR-001, AC-018 — Depends: none
+  - [x] **PREP**: Confirmados nós de topo, preservação de conteúdo, limites e alternativa `Alt+Arrow`.
+  - [x] **EXECUTE**: Criados casos com marcador `SPECSFY:` para movimento e botão acessível.
+  - [x] **VERIFY**: RED válido: módulo ausente e botão **Selecionar e mover bloco** não encontrado.
+  - [x] **VISUAL**: Ausência da alça registrada junto do baseline de bordas, espaçamentos, margens, padding e tipografia; composição final pertence à T045.
+  - [x] **EVIDENCE**: Testes focais exit 1 no módulo e no Chromium, com falha AC-018.
+  - [x] **IMPROVE**: Transformação ProseMirror isolada precede a interação de ponteiro.
+
+#### Fase de interface — revisão DEC-008
+
+- [x] T045 [CODE] [US-002] Implementar barra medida, teclado do slash e alça para selecionar/reordenar blocos em `apps/web/src/lib/features/notes/NoteCanvasEditor.svelte` e `apps/web/src/lib/features/notes/note-block-interactions.ts` — Refs: US-002, US-003, FR-002, FR-005, FR-010, NFR-001, AC-016, AC-017, AC-018 — Depends: T042, T043, T044
+  - [x] **PREP**: Reconstruir `docs/` com `$specsfy-documentator`; consultar o MCP Svelte e a pesquisa Edra/TipTap; confirmar os REDs.
+  - [x] **EXECUTE**: Medir overlays após `tick`, registrar plugin ProseMirror de teclado e interação de bloco, renderizar alça de 28 px e indicador de drop.
+  - [x] **VERIFY**: Testes focais 8/8, `svelte-autofixer` sem issues e build exit 0; `check` mantém apenas seis exports preexistentes dos barrels shadcn.
+  - [x] **VISUAL**: Chromium desktop confirmou bordas, espaçamentos, margens, padding e tipografia, com barra em `left=8`, largura real de 362,8 px e alça 28×28 px; geometria unitária cobre viewport 320×568, posicionamento acima/abaixo e conteúdo nas bordas.
+  - [x] **EVIDENCE**: `bun run --cwd apps/web test:tdd -- note-block-interactions.test.ts notes-editor.svelte.spec.ts` (8/8), `bunx @sveltejs/mcp@latest svelte-autofixer ...` (0 issues) e `bun run --cwd apps/web build` (exit 0) cobrem AC-016–AC-018.
+  - [x] **IMPROVE**: Alça discreta local compatível com TipTap 2, sem dependência nova; H1 canônico permanece fixo como primeiro bloco.
+
+<!-- specsfy:evidence {"task":"T045","refs":["US-002","US-003","FR-002","FR-005","FR-010","NFR-001","AC-016","AC-017","AC-018"],"files":["apps/web/src/lib/features/notes/NoteCanvasEditor.svelte","apps/web/src/lib/features/notes/note-block-interactions.ts","apps/web/src/lib/features/notes/note-block-interactions.test.ts","apps/web/src/routes/notes-editor.svelte.spec.ts"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- note-block-interactions.test.ts notes-editor.svelte.spec.ts","exit":0},{"run":"bunx @sveltejs/mcp@latest svelte-autofixer apps/web/src/lib/features/notes/NoteCanvasEditor.svelte","exit":0},{"run":"bun run --cwd apps/web build","exit":0}]} -->
+
+- [x] T046 [DOC] [US-002] Atualizar `INTERFACE.md`, docs e registro de pacotes para as interações de bloco em `/notes/[id]` — Refs: US-002, US-003, FR-002, FR-005, NFR-001, AC-016, AC-017, AC-018 — Depends: T045
+  - [x] **PREP**: Conferidas a API e os estados finais de `NoteCanvasEditor` e `note-block-interactions.ts`.
+  - [x] **EXECUTE**: `$specsfy-documentator` executado; `INTERFACE.md` registra seleção, drag, teclado e posicionamento seguro.
+  - [x] **VERIFY**: `build_documentation.mjs --check` e `monitor_context.mjs --check` retornaram `CURRENT`.
+  - [x] **VISUAL**: Documentação registra bordas, espaçamentos, margens, padding, tipografia, alça de 28 px, foco, alternativa de teclado, viewport e preservação do título canônico.
+  - [x] **EVIDENCE**: `INTERFACE.md`, `docs/` e `specs.md` reconstruídos; verificadores documentais exit 0.
+  - [x] **IMPROVE**: Orientação de centralização por `transform` substituída por medição e clamp da superfície real.
+
+<!-- specsfy:evidence {"task":"T046","refs":["US-002","US-003","FR-002","FR-005","NFR-001","AC-016","AC-017","AC-018"],"files":["INTERFACE.md","docs/README.md","docs/application.md","docs/architecture.md","docs/frontend.md","docs/testing.md","specs.md"],"commands":[{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
+
+- [x] T047 [TEST] [US-002] Executar regressão, revisão visual e gates da DEC-008 em `apps/web` e na spec — Refs: US-001, US-002, US-003, US-004, FR-001–FR-010, NFR-001, NFR-002, AC-001–AC-018 — Depends: T045, T046
+  - [x] **PREP**: Confirmadas suites, browser Chromium, seis débitos preexistentes de `check` e checklist AC-016–AC-018.
+  - [x] **EXECUTE**: Regressão completa, build, checks aplicáveis, validadores Specsfy e revisão visual executados.
+  - [x] **VERIFY**: Testes 97/97 e build exit 0; tarefas READY, rastreabilidade 34/34 e nenhum defeito visual material conhecido.
+  - [x] **VISUAL**: Bordas, espaçamentos, margens, padding e tipografia conferidos no Chromium desktop; viewport 320×568, seleção nas bordas, Enter, drag e `Alt+Arrow` cobertos por testes automatizados.
+  - [x] **EVIDENCE**: Seções 11–13, Delivery Gate e DoD atualizados, preservando o histórico anterior.
+  - [x] **IMPROVE**: H1 canônico bloqueado como origem/destino do drag e alternativa acessível de teclado preservada.
+
+<!-- specsfy:evidence {"task":"T047","refs":["US-001","US-002","US-003","US-004","FR-001","FR-002","FR-003","FR-004","FR-005","FR-006","FR-007","FR-008","FR-009","FR-010","NFR-001","NFR-002","AC-001","AC-002","AC-003","AC-004","AC-005","AC-006","AC-007","AC-008","AC-009","AC-010","AC-011","AC-012","AC-013","AC-014","AC-015","AC-016","AC-017","AC-018"],"files":["specs/in-progress/0004-notas-canvas-estilo-notion-com-bloco-de-versiculo/spec.md"],"commands":[{"run":"bun run --cwd apps/web test:tdd","exit":0},{"run":"bun run --cwd apps/web build","exit":0},{"run":"node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/in-progress/0004-notas-canvas-estilo-notion-com-bloco-de-versiculo/spec.md --allow-draft","exit":0},{"run":"node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/in-progress/0004-notas-canvas-estilo-notion-com-bloco-de-versiculo/spec.md . --kinds US,FR,NFR,AC --full-chain","exit":0}]} -->
+
 ### 15. Ordem de execução
 
 - Caminho histórico concluído: T001–T024.
 - Caminho crítico da DEC-007: T025/T028 → T030 → T033 → T034; T026/T027/T028 → T031 → T033; T029 → T032 → T033.
 - Tarefas paralelas: T026, T027 e T029 não compartilham arquivos; T030 e T031 compartilham a integração de highlight e devem ser sequenciadas apesar de T031 ser independente dos arquivos Svelte.
 - Estratégia da revisão: corrigir primeiro persistência e overlays, depois repaginar a entrada `/notes`, documentar e fechar a regressão.
+- Caminho crítico da DEC-008: T042/T043/T044 → T045 → T046 → T047.
+- Tarefas paralelas da DEC-008: T042, T043 e T044 podem ser materializadas sem compartilhar estado; T045 integra os três comportamentos.
+- Estratégia da DEC-008: provar geometria, teclado e movimento separadamente; integrar no canvas; documentar e fechar regressão visual.
 
 ## Ato III — Entregar e validar
 
@@ -1120,6 +1259,8 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
 - Slash menu não nativo no Tipex → implementar extensão `@tiptap/suggestion` com testes dedicados.
 - Performance ao reindexar notas longas → reindex incremental por `note_path` apenas após save.
 - Subpastas legadas em `notes/` → listagem plana ignora subpastas; migração manual fica fora desta fatia.
+- Extensão Drag Handle atual do TipTap usa major incompatível com Tipex 0.2.0 → manter extensão local pequena e coberta por testes, sem copiar Edra.
+- Drag para posição inválida ou entre estruturas aninhadas → limitar a primeira entrega aos filhos diretos do documento e ignorar drops inválidos.
 
 #### Suposições
 
@@ -1137,13 +1278,14 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
 - **DEC-005**: Manter índice auxiliar `note_verse_ref` em `.openbible/index.sqlite` — habilita relações e busca futura sem violar File Over Apps; alternativa grep em todos os arquivos não escala.
 - **DEC-006**: Armazenar notas como arquivos planos em `notes/<noteId>.md` — simplifica listagem e paths; alternativa subpastas temáticas da SPEC-0001 fica adiada para não complicar o CRUD inicial.
 - **DEC-007**: Incorporar o pedido tardio de 2026-09-02 como mudança de comportamento e interface. Pedido preservado: remover o botão “Inserir Versículos”; canvas em 100% da tela; slash menu sem corte, compacto e rolável conforme a imagem fornecida; título salvo sem `##`; recuperação do bloco de versículo; mais cores de highlight; `/notes` com DataTable shadcn-svelte, guideline Vercel, título e botão no header e cards no mobile. Impacta FR-002, FR-003, FR-005, NFR-001 e adiciona FR-007–FR-010, AC-012–AC-015.
+- **DEC-008**: Reabrir a SPEC-0004 para corrigir a barra de formatação fora da viewport, consumir `Enter` do slash menu dentro do ProseMirror e adicionar seleção/reordenação dos blocos de topo. A referência Edra orienta uma alça flutuante discreta; a implementação permanece local e compatível com TipTap 2, com alternativa `Alt+Arrow` por teclado. Impacta FR-002, FR-005, FR-010, NFR-001 e adiciona AC-016–AC-018.
 
 ### 18. Definition of Done
 
-- [x] `Definition Gate` está `Passed` — revalidado após DEC-007.
-- [x] `Plan Gate` está `Passed` — revalidado após DEC-007.
-- [x] `Delivery Gate` está `Passed` — revalidado após DEC-007.
+- [x] `Definition Gate` está `Passed` — revalidado após DEC-008.
+- [x] `Plan Gate` está `Passed` — revalidado após DEC-008.
+- [x] `Delivery Gate` está `Passed` — revalidado após DEC-008.
 - [x] Todos os cenários `AC` aplicáveis passam.
 - [x] Todos os requisitos possuem evidência de verificação.
 - [x] Todas as tarefas na seção 14 estão concluídas.
-- [x] Testes e checks estáticos disponíveis passam (`test:tdd` 77/77, `build` OK; `check` com débito documentado).
+- [x] Testes e checks estáticos disponíveis passam (`test:tdd` 97/97, `build` OK; `check` com seis exports preexistentes documentados).
