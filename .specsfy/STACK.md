@@ -20,6 +20,7 @@ uma. Preserve decisões humanas nas seções livres deste arquivo.
 | CSS | Tailwind CSS 4.3.3 | `apps/web/package.json`, `apps/web/vite.config.ts` e `apps/web/src/app.css` |
 | Primitives de interface | shadcn-svelte local, estilo Nova | `apps/web/components.json` e `apps/web/src/lib/components/ui/` |
 | Editor canvas | @friendofsvelte/tipex 0.2.0 | `apps/web/package.json` |
+| Extensão do editor | @tiptap/extension-highlight 2.27.2 | `apps/web/package.json` e `bun.lock` |
 <!-- specsfy:stack:end -->
 
 ## Decisões e observações do projeto

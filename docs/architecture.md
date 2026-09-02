@@ -5,7 +5,7 @@
 
 | Tipo | Quantidade |
 | --- | --- |
-| Código | 233 |
+| Código | 277 |
 | Testes | 13 |
 
 ## Diagramas
