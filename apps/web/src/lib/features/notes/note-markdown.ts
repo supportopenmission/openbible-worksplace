@@ -3,6 +3,10 @@ import type { NoteFile, NoteMeta } from './note-types';
 const FRONTMATTER = /^---\s*\n([\s\S]*?)\n---\s*(?:\n|$)/;
 const H1 = /^(?:\s*)#\s+(.+?)\s*$/m;
 
+export function normalizeNoteTitle(value: string): string {
+	return value.trim().replace(/^(?:#+\s*)+/, '').trim();
+}
+
 function yamlValue(value: string): string {
 	return value.trim().replace(/^["']|["']$/g, '');
 }
@@ -65,9 +69,11 @@ export function serializeNoteFile(note: NoteFile): string {
 }
 
 export function syncTitleWithH1(note: NoteFile, title: string): NoteFile {
-	const normalizedTitle = title.trim();
+	const normalizedTitle = normalizeNoteTitle(title);
 	const body = H1.test(note.body)
 		? note.body.replace(H1, `# ${normalizedTitle}`)
-		: `# ${normalizedTitle}\n\n${note.body}`;
+		: note.body.match(/^\s*#{2,6}\s+.+$/m)
+			? note.body.replace(/^\s*#{2,6}\s+.+$/m, `# ${normalizedTitle}`)
+			: `# ${normalizedTitle}\n\n${note.body}`;
 	return { ...note, meta: { ...note.meta, title: normalizedTitle }, body };
 }

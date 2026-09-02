@@ -1,4 +1,5 @@
-import { mergeAttributes, Node } from '@tiptap/core';
+import { mergeAttributes, Node as TiptapNode } from '@tiptap/core';
+import { isNoteHighlightColor } from './note-highlights';
 
 export interface VerseFenceAttrs {
 	versionId: string;
@@ -80,7 +81,7 @@ function verseFenceToHtml(parsed: ParsedVerseFence): string {
 	const dataAttrs = Object.entries(attrs)
 		.map(([key, value]) => `data-${key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}="${value}"`)
 		.join(' ');
-	return `<div data-type="verse-block" ${dataAttrs}><pre class="verse-snapshot">${escapeHtml(body)}</pre></div>`;
+	return `<div data-type="verse-block" ${dataAttrs} data-snapshot-body="${escapeHtmlAttribute(body)}"><pre class="verse-snapshot">${escapeHtml(body)}</pre></div>`;
 }
 
 function escapeHtml(value: string): string {
@@ -88,6 +89,10 @@ function escapeHtml(value: string): string {
 		.replace(/&/g, '&amp;')
 		.replace(/</g, '&lt;')
 		.replace(/>/g, '&gt;');
+}
+
+function escapeHtmlAttribute(value: string): string {
+	return escapeHtml(value).replace(/"/g, '&quot;').replace(/\n/g, '&#10;');
 }
 
 export function markdownBodyToHtml(markdown: string): string {
@@ -105,62 +110,172 @@ export function markdownBodyToHtml(markdown: string): string {
 	return parts.join('') || '<p></p>';
 }
 
-function simpleMarkdownToHtml(markdown: string): string {
-	return markdown
-		.split(/\n{2,}/)
-		.map((block) => {
-			const trimmed = block.trim();
-			if (!trimmed) return '';
-			const h1 = trimmed.match(/^#\s+(.+)$/);
-			if (h1) return `<h1>${escapeHtml(h1[1])}</h1>`;
-			const h2 = trimmed.match(/^##\s+(.+)$/);
-			if (h2) return `<h2>${escapeHtml(h2[1])}</h2>`;
-			return `<p>${escapeHtml(trimmed).replace(/\n/g, '<br>')}</p>`;
-		})
-		.join('');
+function inlineMarkdownToHtml(text: string): string {
+	return escapeHtml(text)
+		.replace(/`([^`]+)`/g, '<code>$1</code>')
+		.replace(/==\{(yellow|green|blue|pink)\}([^=]+)==/g, '<mark data-color="$1">$2</mark>')
+		.replace(/==([^=]+)==/g, '<mark>$1</mark>')
+		.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+		.replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, '$1<em>$2</em>');
 }
 
-function htmlToPlainText(html: string): string {
-	return html
-		.replace(/<br\s*\/?>/gi, '\n')
-		.replace(/<[^>]+>/g, '')
-		.replace(/&amp;/g, '&')
-		.replace(/&lt;/g, '<')
-		.replace(/&gt;/g, '>');
+function simpleMarkdownToHtml(markdown: string): string {
+	const lines = markdown.replace(/\r\n/g, '\n').split('\n');
+	const html: string[] = [];
+	let listType: 'ul' | 'ol' | 'task' | null = null;
+
+	const closeList = () => {
+		if (listType === 'task' || listType === 'ul') html.push('</ul>');
+		if (listType === 'ol') html.push('</ol>');
+		listType = null;
+	};
+
+	for (const raw of lines) {
+		const line = raw.trimEnd();
+		const task = line.match(/^- \[( |x|X)\]\s+(.*)$/);
+		const bullet = line.match(/^[-*]\s+(.*)$/);
+		const ordered = line.match(/^\d+\.\s+(.*)$/);
+
+		if (task) {
+			if (listType !== 'task') {
+				closeList();
+				html.push('<ul data-type="taskList">');
+				listType = 'task';
+			}
+			const checked = task[1] !== ' ';
+			html.push(
+				`<li data-type="taskItem" data-checked="${checked}"><p>${inlineMarkdownToHtml(task[2])}</p></li>`
+			);
+			continue;
+		}
+		if (bullet) {
+			if (listType !== 'ul') {
+				closeList();
+				html.push('<ul>');
+				listType = 'ul';
+			}
+			html.push(`<li><p>${inlineMarkdownToHtml(bullet[1])}</p></li>`);
+			continue;
+		}
+		if (ordered) {
+			if (listType !== 'ol') {
+				closeList();
+				html.push('<ol>');
+				listType = 'ol';
+			}
+			html.push(`<li><p>${inlineMarkdownToHtml(ordered[1])}</p></li>`);
+			continue;
+		}
+
+		closeList();
+		const trimmed = line.trim();
+		if (!trimmed) continue;
+		if (trimmed.startsWith('### ')) {
+			html.push(`<h3>${inlineMarkdownToHtml(trimmed.slice(4))}</h3>`);
+			continue;
+		}
+		if (trimmed.startsWith('## ')) {
+			html.push(`<h2>${inlineMarkdownToHtml(trimmed.slice(3))}</h2>`);
+			continue;
+		}
+		if (trimmed.startsWith('# ')) {
+			html.push(`<h1>${inlineMarkdownToHtml(trimmed.slice(2))}</h1>`);
+			continue;
+		}
+		if (trimmed.startsWith('> ')) {
+			html.push(`<blockquote><p>${inlineMarkdownToHtml(trimmed.slice(2))}</p></blockquote>`);
+			continue;
+		}
+		if (trimmed.startsWith('```')) continue;
+		html.push(`<p>${inlineMarkdownToHtml(trimmed)}</p>`);
+	}
+
+	closeList();
+	return html.join('');
+}
+
+function inlineHtmlToMarkdown(node: Node): string {
+	if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? '';
+	if (!(node instanceof HTMLElement)) return '';
+	const inner = [...node.childNodes].map(inlineHtmlToMarkdown).join('');
+	const tag = node.tagName.toLowerCase();
+	if (tag === 'strong' || tag === 'b') return `**${inner}**`;
+	if (tag === 'em' || tag === 'i') return `*${inner}*`;
+	if (tag === 'mark') {
+		const color = node.getAttribute('data-color');
+		return isNoteHighlightColor(color) ? `=={${color}}${inner}==` : `==${inner}==`;
+	}
+	if (tag === 'code') return `\`${inner}\``;
+	if (tag === 'u') return inner;
+	if (tag === 's' || tag === 'del') return `~~${inner}~~`;
+	if (tag === 'br') return '\n';
+	if (tag === 'a') return inner;
+	return inner;
+}
+
+function blockToMarkdown(node: Node): string {
+	if (!(node instanceof HTMLElement)) {
+		const text = node.textContent?.trim();
+		return text ?? '';
+	}
+	if (node.dataset.type === 'verse-block') {
+		const attrs: VerseFenceAttrs = {
+			versionId: node.dataset.versionId ?? '',
+			bookId: node.dataset.bookId ?? '',
+			book: node.dataset.book ?? '',
+			chapter: node.dataset.chapter ?? '',
+			verseStart: node.dataset.verseStart ?? '',
+			verseEnd: node.dataset.verseEnd ?? ''
+		};
+		const snapshot = node.querySelector('.verse-snapshot')?.textContent ?? '';
+		return renderVerseFence({ attrs, body: snapshot.trimEnd() });
+	}
+
+	const tag = node.tagName.toLowerCase();
+	const inline = inlineHtmlToMarkdown(node).trim();
+
+	if (tag === 'h1') return `# ${inline}`;
+	if (tag === 'h2') return `## ${inline}`;
+	if (tag === 'h3') return `### ${inline}`;
+	if (tag === 'blockquote') return inline ? `> ${inline}` : '';
+	if (tag === 'pre') return `\`\`\`\n${node.textContent ?? ''}\n\`\`\``;
+	if (tag === 'hr') return '---';
+	if (tag === 'ul' && node.dataset.type === 'taskList') {
+		return [...node.querySelectorAll(':scope > li')]
+			.map((item) => {
+				const checked = item.getAttribute('data-checked') === 'true' ? 'x' : ' ';
+				return `- [${checked}] ${inlineHtmlToMarkdown(item).trim()}`;
+			})
+			.join('\n');
+	}
+	if (tag === 'ul') {
+		return [...node.querySelectorAll(':scope > li')]
+			.map((item) => `- ${inlineHtmlToMarkdown(item).trim()}`)
+			.join('\n');
+	}
+	if (tag === 'ol') {
+		return [...node.querySelectorAll(':scope > li')]
+			.map((item, index) => `${index + 1}. ${inlineHtmlToMarkdown(item).trim()}`)
+			.join('\n');
+	}
+	if (tag === 'p') return inline;
+	if (tag === 'div') {
+		return [...node.childNodes].map(blockToMarkdown).filter(Boolean).join('\n\n');
+	}
+	return inline;
 }
 
 export function htmlBodyToMarkdown(html: string): string {
 	const container = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html');
 	const root = container.body.firstElementChild;
 	if (!root) return '';
-	const chunks: string[] = [];
-	for (const child of root.childNodes) {
-		if (child instanceof HTMLElement && child.dataset.type === 'verse-block') {
-			const attrs: VerseFenceAttrs = {
-				versionId: child.dataset.versionId ?? '',
-				bookId: child.dataset.bookId ?? '',
-				book: child.dataset.book ?? '',
-				chapter: child.dataset.chapter ?? '',
-				verseStart: child.dataset.verseStart ?? '',
-				verseEnd: child.dataset.verseEnd ?? ''
-			};
-			const snapshot = child.querySelector('.verse-snapshot')?.textContent ?? '';
-			chunks.push(renderVerseFence({ attrs, body: snapshot.trimEnd() }));
-			continue;
-		}
-		if (child instanceof HTMLElement) {
-			const tag = child.tagName.toLowerCase();
-			const text = htmlToPlainText(child.innerHTML).trim();
-			if (!text) continue;
-			if (tag === 'h1') chunks.push(`# ${text}`);
-			else if (tag === 'h2') chunks.push(`## ${text}`);
-			else chunks.push(text);
-		}
-	}
-	return chunks.join('\n\n');
+	return [...root.childNodes]
+		.map(blockToMarkdown)
+		.filter((chunk) => chunk.trim().length > 0)
+		.join('\n\n');
 }
 
-export const VerseBlockExtension = Node.create({
+export const VerseBlockExtension = TiptapNode.create({
 	name: 'verseBlock',
 	group: 'block',
 	atom: true,
@@ -169,13 +284,19 @@ export const VerseBlockExtension = Node.create({
 
 	addAttributes() {
 		return {
-			versionId: { default: '' },
-			bookId: { default: '' },
-			book: { default: '' },
-			chapter: { default: '' },
-			verseStart: { default: '' },
-			verseEnd: { default: '' },
-			snapshotBody: { default: '' }
+			versionId: { default: '', parseHTML: (element) => element.getAttribute('data-version-id') ?? '' },
+			bookId: { default: '', parseHTML: (element) => element.getAttribute('data-book-id') ?? '' },
+			book: { default: '', parseHTML: (element) => element.getAttribute('data-book') ?? '' },
+			chapter: { default: '', parseHTML: (element) => element.getAttribute('data-chapter') ?? '' },
+			verseStart: { default: '', parseHTML: (element) => element.getAttribute('data-verse-start') ?? '' },
+			verseEnd: { default: '', parseHTML: (element) => element.getAttribute('data-verse-end') ?? '' },
+			snapshotBody: {
+				default: '',
+				parseHTML: (element) =>
+					element.getAttribute('data-snapshot-body') ??
+					element.querySelector('.verse-snapshot')?.textContent ??
+					''
+			}
 		};
 	},
 
@@ -194,6 +315,7 @@ export const VerseBlockExtension = Node.create({
 				'data-chapter': node.attrs.chapter,
 				'data-verse-start': node.attrs.verseStart,
 				'data-verse-end': node.attrs.verseEnd,
+				'data-snapshot-body': node.attrs.snapshotBody,
 				class: 'verse-block-callout'
 			}),
 			['pre', { class: 'verse-snapshot' }, node.attrs.snapshotBody]
