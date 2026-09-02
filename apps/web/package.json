@@ -16,6 +16,7 @@
     "test:tdd": "vitest run"
   },
   "dependencies": {
+    "@friendofsvelte/tipex": "0.2.0",
     "clsx": "^2.1.1",
     "sql.js": "^1.14.2",
     "tailwind-merge": "^3.6.0"

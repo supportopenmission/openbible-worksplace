@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { BookOpen, GraduationCap, ScrollText, Settings } from '@lucide/svelte';
+	import { BookOpen, GraduationCap, NotebookPen, ScrollText, Settings } from '@lucide/svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import { resolve } from '$app/paths';
 	import ThemeToggle from './ThemeToggle.svelte';
@@ -10,8 +10,16 @@
 		{ label: 'Bíblia', href: '/bible', icon: BookOpen },
 		{ label: 'Sermões', href: '/sermons', icon: ScrollText },
 		{ label: 'Estudos', href: '/study', icon: GraduationCap },
+		{ label: 'Notas', href: '/notes', icon: NotebookPen },
 		{ label: 'Configuração', href: '/config', icon: Settings }
 	];
+
+	function isLinkActive(href: string): boolean {
+		if (href === '/notes') {
+			return currentPath === '/notes' || currentPath.startsWith('/notes/');
+		}
+		return currentPath === href;
+	}
 </script>
 
 <Sidebar.Root collapsible="icon" class="app-sidebar">
@@ -27,7 +35,7 @@
 			<Sidebar.Menu class="sidebar-menu">
 				{#each links as link (link.href)}
 					{@const Icon = link.icon}
-					{@const isActive = currentPath === link.href}
+					{@const isActive = isLinkActive(link.href)}
 					<Sidebar.MenuItem>
 						<Sidebar.MenuButton {isActive} class="nav-link" tooltipContent={link.label}>
 							{#snippet child({ props })}
@@ -56,7 +64,7 @@
 <nav class="mobile-bottom-nav" aria-label="Navegação mobile" data-safe-area="bottom">
 	{#each links as link (link.href)}
 		{@const Icon = link.icon}
-		{@const isActive = currentPath === link.href}
+		{@const isActive = isLinkActive(link.href)}
 		<a
 			class:active={isActive}
 			class="mobile-nav-link"
@@ -216,7 +224,7 @@
 			left: 0;
 			z-index: 20;
 			display: grid;
-			grid-template-columns: repeat(4, minmax(0, 1fr));
+			grid-template-columns: repeat(5, minmax(0, 1fr));
 			border-top: 1px solid var(--border);
 			background: color-mix(in oklch, var(--background) 92%, transparent);
 			padding: 6px 8px max(6px, env(safe-area-inset-bottom));
