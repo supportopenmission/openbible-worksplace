@@ -8,6 +8,7 @@
 | 01 | 0002-tela-inicial-navegacao | Complete | — |
 | 02 | 0003-leitor-biblia-sqlite | Complete | — |
 | 03 | 0001-onboarding-configuracao-armazenamento | Implementing | — |
+| 04 | 0004-notas-canvas-estilo-notion-com-bloco-de-versiculo | Implementing | — |
 
 ## Marcos
 
