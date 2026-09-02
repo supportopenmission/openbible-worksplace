@@ -41,6 +41,13 @@ function directoryStorage(kind: 'opfs', root: FileSystemDirectoryHandle): Worksp
 			await writable.write(content as unknown as FileSystemWriteChunkType);
 			await writable.close();
 		},
+		deleteFile: async (path) => {
+			const parts = pathParts(path);
+			const fileName = parts.pop();
+			if (!fileName) throw new Error(`Invalid workspace file path: ${path}`);
+			const directory = await getDirectory(parts.join('/'));
+			await directory.removeEntry(fileName);
+		},
 		readFile: async (path) => {
 			try {
 				const handle = await getFile(path);

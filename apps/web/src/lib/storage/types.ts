@@ -41,6 +41,7 @@ export interface WorkspaceStorage {
 	label: string;
 	ensureDirectory(path: string): Promise<void>;
 	writeFile(path: string, content: FileContent): Promise<void>;
+	deleteFile?(path: string): Promise<void>;
 	readFile(path: string): Promise<Uint8Array | null>;
 	fileExists(path: string): Promise<boolean>;
 	listFiles(path: string): Promise<string[]>;
