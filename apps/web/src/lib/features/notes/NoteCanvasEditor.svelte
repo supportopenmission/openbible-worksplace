@@ -5,6 +5,7 @@
 	import type { Editor, EditorEvents } from '@tiptap/core';
 	import { Highlight } from '@tiptap/extension-highlight';
 	import { Placeholder } from '@tiptap/extension-placeholder';
+	import { GripVertical } from '@lucide/svelte';
 	import type { WorkspaceStorage } from '$lib/storage/types';
 	import { createNoteEditorService, type SaveStatus } from './note-editor-service';
 	import type { Note } from './note-types';
@@ -15,6 +16,13 @@
 		type SlashCommand
 	} from './slash-commands';
 	import { NOTE_HIGHLIGHTS, type NoteHighlightColor } from './note-highlights';
+	import {
+		computeFloatingSurfacePosition,
+		createNoteKeyboardExtension,
+		moveTopLevelBlock,
+		moveTopLevelBlockTo,
+		type BlockDropSide
+	} from './note-block-interactions';
 	import {
 		htmlBodyToMarkdown,
 		markdownBodyToHtml,
@@ -40,10 +48,25 @@
 	let slashQuery = $state('/');
 	let slashIndex = $state(0);
 	let slashRange = $state<{ from: number; to: number } | null>(null);
-	let slashPos = $state<{ top: number; left: number; width: number; maxHeight: number } | null>(null);
+	let slashPos = $state<{ top: number; left: number; width: number; maxHeight: number } | null>(
+		null
+	);
 	let slashMenu = $state<HTMLDivElement>();
 	let formatOpen = $state(false);
-	let formatPos = $state<{ top: number; left: number } | null>(null);
+	let formatPos = $state<{ top: number; left: number; maxWidth: number } | null>(null);
+	let formatBubble = $state<HTMLDivElement>();
+	let formatAnchor = $state<{ left: number; right: number; top: number; bottom: number } | null>(
+		null
+	);
+	let blockHandle = $state<{ pos: number; top: number; left: number } | null>(null);
+	let draggedBlockPos = $state<number | null>(null);
+	let dropTarget = $state<{
+		pos: number;
+		side: BlockDropSide;
+		top: number;
+		left: number;
+		width: number;
+	} | null>(null);
 	let consumingSlash = false;
 
 	const initialBody = untrack(() => markdownBodyToHtml(note.body));
@@ -55,7 +78,8 @@
 			showOnlyWhenEditable: true
 		}),
 		Highlight.configure({ multicolor: true, HTMLAttributes: { class: 'note-highlight' } }),
-		VerseBlockExtension
+		VerseBlockExtension,
+		createNoteKeyboardExtension(handleEditorKeydown)
 	];
 
 	const filteredCommands = $derived(filterSlashCommands(slashQuery));
@@ -117,8 +141,153 @@
 	}
 
 	function repositionOverlays() {
-		if (!editor || !slashOpen) return;
-		positionSlashMenu(editor.state.selection.from);
+		if (!editor) return;
+		if (slashOpen) positionSlashMenu(editor.state.selection.from);
+		if (formatOpen) updateFormatBubblePosition();
+		if (blockHandle) positionBlockHandle(blockHandle.pos);
+	}
+
+	function selectionAnchor() {
+		if (!editor) return null;
+		const { from, to } = editor.state.selection;
+		const start = editor.view.coordsAtPos(from);
+		const end = editor.view.coordsAtPos(to);
+		return {
+			left: Math.min(start.left, end.left),
+			right: Math.max(start.right, end.right),
+			top: Math.min(start.top, end.top),
+			bottom: Math.max(start.bottom, end.bottom)
+		};
+	}
+
+	function updateFormatBubblePosition() {
+		if (typeof window === 'undefined') return;
+		formatAnchor = selectionAnchor();
+		if (!formatAnchor) return;
+		formatPos ??= { top: 8, left: 8, maxWidth: Math.max(0, window.innerWidth - 16) };
+		void tick().then(() => {
+			if (!formatBubble || !formatAnchor || !formatOpen) return;
+			const surface = formatBubble.getBoundingClientRect();
+			const position = computeFloatingSurfacePosition({
+				anchor: formatAnchor,
+				surface,
+				viewport: { width: window.innerWidth, height: window.innerHeight },
+				padding: 8,
+				gap: 6
+			});
+			formatPos = { top: position.top, left: position.left, maxWidth: position.maxWidth };
+		});
+	}
+
+	function topLevelBlockPosition(position: number): number | null {
+		if (!editor) return null;
+		const resolved = editor.state.doc.resolve(
+			Math.max(0, Math.min(position, editor.state.doc.content.size))
+		);
+		if (resolved.depth === 0) return null;
+		return resolved.before(1);
+	}
+
+	function positionBlockHandle(position: number) {
+		if (!editor || typeof window === 'undefined') return;
+		const node = editor.state.doc.nodeAt(position);
+		if (!node || (position === 0 && node.type.name === 'heading')) {
+			blockHandle = null;
+			return;
+		}
+		const dom = editor.view.nodeDOM(position);
+		if (!(dom instanceof HTMLElement)) return;
+		const rect = dom.getBoundingClientRect();
+		blockHandle = {
+			pos: position,
+			top: rect.top + Math.max(0, (rect.height - 28) / 2),
+			left: Math.max(8, rect.left - 34)
+		};
+	}
+
+	function updateBlockHandleFromSelection() {
+		if (!editor) return;
+		const position =
+			'node' in editor.state.selection
+				? editor.state.selection.from
+				: topLevelBlockPosition(editor.state.selection.from);
+		if (position === null) return;
+		positionBlockHandle(position);
+	}
+
+	function blockAtPoint(clientX: number, clientY: number): { pos: number; rect: DOMRect } | null {
+		if (!editor) return null;
+		const found = editor.view.posAtCoords({ left: clientX, top: clientY });
+		if (!found) return null;
+		const pos = topLevelBlockPosition(found.pos);
+		if (pos === null) return null;
+		const node = editor.state.doc.nodeAt(pos);
+		if (!node || (pos === 0 && node.type.name === 'heading')) return null;
+		const dom = editor.view.nodeDOM(pos);
+		return dom instanceof HTMLElement ? { pos, rect: dom.getBoundingClientRect() } : null;
+	}
+
+	function handleCanvasPointerMove(event: PointerEvent) {
+		if (draggedBlockPos !== null) return;
+		const block = blockAtPoint(event.clientX, event.clientY);
+		if (block) positionBlockHandle(block.pos);
+	}
+
+	function selectCurrentBlock() {
+		if (!editor || !blockHandle) return;
+		const alreadySelected =
+			'node' in editor.state.selection && editor.state.selection.from === blockHandle.pos;
+		if (!alreadySelected) editor.commands.setNodeSelection(blockHandle.pos);
+		editor.view.dom.dataset.blockSelected = 'true';
+	}
+
+	function handleBlockKeydown(event: KeyboardEvent) {
+		if (!editor || !blockHandle) return;
+		if (event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+			event.preventDefault();
+			const direction = event.key === 'ArrowUp' ? -1 : 1;
+			if (moveTopLevelBlock(editor, blockHandle.pos, direction)) updateBlockHandleFromSelection();
+		}
+	}
+
+	function handleBlockDragStart(event: DragEvent) {
+		if (!blockHandle || !event.dataTransfer) return;
+		selectCurrentBlock();
+		draggedBlockPos = blockHandle.pos;
+		event.dataTransfer.effectAllowed = 'move';
+		event.dataTransfer.setData('text/plain', 'openbible-note-block');
+	}
+
+	function handleCanvasDragOver(event: DragEvent) {
+		if (draggedBlockPos === null || !event.dataTransfer) return;
+		const block = blockAtPoint(event.clientX, event.clientY);
+		if (!block) return;
+		event.preventDefault();
+		event.stopPropagation();
+		event.dataTransfer.dropEffect = 'move';
+		const side: BlockDropSide =
+			event.clientY < block.rect.top + block.rect.height / 2 ? 'before' : 'after';
+		dropTarget = {
+			pos: block.pos,
+			side,
+			top: side === 'before' ? block.rect.top : block.rect.bottom,
+			left: block.rect.left,
+			width: block.rect.width
+		};
+	}
+
+	function finishBlockDrag() {
+		draggedBlockPos = null;
+		dropTarget = null;
+	}
+
+	function handleCanvasDrop(event: DragEvent) {
+		if (!editor || draggedBlockPos === null || !dropTarget) return finishBlockDrag();
+		event.preventDefault();
+		event.stopPropagation();
+		moveTopLevelBlockTo(editor, draggedBlockPos, dropTarget.pos, dropTarget.side);
+		finishBlockDrag();
+		updateBlockHandleFromSelection();
 	}
 
 	function updateChrome() {
@@ -131,7 +300,11 @@
 		if (slash && !verseSelectorOpen) {
 			if (isDirectVerseSlash(slash.token)) {
 				consumingSlash = true;
-				editor.chain().focus().deleteRange({ from: from - slash.length, to: from }).run();
+				editor
+					.chain()
+					.focus()
+					.deleteRange({ from: from - slash.length, to: from })
+					.run();
 				consumingSlash = false;
 				closeSlash();
 				verseSelectorOpen = true;
@@ -146,16 +319,21 @@
 			closeSlash();
 		}
 
-		if (!empty && !slashOpen) {
-			const start = editor.view.coordsAtPos(from);
-			const end = editor.view.coordsAtPos(to);
+		const nodeSelected = 'node' in editor.state.selection;
+		if (!nodeSelected && !empty && !slashOpen) {
 			formatOpen = true;
-			formatPos = {
-				top: Math.max(8, start.top - 46),
-				left: (start.left + end.left) / 2
-			};
+			updateFormatBubblePosition();
 		} else {
 			formatOpen = false;
+			formatAnchor = null;
+		}
+
+		if (nodeSelected) {
+			editor.view.dom.dataset.blockSelected = 'true';
+			updateBlockHandleFromSelection();
+		} else {
+			delete editor.view.dom.dataset.blockSelected;
+			updateBlockHandleFromSelection();
 		}
 	}
 
@@ -214,26 +392,31 @@
 		closeSlash();
 	}
 
-	function handleSlashKeydown(event: KeyboardEvent) {
-		if (!slashOpen) return;
-		if (event.key === 'ArrowDown') {
-			event.preventDefault();
+	function handleSlashKeydown(key: string): boolean {
+		if (!slashOpen) return false;
+		if (key === 'ArrowDown') {
 			slashIndex = (slashIndex + 1) % Math.max(filteredCommands.length, 1);
 			keepActiveSlashItemVisible();
-		} else if (event.key === 'ArrowUp') {
-			event.preventDefault();
+			return true;
+		} else if (key === 'ArrowUp') {
 			slashIndex =
 				(slashIndex - 1 + Math.max(filteredCommands.length, 1)) %
 				Math.max(filteredCommands.length, 1);
 			keepActiveSlashItemVisible();
-		} else if (event.key === 'Enter') {
-			event.preventDefault();
+			return true;
+		} else if (key === 'Enter') {
 			const selected = filteredCommands[slashIndex];
 			if (selected) applySlashCommand(selected);
-		} else if (event.key === 'Escape') {
-			event.preventDefault();
+			return true;
+		} else if (key === 'Escape') {
 			closeSlash();
+			return true;
 		}
+		return false;
+	}
+
+	function handleEditorKeydown(key: string): boolean {
+		return handleSlashKeydown(key);
 	}
 
 	function applyHighlight(color: NoteHighlightColor) {
@@ -264,13 +447,18 @@
 	}
 </script>
 
-<svelte:window
-	onkeydown={handleSlashKeydown}
-	onresize={repositionOverlays}
-	onscroll={repositionOverlays}
-/>
+<svelte:window onresize={repositionOverlays} onscroll={repositionOverlays} />
 
-<div class="note-canvas" data-testid="note-canvas" data-viewport-fill="true">
+<div
+	class="note-canvas"
+	data-testid="note-canvas"
+	data-viewport-fill="true"
+	role="region"
+	aria-label="Editor da nota"
+	onpointermove={handleCanvasPointerMove}
+	ondragovercapture={handleCanvasDragOver}
+	ondropcapture={handleCanvasDrop}
+>
 	<p class="save-status" aria-live="polite" aria-atomic="true">
 		{#if saveLabel}
 			<span class:status-error={saveStatus === 'error'}>{saveLabel}</span>
@@ -291,9 +479,11 @@
 
 	{#if formatOpen && formatPos && editor}
 		<div
+			bind:this={formatBubble}
 			class="format-bubble"
 			style:top="{formatPos.top}px"
 			style:left="{formatPos.left}px"
+			style:max-width="{formatPos.maxWidth}px"
 			role="toolbar"
 			aria-label="Formatação"
 		>
@@ -345,6 +535,39 @@
 				</button>
 			</div>
 		</div>
+	{/if}
+
+	{#if blockHandle}
+		<div
+			class="block-handle"
+			class:dragging={draggedBlockPos !== null}
+			style:top="{blockHandle.top}px"
+			style:left="{blockHandle.left}px"
+		>
+			<button
+				type="button"
+				draggable="true"
+				aria-label="Selecionar e mover bloco"
+				title="Selecionar e mover bloco"
+				onpointerdown={selectCurrentBlock}
+				onclick={selectCurrentBlock}
+				onkeydown={handleBlockKeydown}
+				ondragstart={handleBlockDragStart}
+				ondragend={finishBlockDrag}
+			>
+				<GripVertical size={16} aria-hidden="true" />
+			</button>
+		</div>
+	{/if}
+
+	{#if dropTarget}
+		<div
+			class="block-drop-indicator"
+			style:top="{dropTarget.top}px"
+			style:left="{dropTarget.left}px"
+			style:width="{dropTarget.width}px"
+			aria-hidden="true"
+		></div>
 	{/if}
 
 	{#if slashOpen && slashPos}
@@ -524,7 +747,6 @@
 	.slash-menu {
 		position: fixed;
 		z-index: 40;
-		transform: translateX(-50%);
 		border: 1px solid var(--border);
 		background: var(--background);
 		box-shadow: none;
@@ -536,6 +758,67 @@
 		gap: 2px;
 		border-radius: 8px;
 		padding: 4px;
+		overflow-x: auto;
+		overflow-y: hidden;
+		overscroll-behavior: contain;
+		scrollbar-width: thin;
+	}
+
+	.block-handle {
+		position: fixed;
+		z-index: 39;
+		width: 28px;
+		height: 28px;
+		cursor: grab;
+		opacity: 0.58;
+	}
+
+	.block-handle:hover,
+	.block-handle:focus-within,
+	.block-handle.dragging {
+		opacity: 1;
+	}
+
+	.block-handle.dragging {
+		cursor: grabbing;
+	}
+
+	.block-handle button {
+		display: grid;
+		width: 28px;
+		height: 28px;
+		place-items: center;
+		border: 0;
+		border-radius: 5px;
+		background: transparent;
+		color: var(--muted-foreground);
+		cursor: inherit;
+	}
+
+	.block-handle button:hover,
+	.block-handle button:focus-visible {
+		background: color-mix(in oklch, var(--foreground) 7%, transparent);
+		color: var(--foreground);
+	}
+
+	.block-handle button:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 1px;
+	}
+
+	.block-drop-indicator {
+		position: fixed;
+		z-index: 38;
+		height: 2px;
+		transform: translateY(-1px);
+		background: var(--ring);
+		pointer-events: none;
+	}
+
+	:global(.note-canvas .ProseMirror-selectednode) {
+		outline: 1px solid color-mix(in oklch, var(--ring) 72%, transparent) !important;
+		outline-offset: 4px;
+		background: color-mix(in oklch, var(--ring) 5%, transparent);
 	}
 
 	.highlight-colors {
@@ -554,10 +837,18 @@
 		padding: 0;
 	}
 
-	.color-swatch[data-color='yellow'] { background: color-mix(in oklch, #f5d90a 55%, var(--background)); }
-	.color-swatch[data-color='green'] { background: color-mix(in oklch, #46a758 50%, var(--background)); }
-	.color-swatch[data-color='blue'] { background: color-mix(in oklch, #0091ff 45%, var(--background)); }
-	.color-swatch[data-color='pink'] { background: color-mix(in oklch, #d6409f 45%, var(--background)); }
+	.color-swatch[data-color='yellow'] {
+		background: color-mix(in oklch, #f5d90a 55%, var(--background));
+	}
+	.color-swatch[data-color='green'] {
+		background: color-mix(in oklch, #46a758 50%, var(--background));
+	}
+	.color-swatch[data-color='blue'] {
+		background: color-mix(in oklch, #0091ff 45%, var(--background));
+	}
+	.color-swatch[data-color='pink'] {
+		background: color-mix(in oklch, #d6409f 45%, var(--background));
+	}
 
 	.format-bubble .color-swatch.active {
 		outline: 2px solid var(--ring);
@@ -688,10 +979,7 @@
 		}
 
 		.format-bubble {
-			left: 8px !important;
 			max-width: calc(100vw - 16px);
-			transform: none;
-			overflow-x: auto;
 		}
 	}
 
