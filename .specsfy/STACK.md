@@ -45,3 +45,6 @@ manifests.
   para cache do app shell, rotas locais e assets estáticos após o primeiro acesso.
 - Tauri é o alvo confirmado para empacotamento desktop posterior; ainda não faz
   parte da stack implementada.
+- Dependências estruturais de `apps/web/package.json` (Vitest, Playwright,
+  shadcn-svelte, Tipex, `@tiptap/extension-highlight`) reconciliadas no inventário
+  após a SPEC-0006 em 2026-09-03; sem mudança de framework para a SPEC-0007.

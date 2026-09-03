@@ -32,6 +32,7 @@
 | npm | desenvolvimento | tailwind-variants | ^3.3.0 | 🦄 Tailwindcss first-class variant API | https://github.com/heroui-inc/tailwind-variants |
 | npm | desenvolvimento | tailwindcss | ^4.3.3 | A utility-first CSS framework for rapidly building custom user interfaces. | https://github.com/tailwindlabs/tailwindcss |
 | npm | desenvolvimento | tslib | 2.8.1 | Runtime library for TypeScript helper functions | https://github.com/Microsoft/tslib |
+| npm | desenvolvimento | tw-animate-css | ^1.4.0 | TailwindCSS v4.0 compatible replacement for `tailwindcss-animate`. | Wombosvideo/tw-animate-css |
 | npm | desenvolvimento | typescript | 7.0.2 | TypeScript is a language for application scale JavaScript development | https://github.com/microsoft/TypeScript |
 | npm | desenvolvimento | vite | 8.2.1 | Native-ESM powered web dev build tool | https://github.com/vitejs/vite |
 | npm | desenvolvimento | vitest | 4.1.10 | Next generation testing framework powered by Vite | https://github.com/vitest-dev/vitest |

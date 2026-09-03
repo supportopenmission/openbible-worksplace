@@ -4,8 +4,8 @@
 ## Visão geral
 
 - Frameworks detectados: não identificados.
-- Arquivos de código: 281.
-- Arquivos de teste: 15.
+- Arquivos de código: 297.
+- Arquivos de teste: 21.
 
 ## Roteiro
 

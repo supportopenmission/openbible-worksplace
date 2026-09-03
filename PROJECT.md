@@ -23,7 +23,7 @@ As capacidades principais planejadas são:
 
 - biblioteca de estudos e sermões;
 - construtor estruturado de sermões, inspirado em Sermonary e Logos Sermon Builder;
-- leitor da Bíblia;
+- leitor da Bíblia, com seleção de versículos, destaques persistidos, consulta workspace-wide em sheet e em `/highlights`, ícone de nota no versículo, cópia e criação de nota ao lado da leitura;
 - notas simples;
 - importação de bancos SQLite compatíveis com o padrão do OpenLP por arrastar e soltar;
 - acesso a bancos SQLite por URL de distribuição, como uma URL do Cloudflare R2;
@@ -52,8 +52,10 @@ empacotada para desktop com Tauri.
 Detalhes verificáveis ficam em `.specsfy/STACK.md` e `.specsfy/DATABASE.md`.
 
 O código mantém a importação local de bancos SQLite e o leitor bíblico em `/bible`.
-O workspace vive em pasta local (File System Access API) ou OPFS, com
-`.openbible/config.json`, `.openbible/preferences.json` e um `index.sqlite` válido
-sem schema de domínio. A aplicação web contém as rotas `/`, `/bible`, `/sermons`,
-`/study` e `/config`. Tema, tela inicial e posição do leitor são gravados no
+A partir do capítulo aberto a pessoa seleciona um intervalo contínuo de versículos,
+aplica destaques no SQLite auxiliar, copia a referência ou o texto e cria uma nota
+com fence `:::verse` sem sair da rota. O workspace vive em pasta local (File System
+Access API) ou OPFS, com `.openbible/config.json`, `.openbible/preferences.json` e
+um `index.sqlite` auxiliar (`note_verse_ref` e `reader_highlight`).
+A aplicação web contém as rotas `/`, `/bible`, `/sermons`, `/study` e `/config`. Tema, tela inicial e posição do leitor são gravados no
 workspace e cacheados no `localStorage` só para o primeiro paint.

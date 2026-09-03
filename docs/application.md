@@ -9,7 +9,7 @@ Relação: relaciona cada arquivo observado à sua superfície.
 
 | Categoria | Arquivo | Símbolos |
 | --- | --- | --- |
-| Outras fontes | apps/web/.svelte-kit/ambient.d.ts | SHELL, COLORTERM, TURBO_INVOCATION_DIR, NODE, XDG_DATA_HOME, PWD, PNPM_HOME, VSCODE_GIT_ASKPASS_NODE |
+| Outras fontes | apps/web/.svelte-kit/ambient.d.ts | AGENT_TRANSCRIPTS, ALL_PROXY, BACKGROUND, BAT_THEME, BORDER_BACKGROUND, BORDER_FOREGROUND, BROWSER, BUNDLE_PATH |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/0.BdPOMA_N.css | — |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/2.oNqf7eEs.css | — |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/3.BRs61Nlq.css | — |
@@ -215,6 +215,7 @@ Relação: relaciona cada arquivo observado à sua superfície.
 | Rotas e APIs | apps/web/.svelte-kit/types/src/routes/__preview/$types.d.ts | — |
 | Rotas e APIs | apps/web/.svelte-kit/types/src/routes/bible/$types.d.ts | — |
 | Rotas e APIs | apps/web/.svelte-kit/types/src/routes/config/$types.d.ts | — |
+| Rotas e APIs | apps/web/.svelte-kit/types/src/routes/highlights/$types.d.ts | — |
 | Rotas e APIs | apps/web/.svelte-kit/types/src/routes/notes/$types.d.ts | — |
 | Rotas e APIs | apps/web/.svelte-kit/types/src/routes/notes/[id]/$types.d.ts | — |
 | Rotas e APIs | apps/web/.svelte-kit/types/src/routes/sermons/$types.d.ts | — |
@@ -241,24 +242,23 @@ Relação: relaciona cada arquivo observado à sua superfície.
 | Componentes | apps/web/src/lib/components/ui/tooltip/index.ts | — |
 | Testes | apps/web/src/lib/features/bible/bible-reader.test.ts | MemoryBibleStorage, openLpBytes, openLpBytesWithoutAbbreviation, invalidSchemaBytes, storageWith |
 | Outras fontes | apps/web/src/lib/features/bible/bible-reader.ts | BibleVerse, BibleBook, BibleVersion, BibleCatalogDiagnostic, BibleCatalog, BibleChapterSelection, BibleSearchResult, locateWasm |
+| Testes | apps/web/src/lib/features/bible/highlights-page.test.ts | — |
+| Testes | apps/web/src/lib/features/bible/reader-highlights-repository.test.ts | openIndex |
+| Outras fontes | apps/web/src/lib/features/bible/reader-highlights-repository.ts | SqlDatabase, readerHighlightSchema, ensureSchema, listAllReaderHighlights, listChapterHighlights, upsertHighlight, deleteHighlightByRange, READER_HIGHLIGHT_INDEX_PATH |
+| Testes | apps/web/src/lib/features/bible/reader-highlights.test.ts | range |
+| Outras fontes | apps/web/src/lib/features/bible/reader-highlights.ts | READER_HIGHLIGHT_PALETTE, readerHighlightStyle, normalizeSelection, isSameAnnotation, applyHighlight, eraseHighlight, highlightsCoveringVerse, referenceLabel |
+| Testes | apps/web/src/lib/features/bible/reader-note-indicators.test.ts | — |
+| Outras fontes | apps/web/src/lib/features/bible/reader-note-indicators.ts | READER_NOTE_INDICATOR_KIND, matchesChapter, versesCoveredByActiveNotes, noteIndicatorLinksHighlight, noteIndicatorAppliesHighlightStyle, isNoteIndicatorHighlightStyle, verseNoteSelectorLinksHighlight, countActiveNotesExcludingTrash |
+| Outras fontes | apps/web/src/lib/features/bible/reader-note-session.ts | rememberReaderNote, recallReaderNote, noteIdFromPath |
 | Testes | apps/web/src/lib/features/bible/reader-preference.test.ts | createStorage |
 | Outras fontes | apps/web/src/lib/features/bible/reader-preference.ts | READER_SELECTION_STORAGE_KEY, ReaderSelection, browserStorage, isSelectionShape, readReaderPreference, saveReaderPreference, isReaderSelectionValid |
+| Testes | apps/web/src/lib/features/bible/reader-verse-notes.test.ts | — |
+| Outras fontes | apps/web/src/lib/features/bible/reader-verse-notes.ts | matchesChapter, coversVerse, noteRefsForVerse, dedupeRefsByNotePath, countDistinctNotesForVerse, shouldOpenNoteDirectly, formatMultiNoteBadge, readerNoteOpensInBible |
+| Testes | apps/web/src/lib/features/bible/verse-selection.test.ts | — |
+| Outras fontes | apps/web/src/lib/features/bible/verse-selection.ts | isVerseNumber, formContinuousRange, selectionFromVerseNumbers, rangeCoversVerse, versesInRange, sameRange |
+| Outras fontes | apps/web/src/lib/features/bible/version-label.ts | displayVersionAbbreviation |
 | Testes | apps/web/src/lib/features/navigation/sidebar.test.ts | — |
 | Testes | apps/web/src/lib/features/notes/note-block-interactions.test.ts | — |
-| Outras fontes | apps/web/src/lib/features/notes/note-block-interactions.ts | RectLike, SizeLike, ViewportLike, FloatingSurfaceInput, FloatingSurfacePosition, TopLevelBlock, clamp, computeFloatingSurfacePosition |
-| Outras fontes | apps/web/src/lib/features/notes/note-editor-service.ts | H1_PATTERN, DEBOUNCE_MS, titleFromBody, verseRefsFromMarkdown, NoteEditorServiceOptions, createNoteEditorService, setStatus, persist |
-| Outras fontes | apps/web/src/lib/features/notes/note-highlights.ts | NOTE_HIGHLIGHTS, COLORS, isNoteHighlightColor |
-| Testes | apps/web/src/lib/features/notes/note-markdown.test.ts | TEMPLATE |
-| Outras fontes | apps/web/src/lib/features/notes/note-markdown.ts | FRONTMATTER, H1, normalizeNoteTitle, yamlValue, quote, parseFrontmatter, metaFrom, parseNoteFile |
-| Outras fontes | apps/web/src/lib/features/notes/note-types.ts | NoteMeta, Note, VerseBlockAttrs, NoteFile |
-| Testes | apps/web/src/lib/features/notes/note-verse-index.test.ts | — |
-| Outras fontes | apps/web/src/lib/features/notes/note-verse-index.ts | NoteVerseRef, VerseReferenceInput, SqlDatabase, noteVerseIndexSchema, normalizedRef, reindexNoteVerses, deleteNoteVerseRefs, getMemoryNoteVerseRefs |
-| Testes | apps/web/src/lib/features/notes/notes-repository.test.ts | — |
-| Outras fontes | apps/web/src/lib/features/notes/notes-repository.ts | TEMPLATE, MemoryStorage, resolveStorage, toNote, noteFile, readNoteArgs, listNotes, createNote |
-| Outras fontes | apps/web/src/lib/features/notes/slash-commands.ts | SlashCommand, SLASH_COMMANDS, DIRECT_VERSE, isDirectVerseSlash, parseSlashToken, filterSlashCommands, openVerseSelectorFromSlash |
-| Testes | apps/web/src/lib/features/notes/slash-verse-command.test.ts | — |
-| Outras fontes | apps/web/src/lib/features/notes/slash-verse-command.ts | — |
-| Testes | apps/web/src/lib/features/notes/verse-block-extension.test.ts | FENCE |
 <!-- specsfy:documentator:end -->
 
 ## Fontes de aplicação relevantes
