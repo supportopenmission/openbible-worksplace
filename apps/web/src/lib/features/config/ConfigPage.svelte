@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
+	import BibleLibraryManager from '$lib/features/bible/BibleLibraryManager.svelte';
 	import InitialScreenPicker from '$lib/features/navigation/InitialScreenPicker.svelte';
+	import WorkspaceStats from '$lib/features/workspace/WorkspaceStats.svelte';
 	import WorkspaceSettings from '$lib/features/workspace/WorkspaceSettings.svelte';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 
 	const isMobile = new IsMobile();
-	let activeTab = $state<'storage' | 'home'>('storage');
+	let activeTab = $state<'storage' | 'bibles' | 'stats' | 'home'>('storage');
 </script>
 
 <div class="config-page">
@@ -22,6 +24,14 @@
 				<h2 id="config-storage-heading" class="section-label">Armazenamento</h2>
 				<WorkspaceSettings embedded />
 			</section>
+			<section class="config-section" aria-labelledby="config-bibles-heading">
+				<h2 id="config-bibles-heading" class="section-label">Bíblias</h2>
+				<BibleLibraryManager />
+			</section>
+			<section class="config-section" aria-labelledby="config-stats-heading">
+				<h2 id="config-stats-heading" class="section-label">Estatísticas</h2>
+				<WorkspaceStats />
+			</section>
 			<section class="config-section" aria-labelledby="config-home-heading">
 				<h2 id="config-home-heading" class="section-label">Tela inicial</h2>
 				<InitialScreenPicker mode="config" embedded />
@@ -31,10 +41,18 @@
 		<Tabs.Root bind:value={activeTab} class="config-tabs">
 			<Tabs.List variant="line" aria-label="Seções de configuração">
 				<Tabs.Trigger value="storage">Armazenamento</Tabs.Trigger>
+				<Tabs.Trigger value="bibles">Bíblias</Tabs.Trigger>
+				<Tabs.Trigger value="stats">Estatísticas</Tabs.Trigger>
 				<Tabs.Trigger value="home">Tela inicial</Tabs.Trigger>
 			</Tabs.List>
 			<Tabs.Content value="storage" class="config-tab-panel">
 				<WorkspaceSettings embedded />
+			</Tabs.Content>
+			<Tabs.Content value="bibles" class="config-tab-panel">
+				<BibleLibraryManager />
+			</Tabs.Content>
+			<Tabs.Content value="stats" class="config-tab-panel">
+				<WorkspaceStats />
 			</Tabs.Content>
 			<Tabs.Content value="home" class="config-tab-panel">
 				<InitialScreenPicker mode="config" embedded />

@@ -9,6 +9,8 @@
 		Upload
 	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
+	import * as Tabs from '$lib/components/ui/tabs/index.js';
+	import RemoteBibleImport from '$lib/features/bible-remote/RemoteBibleImport.svelte';
 	import { importBibleFiles, prepareWorkspace } from '$lib/storage/workspace';
 	import type {
 		ImportResult,
@@ -41,6 +43,7 @@
 	let step = $state<OnboardingStep>('intro');
 	let progress = $state(0);
 	let errorMessage = $state('');
+	let importTab = $state<'local' | 'remote'>('local');
 	let selectedStorage = $state<WorkspaceStorage | null>(null);
 	let selectedFiles = $state<File[]>([]);
 	let results = $state<ImportResult[]>([]);
@@ -325,42 +328,60 @@
 							<span class="panel-icon" aria-hidden="true"><Upload size={18} strokeWidth={1.75} /></span>
 							<div>
 								<strong>Importe suas Bíblias quando estiver pronto</strong>
-								<span>Você poderá adicionar mais arquivos ao workspace depois.</span>
+								<span>Escolha arquivos do dispositivo ou a URL do bucket R2 nas abas abaixo. Você poderá adicionar mais arquivos ao workspace depois.</span>
 							</div>
 						</div>
-					{:else}
-						<div
-							class="dropzone"
-							role="button"
-							tabindex="0"
-							aria-label="Selecionar Bíblias SQLite"
-							onkeydown={(event) =>
-								event.key === 'Enter' || event.key === ' ' ? fileInput?.click() : undefined}
-							ondragover={(event) => event.preventDefault()}
-							ondrop={handleDrop}
-						>
-							<span class="dropzone-icon" aria-hidden="true"><Upload size={20} strokeWidth={1.75} /></span>
-							<strong>Arraste seus arquivos SQLite</strong>
-							<span>ou selecione pelo diálogo de arquivos</span>
-							<Button variant="outline" size="sm" type="button" onclick={() => fileInput?.click()} disabled={processing}>
-								Selecionar arquivos
-							</Button>
-							<input
-								bind:this={fileInput}
-								class="visually-hidden"
-								type="file"
-								accept=".sqlite"
-								multiple
-								onchange={(event) =>
-									chooseFiles((event.currentTarget as HTMLInputElement).files ?? [])}
-							/>
-						</div>
-						{#if selectedFiles.length > 0}
-							<div class="file-summary" aria-live="polite">
-								{selectedFiles.length} arquivo(s) pronto(s) para importar.
-							</div>
-						{/if}
 					{/if}
+					<Tabs.Root bind:value={importTab} class="import-tabs">
+						<Tabs.List aria-label="Método de importação">
+							<Tabs.Trigger value="local">Arquivos locais</Tabs.Trigger>
+							<Tabs.Trigger value="remote">Bucket R2</Tabs.Trigger>
+						</Tabs.List>
+						<Tabs.Content value="local" forceMount class="import-tab-panel">
+							{#if importStarted}
+								<div
+									class="dropzone"
+									role="button"
+									tabindex="0"
+									aria-label="Selecionar Bíblias SQLite"
+									onkeydown={(event) =>
+										event.key === 'Enter' || event.key === ' ' ? fileInput?.click() : undefined}
+									ondragover={(event) => event.preventDefault()}
+									ondrop={handleDrop}
+								>
+									<span class="dropzone-icon" aria-hidden="true"><Upload size={20} strokeWidth={1.75} /></span>
+									<strong>Arraste seus arquivos SQLite</strong>
+									<span>ou selecione pelo diálogo de arquivos</span>
+									<Button variant="outline" size="sm" type="button" onclick={() => fileInput?.click()} disabled={processing}>
+										Selecionar arquivos
+									</Button>
+									<input
+										bind:this={fileInput}
+										class="visually-hidden"
+										type="file"
+										accept=".sqlite"
+										multiple
+										onchange={(event) =>
+											chooseFiles((event.currentTarget as HTMLInputElement).files ?? [])}
+									/>
+								</div>
+								{#if selectedFiles.length > 0}
+									<div class="file-summary" aria-live="polite">
+										{selectedFiles.length} arquivo(s) pronto(s) para importar.
+									</div>
+								{/if}
+							{:else}
+								<p class="tab-hint">Clique em Importar agora para enviar arquivos do dispositivo, ou use a aba Bucket R2.</p>
+							{/if}
+						</Tabs.Content>
+						<Tabs.Content value="remote" forceMount class="import-tab-panel">
+							{#if selectedStorage}
+								<div class="remote-onboarding">
+									<RemoteBibleImport storage={selectedStorage} variant="onboarding" />
+								</div>
+							{/if}
+						</Tabs.Content>
+					</Tabs.Root>
 				{:else if step === 'complete'}
 					<div class:partial={hasImported && hasRejected} class="panel result-card" aria-live="polite">
 						<span class="panel-icon" aria-hidden="true"><CheckCircle2 size={18} strokeWidth={1.75} /></span>
@@ -725,6 +746,32 @@
 		margin-top: 12px;
 		font-size: 0.82rem;
 		line-height: 1.5;
+	}
+
+	.remote-onboarding {
+		margin-top: 20px;
+		padding-top: 20px;
+		border-top: 1px solid var(--border);
+	}
+
+	.import-tabs {
+		margin-top: 20px;
+	}
+
+	.import-tabs :global([data-slot='tabs-content'][data-state='inactive']) {
+		display: none;
+	}
+
+	.import-tab-panel {
+		margin-top: 14px;
+		outline: none;
+	}
+
+	.tab-hint {
+		margin: 0;
+		color: var(--muted-foreground);
+		font-size: 0.82rem;
+		line-height: 1.55;
 	}
 
 	.file-summary,

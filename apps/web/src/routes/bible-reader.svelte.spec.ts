@@ -144,20 +144,21 @@ describe('/bible', () => {
 		await render(Page, { props: { storageOverride: createStorage(async () => []) } });
 
 		await expect
-			.element(page.getByRole('heading', { name: /nenhuma bíblia compatível encontrada/i }))
+			.element(page.getByRole('heading', { name: /nenhuma bíblia instalada/i }))
 			.toBeInTheDocument();
 		await expect
-			.element(page.getByRole('link', { name: /voltar ao início/i }))
-			.toHaveAttribute('href', '/');
+			.element(page.getByRole('link', { name: /abrir configurações/i }))
+			.toHaveAttribute('href', '/config');
 		expect(page.getByRole('combobox')).not.toBeInTheDocument();
 	});
 
 	it('offers a direct import action when no compatible Bible exists', async () => {
 		await render(Page, { props: { storageOverride: createStorage(async () => []) } });
 
-		await expect
-			.element(page.getByRole('link', { name: /importar uma bíblia/i }))
-			.toHaveAttribute('href', '/?import=bible');
+		await expect.element(page.getByText(/nenhuma bíblia instalada/i)).toBeInTheDocument();
+		await page.getByRole('button', { name: /importar arquivos/i }).click();
+		const dialog = page.getByRole('dialog');
+		await expect.element(dialog.getByText(/importar arquivos sqlite/i)).toBeInTheDocument();
 	});
 
 	it('keeps a catalog failure recoverable with retry and return actions', async () => {

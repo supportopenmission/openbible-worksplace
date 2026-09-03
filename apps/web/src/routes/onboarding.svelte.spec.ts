@@ -74,6 +74,57 @@ describe('OpenBible onboarding', () => {
 			.toBeInTheDocument();
 	});
 
+	it('offers remote bucket import immediately in the import step', async () => {
+		await render(OnboardingModal, {
+			props: { storageMode: 'opfs', storage: createStorage(), initialStep: 'import' }
+		});
+
+		await page.getByRole('tab', { name: /bucket r2/i }).click();
+		await expect
+			.element(page.getByRole('textbox', { name: /url do bucket/i }))
+			.toBeInTheDocument();
+		await expect
+			.element(page.getByRole('button', { name: /^carregar$/i }))
+			.toBeInTheDocument();
+	});
+
+	it('offers local and remote import tabs in the import step', async () => {
+		// SPECSFY: US-001 FR-001 NFR-001 AC-001
+		await render(OnboardingModal, {
+			props: { storageMode: 'opfs', storage: createStorage(), initialStep: 'import' }
+		});
+
+		const localTab = page.getByRole('tab', { name: /arquivos locais/i });
+		const remoteTab = page.getByRole('tab', { name: /bucket r2/i });
+		await expect.element(localTab).toBeInTheDocument();
+		await expect.element(remoteTab).toBeInTheDocument();
+		await expect.element(localTab).toHaveAttribute('data-state', 'active');
+
+		await remoteTab.click();
+		await expect.element(remoteTab).toHaveAttribute('data-state', 'active');
+		await expect.element(page.getByRole('textbox', { name: /url do bucket/i })).toBeInTheDocument();
+
+		await localTab.click();
+		await expect.element(localTab).toHaveAttribute('data-state', 'active');
+	});
+
+	it('keeps each import tab state while switching with the keyboard', async () => {
+		// SPECSFY: US-001 FR-001 NFR-001 AC-002
+		await render(OnboardingModal, {
+			props: { storageMode: 'opfs', storage: createStorage(), initialStep: 'import' }
+		});
+
+		const urlInput = page.getByRole('textbox', { name: /url do bucket/i });
+		await expect.element(urlInput).not.toBeInTheDocument();
+		await page.getByRole('tab', { name: /bucket r2/i }).click();
+		await expect.element(urlInput).toBeInTheDocument();
+		await urlInput.fill('https://cdn.exemplo.com/biblias/');
+
+		await page.getByRole('tab', { name: /arquivos locais/i }).click();
+		await page.getByRole('tab', { name: /bucket r2/i }).click();
+		await expect.element(urlInput).toHaveValue('https://cdn.exemplo.com/biblias/');
+	});
+
 	it('exposes progress and accessible operation state', async () => {
 		// SPECSFY: US-001 US-002 FR-005 NFR-001 NFR-002 AC-009
 		await render(OnboardingModal, {

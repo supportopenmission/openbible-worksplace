@@ -60,7 +60,7 @@
 | npm | transitiva | @standard-schema/spec | 1.1.0 | A family of specs for interoperable TypeScript | https://github.com/standard-schema/standard-schema |
 | npm | transitiva | cross-spawn | 7.0.6 | Cross platform child_process#spawn and child_process#spawnSync | git@github.com:moxystudio/node-cross-spawn |
 | npm | transitiva | detect-libc | 2.1.2 | Node.js module to detect the C standard library (libc) implementation family and version | git://github.com/lovell/detect-libc |
-| npm | transitiva | effect | 4.0.0-beta.83 | The missing standard library for TypeScript, for writing production-grade software. | https://github.com/Effect-TS/effect-smol |
+| npm | transitiva | effect | 4.0.0-beta.83 | The missing standard library for TypeScript, for writing production-grade software. | https://github.com/Effect-TS/effect |
 | npm | transitiva | fast-check | 4.9.0 | Property based testing framework for JavaScript (like QuickCheck) | https://github.com/dubzzz/fast-check |
 | npm | transitiva | find-my-way-ts | 0.1.6 | Crazy fast http radix based router | https://github.com/tim-smart/find-my-way-ts |
 | npm | transitiva | ini | 7.0.0 | An ini encoder/decoder for node | https://github.com/npm/ini |

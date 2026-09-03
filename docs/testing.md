@@ -3,12 +3,13 @@
 <!-- specsfy:documentator:start -->
 ## Resumo
 
-- Arquivos de teste: 21.
+- Arquivos de teste: 27.
 - Runner: não identificado.
 - Scripts: build: turbo run build; check-types: turbo run check-types; dev: turbo run dev; lint: turbo run lint; format: prettier --write .; format:check: prettier --check ..
 
 | Arquivo |
 | --- |
+| apps/web/src/lib/features/bible/bible-library.test.ts |
 | apps/web/src/lib/features/bible/bible-reader.test.ts |
 | apps/web/src/lib/features/bible/highlights-page.test.ts |
 | apps/web/src/lib/features/bible/reader-highlights-repository.test.ts |
@@ -17,6 +18,10 @@
 | apps/web/src/lib/features/bible/reader-preference.test.ts |
 | apps/web/src/lib/features/bible/reader-verse-notes.test.ts |
 | apps/web/src/lib/features/bible/verse-selection.test.ts |
+| apps/web/src/lib/features/bible-remote/remote-download.test.ts |
+| apps/web/src/lib/features/bible-remote/remote-import.svelte.spec.ts |
+| apps/web/src/lib/features/bible-remote/remote-install.test.ts |
+| apps/web/src/lib/features/bible-remote/remote-manifest.test.ts |
 | apps/web/src/lib/features/navigation/sidebar.test.ts |
 | apps/web/src/lib/features/notes/note-block-interactions.test.ts |
 | apps/web/src/lib/features/notes/note-markdown.test.ts |
@@ -25,6 +30,7 @@
 | apps/web/src/lib/features/notes/slash-verse-command.test.ts |
 | apps/web/src/lib/features/notes/verse-block-extension.test.ts |
 | apps/web/src/lib/features/notes/verse-selector.test.ts |
+| apps/web/src/lib/features/workspace/workspace-stats.test.ts |
 | apps/web/src/lib/index.test.ts |
 | apps/web/src/lib/navigation/home-preference.test.ts |
 | apps/web/src/lib/pwa/pwa.test.ts |

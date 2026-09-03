@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { detectStorageKind } from '$lib/storage/environment';
+	import RemoteBibleImport from '$lib/features/bible-remote/RemoteBibleImport.svelte';
 	import { getWorkspaceState } from './workspace-state.svelte';
 
 	const workspace = getWorkspaceState();
@@ -116,6 +117,10 @@
 		{#if workspace.error}
 			<p class="error" role="alert">{workspace.error}</p>
 		{/if}
+
+		<div class="remote-block">
+			<RemoteBibleImport storage={workspace.storage} variant="config" />
+		</div>
 	</section>
 {/if}
 
@@ -257,6 +262,12 @@
 
 	.error {
 		color: var(--destructive);
+	}
+
+	.remote-block {
+		margin-top: 28px;
+		padding-top: 24px;
+		border-top: 1px solid var(--border);
 	}
 
 	@media (max-width: 560px) {

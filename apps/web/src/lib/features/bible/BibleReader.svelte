@@ -2,6 +2,8 @@
 	import {
 		ArrowLeft,
 		ArrowRight,
+		ArrowUpRight,
+		BookOpen,
 		ChevronDown,
 		Highlighter,
 		Plus,
@@ -87,6 +89,9 @@
 	import VerseNoteSelector from './VerseNoteSelector.svelte';
 	import BibleNoteSplit from './BibleNoteSplit.svelte';
 	import HighlightsList from './HighlightsList.svelte';
+	import LocalBibleImport from './LocalBibleImport.svelte';
+	import RemoteBibleImport from '$lib/features/bible-remote/RemoteBibleImport.svelte';
+	import * as Empty from '$lib/components/ui/empty/index.js';
 
 	let {
 		storage,
@@ -103,6 +108,14 @@
 	type ReaderState = 'loading' | 'empty' | 'error' | 'ready' | 'unavailable';
 
 	let state = $state<ReaderState>('loading');
+	let showLocalImport = $state(false);
+	let showRemoteImport = $state(false);
+
+	function handleInstalled() {
+		showLocalImport = false;
+		showRemoteImport = false;
+		if (storage) void loadCatalog(storage);
+	}
 	let catalog = $state<BibleCatalog | null>(null);
 	let errorMessage = $state('');
 	let selectedVersionId = $state('');
@@ -1091,26 +1104,64 @@
 			</div>
 		</section>
 	{:else if state === 'empty'}
-		<section class="state-panel" aria-live="polite">
-			<p class="state-label">Nenhuma fonte disponível</p>
-			<h2>Nenhuma Bíblia compatível encontrada</h2>
-			<p>Importe um arquivo SQLite compatível com o padrão OpenLP para começar a leitura.</p>
-			<div class="state-actions">
-				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-				<a class="button primary" href={resolve('/') + '?import=bible'}>Importar uma Bíblia</a>
-				<a class="text-action" href={resolve('/')}>Voltar ao início</a>
-			</div>
-			{#if catalog && catalog.diagnostics.length > 0}
-				<section class="diagnostic" aria-live="polite">
-					<strong>O arquivo foi encontrado, mas não pôde ser lido.</strong>
-					<ul>
-						{#each catalog.diagnostics as diagnostic (diagnostic.fileName)}
-							<li><span>{diagnostic.fileName}</span>: {diagnostic.message}</li>
-						{/each}
-					</ul>
-				</section>
-			{/if}
-		</section>
+		<Empty.Root class="bible-empty">
+			<Empty.Header>
+				<Empty.Media variant="icon"><BookOpen size={16} strokeWidth={1.8} aria-hidden="true" /></Empty.Media>
+				<h2 class="bible-empty-title" data-slot="empty-title">Nenhuma Bíblia instalada</h2>
+				<Empty.Description>
+					Você ainda não tem nenhuma Bíblia neste workspace.
+					<br />Importe um SQLite no padrão OpenLP para começar a leitura.
+				</Empty.Description>
+			</Empty.Header>
+			<Empty.Content class="bible-empty-actions">
+				<button class="button primary" type="button" onclick={() => (showLocalImport = true)}>
+					Importar arquivos
+				</button>
+				<button
+					class="button secondary"
+					type="button"
+					onclick={() => (showRemoteImport = true)}
+					aria-haspopup="dialog"
+				>
+					Usar URL do bucket
+				</button>
+				<a class="text-action" href={resolve('/config')}>
+					Abrir configurações <ArrowUpRight size={13} strokeWidth={1.8} aria-hidden="true" />
+				</a>
+			</Empty.Content>
+		</Empty.Root>
+		<Dialog.Root bind:open={showLocalImport}>
+			<Dialog.Content class="bible-import-dialog" aria-labelledby="bible-import-local-title">
+				<div class="import-dialog-head">
+					<Dialog.Title id="bible-import-local-title">Importar arquivos SQLite</Dialog.Title>
+					<Dialog.Description>
+						Envie arquivos compatíveis com o padrão OpenLP. Eles ficam em <code>bibles/</code>.
+					</Dialog.Description>
+				</div>
+				<LocalBibleImport {storage} onInstalled={handleInstalled} />
+			</Dialog.Content>
+		</Dialog.Root>
+		<Dialog.Root bind:open={showRemoteImport}>
+			<Dialog.Content class="bible-import-dialog" aria-labelledby="bible-import-remote-title">
+				<div class="import-dialog-head">
+					<Dialog.Title id="bible-import-remote-title">Importar do bucket R2</Dialog.Title>
+					<Dialog.Description>
+						Informe a URL pública do bucket para listar e instalar as versões.
+					</Dialog.Description>
+				</div>
+				<RemoteBibleImport {storage} variant="bible" bare onInstalled={handleInstalled} />
+			</Dialog.Content>
+		</Dialog.Root>
+		{#if catalog && catalog.diagnostics.length > 0}
+			<section class="diagnostic" aria-live="polite">
+				<strong>O arquivo foi encontrado, mas não pôde ser lido.</strong>
+				<ul>
+					{#each catalog.diagnostics as diagnostic (diagnostic.fileName)}
+						<li><span>{diagnostic.fileName}</span>: {diagnostic.message}</li>
+					{/each}
+				</ul>
+			</section>
+		{/if}
 	{:else if selectedVersion && selectedBook && selectedChapter !== null}
 		<section
 			class="reader-toolbar"
@@ -1607,14 +1658,14 @@
 	.reader-page {
 		display: flex;
 		flex-direction: column;
-		max-width: 1120px;
-		margin: 0 auto;
+		width: 100%;
+		max-width: none;
+		margin: 0;
 		padding: 8px clamp(20px, 5vw, 64px) 80px;
 	}
 
 	.reader-page.with-note {
 		min-height: 0;
-		max-width: none;
 		flex: 1;
 		padding-bottom: 16px;
 	}
@@ -1637,6 +1688,66 @@
 		margin-top: 54px;
 		border-block: 1px solid var(--border);
 		padding: 26px 0;
+	}
+
+	.bible-empty {
+		max-width: 560px;
+		min-height: min(56dvh, 420px);
+		margin: 0 auto;
+		border: 0;
+		background: transparent;
+	}
+
+	.bible-empty-title {
+		margin: 0;
+		font-size: 0.95rem;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+	}
+
+	.bible-empty-actions {
+		flex-direction: row;
+		flex-wrap: wrap;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.bible-empty-actions .text-action {
+		margin-top: 0;
+	}
+
+	:global(.bible-import-dialog) {
+		width: min(calc(100% - 32px), 560px);
+		max-width: 560px;
+		max-height: min(80dvh, 640px);
+		overflow-y: auto;
+	}
+
+	.import-dialog-head {
+		display: grid;
+		gap: 6px;
+		margin-bottom: 16px;
+	}
+
+	.import-dialog-head code {
+		font-family: var(--font-mono);
+		font-size: 0.86em;
+	}
+
+	@media (max-width: 560px) {
+		.bible-empty-actions {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.bible-empty-actions > .button {
+			width: 100%;
+			min-height: 42px;
+		}
+
+		.bible-empty-actions > .text-action {
+			text-align: center;
+		}
 	}
 
 	.state-panel h2 {
@@ -1912,6 +2023,10 @@
 		--tw-ring-offset-shadow: 0 0 #0000;
 	}
 
+	:global(.book-search-group [data-slot='input-group-control']) {
+		min-width: 0;
+	}
+
 	:global(.book-search-group [data-slot='input-group-control']:focus-visible) {
 		outline: none;
 		box-shadow: none;
@@ -1972,6 +2087,7 @@
 		max-height: min(46dvh, 360px);
 		margin-top: 16px;
 		overflow-y: auto;
+		overflow-x: clip;
 		padding: 0 2px 2px;
 		scrollbar-width: none;
 		-ms-overflow-style: none;
@@ -2068,6 +2184,7 @@
 	.version-screen {
 		max-height: min(52dvh, 380px);
 		overflow-y: auto;
+		overflow-x: clip;
 		padding-top: 1px;
 		scrollbar-width: none;
 		-ms-overflow-style: none;
@@ -2170,6 +2287,7 @@
 		grid-template-columns: auto minmax(0, 1fr);
 		align-items: center;
 		gap: 10px;
+		min-width: 0;
 		min-height: 44px;
 		border: 1px solid color-mix(in oklch, var(--foreground) 12%, var(--background));
 		border-radius: 11px;

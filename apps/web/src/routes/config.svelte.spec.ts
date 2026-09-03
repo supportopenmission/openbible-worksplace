@@ -62,4 +62,20 @@ describe('/config', () => {
 			.element(page.getByRole('radio', { name: /ler a bíblia/i }))
 			.toBeInTheDocument();
 	});
+
+	it('exposes bibles and stats tabs on desktop and sections on mobile', async () => {
+		// SPECSFY: US-001 US-002 US-004 FR-001 FR-002 FR-004 NFR-001 AC-010
+		await page.viewport(1440, 900);
+		await render(ConfigPage);
+
+		const biblesTab = page.getByRole('tab', { name: 'Bíblias' });
+		const statsTab = page.getByRole('tab', { name: 'Estatísticas' });
+		await expect.element(biblesTab).toBeInTheDocument();
+		await expect.element(statsTab).toBeInTheDocument();
+
+		await biblesTab.click();
+		await expect.element(biblesTab).toHaveAttribute('data-state', 'active');
+		await statsTab.click();
+		await expect.element(statsTab).toHaveAttribute('data-state', 'active');
+	});
 });

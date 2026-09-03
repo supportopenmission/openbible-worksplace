@@ -5,8 +5,8 @@
 
 | Tipo | Quantidade |
 | --- | --- |
-| Código | 297 |
-| Testes | 21 |
+| Código | 350 |
+| Testes | 27 |
 
 ## Diagramas
 
