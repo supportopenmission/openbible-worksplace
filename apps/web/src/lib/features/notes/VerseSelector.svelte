@@ -11,6 +11,7 @@
 		type BibleCatalog,
 		type BibleVersion
 	} from '$lib/features/bible/bible-reader';
+	import { displayVersionAbbreviation } from '$lib/features/bible/version-label';
 	import { readReaderPreference } from '$lib/features/bible/reader-preference';
 	import { getWorkspaceState } from '$lib/features/workspace/workspace-state.svelte';
 	import VerseBlockView from './VerseBlockView.svelte';
@@ -220,6 +221,9 @@
 		onConfirm({
 			...selection,
 			book: selection.book ?? selectedBook?.name ?? '',
+			version: selectedVersion
+				? displayVersionAbbreviation(selectedVersion)
+				: selection.version ?? '',
 			snapshot: previewSnapshot
 		});
 		open = false;
@@ -316,6 +320,9 @@
 				{:else if previewSnapshot}
 					<VerseBlockView
 						versionId={selection.versionId}
+						version={selectedVersion
+							? displayVersionAbbreviation(selectedVersion)
+							: selection.version}
 						bookId={selection.bookId}
 						book={selection.book ?? selectedBook?.name ?? ''}
 						chapter={selection.chapter}

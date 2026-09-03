@@ -3,6 +3,7 @@
 
 	let {
 		versionId,
+		version = '',
 		bookId,
 		book,
 		chapter,
@@ -11,6 +12,7 @@
 		snapshotBody
 	}: {
 		versionId: string;
+		version?: string;
 		bookId: number;
 		book: string;
 		chapter: number;
@@ -22,6 +24,7 @@
 	const reference = $derived(
 		verseReferenceLabel({
 			versionId,
+			version,
 			bookId: String(bookId),
 			book,
 			chapter: String(chapter),

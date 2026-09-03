@@ -9,6 +9,7 @@ export interface VerseRangeInput {
 
 export interface VerseSelectionState {
 	versionId: string;
+	version?: string;
 	bookId: number;
 	book?: string;
 	chapter: number;

@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { resolve } from '$app/paths';
 	import NoteCanvasEditor from '$lib/features/notes/NoteCanvasEditor.svelte';
+	import { notePageChrome } from '$lib/features/notes/note-page-chrome.svelte';
 	import { createNote, readNote } from '$lib/features/notes/notes-repository';
 	import { serializeNoteFile } from '$lib/features/notes/note-markdown';
 	import type { Note } from '$lib/features/notes/note-types';
@@ -71,6 +71,7 @@
 	}
 
 	onMount(async () => {
+		notePageChrome.activate();
 		loading = true;
 		error = '';
 		try {
@@ -101,8 +102,17 @@
 		}
 	});
 
+	$effect(() => {
+		if (note?.title) notePageChrome.updateTitle(note.title);
+	});
+
+	onDestroy(() => {
+		notePageChrome.deactivate();
+	});
+
 	function handleSaved(saved: Note) {
 		note = saved;
+		notePageChrome.updateTitle(saved.title);
 	}
 </script>
 
@@ -111,12 +121,6 @@
 </svelte:head>
 
 <div class="note-page">
-	<nav class="breadcrumb" aria-label="Breadcrumb">
-		<a href={resolve('/notes')}>Notas</a>
-		<span aria-hidden="true">/</span>
-		<span aria-current="page">{note?.title ?? 'Nota'}</span>
-	</nav>
-
 	{#if loading}
 		<p class="state-message" role="status">Carregando nota…</p>
 	{:else if error || !note || !activeStorage}
@@ -129,28 +133,6 @@
 <style>
 	.note-page {
 		padding: 8px 0 80px;
-	}
-
-	.breadcrumb {
-		display: flex;
-		align-items: center;
-		gap: 9px;
-		max-width: 760px;
-		margin: 0 auto 24px;
-		padding: 0 clamp(16px, 4vw, 24px);
-		color: var(--muted-foreground);
-		font-size: 0.72rem;
-	}
-
-	.breadcrumb a {
-		color: var(--foreground);
-		font-weight: 500;
-		text-decoration: none;
-	}
-
-	.breadcrumb a:hover {
-		text-decoration: underline;
-		text-underline-offset: 3px;
 	}
 
 	.state-message {

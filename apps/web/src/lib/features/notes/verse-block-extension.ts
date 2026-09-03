@@ -1,8 +1,10 @@
 import { mergeAttributes, Node as TiptapNode } from '@tiptap/core';
+import { displayVersionAbbreviation } from '$lib/features/bible/version-label';
 import { isNoteHighlightColor } from './note-highlights';
 
 export interface VerseFenceAttrs {
 	versionId: string;
+	version?: string;
 	bookId: string;
 	book: string;
 	chapter: string;
@@ -27,6 +29,7 @@ function parseAttrs(raw: string): VerseFenceAttrs {
 	}
 	return {
 		versionId: attrs.versionId ?? '',
+		version: attrs.version ?? '',
 		bookId: attrs.bookId ?? '',
 		book: attrs.book ?? '',
 		chapter: attrs.chapter ?? '',
@@ -45,6 +48,7 @@ export function renderVerseFence(parsed: ParsedVerseFence): string {
 	const { attrs, body } = parsed;
 	const attrString = [
 		`versionId="${attrs.versionId}"`,
+		...(attrs.version ? [`version="${attrs.version}"`] : []),
 		`bookId="${attrs.bookId}"`,
 		`book="${attrs.book}"`,
 		`chapter="${attrs.chapter}"`,
@@ -68,12 +72,20 @@ export function extractVerseFencesFromMarkdown(markdown: string): ParsedVerseFen
 	return fences;
 }
 
+export function verseVersionLabel(attrs: VerseFenceAttrs): string {
+	if (attrs.version?.trim()) return attrs.version.trim();
+	if (!attrs.versionId) return '';
+	return displayVersionAbbreviation({ name: attrs.versionId, id: attrs.versionId });
+}
+
 export function verseReferenceLabel(attrs: VerseFenceAttrs): string {
 	const start = attrs.verseStart;
 	const end = attrs.verseEnd;
 	const range =
 		start && end && start !== end ? `${start}–${end}` : start || end || '';
-	return `${attrs.book} ${attrs.chapter}:${range}`.trim();
+	const reference = `${attrs.book} ${attrs.chapter}:${range}`.trim();
+	const version = verseVersionLabel(attrs);
+	return version ? `${version} · ${reference}` : reference;
 }
 
 function verseFenceToHtml(parsed: ParsedVerseFence): string {
@@ -221,6 +233,7 @@ function blockToMarkdown(node: Node): string {
 	if (node.dataset.type === 'verse-block') {
 		const attrs: VerseFenceAttrs = {
 			versionId: node.dataset.versionId ?? '',
+			version: node.dataset.version ?? '',
 			bookId: node.dataset.bookId ?? '',
 			book: node.dataset.book ?? '',
 			chapter: node.dataset.chapter ?? '',
@@ -285,6 +298,7 @@ export const VerseBlockExtension = TiptapNode.create({
 	addAttributes() {
 		return {
 			versionId: { default: '', parseHTML: (element) => element.getAttribute('data-version-id') ?? '' },
+			version: { default: '', parseHTML: (element) => element.getAttribute('data-version') ?? '' },
 			bookId: { default: '', parseHTML: (element) => element.getAttribute('data-book-id') ?? '' },
 			book: { default: '', parseHTML: (element) => element.getAttribute('data-book') ?? '' },
 			chapter: { default: '', parseHTML: (element) => element.getAttribute('data-chapter') ?? '' },
@@ -310,6 +324,7 @@ export const VerseBlockExtension = TiptapNode.create({
 			mergeAttributes(HTMLAttributes, {
 				'data-type': 'verse-block',
 				'data-version-id': node.attrs.versionId,
+				'data-version': node.attrs.version,
 				'data-book-id': node.attrs.bookId,
 				'data-book': node.attrs.book,
 				'data-chapter': node.attrs.chapter,
@@ -328,6 +343,7 @@ export const VerseBlockExtension = TiptapNode.create({
 			dom.className = 'verse-block-callout';
 			dom.dataset.type = 'verse-block';
 			dom.dataset.versionId = node.attrs.versionId;
+			dom.dataset.version = node.attrs.version;
 			dom.dataset.bookId = node.attrs.bookId;
 			dom.dataset.book = node.attrs.book;
 			dom.dataset.chapter = node.attrs.chapter;
@@ -338,6 +354,7 @@ export const VerseBlockExtension = TiptapNode.create({
 			ref.className = 'verse-block-ref';
 			ref.textContent = verseReferenceLabel({
 				versionId: node.attrs.versionId,
+				version: node.attrs.version,
 				bookId: node.attrs.bookId,
 				book: node.attrs.book,
 				chapter: node.attrs.chapter,
@@ -360,6 +377,7 @@ export function verseBlockFromFence(parsed: ParsedVerseFence) {
 		type: 'verseBlock',
 		attrs: {
 			versionId: parsed.attrs.versionId,
+			version: parsed.attrs.version ?? '',
 			bookId: parsed.attrs.bookId,
 			book: parsed.attrs.book,
 			chapter: parsed.attrs.chapter,

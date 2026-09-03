@@ -30,6 +30,8 @@
 		verseBlockFromFence
 	} from './verse-block-extension';
 	import VerseSelector, { type VerseSelectionResult } from './VerseSelector.svelte';
+	import { NOTE_EDITOR_WIDTHS } from './note-editor-layout';
+	import { notePageChrome } from './note-page-chrome.svelte';
 
 	let {
 		note,
@@ -428,6 +430,7 @@
 		const block = verseBlockFromFence({
 			attrs: {
 				versionId: result.versionId,
+				version: result.version ?? '',
 				bookId: String(result.bookId),
 				book: result.book ?? '',
 				chapter: String(result.chapter),
@@ -453,12 +456,15 @@
 	class="note-canvas"
 	data-testid="note-canvas"
 	data-viewport-fill="true"
+	data-editor-width={notePageChrome.width}
 	role="region"
 	aria-label="Editor da nota"
+	style:--note-editor-max-width={NOTE_EDITOR_WIDTHS[notePageChrome.width].maxWidth}
 	onpointermove={handleCanvasPointerMove}
 	ondragovercapture={handleCanvasDragOver}
 	ondropcapture={handleCanvasDrop}
 >
+	<div class="note-canvas-inner">
 	<p class="save-status" aria-live="polite" aria-atomic="true">
 		{#if saveLabel}
 			<span class:status-error={saveStatus === 'error'}>{saveLabel}</span>
@@ -605,6 +611,7 @@
 	{/if}
 
 	<VerseSelector bind:open={verseSelectorOpen} {storage} onConfirm={handleVerseConfirm} />
+	</div>
 </div>
 
 <style>
@@ -613,6 +620,12 @@
 		min-height: calc(100dvh - 110px);
 		padding: 0 clamp(18px, 5vw, 72px) 72px;
 		font-family: var(--font-sans);
+	}
+
+	.note-canvas-inner {
+		width: 100%;
+		max-width: var(--note-editor-max-width, 760px);
+		margin: 0 auto;
 	}
 
 	.save-status {
