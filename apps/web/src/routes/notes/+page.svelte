@@ -29,9 +29,10 @@
 
 <style>
 	.notes-error {
-		max-width: 720px;
+		width: 100%;
+		max-width: min(100%, 1120px);
 		margin: 0 auto;
-		padding: 32px clamp(20px, 5vw, 64px);
+		padding: 32px clamp(18px, 5vw, 72px);
 	}
 
 	.notes-error p {

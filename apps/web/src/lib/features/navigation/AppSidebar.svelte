@@ -8,10 +8,10 @@
 
 	const links = [
 		{ label: 'Bíblia', href: '/bible', icon: BookOpen },
+		{ label: 'Notas', href: '/notes', icon: NotebookPen },
 		{ label: 'Sermões', href: '/sermons', icon: ScrollText },
 		{ label: 'Estudos', href: '/study', icon: GraduationCap },
-		{ label: 'Notas', href: '/notes', icon: NotebookPen },
-		{ label: 'Configuração', href: '/config', icon: Settings }
+		{ label: 'Configurações', href: '/config', icon: Settings }
 	];
 
 	function isLinkActive(href: string): boolean {

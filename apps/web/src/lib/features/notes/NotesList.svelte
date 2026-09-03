@@ -4,7 +4,6 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import type { WorkspaceStorage } from '$lib/storage/types';
 	import NoteCardList from './NoteCardList.svelte';
-	import NotesDataTable from './NotesDataTable.svelte';
 	import { listNotes, trashNote } from './notes-repository';
 	import { deleteNoteVerseRefs } from './note-verse-index';
 	import type { Note } from './note-types';
@@ -66,20 +65,18 @@
 </script>
 
 <div class="notes-list">
-	{#if loading}
-		<p class="state-message" role="status" aria-live="polite">Carregando notas…</p>
-	{:else if error}
-		<div class="state-panel error" role="alert">
-			<p>{error}</p>
-			<Button type="button" variant="outline" onclick={loadNotes}>Tentar novamente</Button>
-		</div>
-	{:else if notes.length === 0}
-		<NotesDataTable {notes} {onOpen} onDelete={openDeleteDialog} />
-		<NoteCardList {notes} {onOpen} onDelete={openDeleteDialog} />
-	{:else}
-		<NotesDataTable {notes} {onOpen} onDelete={openDeleteDialog} />
-		<NoteCardList {notes} {onOpen} onDelete={openDeleteDialog} />
-	{/if}
+	<div class="notes-list-inner">
+		{#if loading}
+			<p class="state-message" role="status" aria-live="polite">Carregando notas…</p>
+		{:else if error}
+			<div class="state-panel error" role="alert">
+				<p>{error}</p>
+				<Button type="button" variant="outline" onclick={loadNotes}>Tentar novamente</Button>
+			</div>
+		{:else}
+			<NoteCardList {notes} {onOpen} onDelete={openDeleteDialog} />
+		{/if}
+	</div>
 </div>
 
 <Dialog.Root open={deleteTarget !== null} onOpenChange={(value) => !value && (deleteTarget = null)}>
@@ -103,7 +100,13 @@
 <style>
 	.notes-list {
 		width: 100%;
-		padding: 0 clamp(20px, 4vw, 48px) 80px;
+		padding: 8px clamp(18px, 5vw, 72px) 80px;
+	}
+
+	.notes-list-inner {
+		width: 100%;
+		max-width: min(100%, 1120px);
+		margin: 0 auto;
 	}
 
 	.state-message,

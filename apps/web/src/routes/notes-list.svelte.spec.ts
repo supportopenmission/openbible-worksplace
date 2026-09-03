@@ -42,14 +42,18 @@ describe('notes list revised responsive composition', () => {
 	});
 
 	// SPECSFY: US-001 US-004 FR-001 FR-009 NFR-001 AC-001 AC-015
-	it('renders the desktop data-table composition with a visible ID column', async () => {
+	it('renders the card collection with title and actions', async () => {
 		render(NotesList, { props: { storage: storage(), onOpen: () => {} } });
-		await expect.element(page.getByTestId('notes-data-table')).toBeInTheDocument();
-		await expect.element(page.getByText('ID', { exact: true })).toBeInTheDocument();
+		await expect.element(page.getByTestId('notes-card-list')).toBeInTheDocument();
+		await expect
+			.element(page.getByText('Nota longa para testar a composição responsiva'))
+			.toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: /editar nota/i })).toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: /apagar nota/i })).toBeInTheDocument();
 	});
 
 	// SPECSFY: US-001 US-004 FR-001 FR-009 NFR-001 AC-002 AC-015
-	it('renders an equivalent mobile card collection with edit and delete actions', async () => {
+	it('keeps edit and delete actions available in the card layout', async () => {
 		render(NotesList, { props: { storage: storage(), onOpen: () => {} } });
 		await expect.element(page.getByTestId('notes-card-list')).toBeInTheDocument();
 		await expect.element(page.getByRole('button', { name: /editar nota/i })).toBeInTheDocument();
