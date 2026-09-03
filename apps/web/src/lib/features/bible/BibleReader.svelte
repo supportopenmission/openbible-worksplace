@@ -21,6 +21,7 @@
 		type BibleSearchResult,
 		type BibleVerse
 	} from './bible-reader';
+	import { displayVersionAbbreviation } from './version-label';
 	import {
 		isReaderSelectionValid,
 		readReaderPreference,
@@ -340,41 +341,6 @@
 		void goto(`${resolve('/')}?import=bible`);
 	}
 
-	function displayVersionAbbreviation(version: { name: string; fileName: string }): string {
-		const fileStem = version.fileName
-			.replace(/\.[^.]+$/, '')
-			.replace(/^(?:bibles?|versions?)[_-]/i, '')
-			.trim();
-		if (/^[a-z\d]{2,8}$/i.test(fileStem) && !/^(?:bibles?|versions?)$/i.test(fileStem)) {
-			return fileStem.toUpperCase();
-		}
-
-		const normalizedName = version.name
-			.normalize('NFD')
-			.replace(/[\u0300-\u036f]/g, '')
-			.toLocaleLowerCase('pt-BR');
-		const knownAbbreviations: Array<[string, string]> = [
-			['almeida revista e atualizada', 'ARA'],
-			['almeida corrigida e fiel', 'ACF'],
-			['almeida revista e corrigida', 'ARC'],
-			['nova almeida atualizada', 'NAA'],
-			['nova versao internacional', 'NVI'],
-			['joao ferreira de almeida', 'JFA']
-		];
-		const known = knownAbbreviations.find(([name]) => normalizedName.includes(name));
-		if (known) return known[1];
-
-		const words = version.name.match(/[\p{L}\d]+/gu) ?? [];
-		const ignoredWords = new Set(['a', 'as', 'da', 'das', 'de', 'do', 'dos', 'e', 'o', 'os']);
-		const acronym = words
-			.filter((word) => !ignoredWords.has(word.toLocaleLowerCase('pt-BR')))
-			.map((word) => word[0])
-			.join('')
-			.slice(0, 5)
-			.toUpperCase();
-		return acronym || 'BÍBLIA';
-	}
-
 	function selectorTitle(mode: SelectorMode): string {
 		if (mode === 'book') return 'Selecionar livro';
 		if (mode === 'chapter') return 'Selecionar capítulo';
@@ -556,10 +522,11 @@
 	{:else if selectedVersion && selectedBook && selectedChapter !== null}
 		<section class="reader-toolbar" class:toolbar-hidden={!toolbarVisible} aria-label="Controles do leitor">
 			<div class="toolbar-shell">
-				<ButtonGroup class="reader-nav-group" aria-label="Navegação da Bíblia">
+				<ButtonGroup class="reader-toolbar-group" aria-label="Navegação da Bíblia">
 					<Button
 						variant="ghost"
 						size="icon-sm"
+						class="toolbar-nav-button"
 						disabled={!previousChapter || chapterLoading}
 						onclick={() => moveChapter(previousChapter)}
 						aria-label="Capítulo anterior"
@@ -593,22 +560,10 @@
 						<span>{selectedChapter}</span>
 						<ChevronDown size={13} strokeWidth={1.8} aria-hidden="true" class="choice-chevron" />
 					</button>
-					<Button
-						variant="ghost"
-						size="icon-sm"
-						disabled={!nextChapter || chapterLoading}
-						onclick={() => moveChapter(nextChapter)}
-						aria-label="Próximo capítulo"
-						title="Próximo capítulo"
-					>
-						<ArrowRight size={16} strokeWidth={1.8} aria-hidden="true" />
-					</Button>
-				</ButtonGroup>
-				<ButtonGroup class="reader-actions-group" aria-label="Versão e busca">
-					<Button
-						variant="ghost"
-						size="sm"
-						class="version-choice"
+					<button
+						class="toolbar-choice version-choice"
+						type="button"
+						data-slot="button"
 						onclick={() => openSelector('version')}
 						aria-label="Versão"
 						role="combobox"
@@ -618,10 +573,22 @@
 					>
 						<span class="version-label">{displayVersionAbbreviation(selectedVersion)}</span>
 						<ChevronDown size={13} strokeWidth={1.8} aria-hidden="true" class="choice-chevron" />
+					</button>
+					<Button
+						variant="ghost"
+						size="icon-sm"
+						class="toolbar-nav-button"
+						disabled={!nextChapter || chapterLoading}
+						onclick={() => moveChapter(nextChapter)}
+						aria-label="Próximo capítulo"
+						title="Próximo capítulo"
+					>
+						<ArrowRight size={16} strokeWidth={1.8} aria-hidden="true" />
 					</Button>
 					<Button
 						variant="ghost"
 						size="icon-sm"
+						class="toolbar-search-button"
 						onclick={() => (searchOpen = true)}
 						aria-label="Buscar no texto"
 						title="Buscar no texto"
@@ -1042,11 +1009,7 @@
 
 	.toolbar-shell {
 		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		width: 100%;
+		width: fit-content;
 		max-width: 100%;
 		transform: translateY(0);
 		transition: transform 220ms ease;
@@ -1056,18 +1019,18 @@
 		transform: translateY(calc(-100% - 12px));
 	}
 
-	:global(.reader-nav-group),
-	:global(.reader-actions-group) {
+	:global(.reader-toolbar-group) {
+		display: inline-flex;
+		width: auto;
+		min-width: 0;
 		max-width: 100%;
+		flex-wrap: nowrap;
+		align-items: center;
 		border: 1px solid var(--border);
 		border-radius: 999px;
 		background: color-mix(in oklch, var(--foreground) 7%, var(--background));
 		padding: 2px;
 		overflow: hidden;
-	}
-
-	:global(.reader-actions-group) {
-		flex-shrink: 0;
 	}
 
 	.toolbar-choice {
@@ -1078,6 +1041,7 @@
 		justify-content: center;
 		gap: 3px;
 		border: 0;
+		border-radius: 9999px;
 		background: transparent;
 		padding: 3px 7px;
 		color: var(--foreground);
@@ -1123,22 +1087,25 @@
 		min-width: 52px;
 	}
 
-	.version-label {
-		max-width: 76px;
-	}
-
-	:global(.version-choice) {
-		gap: 4px;
-		min-width: 0;
-		padding-inline: 10px;
-		font-size: 0.76rem;
+	.version-choice {
+		min-width: 52px;
+		padding-inline: 8px;
 		font-weight: 600;
 	}
 
-	:global(.dark .reader-nav-group),
-	:global(.dark .reader-actions-group) {
+	.version-label {
+		max-width: 64px;
+	}
+
+	:global(.dark .reader-toolbar-group) {
 		background: #171717;
 		border-color: #292929;
+	}
+
+	:global(.toolbar-nav-button),
+	:global(.toolbar-search-button) {
+		flex: 0 0 auto;
+		border-radius: 9999px;
 	}
 
 	.sr-only {
@@ -1188,6 +1155,24 @@
 		min-height: 34px;
 		border-radius: 10px;
 		background: color-mix(in oklch, var(--foreground) 5%, var(--background));
+	}
+
+	:global(
+		.book-search-group:has([data-slot='input-group-control']:focus-visible),
+		.book-search-group:has([data-slot='input-group-control']:focus)
+	) {
+		border-color: var(--border);
+		box-shadow: none;
+		outline: none;
+		--tw-ring-shadow: 0 0 #0000;
+		--tw-ring-offset-shadow: 0 0 #0000;
+	}
+
+	:global(.book-search-group [data-slot='input-group-control']:focus-visible) {
+		outline: none;
+		box-shadow: none;
+		--tw-ring-shadow: 0 0 #0000;
+		--tw-ring-offset-shadow: 0 0 #0000;
 	}
 
 	:global(.book-search-end) {
@@ -1736,40 +1721,42 @@
 		}
 
 		.toolbar-shell {
-			flex-direction: column;
-			align-items: stretch;
+			width: 100%;
 		}
 
-		:global(.reader-nav-group),
-		:global(.reader-actions-group) {
+		:global(.reader-toolbar-group) {
+			display: flex;
 			width: 100%;
 			border-radius: 12px;
 		}
 
-		:global(.reader-actions-group) {
-			justify-content: center;
+		.toolbar-choice {
+			padding-inline: 5px;
+			font-size: 0.72rem;
 		}
 
 		.book-choice {
-			flex: 1;
+			flex: 1 1 auto;
+			min-width: 0;
 			max-width: none;
 		}
 
 		.chapter-choice {
-			min-width: 56px;
+			flex: 0 0 auto;
+			min-width: 40px;
+		}
+
+		.version-choice {
+			flex: 0 0 auto;
+			min-width: 44px;
 		}
 
 		.version-label {
-			max-width: none;
+			max-width: 44px;
 		}
 
-		:global(.version-choice) {
-			flex: 1;
-			justify-content: space-between;
-		}
-
-		:global(.reader-actions-group) {
-			justify-content: space-between;
+		:global(.choice-chevron) {
+			display: none;
 		}
 
 		:global(.selector-dialog-content) {
@@ -1822,13 +1809,24 @@
 			padding-inline: 16px;
 		}
 
-		:global(.reader-nav-group),
-		:global(.reader-actions-group) {
+		:global(.reader-toolbar-group) {
 			padding: 2px;
 		}
 
 		.toolbar-choice {
-			padding-inline: 5px;
+			padding-inline: 4px;
+		}
+
+		.chapter-choice {
+			min-width: 34px;
+		}
+
+		.version-choice {
+			min-width: 38px;
+		}
+
+		.version-label {
+			max-width: 38px;
 		}
 	}
 
