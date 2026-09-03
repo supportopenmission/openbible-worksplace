@@ -1,5 +1,15 @@
 <script lang="ts">
-	import { ArrowLeft, ArrowRight, ChevronDown, Plus, RefreshCw, Search, X } from '@lucide/svelte';
+	import {
+		ArrowLeft,
+		ArrowRight,
+		ChevronDown,
+		Highlighter,
+		Plus,
+		RefreshCw,
+		Search,
+		StickyNote,
+		X
+	} from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
@@ -29,6 +39,54 @@
 		type ReaderSelection
 	} from './reader-preference';
 	import { getWorkspaceState } from '$lib/features/workspace/workspace-state.svelte';
+	import {
+		formContinuousRange,
+		rangeCoversVerse,
+		sameRange,
+		type VerseRange
+	} from './verse-selection';
+	import {
+		applyHighlight,
+		buildVerseFenceFromRange,
+		eraseHighlight,
+		formatCopyReference,
+		formatCopyTextAndReference,
+		formatVerseSnapshot,
+		highlightsCoveringVerse,
+		isSameReaderHighlight,
+		readerHighlightStyle,
+		referenceLabel,
+		type ReaderHighlight
+	} from './reader-highlights';
+	import {
+		persistHighlight,
+		readAllReaderHighlights,
+		readChapterHighlights,
+		removeHighlight,
+		type ReaderHighlightRecord
+	} from './reader-highlights-repository';
+	import { createNote, loadNoteSummariesForPaths, readNote, saveNote } from '$lib/features/notes/notes-repository';
+	import type { Note } from '$lib/features/notes/note-types';
+	import {
+		persistNoteVerseRefsToWorkspace,
+		readChapterNoteVerseRefs,
+		type NoteVerseRef
+	} from '$lib/features/notes/note-verse-index';
+	import { versesCoveredByActiveNotes } from './reader-note-indicators';
+	import {
+		countDistinctNotesForVerse,
+		dedupeRefsByNotePath,
+		formatMultiNoteBadge,
+		noteRefsForVerse,
+		shouldOpenNoteDirectly,
+		sortNoteSummariesByUpdatedAt,
+		type VerseNoteSummary
+	} from './reader-verse-notes';
+	import { noteIdFromPath, recallReaderNote, rememberReaderNote } from './reader-note-session';
+	import SelectionActionPopover from './SelectionActionPopover.svelte';
+	import VerseNoteSelector from './VerseNoteSelector.svelte';
+	import BibleNoteSplit from './BibleNoteSplit.svelte';
+	import HighlightsList from './HighlightsList.svelte';
 
 	let {
 		storage,
@@ -58,6 +116,10 @@
 	let searchLoading = $state(false);
 	let searchMessage = $state('');
 	let searchOpen = $state(false);
+	let highlightsSheetOpen = $state(false);
+	let allHighlights = $state<ReaderHighlightRecord[]>([]);
+	let allHighlightsLoading = $state(false);
+	let chapterNoteRefs = $state<NoteVerseRef[]>([]);
 	type SelectorMode = 'book' | 'chapter' | 'version';
 	let selectorMode = $state<SelectorMode>('book');
 	let selectorOpen = $state(false);
@@ -66,17 +128,42 @@
 	let selectorBookId = $state<number | null>(null);
 	let selectorChapter = $state<number | null>(null);
 	const isMobile = new IsMobile();
+	let highlights = $state<ReaderHighlight[]>([]);
+	let highlightError = $state('');
+	let verseSelection = $state<VerseRange | null>(null);
+	let selectionAnchorVerse = $state<number | null>(null);
+	let popoverOpen = $state(false);
+	let popoverAnchor = $state<HTMLElement | null>(null);
+	let popoverError = $state('');
+	let popoverBusy = $state(false);
+	let splitNote = $state<Note | null>(null);
+	let splitNoteList = $state<Note[] | null>(null);
+	let verseNoteSelectorOpen = $state(false);
+	let verseNoteSelectorAnchor = $state<HTMLElement | null>(null);
+	let verseNoteSelectorVerse = $state<number | null>(null);
+	let verseNoteSelectorSummaries = $state<VerseNoteSummary[]>([]);
+	let verseNoteSelectorLoading = $state(false);
+	let verseNoteSelectorError = $state('');
 	let loadToken = 0;
 	let toolbarVisible = $state(true);
-	let scrollBlockers = $state({ selector: false, search: false });
 	let lastScrollY = 0;
+	/** Sessão de ponteiro: não precisa ser reativa — só evita o click pós-arraste. */
+	let versePointerActive = false;
+	let versePointerStart = 0;
+	let versePointerDragged = false;
+	let suppressVerseClick = false;
+	let pendingToggleClose = false;
 
 	const scrollDelta = 10;
 	const scrollRevealTop = 48;
+	let scrollBlockers = $derived({
+		selector: selectorOpen,
+		search: searchOpen,
+		highlights: highlightsSheetOpen
+	});
 
 	$effect(() => {
-		scrollBlockers = { selector: selectorOpen, search: searchOpen };
-		if (selectorOpen || searchOpen) toolbarVisible = true;
+		if (selectorOpen || searchOpen || highlightsSheetOpen) toolbarVisible = true;
 	});
 
 	$effect(() => {
@@ -89,7 +176,7 @@
 		lastScrollY = window.scrollY;
 
 		const onScroll = () => {
-			if (scrollBlockers.selector || scrollBlockers.search) {
+			if (scrollBlockers.selector || scrollBlockers.search || scrollBlockers.highlights) {
 				lastScrollY = window.scrollY;
 				return;
 			}
@@ -142,6 +229,44 @@
 				)
 			: null
 	);
+	let highlightSelection = $derived(
+		verseSelection && selectedVersion && selectedBook && selectedChapter !== null
+			? {
+					versionId: selectedVersion.id,
+					bookId: selectedBook.id,
+					chapter: selectedChapter,
+					verseStart: verseSelection.verseStart,
+					verseEnd: verseSelection.verseEnd
+				}
+			: null
+	);
+	let selectedVerses = $derived.by(() => {
+		const range = verseSelection;
+		return range ? verses.filter((verse) => rangeCoversVerse(range, verse.number)) : [];
+	});
+	let activeStyleId = $derived.by(() => {
+		const target = highlightSelection;
+		if (!target) return null;
+		const found = highlights.find(
+			(highlight) =>
+				highlight.versionId === target.versionId &&
+				highlight.bookId === target.bookId &&
+				highlight.chapter === target.chapter &&
+				sameRange(highlight, target)
+		);
+		return found?.styleId ?? null;
+	});
+	let selectionReference = $derived(
+		verseSelection && selectedBook && selectedVersion && selectedChapter !== null
+			? formatCopyReference({
+					book: selectedBook.name,
+					chapter: selectedChapter,
+					verseStart: verseSelection.verseStart,
+					verseEnd: verseSelection.verseEnd,
+					versionLabel: displayVersionAbbreviation(selectedVersion)
+				})
+			: ''
+	);
 	let filteredBooks = $derived.by(() => {
 		const term = bookSearchTerm.trim().toLocaleLowerCase('pt-BR');
 		return (
@@ -154,6 +279,43 @@
 			}) ?? []
 		);
 	});
+	let noteIndicatorVerses = $derived.by(() => {
+		if (!selectedVersion || selectedBookId === null || selectedChapter === null) return [];
+		return versesCoveredByActiveNotes(chapterNoteRefs, {
+			versionId: selectedVersion.id,
+			bookId: selectedBookId,
+			chapter: selectedChapter
+		});
+	});
+
+	function chapterQuery() {
+		if (!selectedVersion || selectedBookId === null || selectedChapter === null) return null;
+		return {
+			versionId: selectedVersion.id,
+			bookId: selectedBookId,
+			chapter: selectedChapter
+		};
+	}
+
+	function noteBadgeForVerse(verseNumber: number): string | null {
+		const query = chapterQuery();
+		if (!query) return null;
+		return formatMultiNoteBadge(countDistinctNotesForVerse(chapterNoteRefs, query, verseNumber));
+	}
+
+	function noteRefForVerse(verseNumber: number): NoteVerseRef | null {
+		if (!selectedVersion || selectedBookId === null || selectedChapter === null) return null;
+		const matches = chapterNoteRefs.filter(
+			(ref) =>
+				ref.versionId === selectedVersion.id &&
+				ref.bookId === selectedBookId &&
+				ref.chapter === selectedChapter &&
+				verseNumber >= Math.min(ref.verseStart, ref.verseEnd) &&
+				verseNumber <= Math.max(ref.verseStart, ref.verseEnd)
+		);
+		return matches[0] ?? null;
+	}
+
 	let bookGroups = $derived.by(() => {
 		const groups: Array<{ id: string; label: string; books: typeof filteredBooks }> = [];
 		const oldTestament = filteredBooks.filter((book) => book.testamentId === 1);
@@ -256,6 +418,12 @@
 			const nextVerses = await readBibleChapter(version, selection.bookId, selection.chapter);
 			if (token !== loadToken) return;
 			verses = nextVerses;
+			closePopover();
+			highlights = [];
+			chapterNoteRefs = [];
+			highlightError = '';
+			void loadHighlights(selection, token);
+			void loadChapterNoteRefs(selection, token);
 			saveReaderPreference(selection);
 			void workspace?.updatePreferences({ readerSelection: selection });
 		} catch (error) {
@@ -395,6 +563,430 @@
 			await onRetry?.();
 		}
 	}
+
+	/** Os destaques vivem só em `.openbible/index.sqlite`; uma falha aqui não pode
+	 * impedir a leitura do capítulo. */
+	async function loadHighlights(query: ReaderSelection, token: number) {
+		const currentStorage = storage;
+		if (!currentStorage) return;
+		try {
+			const records = await readChapterHighlights(currentStorage, query);
+			if (token !== loadToken) return;
+			highlights = records;
+		} catch {
+			if (token !== loadToken) return;
+			highlightError = 'Não foi possível carregar seus destaques deste capítulo.';
+		}
+	}
+
+	async function loadChapterNoteRefs(query: ReaderSelection, token: number) {
+		const currentStorage = storage;
+		if (!currentStorage) return;
+		try {
+			const refs = await readChapterNoteVerseRefs(currentStorage, query);
+			if (token !== loadToken) return;
+			chapterNoteRefs = refs;
+		} catch {
+			if (token !== loadToken) return;
+			chapterNoteRefs = [];
+		}
+	}
+
+	async function loadAllHighlights() {
+		const currentStorage = storage;
+		if (!currentStorage) return;
+		allHighlightsLoading = true;
+		try {
+			allHighlights = await readAllReaderHighlights(currentStorage);
+		} catch {
+			allHighlights = [];
+		} finally {
+			allHighlightsLoading = false;
+		}
+	}
+
+	function handleAllHighlightRemoved(highlight: ReaderHighlightRecord) {
+		allHighlights = allHighlights.filter((item) => !isSameReaderHighlight(item, highlight));
+		if (
+			selectedVersion?.id === highlight.versionId &&
+			selectedBookId === highlight.bookId &&
+			selectedChapter === highlight.chapter
+		) {
+			highlights = eraseHighlight(highlights, highlight);
+		}
+	}
+
+	function handleAllHighlightNavigate(highlight: ReaderHighlightRecord) {
+		highlightsSheetOpen = false;
+		void chooseSelection(selectionFor(highlight.versionId, highlight.bookId, highlight.chapter));
+	}
+
+	function openHighlightsSheet() {
+		highlightsSheetOpen = true;
+		void loadAllHighlights();
+	}
+
+	async function openNoteFromVerse(verseNumber: number) {
+		const ref = noteRefForVerse(verseNumber);
+		const currentStorage = storage;
+		if (!ref || !currentStorage) return;
+		splitNoteList = null;
+		const cached = recallReaderNote(ref.notePath);
+		if (cached) {
+			splitNote = cached;
+			return;
+		}
+		const id = noteIdFromPath(ref.notePath);
+		if (!id) return;
+		const note = await readNote(currentStorage, id);
+		if (note) {
+			rememberReaderNote(note);
+			splitNote = note;
+		}
+	}
+
+	function closeVerseNoteSelector() {
+		verseNoteSelectorOpen = false;
+		verseNoteSelectorAnchor = null;
+		verseNoteSelectorVerse = null;
+		verseNoteSelectorSummaries = [];
+		verseNoteSelectorError = '';
+		verseNoteSelectorLoading = false;
+	}
+
+	async function openNoteFromSummary(summary: VerseNoteSummary) {
+		closeVerseNoteSelector();
+		const currentStorage = storage;
+		if (!currentStorage) return;
+		splitNoteList = null;
+		const cached = recallReaderNote(summary.notePath);
+		if (cached) {
+			splitNote = cached;
+			return;
+		}
+		const note = await readNote(currentStorage, summary.id);
+		if (note) {
+			rememberReaderNote(note);
+			splitNote = note;
+		}
+	}
+
+	async function openAllNotesForVerse() {
+		const verse = verseNoteSelectorVerse;
+		const currentStorage = storage;
+		const query = chapterQuery();
+		closeVerseNoteSelector();
+		if (verse === null || !currentStorage || !query) return;
+		const refs = dedupeRefsByNotePath(noteRefsForVerse(chapterNoteRefs, query, verse));
+		const summaries = sortNoteSummariesByUpdatedAt(
+			await loadNoteSummariesForPaths(
+				currentStorage,
+				refs.map((ref) => ref.notePath)
+			)
+		);
+		const notes: Note[] = [];
+		for (const summary of summaries) {
+			const cached = recallReaderNote(summary.notePath);
+			if (cached) {
+				notes.push(cached);
+				continue;
+			}
+			const note = await readNote(currentStorage, summary.id);
+			if (!note) continue;
+			rememberReaderNote(note);
+			notes.push(note);
+		}
+		splitNote = null;
+		splitNoteList = notes;
+	}
+
+	async function handleNoteIconClick(verseNumber: number, anchor: HTMLElement) {
+		const currentStorage = storage;
+		const query = chapterQuery();
+		if (!currentStorage || !query) {
+			verseNoteSelectorError = 'Workspace indisponível.';
+			return;
+		}
+		const count = countDistinctNotesForVerse(chapterNoteRefs, query, verseNumber);
+		if (shouldOpenNoteDirectly(count)) {
+			await openNoteFromVerse(verseNumber);
+			return;
+		}
+		if (count < 2) return;
+		verseNoteSelectorVerse = verseNumber;
+		verseNoteSelectorAnchor = anchor;
+		verseNoteSelectorOpen = true;
+		verseNoteSelectorLoading = true;
+		verseNoteSelectorError = '';
+		verseNoteSelectorSummaries = [];
+		try {
+			const refs = dedupeRefsByNotePath(noteRefsForVerse(chapterNoteRefs, query, verseNumber));
+			verseNoteSelectorSummaries = sortNoteSummariesByUpdatedAt(
+				await loadNoteSummariesForPaths(
+					currentStorage,
+					refs.map((ref) => ref.notePath)
+				)
+			);
+		} catch {
+			verseNoteSelectorError = 'Não foi possível carregar as notas deste versículo.';
+			verseNoteSelectorOpen = false;
+		} finally {
+			verseNoteSelectorLoading = false;
+		}
+	}
+
+	function closeSplitPanel() {
+		splitNote = null;
+		splitNoteList = null;
+	}
+
+	function handleListNoteSelected(note: Note) {
+		rememberReaderNote(note);
+		splitNote = note;
+	}
+
+	function backToVerseNoteList() {
+		splitNote = null;
+	}
+
+	function closePopover() {
+		popoverOpen = false;
+		popoverAnchor = null;
+		popoverError = '';
+		popoverBusy = false;
+		verseSelection = null;
+		selectionAnchorVerse = null;
+		versePointerActive = false;
+		pendingToggleClose = false;
+	}
+
+	function releaseVersePointer(event: PointerEvent) {
+		const row = event.currentTarget;
+		if (row instanceof HTMLElement && row.hasPointerCapture(event.pointerId)) {
+			row.releasePointerCapture(event.pointerId);
+		}
+	}
+
+	function verseNumberFromPoint(clientX: number, clientY: number): number | null {
+		const node = document.elementFromPoint(clientX, clientY);
+		const row = node?.closest('[data-verse-row]');
+		if (!(row instanceof HTMLElement)) return null;
+		const verse = Number(row.dataset.verseRow);
+		return Number.isInteger(verse) && verse > 0 ? verse : null;
+	}
+
+	function applyVerseRange(verse: number, event: { shiftKey: boolean }, row: HTMLElement | null) {
+		const isWholeSelection =
+			verseSelection?.verseStart === verse && verseSelection?.verseEnd === verse;
+
+		if (event.shiftKey && selectionAnchorVerse !== null) {
+			verseSelection = formContinuousRange(selectionAnchorVerse, verse) ?? verseSelection;
+			return 'extend';
+		}
+		if (isWholeSelection && popoverOpen) return 'toggle-close';
+		if (popoverOpen && selectionAnchorVerse !== null) {
+			verseSelection = formContinuousRange(selectionAnchorVerse, verse) ?? verseSelection;
+			return 'extend';
+		}
+		selectionAnchorVerse = verse;
+		verseSelection = { verseStart: verse, verseEnd: verse };
+		popoverAnchor = row;
+		return 'replace';
+	}
+
+	function selectVerse(verse: number, event: MouseEvent | KeyboardEvent) {
+		if (suppressVerseClick) {
+			suppressVerseClick = false;
+			return;
+		}
+		const row = event.currentTarget as HTMLElement | null;
+		const action = applyVerseRange(verse, event, row);
+		if (action === 'toggle-close') {
+			closePopover();
+			return;
+		}
+
+		popoverError = '';
+		popoverOpen = true;
+	}
+
+	function handleVersePointerDown(verse: number, event: PointerEvent) {
+		if (event.button !== 0) return;
+		const row = event.currentTarget;
+		if (!(row instanceof HTMLElement)) return;
+		try {
+			row.setPointerCapture(event.pointerId);
+		} catch {
+			/* ponteiro já encerrado */
+		}
+		suppressVerseClick = true;
+		versePointerActive = true;
+		versePointerStart = verse;
+		versePointerDragged = false;
+		pendingToggleClose = applyVerseRange(verse, event, row) === 'toggle-close';
+		popoverError = '';
+	}
+
+	function handleVersePointerMove(event: PointerEvent) {
+		if (!versePointerActive || (event.buttons & 1) === 0) return;
+		const verse = verseNumberFromPoint(event.clientX, event.clientY);
+		if (verse === null || verse === versePointerStart) return;
+		versePointerDragged = true;
+		pendingToggleClose = false;
+		selectionAnchorVerse = versePointerStart;
+		verseSelection = formContinuousRange(versePointerStart, verse) ?? verseSelection;
+	}
+
+	function handleVersePointerUp(event: PointerEvent) {
+		if (!versePointerActive) return;
+		versePointerActive = false;
+		releaseVersePointer(event);
+		if (pendingToggleClose && !versePointerDragged) {
+			closePopover();
+			return;
+		}
+		popoverOpen = true;
+	}
+
+	function handleVersePointerCancel(event: PointerEvent) {
+		if (!versePointerActive) return;
+		versePointerActive = false;
+		pendingToggleClose = false;
+		releaseVersePointer(event);
+	}
+
+	function handleVerseKeydown(event: KeyboardEvent) {
+		if (event.key !== 'Escape' || !popoverOpen) return;
+		event.preventDefault();
+		closePopover();
+	}
+
+	function verseMarkLabel(covering: ReaderHighlight[]): string {
+		return covering
+			.map((highlight) => readerHighlightStyle(highlight.styleId)?.label ?? highlight.styleId)
+			.join(', ');
+	}
+
+	async function applyStyle(styleId: string) {
+		const target = highlightSelection;
+		const currentStorage = storage;
+		if (!currentStorage || !target) return;
+		const previous = highlights;
+		highlights = applyHighlight(highlights, target, styleId);
+		popoverBusy = true;
+		popoverError = '';
+		try {
+			await persistHighlight(currentStorage, { ...target, styleId });
+		} catch {
+			highlights = previous;
+			popoverError = 'Não foi possível salvar o destaque neste workspace.';
+		} finally {
+			popoverBusy = false;
+		}
+	}
+
+	async function eraseStyle() {
+		const target = highlightSelection;
+		const currentStorage = storage;
+		if (!currentStorage || !target) return;
+		const previous = highlights;
+		highlights = eraseHighlight(highlights, target);
+		popoverBusy = true;
+		popoverError = '';
+		try {
+			await removeHighlight(currentStorage, target);
+		} catch {
+			highlights = previous;
+			popoverError = 'Não foi possível apagar o destaque neste workspace.';
+		} finally {
+			popoverBusy = false;
+		}
+	}
+
+	async function copy(text: string) {
+		try {
+			await navigator.clipboard.writeText(text);
+			popoverError = '';
+		} catch {
+			popoverError = 'Não foi possível copiar. A área de transferência não está disponível.';
+		}
+	}
+
+	function copyReference() {
+		if (!selectionReference) return;
+		void copy(selectionReference);
+	}
+
+	function copyTextAndReference() {
+		const range = verseSelection;
+		if (!range || !selectedBook || !selectedVersion || selectedChapter === null) return;
+		void copy(
+			formatCopyTextAndReference({
+				book: selectedBook.name,
+				chapter: selectedChapter,
+				verseStart: range.verseStart,
+				verseEnd: range.verseEnd,
+				versionLabel: displayVersionAbbreviation(selectedVersion),
+				verses: selectedVerses
+			})
+		);
+	}
+
+	/** Criar nota nunca aplica destaque: a fatia grava só a nota nova com o fence
+	 * do intervalo e abre o split ao lado do leitor. */
+	async function createNoteFromSelection() {
+		const range = verseSelection;
+		const currentStorage = storage;
+		if (!currentStorage || !range || !selectedBook || !selectedVersion || selectedChapter === null)
+			return;
+		const reference = referenceLabel({
+			book: selectedBook.name,
+			chapter: selectedChapter,
+			verseStart: range.verseStart,
+			verseEnd: range.verseEnd
+		});
+		popoverBusy = true;
+		try {
+			const created = await createNote(currentStorage);
+			const fence = buildVerseFenceFromRange({
+				versionId: selectedVersion.id,
+				bookId: selectedBook.id,
+				book: selectedBook.name,
+				chapter: selectedChapter,
+				verseStart: range.verseStart,
+				verseEnd: range.verseEnd,
+				snapshot: formatVerseSnapshot(selectedVerses)
+			});
+			const saved = await saveNote(currentStorage, {
+				...created,
+				title: reference,
+				body: `\n# ${reference}\n\n${fence}\n`
+			});
+			await persistNoteVerseRefsToWorkspace(currentStorage, saved.path, [
+				{
+					blockIndex: 0,
+					versionId: selectedVersion.id,
+					bookId: selectedBook.id,
+					bookName: selectedBook.name,
+					chapter: selectedChapter,
+					verseStart: range.verseStart,
+					verseEnd: range.verseEnd
+				}
+			]);
+			rememberReaderNote(saved);
+			chapterNoteRefs = await readChapterNoteVerseRefs(currentStorage, {
+				versionId: selectedVersion.id,
+				bookId: selectedBook.id,
+				chapter: selectedChapter
+			});
+			splitNote = saved;
+			closePopover();
+		} catch {
+			popoverError = 'Não foi possível criar a nota neste workspace.';
+		} finally {
+			popoverBusy = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -472,7 +1064,7 @@
 	</DropdownMenu.Root>
 {/snippet}
 
-<div class="reader-page">
+<div class="reader-page" class:with-note={splitNote !== null || splitNoteList !== null}>
 	{#if state === 'loading'}
 		<section class="state-panel" aria-live="polite" role="status">
 			<p class="state-label">Leitura local</p>
@@ -520,7 +1112,11 @@
 			{/if}
 		</section>
 	{:else if selectedVersion && selectedBook && selectedChapter !== null}
-		<section class="reader-toolbar" class:toolbar-hidden={!toolbarVisible} aria-label="Controles do leitor">
+		<section
+			class="reader-toolbar"
+			class:toolbar-hidden={!toolbarVisible}
+			aria-label="Controles do leitor"
+		>
 			<div class="toolbar-shell">
 				<ButtonGroup class="reader-toolbar-group" aria-label="Navegação da Bíblia">
 					<Button
@@ -568,6 +1164,7 @@
 						aria-label="Versão"
 						role="combobox"
 						aria-haspopup="dialog"
+						aria-controls="bible-selector"
 						aria-expanded={selectorOpen && selectorMode === 'version'}
 						title={selectedVersion.name}
 					>
@@ -594,6 +1191,16 @@
 						title="Buscar no texto"
 					>
 						<Search size={16} strokeWidth={1.8} aria-hidden="true" />
+					</Button>
+					<Button
+						variant="ghost"
+						size="icon-sm"
+						class="toolbar-highlights-button"
+						onclick={() => openHighlightsSheet()}
+						aria-label="Destaques"
+						title="Destaques"
+					>
+						<Highlighter size={16} strokeWidth={1.8} aria-hidden="true" />
 					</Button>
 				</ButtonGroup>
 			</div>
@@ -623,6 +1230,26 @@
 				</Dialog.Content>
 			</Dialog.Root>
 		{/if}
+
+		<Sheet.Root bind:open={highlightsSheetOpen}>
+			<Sheet.Content side={isMobile.current ? 'bottom' : 'right'} class="highlights-sheet-content">
+				<Sheet.Header>
+					<Sheet.Title>Destaques</Sheet.Title>
+					<Sheet.Description>Todos os destaques salvos neste workspace.</Sheet.Description>
+				</Sheet.Header>
+				{#if allHighlightsLoading}
+					<p class="highlights-sheet-status" role="status">Carregando destaques...</p>
+				{:else}
+					<HighlightsList
+						highlights={allHighlights}
+						{catalog}
+						{storage}
+						onNavigate={handleAllHighlightNavigate}
+						onRemoved={handleAllHighlightRemoved}
+					/>
+				{/if}
+			</Sheet.Content>
+		</Sheet.Root>
 
 		{#snippet selectorPanel()}
 			{#if selectorMode === 'book'}
@@ -740,6 +1367,7 @@
 		{#if isMobile.current}
 			<Sheet.Root bind:open={selectorOpen}>
 				<Sheet.Content
+					id="bible-selector"
 					side="bottom"
 					class="selector-drawer-content"
 					data-selector-mode={selectorMode}
@@ -763,6 +1391,7 @@
 		{:else}
 			<Dialog.Root bind:open={selectorOpen}>
 				<Dialog.Content
+					id="bible-selector"
 					class="selector-dialog-content"
 					data-selector-mode={selectorMode}
 					aria-labelledby="bible-selector-title"
@@ -824,41 +1453,148 @@
 			<p class="inline-message" role="status">{searchMessage}</p>
 		{/if}
 
-		<main class="reading-column" aria-labelledby="chapter-heading">
-			<h2 id="chapter-heading" class="sr-only">{selectedBook.name} {selectedChapter}</h2>
-			{#if chapterLoading}
-				<p class="chapter-status" role="status">Carregando capítulo...</p>
-			{:else if chapterError}
-				<div class="chapter-error" role="alert">
-					<p>Não foi possível ler este capítulo.</p>
-					<button
-						class="button secondary"
-						type="button"
-						onclick={() =>
-							loadChapter({
-								versionId: selectedVersion.id,
-								bookId: selectedBook.id,
-								chapter: selectedChapter ?? 1
-							})}
-					>
-						Tentar novamente
-					</button>
-				</div>
-			{:else if verses.length === 0}
-				<p class="chapter-status" role="status">Este capítulo não possui versículos disponíveis.</p>
-			{:else}
-				<ol class="verse-list">
-					{#each verses as verse (verse.number)}
-						<li>
-							<span class="verse-number" aria-label={`Versículo ${verse.number}`}
-								>{verse.number}</span
-							>
-							<p>{verse.text}</p>
-						</li>
-					{/each}
-				</ol>
-			{/if}
-		</main>
+		{#if highlightError}
+			<p class="highlight-error" role="alert">{highlightError}</p>
+		{/if}
+
+		<BibleNoteSplit
+			note={splitNote}
+			listNotes={splitNoteList}
+			{storage}
+			onClose={closeSplitPanel}
+			onBackToList={backToVerseNoteList}
+			onSaved={(note) => (splitNote = note)}
+			onSelectListNote={handleListNoteSelected}
+		>
+			<main class="reading-column" aria-labelledby="chapter-heading">
+				<h2 id="chapter-heading" class="sr-only">{selectedBook.name} {selectedChapter}</h2>
+				{#if chapterLoading}
+					<p class="chapter-status" role="status">Carregando capítulo...</p>
+				{:else if chapterError}
+					<div class="chapter-error" role="alert">
+						<p>Não foi possível ler este capítulo.</p>
+						<button
+							class="button secondary"
+							type="button"
+							onclick={() =>
+								loadChapter({
+									versionId: selectedVersion.id,
+									bookId: selectedBook.id,
+									chapter: selectedChapter ?? 1
+								})}
+						>
+							Tentar novamente
+						</button>
+					</div>
+				{:else if verses.length === 0}
+					<p class="chapter-status" role="status">
+						Este capítulo não possui versículos disponíveis.
+					</p>
+				{:else}
+					<ol class="verse-list">
+						{#each verses as verse (verse.number)}
+							{@const covering = highlightsCoveringVerse(highlights, verse.number)}
+							{@const selected = verseSelection
+								? rangeCoversVerse(verseSelection, verse.number)
+								: false}
+							{@const hasUnderline = covering.some(
+								(highlight) => readerHighlightStyle(highlight.styleId)?.kind === 'underline'
+							)}
+							{@const hasWavy = covering.some(
+								(highlight) => readerHighlightStyle(highlight.styleId)?.kind === 'wavy'
+							)}
+							<li>
+								<div class="verse-row" data-selected={selected ? 'true' : undefined}>
+									<span class="verse-number-cell">
+										<span class="verse-number" aria-label={`Versículo ${verse.number}`}
+											>{verse.number}</span
+										>
+										{#if noteIndicatorVerses.includes(verse.number)}
+											{@const noteBadge = noteBadgeForVerse(verse.number)}
+											<button
+												type="button"
+												class="verse-note-button"
+												aria-label="Abrir nota"
+												title="Abrir nota"
+												onclick={(event) =>
+													void handleNoteIconClick(
+														verse.number,
+														event.currentTarget as HTMLElement
+													)}
+											>
+												<StickyNote size={12} strokeWidth={1.8} aria-hidden="true" />
+												{#if noteBadge}
+													<span class="verse-note-badge" aria-hidden="true">{noteBadge}</span>
+												{/if}
+											</button>
+										{/if}
+									</span>
+									<button
+										type="button"
+										class="verse-content"
+										data-verse-row={verse.number}
+										aria-pressed={selected}
+										onclick={(event) => selectVerse(verse.number, event)}
+										onpointerdown={(event) => handleVersePointerDown(verse.number, event)}
+										onpointermove={handleVersePointerMove}
+										onpointerup={handleVersePointerUp}
+										onpointercancel={handleVersePointerCancel}
+										onkeydown={handleVerseKeydown}
+									>
+										<span class="verse-body">
+											<span class="verse-marks" aria-hidden="true">
+												{#each covering as highlight (`${highlight.verseStart}-${highlight.verseEnd}`)}
+													<span
+														class="verse-mark"
+														data-style-id={highlight.styleId}
+														data-kind={readerHighlightStyle(highlight.styleId)?.kind}
+													></span>
+												{/each}
+											</span>
+											<span
+												class="verse-text"
+												data-underline={hasUnderline ? 'true' : undefined}
+												data-wavy={hasWavy ? 'true' : undefined}>{verse.text}</span
+											>
+											{#if covering.length > 0}
+												<span class="sr-only">Destacado: {verseMarkLabel(covering)}</span>
+											{/if}
+										</span>
+									</button>
+								</div>
+							</li>
+						{/each}
+					</ol>
+				{/if}
+			</main>
+		</BibleNoteSplit>
+
+		<SelectionActionPopover
+			open={popoverOpen}
+			anchor={popoverAnchor}
+			referenceLabel={selectionReference}
+			{activeStyleId}
+			errorMessage={popoverError}
+			busy={popoverBusy}
+			onApplyStyle={(styleId) => void applyStyle(styleId)}
+			onErase={() => void eraseStyle()}
+			onCopyReference={copyReference}
+			onCopyText={copyTextAndReference}
+			onCreateNote={() => void createNoteFromSelection()}
+			onClose={closePopover}
+		/>
+
+		<VerseNoteSelector
+			open={verseNoteSelectorOpen}
+			anchor={verseNoteSelectorAnchor}
+			mobile={isMobile.current}
+			summaries={verseNoteSelectorSummaries}
+			loading={verseNoteSelectorLoading}
+			errorMessage={verseNoteSelectorError}
+			onSelectNote={(summary) => void openNoteFromSummary(summary)}
+			onViewAll={() => void openAllNotesForVerse()}
+			onClose={closeVerseNoteSelector}
+		/>
 	{:else}
 		<section class="state-panel" aria-live="polite">
 			<h2>Nenhum capítulo disponível</h2>
@@ -874,6 +1610,13 @@
 		max-width: 1120px;
 		margin: 0 auto;
 		padding: 8px clamp(20px, 5vw, 64px) 80px;
+	}
+
+	.reader-page.with-note {
+		min-height: 0;
+		max-width: none;
+		flex: 1;
+		padding-bottom: 16px;
 	}
 
 	.text-action:hover {
@@ -1103,7 +1846,8 @@
 	}
 
 	:global(.toolbar-nav-button),
-	:global(.toolbar-search-button) {
+	:global(.toolbar-search-button),
+	:global(.toolbar-highlights-button) {
 		flex: 0 0 auto;
 		border-radius: 9999px;
 	}
@@ -1563,6 +2307,13 @@
 	:global(.search-drawer-content) {
 		max-height: min(560px, calc(100dvh - 24px));
 		padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+		border-color: var(--border);
+		background: var(--background);
+	}
+
+	:global(.dark .search-drawer-content) {
+		border-color: #292929;
+		background: #090909;
 	}
 
 	:global(.search-panel-header) {
@@ -1675,35 +2426,211 @@
 	}
 
 	.verse-list {
+		/* Tintas discretas: o texto continua legível porque a camada fica atrás dele. */
+		--pen-gold: #d9a441;
+		--pen-mint: #4f9d69;
+		--pen-sky: #4f83c2;
+		--pen-rose: #c4657f;
+		--pen-lilac: #8d7bc4;
+		--pen-alpha: 32%;
+		--ink-stroke: color-mix(in oklch, var(--foreground) 55%, transparent);
+
 		margin: 0;
 		padding: 20px 0 0;
 		list-style: none;
 	}
 
-	.verse-list li {
-		display: grid;
-		grid-template-columns: 32px minmax(0, 1fr);
-		gap: 12px;
-		align-items: start;
+	:global(.dark) .verse-list {
+		--pen-alpha: 42%;
 	}
 
 	.verse-list li + li {
 		margin-top: 16px;
 	}
 
+	.verse-row {
+		display: grid;
+		width: calc(100% + 12px);
+		grid-template-columns: 36px minmax(0, 1fr);
+		gap: 12px;
+		align-items: start;
+		margin-inline: -6px;
+	}
+
+	.verse-content {
+		display: block;
+		width: 100%;
+		border: 0;
+		border-radius: 8px;
+		background: transparent;
+		padding: 2px 6px;
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+		touch-action: pan-y;
+		user-select: none;
+	}
+
+	.verse-row[data-selected='true'] .verse-content {
+		background: color-mix(in oklch, var(--foreground) 8%, transparent);
+	}
+
+	.verse-content:hover {
+		background: color-mix(in oklch, var(--foreground) 4%, transparent);
+	}
+
+	.verse-row[data-selected='true'] .verse-content:hover {
+		background: color-mix(in oklch, var(--foreground) 8%, transparent);
+	}
+
+	.verse-content:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: -2px;
+	}
+
+	.verse-number-cell {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 2px;
+		padding-top: 2px;
+	}
+
 	.verse-number {
-		padding-top: 3px;
 		color: var(--muted-foreground);
 		font-size: 0.7rem;
 		text-align: right;
 	}
 
-	.verse-list p {
+	.verse-note-button {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border: 0;
+		border-radius: 4px;
+		background: transparent;
+		padding: 1px;
+		color: var(--muted-foreground);
+		cursor: pointer;
+	}
+
+	.verse-note-badge {
+		position: absolute;
+		top: -4px;
+		right: -6px;
+		min-width: 12px;
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		background: var(--background);
+		padding: 0 3px;
+		color: var(--foreground);
+		font-family: var(--font-mono);
+		font-size: 0.5rem;
+		font-weight: 600;
+		line-height: 1.3;
+		text-align: center;
+	}
+
+	.verse-note-button:hover {
+		color: var(--foreground);
+		background: color-mix(in oklch, var(--foreground) 6%, transparent);
+	}
+
+	.verse-note-button:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 1px;
+	}
+
+	:global(.highlights-sheet-content) {
+		width: min(100%, 420px);
+		max-width: 420px;
+		padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+		border-color: var(--border);
+		background: var(--background);
+	}
+
+	:global(.dark .highlights-sheet-content) {
+		border-color: #292929;
+		background: #090909;
+	}
+
+	.highlights-sheet-status {
+		margin: 16px 0 0;
+		color: var(--muted-foreground);
+		font-size: 0.8rem;
+	}
+
+	.verse-body {
+		position: relative;
+		display: block;
 		min-width: 0;
-		margin: 0;
+	}
+
+	.verse-marks,
+	.verse-mark {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+	}
+
+	.verse-text {
+		position: relative;
+		z-index: 1;
+		display: block;
+		min-width: 0;
 		font-size: 1.05rem;
 		line-height: 1.75;
 		overflow-wrap: anywhere;
+	}
+
+	.verse-text[data-underline='true'] {
+		text-decoration-line: underline;
+		text-decoration-thickness: 2px;
+		text-underline-offset: 0.22em;
+		text-decoration-color: var(--ink-stroke);
+	}
+
+	.verse-text[data-wavy='true'] {
+		text-decoration-line: underline;
+		text-decoration-style: wavy;
+		text-decoration-thickness: 1.5px;
+		text-underline-offset: 0.2em;
+		text-decoration-color: var(--ink-stroke);
+	}
+
+	.verse-mark[data-kind='pen'] {
+		inset: -2px -4px;
+		border-radius: 4px;
+	}
+
+	.verse-mark[data-style-id='pen-gold'] {
+		background: color-mix(in oklch, var(--pen-gold) var(--pen-alpha), transparent);
+	}
+	.verse-mark[data-style-id='pen-mint'] {
+		background: color-mix(in oklch, var(--pen-mint) var(--pen-alpha), transparent);
+	}
+	.verse-mark[data-style-id='pen-sky'] {
+		background: color-mix(in oklch, var(--pen-sky) var(--pen-alpha), transparent);
+	}
+	.verse-mark[data-style-id='pen-rose'] {
+		background: color-mix(in oklch, var(--pen-rose) var(--pen-alpha), transparent);
+	}
+	.verse-mark[data-style-id='pen-lilac'] {
+		background: color-mix(in oklch, var(--pen-lilac) var(--pen-alpha), transparent);
+	}
+
+	.verse-mark[data-kind='box'] {
+		inset: -3px -5px;
+		border-radius: 5px;
+		outline: 1.5px solid var(--ink-stroke);
+	}
+
+	.highlight-error {
+		margin: 20px 0 0;
+		color: var(--muted-foreground);
+		font-size: 0.78rem;
 	}
 
 	.chapter-error p {

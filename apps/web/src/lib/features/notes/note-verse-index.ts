@@ -1,3 +1,7 @@
+import { isSQLite } from '$lib/storage/empty-sqlite';
+import type { WorkspaceStorage } from '$lib/storage/types';
+import { getSql } from '$lib/features/bible/bible-reader';
+
 export interface NoteVerseRef {
 	id?: number;
 	notePath: string;
@@ -100,4 +104,103 @@ export async function deleteNoteVerseRefs(notePath: string, database?: SqlDataba
 
 export function getMemoryNoteVerseRefs(notePath: string): NoteVerseRef[] {
 	return memoryIndex.get(notePath) ?? [];
+}
+
+export function resetMemoryNoteVerseIndex(): void {
+	memoryIndex.clear();
+}
+
+export function listMemoryNoteVerseRefsForChapter(query: {
+	versionId: string;
+	bookId: number;
+	chapter: number;
+}): NoteVerseRef[] {
+	const refs: NoteVerseRef[] = [];
+	for (const noteRefs of memoryIndex.values()) {
+		for (const ref of noteRefs) {
+			if (
+				ref.versionId === query.versionId &&
+				ref.bookId === query.bookId &&
+				ref.chapter === query.chapter
+			) {
+				refs.push(ref);
+			}
+		}
+	}
+	return refs;
+}
+
+function mapNoteVerseRow(row: unknown[]): NoteVerseRef {
+	return {
+		notePath: String(row[0]),
+		blockIndex: Number(row[1]),
+		versionId: String(row[2]),
+		bookId: Number(row[3]),
+		bookName: String(row[4]),
+		chapter: Number(row[5]),
+		verseStart: Number(row[6]),
+		verseEnd: Number(row[7])
+	};
+}
+
+export function listChapterNoteVerseRefs(
+	database: SqlDatabase,
+	query: { versionId: string; bookId: number; chapter: number }
+): NoteVerseRef[] {
+	database.run(noteVerseIndexSchema());
+	const rows =
+		database.exec(
+			`SELECT note_path, block_index, version_id, book_id, book_name, chapter, verse_start, verse_end
+			 FROM note_verse_ref
+			 WHERE version_id = ? AND book_id = ? AND chapter = ?
+			 ORDER BY verse_start, verse_end`,
+			[query.versionId, query.bookId, query.chapter]
+		)[0]?.values ?? [];
+	return rows.map((row) => mapNoteVerseRow(row));
+}
+
+const NOTE_INDEX_PATH = '.openbible/index.sqlite';
+
+export async function readChapterNoteVerseRefs(
+	storage: WorkspaceStorage,
+	query: { versionId: string; bookId: number; chapter: number }
+): Promise<NoteVerseRef[]> {
+	const sql = await getSql();
+	const bytes = await storage.readFile(NOTE_INDEX_PATH);
+	const database =
+		bytes && isSQLite(bytes) ? new sql.Database(bytes) : new sql.Database();
+	try {
+		const persisted = listChapterNoteVerseRefs(database, query);
+		const memory = listMemoryNoteVerseRefsForChapter(query);
+		if (memory.length === 0) return persisted;
+		const seen = new Set(persisted.map((ref) => `${ref.notePath}:${ref.blockIndex}`));
+		const merged = [...persisted];
+		for (const ref of memory) {
+			const key = `${ref.notePath}:${ref.blockIndex}`;
+			if (!seen.has(key)) merged.push(ref);
+		}
+		return merged;
+	} finally {
+		database.close();
+	}
+}
+
+export async function persistNoteVerseRefsToWorkspace(
+	storage: WorkspaceStorage,
+	notePath: string,
+	refs: VerseReferenceInput[]
+): Promise<NoteVerseRef[]> {
+	const sql = await getSql();
+	const bytes = await storage.readFile(NOTE_INDEX_PATH);
+	const database =
+		bytes && isSQLite(bytes) ? new sql.Database(bytes) : new sql.Database();
+	try {
+		const normalized = await reindexNoteVerses(notePath, refs, database);
+		await storage.ensureDirectory('.openbible');
+		await storage.writeFile(NOTE_INDEX_PATH, database.export());
+		memoryIndex.set(notePath, normalized);
+		return normalized;
+	} finally {
+		database.close();
+	}
 }

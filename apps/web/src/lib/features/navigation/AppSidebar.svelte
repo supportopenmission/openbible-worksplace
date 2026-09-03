@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { BookOpen, GraduationCap, NotebookPen, ScrollText, Settings } from '@lucide/svelte';
+	import { BookOpen, GraduationCap, Highlighter, NotebookPen, ScrollText, Settings } from '@lucide/svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import { resolve } from '$app/paths';
 	import ThemeToggle from './ThemeToggle.svelte';
@@ -9,6 +9,7 @@
 	const links = [
 		{ label: 'Bíblia', href: '/bible', icon: BookOpen },
 		{ label: 'Notas', href: '/notes', icon: NotebookPen },
+		{ label: 'Destaques', href: '/highlights', icon: Highlighter },
 		{ label: 'Sermões', href: '/sermons', icon: ScrollText },
 		{ label: 'Estudos', href: '/study', icon: GraduationCap },
 		{ label: 'Configurações', href: '/config', icon: Settings }
@@ -224,7 +225,7 @@
 			left: 0;
 			z-index: 20;
 			display: grid;
-			grid-template-columns: repeat(5, minmax(0, 1fr));
+			grid-template-columns: repeat(6, minmax(0, 1fr));
 			border-top: 1px solid var(--border);
 			background: color-mix(in oklch, var(--background) 92%, transparent);
 			padding: 6px 8px max(6px, env(safe-area-inset-bottom));

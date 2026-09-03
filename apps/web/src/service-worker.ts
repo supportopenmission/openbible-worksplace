@@ -3,7 +3,7 @@
 import { build, files, prerendered, version } from '$service-worker';
 
 const CACHE_NAME = `openbible-${version}`;
-const APP_ROUTES = ['/', '/bible', '/sermons', '/study', '/config'];
+const APP_ROUTES = ['/', '/bible', '/notes', '/highlights', '/sermons', '/study', '/config'];
 const PRECACHE_ASSETS = [...build, ...files, ...prerendered];
 const worker = self as unknown as ServiceWorkerGlobalScope;
 

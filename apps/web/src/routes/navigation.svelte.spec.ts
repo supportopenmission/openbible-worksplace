@@ -24,7 +24,7 @@ describe('AppSidebar', () => {
 			.element(primaryNavigation.getByRole('link', { name: 'Estudos' }))
 			.toBeInTheDocument();
 		await expect
-			.element(primaryNavigation.getByRole('link', { name: 'Configuração' }))
+			.element(primaryNavigation.getByRole('link', { name: 'Configurações' }))
 			.toBeInTheDocument();
 	});
 
@@ -47,9 +47,22 @@ describe('AppSidebar', () => {
 			.element(mobileNavigation.getByRole('link', { name: 'Bíblia' }))
 			.toBeInTheDocument();
 		await expect
-			.element(mobileNavigation.getByRole('link', { name: 'Configuração' }))
+			.element(mobileNavigation.getByRole('link', { name: 'Configurações' }))
 			.toBeInTheDocument();
 		await expect.element(mobileNavigation).toHaveAttribute('data-safe-area', 'bottom');
+	});
+
+	it('includes Destaques next to Bible and Notes', async () => {
+		// SPECSFY: US-002 FR-002 NFR-001 AC-016
+		await render(AppSidebarTestHost, { props: { currentPath: '/highlights' } });
+
+		const mobileNavigation = page.getByRole('navigation', { name: /navegação mobile/i });
+		const highlightsLink = mobileNavigation.getByRole('link', { name: 'Destaques' });
+		await expect.element(highlightsLink).toBeInTheDocument();
+		await expect.element(highlightsLink).toHaveAttribute('href', expect.stringContaining('/highlights'));
+		await expect.element(highlightsLink).toHaveAttribute('aria-current', 'page');
+		await expect.element(mobileNavigation.getByRole('link', { name: 'Bíblia' })).toBeInTheDocument();
+		await expect.element(mobileNavigation.getByRole('link', { name: 'Notas' })).toBeInTheDocument();
 	});
 
 	// SPECSFY: US-003 FR-006 FR-007 NFR-002 AC-011 AC-012

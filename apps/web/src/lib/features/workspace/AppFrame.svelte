@@ -23,11 +23,12 @@
 	let creatingNote = $state(false);
 
 	const isNotesList = $derived(page.url.pathname === '/notes');
+	const isHighlightsList = $derived(page.url.pathname === '/highlights');
 	const isNoteEditor = $derived(
 		page.url.pathname.startsWith('/notes/') && page.url.pathname !== '/notes'
 	);
 	const headerTitle = $derived(
-		isNoteEditor ? 'Nota' : isNotesList ? 'Notas' : ''
+		isNoteEditor ? 'Nota' : isNotesList ? 'Notas' : isHighlightsList ? 'Destaques' : ''
 	);
 
 	function setNoteWidth(width: NoteEditorWidth) {
@@ -212,8 +213,11 @@
 	}
 
 	.shell-main {
+		display: flex;
 		min-width: 0;
+		min-height: 0;
 		flex: 1;
+		flex-direction: column;
 	}
 
 	.desktop-header {

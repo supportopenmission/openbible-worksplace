@@ -157,6 +157,36 @@ export async function saveNote(
 	return result;
 }
 
+export type NoteSummary = {
+	notePath: string;
+	id: string;
+	title: string;
+	updatedAt: string;
+};
+
+export async function loadNoteSummariesForPaths(
+	storage: WorkspaceStorage,
+	paths: string[]
+): Promise<NoteSummary[]> {
+	const summaries: NoteSummary[] = [];
+	for (const notePath of paths) {
+		const bytes = await storage.readFile(notePath);
+		if (!bytes) continue;
+		try {
+			const parsed = parseNoteFile(decoder.decode(bytes), notePath);
+			summaries.push({
+				notePath: parsed.meta.path,
+				id: parsed.meta.id,
+				title: parsed.meta.title,
+				updatedAt: parsed.meta.updatedAt
+			});
+		} catch {
+			// Malformed notes stay on disk but are omitted from selector summaries.
+		}
+	}
+	return summaries;
+}
+
 export async function trashNote(storage: WorkspaceStorage, id: string): Promise<void>;
 export async function trashNote(id: string): Promise<void>;
 export async function trashNote(storageOrId: WorkspaceStorage | string, id?: string): Promise<void> {

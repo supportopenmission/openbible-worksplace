@@ -457,7 +457,7 @@
 	data-testid="note-canvas"
 	data-viewport-fill="true"
 	data-editor-width={notePageChrome.width}
-	role="region"
+	role="group"
 	aria-label="Editor da nota"
 	style:--note-editor-max-width={NOTE_EDITOR_WIDTHS[notePageChrome.width].maxWidth}
 	onpointermove={handleCanvasPointerMove}

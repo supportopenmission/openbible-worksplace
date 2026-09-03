@@ -1,6 +1,6 @@
 import type { WorkspaceStorage } from '$lib/storage/types';
 import { syncTitleWithH1 } from './note-markdown';
-import { reindexNoteVerses, type VerseReferenceInput } from './note-verse-index';
+import { persistNoteVerseRefsToWorkspace, type VerseReferenceInput } from './note-verse-index';
 import type { Note } from './note-types';
 import { saveNote } from './notes-repository';
 import { extractVerseFencesFromMarkdown } from './verse-block-extension';
@@ -68,7 +68,7 @@ export function createNoteEditorService(options: NoteEditorServiceOptions) {
 			updatedAt: noteFile.meta.updatedAt
 		});
 		const refs = verseRefsFromMarkdown(noteFile.body, saved.path);
-		await reindexNoteVerses(saved.path, refs);
+		await persistNoteVerseRefsToWorkspace(options.storage, saved.path, refs);
 		options.note = saved;
 		return saved;
 	}

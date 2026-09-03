@@ -6,11 +6,13 @@
 	let {
 		notes,
 		onOpen,
-		onDelete
+		onDelete,
+		hideDelete = false
 	}: {
 		notes: Note[];
 		onOpen: (noteId: string) => void;
-		onDelete: (note: Note, event: MouseEvent) => void;
+		onDelete?: (note: Note, event: MouseEvent) => void;
+		hideDelete?: boolean;
 	} = $props();
 
 	function formatDate(iso: string): string {
@@ -33,26 +35,28 @@
 				<span class="card-title">{note.title || 'Sem título'}</span>
 				<span class="card-meta">{formatDate(note.updatedAt)}</span>
 			</button>
-			<div class="card-actions">
-				<Button
-					type="button"
-					variant="ghost"
-					size="icon-sm"
-					aria-label={`Editar nota ${note.title || note.id}`}
-					onclick={() => onOpen(note.id)}
-				>
-					<Pencil size={15} strokeWidth={1.75} aria-hidden="true" />
-				</Button>
-				<Button
-					type="button"
-					variant="ghost"
-					size="icon-sm"
-					aria-label={`Apagar nota ${note.title || note.id}`}
-					onclick={(event) => onDelete(note, event)}
-				>
-					<Trash2 size={15} strokeWidth={1.75} aria-hidden="true" />
-				</Button>
-			</div>
+			{#if !hideDelete}
+				<div class="card-actions">
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						aria-label={`Editar nota ${note.title || note.id}`}
+						onclick={() => onOpen(note.id)}
+					>
+						<Pencil size={15} strokeWidth={1.75} aria-hidden="true" />
+					</Button>
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						aria-label={`Apagar nota ${note.title || note.id}`}
+						onclick={(event) => onDelete?.(note, event)}
+					>
+						<Trash2 size={15} strokeWidth={1.75} aria-hidden="true" />
+					</Button>
+				</div>
+			{/if}
 		</article>
 	{:else}
 		<p class="empty">Nenhuma nota ainda.</p>

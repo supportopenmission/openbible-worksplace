@@ -57,7 +57,7 @@ function locateWasm(file: string): string {
 	return new URL(`../../../../../../node_modules/sql.js/dist/${file}`, import.meta.url).pathname;
 }
 
-async function getSql(): Promise<SqlJs> {
+export async function getSql(): Promise<SqlJs> {
 	sqlPromise ??= initSqlJs({ locateFile: locateWasm });
 	return sqlPromise;
 }
