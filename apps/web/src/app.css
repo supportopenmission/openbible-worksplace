@@ -161,6 +161,15 @@ body {
 	}
 }
 
+/* App nativo: sem zoom de foco no iOS em dispositivos touch. */
+@media (pointer: coarse) {
+	input,
+	select,
+	textarea {
+		font-size: 16px;
+	}
+}
+
 *,
 *::before,
 *::after {

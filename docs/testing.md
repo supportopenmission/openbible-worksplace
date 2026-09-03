@@ -3,7 +3,7 @@
 <!-- specsfy:documentator:start -->
 ## Resumo
 
-- Arquivos de teste: 31.
+- Arquivos de teste: 32.
 - Runner: não identificado.
 - Scripts: build: turbo run build; check-types: turbo run check-types; dev: turbo run dev; lint: turbo run lint; format: prettier --write .; format:check: prettier --check ..
 
@@ -35,6 +35,7 @@
 | apps/web/src/lib/index.test.ts |
 | apps/web/src/lib/navigation/home-preference.test.ts |
 | apps/web/src/lib/pwa/daily-reminder.test.ts |
+| apps/web/src/lib/pwa/mobile-viewport.test.ts |
 | apps/web/src/lib/pwa/offline-reminder.test.ts |
 | apps/web/src/lib/pwa/pwa-shell.test.ts |
 | apps/web/src/lib/pwa/pwa.test.ts |

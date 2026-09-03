@@ -9,7 +9,7 @@
 
 | Arquivo |
 | --- |
-| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/0.BNQnwOfD.css |
+| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/0.BtzHsioR.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/2.C16iMyaC.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/3.CqSNm3nF.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/4.CJLrh___.css |
@@ -22,7 +22,7 @@
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/NoteCardList.715T3UT6.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/ProductPage.Bt54Nk6E.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/RemoteBibleImport.CJit26Yt.css |
-| apps/web/.svelte-kit/output/client/_app/immutable/assets/0.BNQnwOfD.css |
+| apps/web/.svelte-kit/output/client/_app/immutable/assets/0.BtzHsioR.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/2.C16iMyaC.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/3.CqSNm3nF.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/4.CJLrh___.css |
@@ -41,7 +41,7 @@
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/NoteCardList.715T3UT6.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/ProductPage.Bt54Nk6E.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/RemoteBibleImport.CJit26Yt.css |
-| apps/web/.svelte-kit/output/server/_app/immutable/assets/_layout.CRge9OFm.css |
+| apps/web/.svelte-kit/output/server/_app/immutable/assets/_layout.DXRj3vcn.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.C16iMyaC.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.CB19i-ra.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.CJLrh___.css |

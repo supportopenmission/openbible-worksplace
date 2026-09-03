@@ -5,8 +5,8 @@
 
 | Tipo | Quantidade |
 | --- | --- |
-| Código | 365 |
-| Testes | 31 |
+| Código | 366 |
+| Testes | 32 |
 
 ## Diagramas
 
