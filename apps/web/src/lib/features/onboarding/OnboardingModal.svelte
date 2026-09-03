@@ -754,15 +754,15 @@
 		border-top: 1px solid var(--border);
 	}
 
-	.import-tabs {
+	:global(.import-tabs) {
 		margin-top: 20px;
 	}
 
-	.import-tabs :global([data-slot='tabs-content'][data-state='inactive']) {
+	:global(.import-tabs [data-slot='tabs-content'][data-state='inactive']) {
 		display: none;
 	}
 
-	.import-tab-panel {
+	:global(.import-tab-panel) {
 		margin-top: 14px;
 		outline: none;
 	}

@@ -1659,6 +1659,7 @@
 		display: flex;
 		flex-direction: column;
 		width: 100%;
+		height: 100%;
 		max-width: none;
 		margin: 0;
 		padding: 8px clamp(20px, 5vw, 64px) 80px;
@@ -1690,7 +1691,7 @@
 		padding: 26px 0;
 	}
 
-	.bible-empty {
+	:global(.bible-empty) {
 		max-width: 560px;
 		min-height: min(56dvh, 420px);
 		margin: 0 auto;
@@ -1705,15 +1706,19 @@
 		letter-spacing: -0.01em;
 	}
 
-	.bible-empty-actions {
+	:global(.bible-empty-actions) {
 		flex-direction: row;
 		flex-wrap: wrap;
 		justify-content: center;
 		align-items: center;
+		max-width: none;
 	}
 
-	.bible-empty-actions .text-action {
+	:global(.bible-empty-actions > .text-action) {
+		flex-basis: 100%;
 		margin-top: 0;
+		justify-content: center;
+		text-align: center;
 	}
 
 	:global(.bible-import-dialog) {
@@ -1735,17 +1740,18 @@
 	}
 
 	@media (max-width: 560px) {
-		.bible-empty-actions {
+		:global(.bible-empty-actions) {
 			flex-direction: column;
 			align-items: stretch;
 		}
 
-		.bible-empty-actions > .button {
+		:global(.bible-empty-actions > .button) {
 			width: 100%;
 			min-height: 42px;
 		}
 
-		.bible-empty-actions > .text-action {
+		:global(.bible-empty-actions > .text-action) {
+			flex-basis: auto;
 			text-align: center;
 		}
 	}

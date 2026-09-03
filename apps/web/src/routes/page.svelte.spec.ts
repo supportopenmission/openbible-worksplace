@@ -12,16 +12,11 @@ describe('+page.svelte', () => {
 		vi.clearAllMocks();
 	});
 
-	it('renders the page title', async () => {
+	it('renders the logo without a text title', async () => {
 		await render(Page, { props: { initialWorkspaceConfigured: true } });
 
-		await expect.element(page.getByRole('heading', { name: 'OpenBible' })).toBeInTheDocument();
-	});
-
-	it('renders the Bible status in the project surface', async () => {
-		await render(Page, { props: { initialWorkspaceConfigured: true } });
-
-		await expect.element(page.getByText(/bíblias pendentes/i)).toBeInTheDocument();
+		await expect.element(page.getByRole('img', { name: 'OpenBible' })).toBeInTheDocument();
+		expect(page.getByRole('heading', { name: 'OpenBible' })).not.toBeInTheDocument();
 	});
 
 	// SPECSFY: US-001 FR-001 FR-002 FR-003 NFR-001 AC-001

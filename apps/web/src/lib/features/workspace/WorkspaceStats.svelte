@@ -99,7 +99,7 @@
 
 <style>
 	.workspace-stats {
-		max-width: 680px;
+		width: 100%;
 		display: grid;
 		gap: 14px;
 	}

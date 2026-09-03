@@ -26,8 +26,8 @@
 <Sidebar.Root collapsible="icon" class="app-sidebar">
 	<Sidebar.Header class="sidebar-header">
 		<a class="brand-link" href={resolve('/')} aria-label="OpenBible, início">
-			<span class="brand-wordmark">OpenBible</span>
-			<span class="brand-monogram" aria-hidden="true">OB</span>
+			<img class="brand-logo-full" src="/logo.png" alt="" aria-hidden="true" />
+			<img class="brand-logo-mark" src="/logo-minimal.png" alt="" aria-hidden="true" />
 		</a>
 	</Sidebar.Header>
 
@@ -99,19 +99,24 @@
 		text-decoration: none;
 	}
 
-	.brand-wordmark {
-		font-size: 0.92rem;
-		font-weight: 600;
-		letter-spacing: -0.03em;
-		line-height: 1;
+	.brand-logo-full {
+		display: block;
+		height: 24px;
+		width: auto;
+		filter: invert(1);
 	}
 
-	.brand-monogram {
+	.brand-logo-mark {
 		display: none;
-		font-family: var(--font-mono);
-		font-size: 0.68rem;
-		font-weight: 600;
-		letter-spacing: 0.06em;
+		height: 28px;
+		width: 28px;
+		object-fit: contain;
+		filter: invert(1);
+	}
+
+	:global(.dark) .brand-logo-full,
+	:global(.dark) .brand-logo-mark {
+		filter: none;
 	}
 
 	:global(.sidebar-content) {
@@ -178,7 +183,7 @@
 		background: color-mix(in oklch, var(--sidebar-foreground) 6%, transparent);
 	}
 
-	:global([data-collapsible='icon'] .brand-wordmark) {
+	:global([data-collapsible='icon'] .brand-logo-full) {
 		display: none;
 	}
 
@@ -186,10 +191,8 @@
 		justify-content: center;
 	}
 
-	:global([data-collapsible='icon'] .brand-monogram) {
-		display: inline-flex;
-		width: 100%;
-		justify-content: center;
+	:global([data-collapsible='icon'] .brand-logo-mark) {
+		display: block;
 	}
 
 	:global([data-collapsible='icon'] .nav-link[data-active='true']::before) {

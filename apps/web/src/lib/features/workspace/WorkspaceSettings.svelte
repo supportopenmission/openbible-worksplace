@@ -126,7 +126,7 @@
 
 <style>
 	.workspace-settings {
-		max-width: 680px;
+		width: 100%;
 	}
 
 	.workspace-settings:not(.embedded) {

@@ -62,6 +62,29 @@ describe('/bible empty state', () => {
 		await expect.element(page.getByRole('button', { name: /importar arquivos/i })).toBeInTheDocument();
 		await expect.element(page.getByRole('button', { name: /usar url do bucket/i })).toBeInTheDocument();
 		await expect.element(page.getByRole('link', { name: /abrir configurações/i })).toBeInTheDocument();
+		const configLink = (await page
+			.getByRole('link', { name: /abrir configurações/i })
+			.element()) as unknown as HTMLElement;
+		expect(window.getComputedStyle(configLink).justifyContent).toBe('center');
+	});
+
+	it('keeps action buttons in a row on desktop', async () => {
+		await page.viewport(1440, 900);
+		await render(Page, { props: { storageOverride: createStorage() } });
+		await expect.element(page.getByText(/nenhuma bíblia instalada/i)).toBeInTheDocument();
+
+		const primary = (await page
+			.getByRole('button', { name: /importar arquivos/i })
+			.element()) as unknown as HTMLElement;
+		const secondary = (await page
+			.getByRole('button', { name: /usar url do bucket/i })
+			.element()) as unknown as HTMLElement;
+		const first = primary.getBoundingClientRect();
+		const second = secondary.getBoundingClientRect();
+		expect(
+			Math.abs(first.y - second.y),
+			`primary y=${first.y} h=${first.height} secondary y=${second.y} h=${second.height}`
+		).toBeLessThanOrEqual(1);
 	});
 
 	it('opens local import in a dialog instead of the onboarding', async () => {

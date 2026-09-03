@@ -113,7 +113,7 @@
 					{/if}
 				</div>
 			</header>
-			<header class="mobile-header">
+			<header class="mobile-header" class:with-context={notePageChrome.active || isNotesList}>
 				{#if notePageChrome.active}
 					<nav class="mobile-breadcrumb" aria-label="Breadcrumb">
 						<a href={resolve('/notes')}>Notas</a>
@@ -205,11 +205,16 @@
 
 	:global(.app-sidebar-provider) {
 		min-height: 100dvh;
+		height: 100dvh;
+		overflow: hidden;
 		background: var(--background);
 	}
 
 	:global(.shell-content) {
 		min-width: 0;
+		height: 100%;
+		min-height: 0;
+		overflow: hidden;
 	}
 
 	.shell-main {
@@ -219,10 +224,15 @@
 		min-height: 0;
 		flex: 1;
 		flex-direction: column;
+		overflow-y: auto;
+		overscroll-behavior: contain;
 	}
 
 	.desktop-header {
 		display: flex;
+		position: sticky;
+		top: 0;
+		z-index: 10;
 		align-items: center;
 		justify-content: space-between;
 		gap: 16px;
@@ -348,6 +358,10 @@
 		}
 
 		.mobile-header {
+			display: none;
+		}
+
+		.mobile-header.with-context {
 			display: flex;
 		}
 

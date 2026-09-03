@@ -9,7 +9,7 @@
 	import { detectStorageKind } from '$lib/storage/environment';
 	import { chooseWorkspaceStorage, createConfiguredStorage } from '$lib/storage/storage-registry';
 	import { loadWorkspaceConfig } from '$lib/storage/workspace';
-	import type { ImportResult, StorageKind, WorkspaceStorage } from '$lib/storage/types';
+	import type { StorageKind, WorkspaceStorage } from '$lib/storage/types';
 	import type { OnboardingStep } from '$lib/features/onboarding/onboarding-copy';
 
 	let {
@@ -25,10 +25,10 @@
 	let selectedStorage = $state<WorkspaceStorage | null>(null);
 	let onboardingClosed = $state(false);
 	let importRequested = $state(false);
-	let importStatus = $state<'pending' | 'complete' | 'partial'>('pending');
 	let initialError = $state('');
 	let redirecting = $state(false);
 	let onboardingStep = $state<OnboardingStep>('intro');
+	let logoFailed = $state(false);
 	let storageMode = $state<StorageKind>(
 		typeof window === 'undefined' ? 'opfs' : detectStorageKind()
 	);
@@ -43,7 +43,6 @@
 
 	async function syncFromWorkspace() {
 		if (!workspace) return;
-		if (workspace.config) importStatus = workspace.config.bibleImportStatus;
 		if (workspace.error) initialError = workspace.error;
 		if (workspace.status === 'ready' && !importRequested) onboardingClosed = true;
 		if (workspace.status === 'unconfigured') onboardingClosed = false;
@@ -70,7 +69,6 @@
 			if (selectedStorage) {
 				const config = await loadWorkspaceConfig(selectedStorage);
 				if (config) {
-					importStatus = config.bibleImportStatus;
 					if (!importRequested) {
 						onboardingClosed = true;
 						redirectToPreferredHome();
@@ -96,17 +94,11 @@
 	}
 
 	async function deferImport() {
-		importStatus = 'pending';
 		await closeOnboarding();
 	}
 
-	async function finishOnboarding(results: ImportResult[]) {
-		if (results.some((result) => result.status === 'imported')) {
-			importStatus = results.every((result) => result.status === 'imported')
-				? 'complete'
-				: 'partial';
-		}
-		await closeOnboarding();
+	function finishOnboarding() {
+		void closeOnboarding();
 	}
 
 	function redirectToPreferredHome() {
@@ -143,36 +135,18 @@
 	{:else}
 		<main class="project-home">
 			<div class="home-intro">
-				<img class="home-logo" src="/logo.png" alt="Logo do OpenBible" />
+				{#if !logoFailed}
+					<img class="home-logo" src="/logo.png" alt="OpenBible" onerror={() => (logoFailed = true)} />
+				{:else}
+					<h1>OpenBible</h1>
+				{/if}
 				<p class="eyebrow">Seu espaço de estudo</p>
-				<h1>OpenBible</h1>
 				<p class="description">
 					Um lugar calmo para ler, estudar e preparar o que você vai compartilhar.
 				</p>
 			</div>
 			<div class="home-actions">
 				<InitialScreenPicker />
-				<div class="workspace-status" aria-live="polite">
-					<span
-						class:status-complete={importStatus === 'complete'}
-						class="status-dot"
-						aria-hidden="true"
-					></span>
-					<strong
-						>{importStatus === 'pending'
-							? 'Bíblias pendentes'
-							: importStatus === 'partial'
-								? 'Importação parcial'
-								: 'Bíblias prontas'}</strong
-					>
-					<span
-						>{importStatus === 'pending'
-							? 'Você pode importar seus arquivos SQLite quando quiser.'
-							: importStatus === 'partial'
-								? 'Alguns arquivos precisam de atenção.'
-								: 'Sua biblioteca está disponível no workspace.'}</span
-					>
-				</div>
 			</div>
 		</main>
 	{/if}
@@ -237,38 +211,10 @@
 		min-width: 0;
 	}
 
-	.workspace-status {
-		display: grid;
-		grid-template-columns: auto 1fr;
-		column-gap: 10px;
-		margin-top: 48px;
-		padding: 16px 0;
-		border-block: 1px solid var(--border);
-	}
-
-	.workspace-status > span:last-child {
-		grid-column: 2;
-		color: var(--muted-foreground);
-		font-size: 0.84rem;
-		line-height: 1.5;
-	}
-
-	.status-dot {
-		width: 7px;
-		height: 7px;
-		margin-top: 6px;
-		border-radius: 50%;
-		background: var(--muted-foreground);
-	}
-
-	.status-dot.status-complete {
-		background: var(--foreground);
-	}
-
-	@media (max-width: 760px) {
+	@media (max-width: 1024px) {
 		.project-home {
-			grid-template-columns: 1fr;
-			align-content: center;
+			grid-template-columns: minmax(0, 560px);
+			justify-content: center;
 			gap: 48px;
 			padding-right: max(24px, env(safe-area-inset-right));
 			padding-bottom: max(24px, env(safe-area-inset-bottom));

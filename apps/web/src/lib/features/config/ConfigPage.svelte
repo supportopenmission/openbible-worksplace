@@ -64,6 +64,7 @@
 <style>
 	.config-page {
 		max-width: 720px;
+		width: 100%;
 		margin: 0 auto;
 		padding: 8px clamp(20px, 5vw, 64px) 80px;
 	}
