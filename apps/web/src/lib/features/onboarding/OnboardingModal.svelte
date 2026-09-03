@@ -38,28 +38,20 @@
 
 	const steps = Object.keys(onboardingCopy) as OnboardingStep[];
 
-	let step = $state<OnboardingStep>(initialStep);
+	let step = $state<OnboardingStep>('intro');
 	let progress = $state(0);
-	let errorMessage = $state(initialError);
-	let selectedStorage = $state<WorkspaceStorage | null>(storage);
+	let errorMessage = $state('');
+	let selectedStorage = $state<WorkspaceStorage | null>(null);
 	let selectedFiles = $state<File[]>([]);
 	let results = $state<ImportResult[]>([]);
 	let importStarted = $state(false);
 	let processing = $state(false);
 	let statusMessage = $state('');
 	let fileInput = $state<HTMLInputElement | undefined>();
-	let displayedInitialError = $state(initialError);
+	let displayedInitialError = $state('');
 
-	const copy = $derived(onboardingCopy[step]);
-	const stepNumber = $derived(steps.indexOf(step) + 1);
-	const hasImported = $derived(results.some((result) => result.status === 'imported'));
-	const hasRejected = $derived(results.some((result) => result.status === 'rejected'));
-	const showProgress = $derived(
-		processing || progress > 0 || step === 'installing' || (step === 'import' && importStarted)
-	);
-
-	$effect(() => {
-		if (storage && !selectedStorage) selectedStorage = storage;
+	$effect.pre(() => {
+		step = initialStep;
 	});
 
 	$effect(() => {
@@ -68,6 +60,18 @@
 			errorMessage = initialError;
 		}
 	});
+
+	$effect(() => {
+		if (storage && !selectedStorage) selectedStorage = storage;
+	});
+
+	const copy = $derived(onboardingCopy[step]);
+	const stepNumber = $derived(steps.indexOf(step) + 1);
+	const hasImported = $derived(results.some((result) => result.status === 'imported'));
+	const hasRejected = $derived(results.some((result) => result.status === 'rejected'));
+	const showProgress = $derived(
+		processing || progress > 0 || step === 'installing' || (step === 'import' && importStarted)
+	);
 
 	onMount(() => {
 		void moveFocus();
