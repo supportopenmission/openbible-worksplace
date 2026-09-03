@@ -7,6 +7,8 @@
     "dev": "vite dev",
     "build": "svelte-kit sync && vite build",
     "preview": "bun run build && wrangler dev --local",
+    "deploy": "wrangler deploy",
+    "deploy:preview": "wrangler versions upload",
     "check-types": "svelte-kit sync && tsc --noEmit",
     "check": "svelte-kit sync && tsc --noEmit",
     "check:watch": "svelte-kit sync && tsc --noEmit --watch",
