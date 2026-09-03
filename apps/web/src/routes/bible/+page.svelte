@@ -44,4 +44,19 @@
 	}
 </script>
 
+<h1 class="sr-only">Bíblia</h1>
 <BibleReader {storage} {initialError} onRetry={retryStorage} />
+
+<style>
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		border: 0;
+		white-space: nowrap;
+	}
+</style>

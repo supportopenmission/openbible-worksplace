@@ -48,3 +48,11 @@ manifests.
 - Dependências estruturais de `apps/web/package.json` (Vitest, Playwright,
   shadcn-svelte, Tipex, `@tiptap/extension-highlight`) reconciliadas no inventário
   após a SPEC-0006 em 2026-09-03; sem mudança de framework para a SPEC-0007.
+- Favicon, `icon-192.png`, `icon-512.png` e `apple-touch-icon.png` derivam de
+  `apps/web/static/logo-minimal.png` (marca branca em fundo preto com área de
+  segurança para maskable); o manifesto segue `standalone` com `purpose any
+  maskable`.
+- Versão visível do app em `0.4.0`: canônico em `apps/web/package.json`
+  (`version`), espelhado em `apps/web/src/lib/app-version.ts` (`APP_VERSION`)
+  via `bun run version:sync [X.Y.Z]` (`apps/web/scripts/sync_app_version.mjs`).
+  Exibida no rodapé da sidebar e em `/config`.

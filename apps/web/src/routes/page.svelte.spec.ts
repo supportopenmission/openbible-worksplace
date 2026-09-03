@@ -12,11 +12,14 @@ describe('+page.svelte', () => {
 		vi.clearAllMocks();
 	});
 
-	it('renders the logo without a text title', async () => {
+	it('renders the logo with an accessible title and no visible text title', async () => {
 		await render(Page, { props: { initialWorkspaceConfigured: true } });
 
-		await expect.element(page.getByRole('img', { name: 'OpenBible' })).toBeInTheDocument();
-		expect(page.getByRole('heading', { name: 'OpenBible' })).not.toBeInTheDocument();
+		const logo = document.querySelector('img.home-logo');
+		expect(logo?.getAttribute('src')).toBe('/logo.png');
+		await expect
+			.element(page.getByRole('heading', { name: 'OpenBible', level: 1 }))
+			.toBeInTheDocument();
 	});
 
 	// SPECSFY: US-001 FR-001 FR-002 FR-003 NFR-001 AC-001

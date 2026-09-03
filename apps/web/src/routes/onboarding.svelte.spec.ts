@@ -61,7 +61,10 @@ describe('OpenBible onboarding', () => {
 		await render(Page, { props: { initialWorkspaceConfigured: true } });
 
 		expect(page.getByRole('dialog')).not.toBeInTheDocument();
-		await expect.element(page.getByRole('img', { name: /openbible/i })).toBeInTheDocument();
+		expect(document.querySelector('img.home-logo')?.getAttribute('src')).toBe('/logo.png');
+		await expect
+			.element(page.getByRole('heading', { name: 'OpenBible', level: 1 }))
+			.toBeInTheDocument();
 	});
 
 	it('opens directly at the import step when requested', async () => {

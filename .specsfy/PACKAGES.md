@@ -81,3 +81,11 @@
 | npm | transitiva | yaml | 2.9.0 | JavaScript parser and stringifier for YAML | github:eemeli/yaml |
 | npm | transitiva | zod | 4.1.8 | TypeScript-first schema declaration and validation library with static type inference | https://github.com/colinhacks/zod |
 <!-- specsfy:documentator:end -->
+
+## Versão do app web (nota humana)
+
+- Workspace `web`: versão `0.4.0` (canônico em `apps/web/package.json`).
+- Troca em um comando: `bun run version:sync <X.Y.Z>` em `apps/web`
+  (`scripts/sync_app_version.mjs` espelha em `src/lib/app-version.ts`).
+- Nenhuma dependência foi adicionada, removida ou teve versão alterada
+  nesta fatia; o inventário acima permanece válido.

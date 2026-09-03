@@ -11,7 +11,10 @@
 | 04 | 0005-selecao-versiculos-highlights-nota-leitor | Complete | — |
 | 05 | 0006-lista-highlights-indicador-nota-leitor | Complete | — |
 | 06 | 0007-seletor-varias-notas-versiculo-leitor | Complete | — |
-| 07 | 0001-onboarding-configuracao-armazenamento | Implementing | — |
+| 07 | 0008-importar-biblias-por-url-do-bucket-r2 | Complete | — |
+| 08 | 0009-importacao-com-abas-empty-da-biblia-gestao-e-stats | Complete | — |
+| 09 | 0010-melhorar-experiencia-do-pwa | Complete | — |
+| 10 | 0001-onboarding-configuracao-armazenamento | Implementing | — |
 
 ## Marcos
 

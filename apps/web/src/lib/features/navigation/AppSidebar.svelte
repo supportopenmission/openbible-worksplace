@@ -2,6 +2,7 @@
 	import { BookOpen, GraduationCap, Highlighter, NotebookPen, ScrollText, Settings } from '@lucide/svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import { resolve } from '$app/paths';
+	import { APP_VERSION } from '$lib/app-version';
 	import ThemeToggle from './ThemeToggle.svelte';
 
 	let { currentPath = '/' }: { currentPath?: string } = $props();
@@ -58,6 +59,7 @@
 
 	<Sidebar.Footer class="sidebar-footer">
 		<ThemeToggle />
+		<p class="sidebar-version">OpenBible v{APP_VERSION}</p>
 	</Sidebar.Footer>
 	<Sidebar.Rail />
 </Sidebar.Root>
@@ -167,6 +169,14 @@
 		margin-top: auto;
 		border-top: 1px solid color-mix(in oklch, var(--sidebar-foreground) 8%, transparent);
 		padding: 10px 8px 14px;
+	}
+
+	.sidebar-version {
+		margin: 8px 0 0;
+		padding-inline: 10px;
+		color: var(--muted-foreground);
+		font-family: var(--font-mono);
+		font-size: 0.68rem;
 	}
 
 	:global(.sidebar-footer .theme-toggle) {

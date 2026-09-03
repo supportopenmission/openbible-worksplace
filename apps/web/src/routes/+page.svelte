@@ -136,7 +136,8 @@
 		<main class="project-home">
 			<div class="home-intro">
 				{#if !logoFailed}
-					<img class="home-logo" src="/logo.png" alt="OpenBible" onerror={() => (logoFailed = true)} />
+					<h1 class="sr-only">OpenBible</h1>
+					<img class="home-logo" src="/logo.png" alt="" aria-hidden="true" onerror={() => (logoFailed = true)} />
 				{:else}
 					<h1>OpenBible</h1>
 				{/if}
@@ -178,6 +179,18 @@
 		height: auto;
 		margin-bottom: 32px;
 		filter: invert(1);
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		border: 0;
+		white-space: nowrap;
 	}
 
 	:global(.dark) .home-logo {

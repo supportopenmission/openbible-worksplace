@@ -134,6 +134,7 @@ body {
 }
 
 html {
+	height: 100%;
 	color-scheme: light;
 }
 
@@ -143,12 +144,21 @@ html.dark {
 
 body {
 	margin: 0;
+	min-height: 100dvh;
 	background: var(--background);
 	color: var(--foreground);
 	font-family: var(--font-sans);
 	font-size: 0.875rem;
 	line-height: 1.5;
 	overflow-x: hidden;
+	overscroll-behavior-y: none;
+}
+
+/* PWA standalone: o fundo do tema se estende sob notch e barra do sistema. */
+@media (max-width: 767px) {
+	.shell-main {
+		padding-top: env(safe-area-inset-top);
+	}
 }
 
 *,

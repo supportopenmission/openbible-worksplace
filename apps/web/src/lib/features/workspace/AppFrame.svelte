@@ -12,7 +12,6 @@
 	import { NOTE_EDITOR_WIDTHS, type NoteEditorWidth } from '$lib/features/notes/note-editor-layout';
 	import { notePageChrome } from '$lib/features/notes/note-page-chrome.svelte';
 	import NetworkStatus from '$lib/features/navigation/NetworkStatus.svelte';
-	import ThemeToggle from '$lib/features/navigation/ThemeToggle.svelte';
 	import PermissionRecovery from './PermissionRecovery.svelte';
 	import { getWorkspaceState } from './workspace-state.svelte';
 
@@ -113,67 +112,6 @@
 					{/if}
 				</div>
 			</header>
-			<header class="mobile-header" class:with-context={notePageChrome.active || isNotesList}>
-				{#if notePageChrome.active}
-					<nav class="mobile-breadcrumb" aria-label="Breadcrumb">
-						<a href={resolve('/notes')}>Notas</a>
-						<span aria-hidden="true">/</span>
-						<span class="breadcrumb-current" aria-current="page">{notePageChrome.title}</span>
-					</nav>
-				{:else}
-					<a class="mobile-brand" href={resolve('/')} aria-label="OpenBible, início">
-						<span>{headerTitle || 'OpenBible'}</span>
-					</a>
-				{/if}
-				<div class="mobile-actions">
-					{#if notePageChrome.active}
-						<DropdownMenu.Root>
-							<DropdownMenu.Trigger>
-								{#snippet child({ props })}
-									<Button
-										{...props}
-										type="button"
-										variant="ghost"
-										size="icon-sm"
-										aria-label="Opções da nota"
-										title="Opções da nota"
-									>
-										<MoreHorizontal size={17} strokeWidth={1.75} aria-hidden="true" />
-									</Button>
-								{/snippet}
-							</DropdownMenu.Trigger>
-							<DropdownMenu.Content align="end" class="note-options-menu">
-								<DropdownMenu.Label>Largura do editor</DropdownMenu.Label>
-								<DropdownMenu.RadioGroup
-									value={notePageChrome.width}
-									onValueChange={(value) => value && setNoteWidth(value as NoteEditorWidth)}
-								>
-									{#each Object.entries(NOTE_EDITOR_WIDTHS) as [id, option] (id)}
-										<DropdownMenu.RadioItem value={id}>
-											<span class="width-option">
-												<span>{option.label}</span>
-												<span class="width-option-desc">{option.description}</span>
-											</span>
-										</DropdownMenu.RadioItem>
-									{/each}
-								</DropdownMenu.RadioGroup>
-							</DropdownMenu.Content>
-						</DropdownMenu.Root>
-					{:else if isNotesList}
-						<Button
-							type="button"
-							variant="ghost"
-							size="icon-sm"
-							aria-label="Nova nota"
-							onclick={handleCreateNote}
-							disabled={creatingNote}
-						>
-							<Plus size={17} strokeWidth={1.75} aria-hidden="true" />
-						</Button>
-					{/if}
-					<ThemeToggle />
-				</div>
-			</header>
 			<NetworkStatus />
 			<div class="shell-main">
 				{@render children()}
@@ -242,7 +180,6 @@
 	}
 
 	.header-context,
-	.mobile-actions,
 	.header-actions {
 		display: flex;
 		min-width: 0;
@@ -250,8 +187,7 @@
 		gap: 10px;
 	}
 
-	.header-breadcrumb,
-	.mobile-breadcrumb {
+	.header-breadcrumb {
 		display: flex;
 		min-width: 0;
 		align-items: center;
@@ -260,15 +196,13 @@
 		font-size: 0.72rem;
 	}
 
-	.header-breadcrumb a,
-	.mobile-breadcrumb a {
+	.header-breadcrumb a {
 		color: var(--foreground);
 		font-weight: 500;
 		text-decoration: none;
 	}
 
-	.header-breadcrumb a:hover,
-	.mobile-breadcrumb a:hover {
+	.header-breadcrumb a:hover {
 		text-decoration: underline;
 		text-underline-offset: 3px;
 	}
@@ -311,58 +245,9 @@
 		color: var(--foreground);
 	}
 
-	.mobile-header {
-		display: none;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		border-bottom: 1px solid var(--border);
-		padding: max(12px, env(safe-area-inset-top)) 16px 12px;
-		background: var(--background);
-	}
-
-	.mobile-brand {
-		display: inline-flex;
-		min-width: 0;
-		flex: 1;
-		align-items: center;
-		color: var(--foreground);
-		font-size: 0.88rem;
-		font-weight: 600;
-		letter-spacing: -0.03em;
-		text-decoration: none;
-	}
-
-	.mobile-breadcrumb {
-		flex: 1;
-	}
-
-	.mobile-brand:focus-visible {
-		outline: 2px solid var(--ring);
-		outline-offset: 2px;
-	}
-
-	:global(.mobile-header .theme-toggle) {
-		min-width: 34px;
-		justify-content: center;
-		padding: 7px;
-	}
-
-	:global(.mobile-header .theme-toggle span) {
-		display: none;
-	}
-
 	@media (max-width: 767px) {
 		.desktop-header {
 			display: none;
-		}
-
-		.mobile-header {
-			display: none;
-		}
-
-		.mobile-header.with-context {
-			display: flex;
 		}
 
 		.shell-main {

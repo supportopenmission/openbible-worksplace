@@ -1,12 +1,13 @@
 {
   "name": "web",
-  "version": "0.0.1",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite dev",
     "build": "svelte-kit sync && vite build",
     "preview": "bun run build && wrangler dev --local",
+    "version:sync": "node scripts/sync_app_version.mjs",
     "deploy": "wrangler deploy",
     "deploy:preview": "wrangler versions upload",
     "check-types": "svelte-kit sync && tsc --noEmit",

@@ -56,6 +56,24 @@ worker.addEventListener('fetch', (event) => {
 	event.respondWith(cacheFirstAsset(event.request));
 });
 
+worker.addEventListener('notificationclick', (event) => {
+	event.waitUntil(
+		(async () => {
+			const windows = await worker.clients.matchAll({
+				type: 'window',
+				includeUncontrolled: true
+			});
+			const open = windows.find((client) => 'focus' in client);
+			if (open) {
+				await open.focus();
+				return;
+			}
+			await worker.clients.openWindow('/');
+		})()
+	);
+	event.notification.close();
+});
+
 async function networkFirstNavigation(request: Request): Promise<Response> {
 	const cache = await caches.open(CACHE_NAME);
 	try {

@@ -30,11 +30,13 @@ describe('/config', () => {
 		await expect.element(page.getByText(/preferência removida/i)).toBeInTheDocument();
 	});
 
-	it('shows stacked sections on mobile without a page hero', async () => {
+	it('shows stacked sections on mobile with an accessible page title', async () => {
 		await page.viewport(320, 900);
 		await render(ConfigPage);
 
-		expect(page.getByRole('heading', { level: 1 })).not.toBeInTheDocument();
+		await expect
+			.element(page.getByRole('heading', { name: 'Configurações', level: 1 }))
+			.toBeInTheDocument();
 		await expect
 			.element(page.getByRole('heading', { name: 'Armazenamento', level: 2 }))
 			.toBeInTheDocument();
@@ -47,7 +49,9 @@ describe('/config', () => {
 		await page.viewport(1440, 900);
 		await render(ConfigPage);
 
-		expect(page.getByRole('heading', { level: 1 })).not.toBeInTheDocument();
+		await expect
+			.element(page.getByRole('heading', { name: 'Configurações', level: 1 }))
+			.toBeInTheDocument();
 		const storageTab = page.getByRole('tab', { name: 'Armazenamento' });
 		const homeTab = page.getByRole('tab', { name: 'Tela inicial' });
 		await expect.element(storageTab).toBeInTheDocument();
