@@ -267,6 +267,16 @@ pub fn read_bible_verses(state: tauri::State<'_, Mutex<WorkspaceContext>>, versi
 }
 
 #[tauri::command]
+pub fn release_workspace_lock(state: tauri::State<'_, Mutex<WorkspaceContext>>) -> Result<bool, CommandError> {
+	let mut context = state.lock().map_err(|_| CommandError::new("state_error", true))?;
+	if let Some(lock) = context.lock.take() {
+		lock::release(lock).map_err(CommandError::from)?;
+		return Ok(true);
+	}
+	Ok(false)
+}
+
+#[tauri::command]
 pub fn inspect_bible(state: tauri::State<'_, Mutex<WorkspaceContext>>, version: String) -> Result<BibleInfo, CommandError> {
 	let context = state.lock().map_err(|_| CommandError::new("state_error", true))?;
 	inspect_bible_impl(&context, version)

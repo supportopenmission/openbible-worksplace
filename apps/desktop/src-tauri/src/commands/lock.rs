@@ -1,6 +1,6 @@
+use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
-use std::fs;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, thiserror::Error)]
@@ -24,12 +24,6 @@ impl LockError {
 pub struct WorkspaceLock {
 	path: PathBuf,
 	file: File,
-}
-
-impl WorkspaceLock {
-	pub fn path(&self) -> &Path {
-		&self.path
-	}
 }
 
 pub fn acquire(root: &Path) -> Result<WorkspaceLock, LockError> {
