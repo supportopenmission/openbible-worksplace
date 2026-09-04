@@ -105,6 +105,14 @@
 
 	async function start() {
 		errorMessage = '';
+		if (storageMode === 'native') {
+			if (selectedStorage) {
+				await install(selectedStorage);
+			} else {
+				await chooseFolder();
+			}
+			return;
+		}
 		if (storageMode === 'opfs' && !offersStorageChoice) {
 			if (!selectedStorage) {
 				errorMessage = 'Não foi possível acessar o armazenamento deste navegador.';
@@ -309,6 +317,8 @@
 					<p class="storage-note">
 						{offersStorageChoice
 							? 'Neste app instalado, você escolherá entre uma pasta do computador e o armazenamento do navegador.'
+							: storageMode === 'native'
+								? 'Neste app, os arquivos ficam em uma pasta nativa do seu computador.'
 							: storageMode === 'opfs'
 								? 'Neste ambiente, os arquivos ficam no armazenamento privado do navegador.'
 								: 'Neste ambiente, você escolherá uma pasta local para guardar os arquivos.'}

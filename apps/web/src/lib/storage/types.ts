@@ -1,6 +1,6 @@
 import type { Theme } from '$lib/theme/theme';
 
-export type StorageKind = 'local' | 'opfs';
+export type StorageKind = 'local' | 'opfs' | 'native';
 export type FileContent = string | Uint8Array;
 export type BibleImportStatus = 'pending' | 'complete' | 'partial';
 export type ImportResultStatus = 'imported' | 'rejected';
@@ -21,6 +21,7 @@ export interface WorkspaceConfig {
 	configuredAt: string;
 	bibleImportStatus: BibleImportStatus;
 	label?: string;
+	migrationState?: 'not_started' | 'completed' | 'error';
 }
 
 export interface WorkspacePreferences {
@@ -48,6 +49,9 @@ export interface WorkspaceStorage {
 	readFile(path: string): Promise<Uint8Array | null>;
 	fileExists(path: string): Promise<boolean>;
 	listFiles(path: string): Promise<string[]>;
+	readBibleChapter?(version: string, bookId: number, chapter: number): Promise<{ verse: number; text: string }[]>;
+	inspectBible?(version: string): Promise<{ name: string; books: { id: number; name: string; abbreviation: string; chapters: number[] }[] }>;
+	queryIndex?(operation: 'list_highlights' | 'upsert_highlight' | 'delete_highlight', record: { versionId: string; bookId: number; chapter: number; verseStart?: number; verseEnd?: number; styleId?: string }): Promise<unknown>;
 }
 
 export interface WorkspaceSnapshot {

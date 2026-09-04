@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { ArrowLeft, Sparkles } from '@lucide/svelte';
-	import { resolve } from '$app/paths';
+import { resolve } from '$app/paths';
+import { getWorkspaceState } from '$lib/features/workspace/workspace-state.svelte';
+
+	const workspace = getWorkspaceState();
+	const storageKind = $derived(workspace?.storage?.kind ?? 'unconfigured');
 
 	let {
 		eyebrow = 'Área do OpenBible',
@@ -24,7 +28,7 @@
 	<meta name="description" content={description} />
 </svelte:head>
 
-<div class="product-page">
+<div class="product-page" data-storage-kind={storageKind}>
 	<nav class="breadcrumb" aria-label="Breadcrumb">
 		<a href={resolve('/')}>OpenBible</a>
 		<span aria-hidden="true">/</span>

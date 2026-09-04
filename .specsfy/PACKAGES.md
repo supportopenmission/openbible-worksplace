@@ -9,10 +9,12 @@
 | npm | desenvolvimento | prettier-plugin-svelte | catalog:sveltejs | Svelte plugin for prettier | https://github.com/sveltejs/prettier-plugin-svelte |
 | npm | desenvolvimento | turbo | ^2.10.12 | Turborepo is the build system for coding agents. | https://github.com/vercel/turborepo |
 | npm | produção | @opencode-ai/plugin | 1.18.25 | Finalidade não descrita nos metadados locais. |  |
+| npm | desenvolvimento | @tauri-apps/cli | ^2.11.4 | Command line interface for building Tauri apps | https://github.com/tauri-apps/tauri |
+| npm | produção | @tauri-apps/api | ^2.11.1 | Tauri API definitions | https://github.com/tauri-apps/tauri |
 | npm | produção | @friendofsvelte/tipex | 0.2.0 | Finalidade não descrita nos metadados locais. | https://github.com/friendofsvelte/tipex |
 | npm | produção | @milkdown/kit | 7.22.1 | Finalidade não descrita nos metadados locais. | https://github.com/Milkdown/milkdown |
 | npm | produção | @tiptap/extension-highlight | 2.27.2 | highlight extension for tiptap | https://github.com/ueberdosis/tiptap |
-| npm | produção | bible-passage-reference-parser | 4.0.0 | Identifies and parses Bible references in 50 languages | https://github.com/openbibleinfo/Bible-Passage-Reference-Parser |
+| npm | produção | bible-passage-reference-parser | ^4.0.0 | Identifies and parses Bible references (like John 3:16) in 50 languages. | git://github.com/openbibleinfo/Bible-Passage-Reference-Parser |
 | npm | produção | clsx | ^2.1.1 | A tiny (239B) utility for constructing className strings conditionally. | lukeed/clsx |
 | npm | produção | remark-directive | ^4.0.0 | remark plugin to support directives | remarkjs/remark-directive |
 | npm | produção | sql.js | ^1.14.2 | SQLite library with support for opening and writing databases, prepared statements, and more. This SQLite library is in pure javascript (compiled with emscripten). | http://github.com/sql-js/sql.js |
@@ -23,6 +25,7 @@
 | npm | desenvolvimento | @repo/eslint-config | * | Finalidade não descrita nos metadados locais. |  |
 | npm | desenvolvimento | @repo/typescript-config | * | Finalidade não descrita nos metadados locais. |  |
 | npm | desenvolvimento | @sveltejs/adapter-cloudflare | ^7.2.9 | Adapts SvelteKit applications for Cloudflare Workers or Cloudflare Pages | https://github.com/sveltejs/kit |
+| npm | desenvolvimento | @sveltejs/adapter-static | ^3.0.8 | Adapter for SvelteKit apps that prerenders your entire site as a collection of static files | https://github.com/sveltejs/kit |
 | npm | desenvolvimento | @sveltejs/kit | catalog:sveltejs | SvelteKit is the fastest way to build Svelte apps | https://github.com/sveltejs/kit |
 | npm | desenvolvimento | @sveltejs/vite-plugin-svelte | catalog:sveltejs | Finalidade não descrita nos metadados locais. | https://github.com/sveltejs/vite-plugin-svelte |
 | npm | desenvolvimento | @tailwindcss/vite | ^4.3.3 | A utility-first CSS framework for rapidly building custom user interfaces. | https://github.com/tailwindlabs/tailwindcss |

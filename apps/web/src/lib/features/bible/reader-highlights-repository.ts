@@ -157,10 +157,18 @@ export async function readChapterHighlights(
 	storage: WorkspaceStorage,
 	query: { versionId: string; bookId: number; chapter: number }
 ): Promise<ReaderHighlightRecord[]> {
+	if (storage.kind === 'native' && storage.queryIndex) {
+		const value = await storage.queryIndex('list_highlights', query);
+		return Array.isArray(value) ? (value as ReaderHighlightRecord[]) : [];
+	}
 	return withWorkspaceIndex(storage, (database) => listChapterHighlights(database, query), false);
 }
 
 export async function readAllReaderHighlights(storage: WorkspaceStorage): Promise<ReaderHighlightRecord[]> {
+	if (storage.kind === 'native' && storage.queryIndex) {
+		const value = await storage.queryIndex('list_highlights', { versionId: '', bookId: 0, chapter: 0 });
+		return Array.isArray(value) ? (value as ReaderHighlightRecord[]) : [];
+	}
 	return withWorkspaceIndex(storage, (database) => listAllReaderHighlights(database), false);
 }
 
@@ -168,6 +176,10 @@ export async function persistHighlight(
 	storage: WorkspaceStorage,
 	record: ReaderHighlightRecord
 ): Promise<void> {
+	if (storage.kind === 'native' && storage.queryIndex) {
+		await storage.queryIndex('upsert_highlight', record);
+		return;
+	}
 	await withWorkspaceIndex(storage, (database) => upsertHighlight(database, record), true);
 }
 
@@ -175,5 +187,9 @@ export async function removeHighlight(
 	storage: WorkspaceStorage,
 	record: Omit<ReaderHighlightRecord, 'styleId'>
 ): Promise<void> {
+	if (storage.kind === 'native' && storage.queryIndex) {
+		await storage.queryIndex('delete_highlight', record);
+		return;
+	}
 	await withWorkspaceIndex(storage, (database) => deleteHighlightByRange(database, record), true);
 }

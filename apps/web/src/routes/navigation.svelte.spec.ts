@@ -2,10 +2,24 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import AppSidebarTestHost from '$lib/features/navigation/AppSidebar.test-host.svelte';
+import { nativeRouteRegistry } from '$lib/storage/tauri-runtime';
 
 describe('AppSidebar', () => {
 	beforeEach(() => {
 		localStorage.clear();
+	});
+
+	// SPECSFY: US-001 FR-001 FR-005 NFR-002 AC-003
+	it('exposes the published routes to the Tauri shell', () => {
+		expect(nativeRouteRegistry()).toEqual([
+			'/',
+			'/bible',
+			'/notes',
+			'/highlights',
+			'/sermons',
+			'/study',
+			'/config'
+		]);
 	});
 
 	// SPECSFY: US-003 FR-005 FR-006 NFR-001 AC-003

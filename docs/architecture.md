@@ -5,8 +5,8 @@
 
 | Tipo | Quantidade |
 | --- | --- |
-| Código | 421 |
-| Testes | 54 |
+| Código | 565 |
+| Testes | 62 |
 
 ## Diagramas
 

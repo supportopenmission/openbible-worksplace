@@ -685,7 +685,8 @@
 	<BibleReferenceViewer {storage} />
 
 	<MilkdownMobileToolbar
-		active={mobile && editingActive && !readOnly}
+		active={mobile && !readOnly}
+		disabled={!editingActive}
 		activeActions={toolbarActive}
 		onAction={runToolbar}
 	/>

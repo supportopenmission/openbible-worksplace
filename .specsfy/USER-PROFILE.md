@@ -36,6 +36,14 @@ produção.
 | Persistência | Nome do SQLite do workspace | Manter `.openbible/index.sqlite` como banco auxiliar de índices; não adotar `app.sqlite` ou `openbible.sqlite` nesta etapa | Conversa atual, resposta à Pergunta 1 sobre nome do SQLite | 2026-08-31 |
 | Operação | Testes, observabilidade e deploy | Vitest para testes unitários e de componentes conforme a documentação do Svelte; observabilidade conforme a documentação do SvelteKit; hospedagem PWA na Cloudflare com o adapter oficial | Conversa atual, resposta à Pergunta 9 do setup e complemento posterior; https://svelte.dev/docs/svelte/testing#Unit-and-component-tests-with-Vitest; https://svelte.dev/docs/kit/observability; https://svelte.dev/docs/kit/adapter-cloudflare | 2026-08-31 |
 | Operação | Agentes Cursor | Planejador Specsfy (`specsfy-planner`) arquiteta e especifica; implementador (`specsfy-implementer`) usa Composer 2.5 ou GPT-5.6 Luna em xhigh; ambos registram no ai-memory local quando necessário | Conversa atual, pedido explícito de configuração dos dois agentes | 2026-09-01 |
+| Plataforma nativa | Migração OPFS | Migração assistida opcional para pasta nativa, preservando o workspace web original | Conversa atual, resposta à Pergunta 1 do backlog BACKLOG-0014 | 2026-09-04 |
+| Plataforma nativa | Workspace padrão | `~/Library/Application Support/OpenBible/workspace`, com opção de escolher outra pasta | Conversa atual, resposta à Pergunta 2 do backlog BACKLOG-0014 | 2026-09-04 |
+| Plataforma nativa | Alvo macOS | macOS 13 Ventura ou mais recente, binário universal Intel + Apple Silicon | Conversa atual, resposta à Pergunta 3 do backlog BACKLOG-0014 | 2026-09-04 |
+| Plataforma nativa | Compartilhamento de UI | Reutilizar `apps/web` e selecionar storage web/Tauri em runtime | Conversa atual, resposta à Pergunta 4 do backlog BACKLOG-0014 | 2026-09-04 |
+| Plataforma nativa | Contrato Tauri | Facade tipada de comandos com capabilities allowlist; sem caminho arbitrário ou SQL livre na UI | Conversa atual, resposta à Pergunta 5 do backlog BACKLOG-0014 | 2026-09-04 |
+| Plataforma nativa | Paridade inicial | Cobrir onboarding e todas as rotas/fluxos web publicados (`/`, `/bible`, `/notes`, `/highlights`, `/sermons`, `/study`, `/config`) | Conversa atual, resposta à Pergunta 6 do backlog BACKLOG-0014 | 2026-09-04 |
+| Plataforma nativa | Distribuição inicial | Build local e artefato CI testável sem assinatura/notarização; distribuição pública posterior | Conversa atual, resposta à Pergunta 7 do backlog BACKLOG-0014 | 2026-09-04 |
+| Plataforma nativa | Concorrência | Uso exclusivo de um workspace por vez, com lock/sinalização e orientação à pessoa | Conversa atual, resposta à Pergunta 8 do backlog BACKLOG-0014 | 2026-09-04 |
 
 ## Uso pelo setup
 

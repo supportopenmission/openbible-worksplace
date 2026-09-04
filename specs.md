@@ -18,6 +18,7 @@
 | 11 | 0001-onboarding-configuracao-armazenamento | Implementing | — |
 | 12 | 0012-pagina-inicial-operacional-do-openbible | Implementing | — |
 | 13 | 0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile | Implementing | — |
+| 14 | 0014-versao-nativa-macos-tauri | Complete | — |
 
 ## Marcos
 

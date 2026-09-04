@@ -1,0 +1,59 @@
+name: macOS Tauri
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  build-macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.0'
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/desktop/src-tauri/target
+          key: macos-tauri-${{ runner.arch }}-${{ hashFiles('**/Cargo.lock', 'bun.lock') }}
+      - run: bun install --frozen-lockfile
+      - run: bun run --cwd apps/desktop build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openbible-macos-universal
+          path: apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/OpenBible.app
+
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.0'
+      - name: Install Tauri Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/desktop/src-tauri/target
+          key: linux-tauri-${{ hashFiles('**/Cargo.lock', 'bun.lock') }}
+      - run: bun install --frozen-lockfile
+      - run: bun run --cwd apps/desktop build:linux
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openbible-linux-packages
+          path: |
+            apps/desktop/src-tauri/target/release/bundle/deb/*.deb
+            apps/desktop/src-tauri/target/release/bundle/appimage/*.AppImage

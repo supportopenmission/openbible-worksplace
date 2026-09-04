@@ -1,0 +1,38 @@
+{
+	"$schema": "https://schema.tauri.app/config/2",
+	"productName": "OpenBible",
+	"version": "0.5.0",
+	"identifier": "org.openbible.desktop",
+	"build": {
+		"beforeDevCommand": "bun run --cwd ../web dev -- --host 127.0.0.1",
+		"devUrl": "http://127.0.0.1:5173",
+		"beforeBuildCommand": "TAURI_BUILD=1 bun run --cwd ../web build",
+		"frontendDist": "../../web/.svelte-kit/tauri"
+	},
+	"app": {
+		"windows": [
+			{
+				"label": "main",
+				"title": "OpenBible",
+				"width": 1280,
+				"height": 840,
+				"minWidth": 960,
+				"minHeight": 640,
+				"resizable": true
+			}
+		],
+		"security": {
+			"csp": null
+		}
+	},
+	"bundle": {
+		"active": true,
+		"targets": ["app"],
+		"category": "Productivity",
+		"shortDescription": "Estudos bíblicos locais",
+		"longDescription": "OpenBible para leitura da Bíblia, notas, estudos e sermões.",
+		"macOS": {
+			"minimumSystemVersion": "13.0"
+		}
+	}
+}

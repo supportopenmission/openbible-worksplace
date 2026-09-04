@@ -48,8 +48,9 @@ como gerenciador declarado. A aplicação será executável localmente via
 `localhost` ou hospedada na Cloudflare como PWA para mobile, com adapter oficial
 do SvelteKit. O app shell usa manifesto, service worker versionado, safe area e
 tokens claros/escuros em `apps/web/src/app.css`; conteúdo de domínio continua
-dependente do armazenamento local já configurado. Em etapa posterior, será
-empacotada para desktop com Tauri.
+dependente do armazenamento local já configurado. A versão nativa para macOS é
+empacotada em `apps/desktop` com Tauri 2, backend Rust e SQLite via `rusqlite`,
+usando o target universal da Apple e a pasta nativa de dados do usuário.
 Detalhes verificáveis ficam em `.specsfy/STACK.md` e `.specsfy/DATABASE.md`.
 
 O código mantém a importação local de bancos SQLite e o leitor bíblico em `/bible`.

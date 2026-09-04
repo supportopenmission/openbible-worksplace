@@ -3,13 +3,18 @@
 <!-- specsfy:documentator:start -->
 ## Resumo
 
-- Arquivos de teste: 54.
+- Arquivos de teste: 62.
 - Runner: não identificado.
 - Scripts: build: turbo run build; check-types: turbo run check-types; dev: turbo run dev; lint: turbo run lint; format: prettier --write .; format:check: prettier --check ..
 
 | Arquivo |
 | --- |
 | apps/web/src/lib/app-version.test.ts |
+| apps/web/src/lib/bible/editor/bibleReferenceDecorations.test.ts |
+| apps/web/src/lib/bible/parser/BibleReferenceParser.test.ts |
+| apps/web/src/lib/bible/parser/translations.test.ts |
+| apps/web/src/lib/bible/repository/bible-repository.test.ts |
+| apps/web/src/lib/bible/stores/bible-reference-viewer.test.ts |
 | apps/web/src/lib/features/bible/bible-library.test.ts |
 | apps/web/src/lib/features/bible/bible-reader.test.ts |
 | apps/web/src/lib/features/bible/highlights-page.test.ts |
@@ -37,6 +42,7 @@
 | apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts |
 | apps/web/src/lib/features/notes/MilkdownNoteEditor.test.ts |
 | apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts |
+| apps/web/src/lib/features/notes/milkdown-placeholder-plugin.test.ts |
 | apps/web/src/lib/features/notes/milkdown-slash-drawer.test.ts |
 | apps/web/src/lib/features/notes/milkdown-slash.test.ts |
 | apps/web/src/lib/features/notes/milkdown-verse-node.test.ts |
@@ -46,11 +52,13 @@
 | apps/web/src/lib/features/notes/note-markdown.test.ts |
 | apps/web/src/lib/features/notes/note-verse-index.test.ts |
 | apps/web/src/lib/features/notes/notes-repository.test.ts |
+| apps/web/src/lib/features/notes/notes-state.test.ts |
 | apps/web/src/lib/features/notes/slash-verse-command.test.ts |
 | apps/web/src/lib/features/notes/verse-block-extension.test.ts |
 | apps/web/src/lib/features/notes/verse-selector.test.ts |
 | apps/web/src/lib/features/onboarding/onboarding-errors.test.ts |
 | apps/web/src/lib/features/onboarding/storage-choice.svelte.spec.ts |
+| apps/web/src/lib/features/workspace/native-workspace-states.test.ts |
 | apps/web/src/lib/features/workspace/workspace-state.test.ts |
 | apps/web/src/lib/features/workspace/workspace-stats.test.ts |
 | apps/web/src/lib/index.test.ts |

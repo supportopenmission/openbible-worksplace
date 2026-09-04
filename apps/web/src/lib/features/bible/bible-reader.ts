@@ -24,6 +24,7 @@ export interface BibleVersion {
 	name: string;
 	books: BibleBook[];
 	bytes: Uint8Array;
+	storage?: WorkspaceStorage;
 }
 
 export interface BibleCatalogDiagnostic {
@@ -131,7 +132,7 @@ function databaseFor(version: BibleVersion, sql: SqlJs): SqlDatabase {
 }
 
 export async function loadBibleCatalog(storage: WorkspaceStorage): Promise<BibleCatalog> {
-	const sql = await getSql();
+	const sql = storage.kind === 'native' ? null : await getSql();
 	const versions: BibleVersion[] = [];
 	const diagnostics: BibleCatalogDiagnostic[] = [];
 	const files = (await storage.listFiles('bibles'))
@@ -139,6 +140,22 @@ export async function loadBibleCatalog(storage: WorkspaceStorage): Promise<Bible
 		.sort();
 
 	for (const fileName of files) {
+		if (storage.kind === 'native' && storage.inspectBible) {
+			try {
+				const inspected = await storage.inspectBible(fileName);
+				versions.push({
+					id: fileName,
+					fileName,
+					name: inspected.name,
+					books: inspected.books,
+					bytes: new Uint8Array(),
+					storage
+				});
+			} catch (error) {
+				diagnostics.push({ fileName, message: error instanceof Error ? error.message : 'Arquivo SQLite incompatível' });
+			}
+			continue;
+		}
 		const bytes = await storage.readFile(`bibles/${fileName}`);
 		if (!bytes) {
 			diagnostics.push({ fileName, message: 'Arquivo da Bíblia não pôde ser lido' });
@@ -147,6 +164,7 @@ export async function loadBibleCatalog(storage: WorkspaceStorage): Promise<Bible
 
 		let database: SqlDatabase | null = null;
 		try {
+			if (!sql) throw new Error('SQLite indisponível');
 			database = new sql.Database(bytes);
 			const { bookColumns } = validateOpenLpSchema(database);
 			versions.push({
@@ -175,6 +193,12 @@ export async function readBibleChapter(
 	bookId: number,
 	chapter: number
 ): Promise<BibleVerse[]> {
+	if (version.storage?.kind === 'native' && version.storage.readBibleChapter) {
+		return (await version.storage.readBibleChapter(version.id, bookId, chapter)).map((verse) => ({
+			number: verse.verse,
+			text: verse.text
+		}));
+	}
 	const sql = await getSql();
 	const database = databaseFor(version, sql);
 	try {

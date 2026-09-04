@@ -14,10 +14,12 @@
 
 	let {
 		active = true,
+		disabled = false,
 		activeActions = {},
 		onAction = () => {}
 	}: {
 		active?: boolean;
+		disabled?: boolean;
 		activeActions?: Partial<Record<ToolbarAction, boolean>>;
 		onAction?: (action: ToolbarAction) => void;
 	} = $props();
@@ -44,6 +46,7 @@
 					size="sm"
 					aria-label={action.label}
 					aria-pressed={activeActions[action.id] ?? false}
+					disabled={disabled}
 					class={activeActions[action.id] ? 'active' : undefined}
 					title={action.label}
 					onmousedown={(e) => e.preventDefault()}

@@ -1,0 +1,15 @@
+{
+  "name": "desktop",
+  "private": true,
+  "version": "0.5.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build --target universal-apple-darwin --no-sign",
+    "build:debug": "tauri build --debug --target universal-apple-darwin --no-sign",
+    "build:linux": "tauri build --bundles deb,appimage --no-sign"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4"
+  }
+}

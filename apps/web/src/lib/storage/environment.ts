@@ -38,6 +38,7 @@ export function detectStorageKind(
 		: window.location
 ): StorageKind {
 	if (!location) return 'opfs';
+	if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) return 'native';
 	return isLocalhost(location.hostname) ? 'local' : 'opfs';
 }
 

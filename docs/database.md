@@ -5,6 +5,7 @@
 
 | Arquivo |
 | --- |
+| apps/desktop/src-tauri/src/commands/migration.rs |
 | Nenhuma estrutura confirmada além das fontes listadas. |
 
 ```mermaid

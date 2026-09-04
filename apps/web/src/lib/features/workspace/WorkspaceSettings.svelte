@@ -6,7 +6,8 @@
 		supportsFileSystemAccess
 	} from '$lib/storage/environment';
 	import { chooseLocalWorkspaceStorage } from '$lib/storage/local-storage';
-	import { createOpfsStorage } from '$lib/storage/opfs-storage';
+import { createOpfsStorage } from '$lib/storage/opfs-storage';
+import { createTauriStorage, initializeNativeWorkspace } from '$lib/storage/tauri-storage';
 	import { prepareWorkspace } from '$lib/storage/workspace';
 	import type { StorageKind } from '$lib/storage/types';
 	import RemoteBibleImport from '$lib/features/bible-remote/RemoteBibleImport.svelte';
@@ -75,7 +76,11 @@
 		switchMessage = '';
 		try {
 			const next =
-				kind === 'local' ? await chooseLocalWorkspaceStorage() : await createOpfsStorage();
+				kind === 'local'
+					? await chooseLocalWorkspaceStorage()
+					: kind === 'native'
+						? (await initializeNativeWorkspace(), createTauriStorage())
+						: await createOpfsStorage();
 			rememberStoragePreference(kind);
 			await prepareWorkspace(next);
 			await workspace.markConfigured(next);
@@ -83,7 +88,9 @@
 			switchMessage =
 				kind === 'local'
 					? 'Workspace na pasta escolhida.'
-					: 'Workspace no armazenamento do navegador (OPFS).';
+					: kind === 'native'
+						? 'Workspace na pasta nativa do computador.'
+						: 'Workspace no armazenamento do navegador (OPFS).';
 		} catch (error) {
 			workspace.error =
 				error instanceof DOMException && error.name === 'AbortError'
@@ -119,7 +126,7 @@
 		<dl class="facts">
 			<div>
 				<dt>Tipo</dt>
-				<dd>{kind === 'local' ? 'Pasta do computador' : 'OPFS do navegador'}</dd>
+				<dd>{kind === 'native' || kind === 'local' ? 'Pasta do computador' : 'OPFS do navegador'}</dd>
 			</div>
 			<div>
 				<dt>Nome</dt>
@@ -137,7 +144,7 @@
 
 		<div class="actions">
 			<a class="secondary" href={`${resolve('/')}?import=bible`}>Importar Bíblias</a>
-			{#if workspace.storage?.kind === 'local'}
+			{#if workspace.storage?.kind === 'local' || workspace.storage?.kind === 'native'}
 				<button class="secondary" type="button" onclick={reconnectFolder} disabled={busy}>
 					Escolher pasta
 				</button>
@@ -152,7 +159,17 @@
 			<p class="feedback" aria-live="polite">{persistMessage}</p>
 		{/if}
 		{#if workspace.error}
-			<p class="error" role="alert">{workspace.error}</p>
+			<div class="error-block" role="alert">
+				<p class="error">{workspace.error}</p>
+				<button class="secondary" type="button" onclick={() => workspace.boot({ requestPermission: true })} disabled={busy}>
+					Tentar novamente
+				</button>
+			</div>
+		{/if}
+		{#if kind === 'native' && workspace.config?.migrationState}
+			<p class="feedback" aria-live="polite">
+				Migração: {workspace.config.migrationState === 'completed' ? 'concluída' : workspace.config.migrationState === 'error' ? 'precisa ser repetida' : 'não iniciada'}.
+			</p>
 		{/if}
 
 		<div class="switch-block">

@@ -81,7 +81,7 @@
 	}
 </script>
 
-<div class="notes-list">
+<div class="notes-list" data-storage-kind={storage.kind}>
 	<div class="notes-list-inner" class:notes-list-empty={!loading && !error && notes.length === 0}>
 		{#if loading}
 			<p class="state-message" role="status" aria-live="polite">Carregando notas…</p>

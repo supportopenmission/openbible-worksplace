@@ -111,7 +111,7 @@
 	<meta name="description" content="Retome sua leitura e escolha o próximo passo no OpenBible." />
 </svelte:head>
 
-<main class="home-page">
+<main class="home-page" data-storage-kind={effectiveStorage?.kind ?? 'unconfigured'}>
 	<PageHeader
 		eyebrow="Seu espaço de estudo"
 		title="Início"

@@ -96,7 +96,21 @@ export async function prepareWorkspace(
 export async function loadWorkspaceConfig(
 	storage: WorkspaceStorage
 ): Promise<WorkspaceConfig | null> {
-	const config = decodeJson<WorkspaceConfig>(await storage.readFile('.openbible/config.json'));
+	const raw = decodeJson<WorkspaceConfig & { path?: string; storageKind?: string; formatVersion?: number; migrationState?: string }>(
+		await storage.readFile('.openbible/config.json')
+	);
+	const config = raw?.version
+		? raw
+		: raw?.formatVersion === 1 && raw.storageKind === 'native'
+			? {
+					version: 1 as const,
+					storage: 'native' as const,
+					configuredAt: new Date().toISOString(),
+					bibleImportStatus: 'pending' as const,
+					label: raw.path,
+					migrationState: raw.migrationState === 'completed' || raw.migrationState === 'error' ? raw.migrationState : 'not_started'
+				}
+			: null;
 	if (!config || config.version !== 1 || config.storage !== storage.kind) return null;
 	if (!['pending', 'complete', 'partial'].includes(config.bibleImportStatus)) return null;
 	return config;

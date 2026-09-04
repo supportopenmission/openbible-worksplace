@@ -1,0 +1,21 @@
+[package]
+name = "openbible-desktop"
+version = "0.5.0"
+description = "OpenBible native macOS shell"
+authors = ["OpenBible"]
+edition = "2021"
+
+[lib]
+name = "openbible_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.5.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.11.5", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+libc = "0.2"
+rusqlite = { version = "0.40.2", features = ["bundled"] }

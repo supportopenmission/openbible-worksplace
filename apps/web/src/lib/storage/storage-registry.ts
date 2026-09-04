@@ -5,10 +5,15 @@ import {
 	loadLocalWorkspaceHandle
 } from './local-storage';
 import { createOpfsStorage } from './opfs-storage';
+import { createTauriStorage, initializeNativeWorkspace } from './tauri-storage';
 import { loadWorkspaceConfig } from './workspace';
 import type { WorkspaceStorage } from './types';
 
 export async function createConfiguredStorage(): Promise<WorkspaceStorage | null> {
+	if (resolveStorageKind() === 'native') {
+		await initializeNativeWorkspace();
+		return createTauriStorage();
+	}
 	if (resolveStorageKind() === 'opfs') return createOpfsStorage();
 
 	const handle = await loadLocalWorkspaceHandle();
@@ -20,6 +25,10 @@ export async function createConfiguredStorage(): Promise<WorkspaceStorage | null
 }
 
 export async function chooseWorkspaceStorage(): Promise<WorkspaceStorage> {
+	if (resolveStorageKind() === 'native') {
+		await initializeNativeWorkspace();
+		return createTauriStorage();
+	}
 	if (resolveStorageKind() === 'opfs') return createOpfsStorage();
 	const storage = await chooseLocalWorkspaceStorage();
 	rememberStoragePreference('local');
