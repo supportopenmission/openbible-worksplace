@@ -1,7 +1,9 @@
 <script lang="ts">
-	import { ArrowUpRight, Trash2 } from '@lucide/svelte';
+	import { ArrowUpRight, Highlighter, Trash2 } from '@lucide/svelte';
+	import { resolve } from '$app/paths';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import * as Empty from '$lib/components/ui/empty/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 	import type { WorkspaceStorage } from '$lib/storage/types';
@@ -218,7 +220,23 @@
 {/snippet}
 
 {#if highlights.length === 0}
-	<p class="highlights-empty" role="status">{emptyMessage}</p>
+	<Empty.Root data-testid="highlights-empty">
+		<Empty.Header>
+			<Empty.Media variant="icon">
+				<Highlighter size={16} strokeWidth={1.8} aria-hidden="true" />
+			</Empty.Media>
+			<Empty.Title>Nenhum destaque ainda.</Empty.Title>
+			<Empty.Description>
+				{emptyMessage} Abra a Bíblia, selecione um trecho e salve seu primeiro destaque.
+			</Empty.Description>
+		</Empty.Header>
+		<Empty.Content>
+			<Button href={resolve('/bible')} size="sm" variant="outline">
+				Ler a Bíblia
+				<ArrowUpRight size={15} strokeWidth={1.75} aria-hidden="true" />
+			</Button>
+		</Empty.Content>
+	</Empty.Root>
 {:else}
 	<div class="highlights-grid" data-testid="highlights-card-list" aria-label="Destaques">
 		{#each highlights as highlight (highlightKey(highlight))}
@@ -268,13 +286,6 @@
 {/if}
 
 <style>
-	.highlights-empty {
-		margin: 0;
-		color: var(--muted-foreground);
-		font-size: 0.82rem;
-		line-height: 1.55;
-	}
-
 	.highlights-grid,
 	:global(.highlight-detail-dialog),
 	:global(.highlight-detail-sheet) {
