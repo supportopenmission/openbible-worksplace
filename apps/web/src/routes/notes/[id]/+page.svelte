@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 	import { page } from '$app/state';
+	import { resolve } from '$app/paths';
+	import { ChevronLeft } from '@lucide/svelte';
 	import NoteCanvasEditor from '$lib/features/notes/NoteCanvasEditor.svelte';
 	import { notePageChrome } from '$lib/features/notes/note-page-chrome.svelte';
 	import { createNote, readNote } from '$lib/features/notes/notes-repository';
@@ -121,6 +123,12 @@
 </svelte:head>
 
 <div class="note-page">
+	<div class="note-back">
+		<a href={resolve('/notes')} aria-label="Voltar para todas as notas">
+			<ChevronLeft size={17} strokeWidth={2} aria-hidden="true" />
+			<span>Todas as notas</span>
+		</a>
+	</div>
 	{#if loading}
 		<p class="state-message" role="status">Carregando nota…</p>
 	{:else if error || !note || !activeStorage}
@@ -133,6 +141,33 @@
 <style>
 	.note-page {
 		padding: 8px 0 80px;
+	}
+
+	.note-back {
+		display: none;
+	}
+
+	@media (max-width: 767px) {
+		.note-back {
+			display: block;
+			padding: 12px 16px 0;
+		}
+
+		.note-back a {
+			display: inline-flex;
+			align-items: center;
+			gap: 2px;
+			margin-left: -6px;
+			padding: 6px;
+			color: var(--muted-foreground);
+			font-size: 0.85rem;
+			font-weight: 500;
+			text-decoration: none;
+		}
+
+		.note-back a:active {
+			color: var(--foreground);
+		}
 	}
 
 	.state-message {
