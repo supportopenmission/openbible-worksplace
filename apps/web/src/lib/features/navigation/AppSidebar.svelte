@@ -22,6 +22,13 @@
 		}
 		return currentPath === href;
 	}
+
+	const mobileOrder = ['/notes', '/highlights', '/bible', '/sermons', '/config'];
+	const mobileLinks = mobileOrder.flatMap((href) => {
+		const link = links.find((item) => item.href === href);
+		if (!link || ('hideOnMobile' in link && link.hideOnMobile)) return [];
+		return [link];
+	});
 </script>
 
 <Sidebar.Root collapsible="icon" class="app-sidebar">
@@ -65,17 +72,30 @@
 </Sidebar.Root>
 
 <nav class="mobile-bottom-nav" aria-label="Navegação mobile" data-safe-area="bottom">
-	{#each links.filter((link) => !('hideOnMobile' in link && link.hideOnMobile)) as link (link.href)}
+	{#each mobileLinks as link (link.href)}
 		{@const Icon = link.icon}
 		{@const isActive = isLinkActive(link.href)}
+		{@const isDisabled = 'disabled' in link && link.disabled === true}
 		<a
 			class:active={isActive}
+			class:bible-home={link.href === '/bible'}
 			class="mobile-nav-link"
-			href={resolve(link.href)}
+			href={isDisabled ? undefined : resolve(link.href)}
 			aria-current={isActive ? 'page' : undefined}
+			aria-label={link.href === '/bible' ? 'Bíblia' : undefined}
+			aria-disabled={isDisabled || undefined}
+			tabindex={isDisabled ? -1 : undefined}
+			title={isDisabled ? 'Em breve' : undefined}
+			onclick={isDisabled ? (event) => event.preventDefault() : undefined}
 		>
-			<Icon size={17} strokeWidth={1.75} aria-hidden="true" />
-			<span>{link.label}</span>
+			{#if link.href === '/bible'}
+				<span class="bible-home-circle" aria-hidden="true">
+					<img class="bible-home-logo" src="/logo-minimal.png" alt="" aria-hidden="true" />
+				</span>
+			{:else}
+				<Icon size={17} strokeWidth={1.75} aria-hidden="true" />
+			{/if}
+			<span class="mobile-nav-label">{link.label}</span>
 		</a>
 	{/each}
 </nav>
@@ -287,11 +307,54 @@
 			text-overflow: ellipsis;
 			white-space: nowrap;
 		}
+
+		.mobile-nav-link.bible-home {
+			overflow: visible;
+		}
+
+		.mobile-nav-link.bible-home .mobile-nav-label {
+			display: none;
+		}
+
+		.mobile-nav-link.bible-home:hover .bible-home-circle {
+			transform: scale(1.06);
+		}
+
+		.mobile-nav-link.bible-home:active .bible-home-circle {
+			transform: scale(0.96);
+		}
+
+		.bible-home-circle {
+			display: flex;
+			width: 56px;
+			height: 56px;
+			flex-shrink: 0;
+			align-items: center;
+			justify-content: center;
+			margin-top: -28px;
+			border: 1px solid var(--border);
+			border-radius: 999px;
+			background: var(--primary);
+			transition: transform 160ms ease;
+		}
+
+		.bible-home-logo {
+			display: block;
+			width: 30px;
+			height: 30px;
+			object-fit: contain;
+			filter: none;
+		}
+
+		:global(.dark) .bible-home-logo {
+			filter: invert(1);
+		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
 		:global(.nav-link),
-		.mobile-nav-link {
+		.mobile-nav-link,
+		.bible-home-circle {
 			transition: none;
 		}
 	}
