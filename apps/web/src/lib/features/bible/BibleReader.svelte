@@ -154,6 +154,12 @@
 	let popoverBusy = $state(false);
 	let splitNote = $state<Note | null>(null);
 	let splitNoteList = $state<Note[] | null>(null);
+	/** Espelha o `showSplit` do BibleNoteSplit no desktop: a toolbar mora no tile. */
+	const desktopSplitActive = $derived(
+		!isMobile.current &&
+			((splitNoteList != null && splitNoteList.length > 0 && splitNote == null) ||
+				(splitNote != null && storage != null))
+	);
 	let verseNoteSelectorOpen = $state(false);
 	let verseNoteSelectorAnchor = $state<HTMLElement | null>(null);
 	let verseNoteSelectorVerse = $state<number | null>(null);
@@ -1180,11 +1186,12 @@
 			</section>
 		{/if}
 	{:else if selectedVersion && selectedBook && selectedChapter !== null}
-		<section
-			class="reader-toolbar"
-			class:toolbar-hidden={!toolbarVisible}
-			aria-label="Controles do leitor"
-		>
+		{#snippet readerToolbar()}
+			<section
+				class="reader-toolbar"
+				class:toolbar-hidden={!toolbarVisible}
+				aria-label="Controles do leitor"
+			>
 			<div class="toolbar-shell">
 				<ButtonGroup class="reader-toolbar-group" aria-label="Navegação da Bíblia">
 					<Button
@@ -1272,12 +1279,15 @@
 					</Button>
 				</ButtonGroup>
 			</div>
-		</section>
+			</section>
+		{/snippet}
+		{#if !desktopSplitActive}
+			{@render readerToolbar()}
+		{/if}
 		<div
 			class="reader-fab"
 			class:fab-open={fabOpen}
 			class:fab-hidden={popoverOpen}
-			onkeydown={handleFabKeydown}
 		>
 			<div class="fab-actions" aria-hidden={!fabOpen}>
 				<button
@@ -1575,6 +1585,7 @@
 			note={splitNote}
 			listNotes={splitNoteList}
 			{storage}
+			toolbar={desktopSplitActive ? readerToolbar : null}
 			onClose={closeSplitPanel}
 			onBackToList={backToVerseNoteList}
 			onSaved={(note) => (splitNote = note)}

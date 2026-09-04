@@ -20,6 +20,7 @@
 		storage,
 		listNotes = null,
 		hideListDelete = true,
+		toolbar = null,
 		onClose,
 		onBackToList,
 		onSaved,
@@ -30,6 +31,7 @@
 		storage: WorkspaceStorage | null;
 		listNotes?: Note[] | null;
 		hideListDelete?: boolean;
+		toolbar?: Snippet | null;
 		onClose: () => void;
 		onBackToList?: () => void;
 		onSaved?: (note: Note) => void;
@@ -184,10 +186,12 @@
 {:else}
 	<div class="note-split-shell" bind:this={splitShell} class:resizing>
 		<div class="note-split" style:--reader-split-ratio={readerRatio}>
-			<div class="reader-pane">{@render children()}</div>
-			<button
-				type="button"
+			<div class="reader-pane">{@render toolbar?.()}{@render children()}</div>
+			<div
 				class="split-resizer"
+				role="slider"
+				aria-orientation="vertical"
+				tabindex={0}
 				aria-label="Redimensionar painéis entre Bíblia e nota"
 				aria-valuemin={MIN_READER_RATIO * 100}
 				aria-valuemax={MAX_READER_RATIO * 100}
