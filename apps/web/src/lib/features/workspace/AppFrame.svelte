@@ -13,6 +13,7 @@
 	import { notePageChrome } from '$lib/features/notes/note-page-chrome.svelte';
 	import NetworkStatus from '$lib/features/navigation/NetworkStatus.svelte';
 	import PermissionRecovery from './PermissionRecovery.svelte';
+	import WorkspaceBootSplash from './WorkspaceBootSplash.svelte';
 	import { getWorkspaceState } from './workspace-state.svelte';
 
 	let { children }: { children: Snippet } = $props();
@@ -57,10 +58,7 @@
 </script>
 
 {#if workspace?.status === 'loading'}
-	<main class="boot-state" aria-live="polite">
-		<p class="eyebrow">OpenBible</p>
-		<p>Abrindo seu workspace...</p>
-	</main>
+	<WorkspaceBootSplash />
 {:else if workspace?.status === 'permission-needed'}
 	<PermissionRecovery />
 {:else if workspace?.showShell}
@@ -133,24 +131,6 @@
 {/if}
 
 <style>
-	.boot-state {
-		max-width: 640px;
-		min-height: 100dvh;
-		margin: 0 auto;
-		padding: 64px 24px;
-	}
-
-	.eyebrow,
-	.boot-state p:last-child {
-		color: var(--muted-foreground);
-	}
-
-	.eyebrow {
-		margin: 0 0 10px;
-		font-size: 0.75rem;
-		font-weight: 500;
-	}
-
 	:global(.app-sidebar-provider) {
 		min-height: 100dvh;
 		height: 100dvh;

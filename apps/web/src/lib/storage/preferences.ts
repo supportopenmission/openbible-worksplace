@@ -1,4 +1,4 @@
-import { clearHomeRoute, readHomeRoute, saveHomeRoute } from '$lib/navigation/home-preference';
+import { clearHomeRoute, readHomeRoute } from '$lib/navigation/home-preference';
 import {
 	readReaderPreference,
 	READER_SELECTION_STORAGE_KEY,
@@ -58,8 +58,7 @@ export function readCachedPreferences(): WorkspacePreferences {
 
 export function writeCachedPreferences(preferences: WorkspacePreferences): void {
 	saveTheme(preferences.theme);
-	if (preferences.initialRoute) saveHomeRoute(preferences.initialRoute);
-	else clearHomeRoute();
+	clearHomeRoute();
 	if (preferences.readerSelection) saveReaderPreference(preferences.readerSelection);
 	else if (typeof window !== 'undefined') {
 		try {

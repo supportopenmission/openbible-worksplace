@@ -8,28 +8,25 @@ describe('/config', () => {
 		localStorage.clear();
 	});
 
-	// SPECSFY: US-001 FR-001 FR-002 FR-003 NFR-001 AC-002
-	it('saves Bible as the initial screen', async () => {
+	// SPECSFY: US-003 FR-006 NFR-003 AC-010
+	it('no longer offers an initial screen section', async () => {
 		await page.viewport(320, 900);
 		await render(ConfigPage);
 
-		await page.getByRole('button', { name: 'Tela inicial' }).click();
-		await page.getByRole('radio', { name: /ler a bíblia/i }).click();
-		await page.getByRole('button', { name: /salvar tela inicial/i }).click();
-
-		await expect.element(page.getByText(/tela inicial salva/i)).toBeInTheDocument();
+		expect(page.getByRole('button', { name: 'Tela inicial' })).not.toBeInTheDocument();
+		expect(page.getByRole('button', { name: 'Armazenamento' })).toBeInTheDocument();
 	});
 
-	// SPECSFY: US-001 FR-001 FR-002 FR-003 NFR-001 AC-003
-	it('removes an existing initial screen preference', async () => {
+	// SPECSFY: US-003 FR-006 NFR-003 AC-011
+	it('ignores a legacy initial screen preference', async () => {
 		localStorage.setItem('openbible.initial-route', 'sermons');
 		await page.viewport(320, 900);
 		await render(ConfigPage);
 
-		await page.getByRole('button', { name: 'Tela inicial' }).click();
-		await page.getByRole('button', { name: /remover preferência/i }).click();
-
-		await expect.element(page.getByText(/preferência removida/i)).toBeInTheDocument();
+		expect(page.getByRole('button', { name: 'Tela inicial' })).not.toBeInTheDocument();
+		await expect
+			.element(page.getByRole('button', { name: 'Armazenamento' }))
+			.toBeInTheDocument();
 	});
 
 	it('shows a section index on mobile with drill-down subpages and back', async () => {
@@ -44,7 +41,7 @@ describe('/config', () => {
 			.toBeInTheDocument();
 		const storageRow = page.getByRole('button', { name: 'Armazenamento' });
 		await expect.element(storageRow).toBeInTheDocument();
-		await expect.element(page.getByRole('button', { name: 'Tela inicial' })).toBeInTheDocument();
+		expect(page.getByRole('button', { name: 'Tela inicial' })).not.toBeInTheDocument();
 		await expect.element(page.getByRole('button', { name: 'Sobre' })).toBeInTheDocument();
 		await expect.element(page.getByRole('button', { name: 'Aparência' })).toBeInTheDocument();
 
@@ -52,13 +49,12 @@ describe('/config', () => {
 		await expect
 			.element(page.getByRole('heading', { name: 'Armazenamento', level: 2 }))
 			.toBeInTheDocument();
-		expect(page.getByRole('button', { name: 'Tela inicial' })).not.toBeInTheDocument();
 
 		await page.getByRole('button', { name: /voltar para configurações/i }).click();
-		await expect.element(page.getByRole('button', { name: 'Tela inicial' })).toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: 'Armazenamento' })).toBeInTheDocument();
 	});
 
-	it('uses tabs on desktop and reveals the home panel on selection', async () => {
+	it('uses tabs on desktop without an initial screen panel', async () => {
 		await page.viewport(1440, 900);
 		await render(ConfigPage);
 
@@ -66,18 +62,12 @@ describe('/config', () => {
 			.element(page.getByRole('heading', { name: 'Configurações', level: 1 }))
 			.toBeInTheDocument();
 		const storageTab = page.getByRole('tab', { name: 'Armazenamento' });
-		const homeTab = page.getByRole('tab', { name: 'Tela inicial' });
 		await expect.element(storageTab).toBeInTheDocument();
-		await expect.element(homeTab).toBeInTheDocument();
+		expect(page.getByRole('tab', { name: 'Tela inicial' })).not.toBeInTheDocument();
 		await expect.element(storageTab).toHaveAttribute('data-state', 'active');
-		await expect.element(homeTab).toHaveAttribute('data-state', 'inactive');
 
-		await homeTab.click();
-		await expect.element(homeTab).toHaveAttribute('data-state', 'active');
-		await expect.element(storageTab).toHaveAttribute('data-state', 'inactive');
-		await expect
-			.element(page.getByRole('radio', { name: /ler a bíblia/i }))
-			.toBeInTheDocument();
+		await storageTab.click();
+		await expect.element(storageTab).toHaveAttribute('data-state', 'active');
 	});
 
 	it('exposes bibles and stats tabs on desktop and sections on mobile', async () => {

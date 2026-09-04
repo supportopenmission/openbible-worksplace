@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { BookOpen, GraduationCap, Highlighter, NotebookPen, ScrollText, Settings } from '@lucide/svelte';
+	import { BookOpen, GraduationCap, Highlighter, House, NotebookPen, ScrollText, Settings } from '@lucide/svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import { resolve } from '$app/paths';
 	import { APP_VERSION } from '$lib/app-version';
@@ -8,6 +8,7 @@
 	let { currentPath = '/' }: { currentPath?: string } = $props();
 
 	const links = [
+		{ label: 'Início', href: '/', icon: House },
 		{ label: 'Bíblia', href: '/bible', icon: BookOpen },
 		{ label: 'Notas', href: '/notes', icon: NotebookPen },
 		{ label: 'Destaques', href: '/highlights', icon: Highlighter },
@@ -23,7 +24,7 @@
 		return currentPath === href;
 	}
 
-	const mobileOrder = ['/notes', '/highlights', '/bible', '/sermons', '/config'];
+	const mobileOrder = ['/', '/notes', '/bible', '/sermons', '/config'];
 	const mobileLinks = mobileOrder.flatMap((href) => {
 		const link = links.find((item) => item.href === href);
 		if (!link || ('hideOnMobile' in link && link.hideOnMobile)) return [];

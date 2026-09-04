@@ -21,6 +21,8 @@
 		highlights,
 		catalog = null,
 		storage = null,
+		layout = 'grid',
+		emptyVariant = 'panel',
 		emptyMessage = 'Nenhum destaque salvo neste workspace.',
 		onNavigate,
 		onRemoved
@@ -28,6 +30,8 @@
 		highlights: ReaderHighlightRecord[];
 		catalog?: BibleCatalog | null;
 		storage?: WorkspaceStorage | null;
+		layout?: 'grid' | 'rail';
+		emptyVariant?: 'panel' | 'inline';
 		emptyMessage?: string;
 		onNavigate?: (highlight: ReaderHighlightRecord) => void;
 		onRemoved?: (highlight: ReaderHighlightRecord) => void;
@@ -220,6 +224,11 @@
 {/snippet}
 
 {#if highlights.length === 0}
+	{#if emptyVariant === 'inline'}
+		<p class="highlights-min-empty">
+			Nenhum destaque ainda. <a href={resolve('/bible')}>Ler a Bíblia</a>
+		</p>
+	{:else}
 	<Empty.Root data-testid="highlights-empty">
 		<Empty.Header>
 			<Empty.Media variant="icon">
@@ -237,29 +246,28 @@
 			</Button>
 		</Empty.Content>
 	</Empty.Root>
+	{/if}
 {:else}
-	<div class="highlights-grid" data-testid="highlights-card-list" aria-label="Destaques">
+	<div class="highlights-grid" class:highlights-rail={layout === 'rail'} data-testid="highlights-card-list" aria-label="Destaques">
 		{#each highlights as highlight (highlightKey(highlight))}
 			<article class="highlight-card">
 				<button type="button" class="card-main" onclick={() => openDetail(highlight)}>
-					<span class="card-reference">{rowReference(highlight)}</span>
-					<span class="card-meta">
-						<span>{versionAbbreviation(highlight.versionId)}</span>
+					{@render styleIndicator(highlight.styleId)}
+					<span class="card-text">
+						<span class="card-reference">{rowReference(highlight)}</span>
+						<span class="card-meta">{versionAbbreviation(highlight.versionId)}</span>
 					</span>
 				</button>
-				<div class="card-footer">
-					{@render styleIndicator(highlight.styleId)}
-					<Button
-						type="button"
-						variant="ghost"
-						size="icon-sm"
-						aria-label={`Remover destaque ${rowReference(highlight)}`}
-						disabled={!storage || removing}
-						onclick={(event) => void handleRemove(highlight, event)}
-					>
-						<Trash2 size={15} strokeWidth={1.75} aria-hidden="true" />
-					</Button>
-				</div>
+				<Button
+					type="button"
+					variant="ghost"
+					size="icon-sm"
+					aria-label={`Remover destaque ${rowReference(highlight)}`}
+					disabled={!storage || removing}
+					onclick={(event) => void handleRemove(highlight, event)}
+				>
+					<Trash2 size={14} strokeWidth={1.75} aria-hidden="true" />
+				</Button>
 			</article>
 		{/each}
 	</div>
@@ -310,13 +318,55 @@
 		gap: 12px;
 	}
 
+	.highlights-grid.highlights-rail {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+	}
+
+	@media (max-width: 900px) {
+		.highlights-grid.highlights-rail {
+			display: flex;
+			padding-bottom: 4px;
+			overflow-x: auto;
+			scroll-snap-type: x proximity;
+			scrollbar-width: none;
+		}
+
+		.highlights-grid.highlights-rail::-webkit-scrollbar {
+			display: none;
+		}
+
+	.highlights-grid.highlights-rail .highlight-card {
+			flex: 0 0 72%;
+			scroll-snap-align: start;
+		}
+	}
+
+	.highlights-min-empty {
+		margin: 0;
+		color: var(--muted-foreground);
+		font-size: 0.82rem;
+		line-height: 1.55;
+	}
+
+	.highlights-min-empty a {
+		color: var(--foreground);
+		font-weight: 500;
+		text-underline-offset: 3px;
+	}
+
+	.highlights-min-empty a:hover {
+		text-decoration: underline;
+	}
+
 	.highlight-card {
 		display: flex;
 		min-width: 0;
-		flex-direction: column;
-		justify-content: space-between;
+		align-items: center;
+		gap: 4px;
 		border: 1px solid var(--border);
 		border-radius: 10px;
+		padding: 6px 6px 6px 10px;
 		background: transparent;
 		transition: background 160ms ease;
 	}
@@ -329,10 +379,10 @@
 		display: flex;
 		min-width: 0;
 		flex: 1;
-		flex-direction: column;
-		gap: 6px;
+		align-items: center;
+		gap: 8px;
 		border: 0;
-		padding: 14px 14px 10px;
+		padding: 4px 2px;
 		background: transparent;
 		color: inherit;
 		text-align: left;
@@ -341,32 +391,32 @@
 
 	.card-main:focus-visible {
 		outline: 2px solid var(--ring);
-		outline-offset: -2px;
-		border-radius: 10px;
+		outline-offset: 2px;
+		border-radius: 8px;
+	}
+
+	.card-text {
+		display: flex;
+		min-width: 0;
+		flex-direction: column;
+		gap: 1px;
 	}
 
 	.card-reference {
+		overflow: hidden;
 		font-family: var(--font-mono);
-		font-size: 0.78rem;
+		font-size: 0.76rem;
 		font-weight: 600;
 		letter-spacing: 0.01em;
-		line-height: 1.45;
+		line-height: 1.4;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.card-meta {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
 		color: var(--muted-foreground);
-		font-size: 0.74rem;
-		line-height: 1.4;
-	}
-
-	.card-footer {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 0 8px 8px;
+		font-size: 0.7rem;
+		line-height: 1.35;
 	}
 
 	.style-indicator {

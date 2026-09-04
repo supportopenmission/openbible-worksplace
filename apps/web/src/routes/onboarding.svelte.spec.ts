@@ -43,6 +43,52 @@ describe('OpenBible onboarding', () => {
 		expect(page.getByText(/não foi possível/i)).toBeInTheDocument();
 	});
 
+	it('explains integrated-browser permission failures without closing onboarding', async () => {
+		// SPECSFY: US-001 FR-001 FR-005 NFR-001 NFR-002 AC-003
+		const chooseStorage = vi.fn(async () => {
+			throw new DOMException('The user aborted a request.', 'AbortError');
+		});
+
+		await render(OnboardingModal, {
+			props: { storageMode: 'local', onChooseStorage: chooseStorage }
+		});
+
+		await page.getByRole('button', { name: /começar/i }).click();
+		await page.getByRole('button', { name: /escolher pasta/i }).click();
+
+		expect(chooseStorage).toHaveBeenCalledOnce();
+		expect(page.getByRole('dialog')).toBeInTheDocument();
+		await expect
+			.element(page.getByText(/ambiente integrado pode não oferecer acesso a pastas/i))
+			.toBeInTheDocument();
+	});
+
+	it('offers explicit OPFS fallback after the integrated picker fails', async () => {
+		// SPECSFY: US-001 FR-001 FR-003 FR-005 NFR-001 NFR-002 AC-010
+		const chooseStorage = vi.fn(async () => {
+			throw new DOMException('The user aborted a request.', 'AbortError');
+		});
+		const browserStorage = createStorage();
+		const chooseBrowserStorage = vi.fn(async () => browserStorage);
+
+		await render(OnboardingModal, {
+			props: {
+				storageMode: 'local',
+				onChooseStorage: chooseStorage,
+				onChooseBrowserStorage: chooseBrowserStorage
+			}
+		});
+
+		await page.getByRole('button', { name: /começar/i }).click();
+		await page.getByRole('button', { name: /escolher pasta/i }).click();
+		await page.getByRole('button', { name: /usar armazenamento do navegador/i }).click();
+
+		expect(chooseBrowserStorage).toHaveBeenCalledOnce();
+		await expect
+			.element(page.getByRole('heading', { name: /você já tem bíblias sqlite/i }))
+			.toBeInTheDocument();
+	});
+
 	it('allows postponing Bible import and opens the project', async () => {
 		// SPECSFY: US-002 FR-003 FR-004 FR-005 NFR-001 NFR-002 AC-004
 		const deferred = vi.fn();
@@ -61,9 +107,8 @@ describe('OpenBible onboarding', () => {
 		await render(Page, { props: { initialWorkspaceConfigured: true } });
 
 		expect(page.getByRole('dialog')).not.toBeInTheDocument();
-		expect(document.querySelector('img.home-logo')?.getAttribute('src')).toBe('/logo.png');
 		await expect
-			.element(page.getByRole('heading', { name: 'OpenBible', level: 1 }))
+			.element(page.getByRole('heading', { name: 'Início', level: 1 }))
 			.toBeInTheDocument();
 	});
 
@@ -83,12 +128,8 @@ describe('OpenBible onboarding', () => {
 		});
 
 		await page.getByRole('tab', { name: /bucket r2/i }).click();
-		await expect
-			.element(page.getByRole('textbox', { name: /url do bucket/i }))
-			.toBeInTheDocument();
-		await expect
-			.element(page.getByRole('button', { name: /^carregar$/i }))
-			.toBeInTheDocument();
+		await expect.element(page.getByRole('textbox', { name: /url do bucket/i })).toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: /^carregar$/i })).toBeInTheDocument();
 	});
 
 	it('offers local and remote import tabs in the import step', async () => {

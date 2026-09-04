@@ -31,6 +31,7 @@ export class WorkspaceState {
 	persisted = $state<boolean | null>(null);
 	permission = $state<WorkspacePermission | null>(null);
 	error = $state('');
+	private bootFlight: Promise<void> | null = null;
 
 	get showShell() {
 		return this.status === 'ready';
@@ -48,6 +49,17 @@ export class WorkspaceState {
 	}
 
 	async boot(options: { requestPermission?: boolean; requestPersist?: boolean } = {}) {
+		if (this.bootFlight) return this.bootFlight;
+		if (this.status === 'ready' && !options.requestPermission) return;
+		this.bootFlight = this.runBoot(options);
+		try {
+			await this.bootFlight;
+		} finally {
+			this.bootFlight = null;
+		}
+	}
+
+	private async runBoot(options: { requestPermission?: boolean; requestPersist?: boolean }) {
 		this.error = '';
 		const snapshot = await bootstrapWorkspace({
 			requestPermission: options.requestPermission,

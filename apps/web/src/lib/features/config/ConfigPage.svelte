@@ -9,7 +9,6 @@
 		ChevronLeft,
 		ChevronRight,
 		Database,
-		House,
 		Info,
 		SunMoon
 	} from '@lucide/svelte';
@@ -17,7 +16,6 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import AppearanceSettings from './AppearanceSettings.svelte';
 	import BibleLibraryManager from '$lib/features/bible/BibleLibraryManager.svelte';
-	import InitialScreenPicker from '$lib/features/navigation/InitialScreenPicker.svelte';
 	import {
 		getReminderConfig,
 		requestReminderPermission,
@@ -28,17 +26,16 @@
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 
 	const isMobile = new IsMobile();
-	let activeTab = $state<'storage' | 'bibles' | 'stats' | 'home' | 'reminder' | 'appearance'>(
+	let activeTab = $state<'storage' | 'bibles' | 'stats' | 'reminder' | 'appearance'>(
 		'storage'
 	);
 
-	type MobileSectionId = 'storage' | 'bibles' | 'stats' | 'home' | 'reminder' | 'about' | 'appearance';
+	type MobileSectionId = 'storage' | 'bibles' | 'stats' | 'reminder' | 'about' | 'appearance';
 
 	const mobileSections: Array<{ id: MobileSectionId; label: string; icon: Component }> = [
 		{ id: 'storage', label: 'Armazenamento', icon: Database },
 		{ id: 'bibles', label: 'Bíblias', icon: BookOpen },
 		{ id: 'stats', label: 'Estatísticas', icon: ChartColumn },
-		{ id: 'home', label: 'Tela inicial', icon: House },
 		{ id: 'reminder', label: 'Lembrete diário', icon: Bell },
 		{ id: 'appearance', label: 'Aparência', icon: SunMoon },
 		{ id: 'about', label: 'Sobre', icon: Info }
@@ -163,8 +160,6 @@
 							<BibleLibraryManager />
 						{:else if mobileSection === 'stats'}
 							<WorkspaceStats />
-						{:else if mobileSection === 'home'}
-							<InitialScreenPicker mode="config" embedded />
 						{:else if mobileSection === 'reminder'}
 							{@render reminderSettings()}
 						{:else if mobileSection === 'appearance'}
@@ -192,7 +187,6 @@
 				<Tabs.Trigger value="storage">Armazenamento</Tabs.Trigger>
 				<Tabs.Trigger value="bibles">Bíblias</Tabs.Trigger>
 				<Tabs.Trigger value="stats">Estatísticas</Tabs.Trigger>
-				<Tabs.Trigger value="home">Tela inicial</Tabs.Trigger>
 				<Tabs.Trigger value="reminder">Lembrete</Tabs.Trigger>
 				<Tabs.Trigger value="appearance">Aparência</Tabs.Trigger>
 			</Tabs.List>
@@ -204,9 +198,6 @@
 			</Tabs.Content>
 			<Tabs.Content value="stats" class="config-tab-panel">
 				<WorkspaceStats />
-			</Tabs.Content>
-			<Tabs.Content value="home" class="config-tab-panel">
-				<InitialScreenPicker mode="config" embedded />
 			</Tabs.Content>
 			<Tabs.Content value="reminder" class="config-tab-panel">
 				{@render reminderSettings()}

@@ -1,14 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
-	import { APP_VERSION } from '$lib/app-version';
 	import OnboardingModal from '$lib/features/onboarding/OnboardingModal.svelte';
-	import InitialScreenPicker from '$lib/features/navigation/InitialScreenPicker.svelte';
+	import HomePage from '$lib/features/home/HomePage.svelte';
 	import { getWorkspaceState } from '$lib/features/workspace/workspace-state.svelte';
-	import { homeRoutePath, readHomeRoute } from '$lib/navigation/home-preference';
 	import { detectStorageKind } from '$lib/storage/environment';
 	import {
+		chooseBrowserWorkspaceStorage,
 		chooseWorkspaceStorage,
 		createConfiguredStorage
 	} from '$lib/storage/storage-registry';
@@ -30,9 +27,7 @@
 	let onboardingClosed = $state(false);
 	let importRequested = $state(false);
 	let initialError = $state('');
-	let redirecting = $state(false);
 	let onboardingStep = $state<OnboardingStep>('intro');
-	let logoFailed = $state(false);
 	let storageMode = $state<StorageKind>(
 		typeof window === 'undefined' ? 'opfs' : detectStorageKind()
 	);
@@ -41,10 +36,6 @@
 		importRequested || (!onboardingClosed && !initialWorkspaceConfigured)
 	);
 
-	function preferredHomeRoute() {
-		return workspace?.preferences.initialRoute ?? readHomeRoute();
-	}
-
 	async function syncFromWorkspace() {
 		if (!workspace) return;
 		if (workspace.error) initialError = workspace.error;
@@ -52,19 +43,26 @@
 		if (workspace.status === 'unconfigured') onboardingClosed = false;
 	}
 
+	function clearLegacyHomeRoute() {
+		try {
+			window.localStorage.removeItem('openbible.initial-route');
+		} catch {
+			// Cache legível indisponível não impede a home.
+		}
+	}
+
 	onMount(async () => {
+		clearLegacyHomeRoute();
 		importRequested = new URLSearchParams(window.location.search).get('import') === 'bible';
 		if (importRequested) onboardingStep = 'import';
 		if (initialWorkspaceConfigured && !importRequested) {
 			onboardingClosed = true;
-			redirectToPreferredHome();
 			return;
 		}
 
 		storageMode = detectStorageKind();
 		if (workspace) {
 			await syncFromWorkspace();
-			if (workspace.status === 'ready' && !importRequested) redirectToPreferredHome();
 			return;
 		}
 
@@ -72,12 +70,7 @@
 			selectedStorage = storageOverride ?? (await createConfiguredStorage());
 			if (selectedStorage) {
 				const config = await loadWorkspaceConfig(selectedStorage);
-				if (config) {
-					if (!importRequested) {
-						onboardingClosed = true;
-						redirectToPreferredHome();
-					}
-				}
+				if (config && !importRequested) onboardingClosed = true;
 			}
 		} catch (error) {
 			initialError =
@@ -90,11 +83,15 @@
 		return selectedStorage;
 	}
 
+	async function chooseBrowserStorage() {
+		selectedStorage = await chooseBrowserWorkspaceStorage();
+		return selectedStorage;
+	}
+
 	async function closeOnboarding() {
 		importRequested = false;
 		onboardingClosed = true;
 		if (storage && workspace) await workspace.markConfigured(storage);
-		redirectToPreferredHome();
 	}
 
 	async function deferImport() {
@@ -104,17 +101,10 @@
 	function finishOnboarding() {
 		void closeOnboarding();
 	}
-
-	function redirectToPreferredHome() {
-		const route = preferredHomeRoute();
-		if (!route) return;
-		redirecting = true;
-		void goto(resolve(homeRoutePath(route)));
-	}
 </script>
 
 <svelte:head>
-	<title>OpenBible</title>
+	<title>Início | OpenBible</title>
 	<meta name="description" content="Seu espaço local para estudos bíblicos." />
 </svelte:head>
 
@@ -126,130 +116,11 @@
 			{initialError}
 			initialStep={onboardingStep}
 			onChooseStorage={chooseStorage}
+			onChooseBrowserStorage={chooseBrowserStorage}
 			onDeferred={deferImport}
 			onComplete={finishOnboarding}
 		/>
 	{/key}
 {:else}
-	{#if redirecting}
-		<main class="project-home redirecting" aria-live="polite">
-			<p class="eyebrow">Seu espaço de estudo</p>
-			<p class="description">Abrindo sua tela inicial...</p>
-		</main>
-	{:else}
-		<main class="project-home">
-			<div class="home-intro">
-				{#if !logoFailed}
-					<h1 class="sr-only">OpenBible</h1>
-					<img class="home-logo" src="/logo.png" alt="" aria-hidden="true" onerror={() => (logoFailed = true)} />
-				{:else}
-					<h1>OpenBible</h1>
-				{/if}
-				<p class="eyebrow">Seu espaço de estudo</p>
-				<p class="description">
-					Um lugar calmo para ler, estudar e preparar o que você vai compartilhar.
-				</p>
-			</div>
-			<div class="home-actions">
-				<InitialScreenPicker />
-			</div>
-			<p class="home-version">OpenBible v{APP_VERSION}</p>
-		</main>
-	{/if}
+	<HomePage {storage} />
 {/if}
-
-<style>
-	.project-home {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(320px, 520px);
-		align-items: center;
-		gap: clamp(48px, 9vw, 128px);
-		max-width: 1120px;
-		min-height: 100dvh;
-		margin: 0 auto;
-		padding: max(48px, env(safe-area-inset-top)) clamp(24px, 5vw, 64px)
-			max(48px, env(safe-area-inset-bottom));
-	}
-
-	.project-home.redirecting {
-		display: grid;
-		grid-template-columns: 1fr;
-		place-content: center;
-		max-width: 720px;
-	}
-
-	.home-logo {
-		display: block;
-		width: min(240px, 72vw);
-		height: auto;
-		margin-bottom: 32px;
-		filter: invert(1);
-	}
-
-	.sr-only {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		margin: -1px;
-		padding: 0;
-		overflow: hidden;
-		clip: rect(0, 0, 0, 0);
-		border: 0;
-		white-space: nowrap;
-	}
-
-	:global(.dark) .home-logo {
-		filter: none;
-	}
-
-	.eyebrow {
-		margin: 0 0 10px;
-		color: var(--muted-foreground);
-		font-size: 0.75rem;
-		font-weight: 500;
-	}
-
-	h1 {
-		margin: 0;
-		font-size: clamp(2.75rem, 7vw, 4.5rem);
-		font-weight: 600;
-		letter-spacing: -0.06em;
-		line-height: 1;
-	}
-
-	.description {
-		max-width: 430px;
-		margin: 20px 0 0;
-		color: var(--muted-foreground);
-		font-size: 1rem;
-		line-height: 1.6;
-	}
-
-	.home-actions {
-		min-width: 0;
-	}
-
-	.home-version {
-		grid-column: 1 / -1;
-		margin: 24px 0 0;
-		color: var(--muted-foreground);
-		font-family: var(--font-mono);
-		font-size: 0.68rem;
-		text-align: center;
-	}
-
-	@media (max-width: 1024px) {
-		.project-home {
-			grid-template-columns: minmax(0, 560px);
-			justify-content: center;
-			gap: 48px;
-			padding-right: max(24px, env(safe-area-inset-right));
-			padding-bottom: max(24px, env(safe-area-inset-bottom));
-			padding-left: max(24px, env(safe-area-inset-left));
-		}
-
-		.home-logo {
-			margin-bottom: 24px;
-		}
-	}
-</style>
