@@ -94,4 +94,7 @@ jobs:
       - name: Upload binaries to GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${GITHUB_REF_NAME}" release-assets/* --clobber --repo "${GITHUB_REPOSITORY}"
+        run: |
+          mapfile -d '' assets < <(find release-assets -type f -print0)
+          test "${#assets[@]}" -gt 0
+          gh release upload "${GITHUB_REF_NAME}" --clobber --repo "${GITHUB_REPOSITORY}" "${assets[@]}"
