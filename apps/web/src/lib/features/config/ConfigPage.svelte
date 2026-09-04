@@ -105,11 +105,6 @@
 
 <div class="config-page">
 	<h1 class="sr-only">Configurações</h1>
-	<nav class="breadcrumb" aria-label="Breadcrumb">
-		<a href={resolve('/')}>OpenBible</a>
-		<span aria-hidden="true">/</span>
-		<span aria-current="page">Configuração</span>
-	</nav>
 
 	{#if isMobile.current}
 		{#if mobileSection === null}
@@ -261,15 +256,6 @@
 		padding: 8px clamp(20px, 5vw, 64px) 80px;
 	}
 
-	.breadcrumb {
-		display: flex;
-		align-items: center;
-		gap: 9px;
-		margin-bottom: 24px;
-		color: var(--muted-foreground);
-		font-size: 0.72rem;
-	}
-
 	.sr-only {
 		position: absolute;
 		width: 1px;
@@ -280,17 +266,6 @@
 		clip: rect(0, 0, 0, 0);
 		border: 0;
 		white-space: nowrap;
-	}
-
-	.breadcrumb a {
-		color: var(--foreground);
-		font-weight: 500;
-		text-decoration: none;
-	}
-
-	.breadcrumb a:hover {
-		text-decoration: underline;
-		text-underline-offset: 3px;
 	}
 
 	:global(.config-tabs) {
@@ -525,12 +500,6 @@
 		color: var(--muted-foreground);
 		font-size: 0.78rem;
 		line-height: 1.55;
-	}
-
-	@media (max-width: 767px) {
-		.breadcrumb {
-			display: none;
-		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
