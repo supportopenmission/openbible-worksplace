@@ -148,8 +148,18 @@
 	}
 
 	@media (max-width: 767px) {
+		.note-page {
+			display: flex;
+			height: 100%;
+			min-height: 0;
+			flex-direction: column;
+			overflow: hidden;
+			padding: 0;
+		}
+
 		.note-back {
 			display: block;
+			flex-shrink: 0;
 			padding: 12px 16px 0;
 		}
 

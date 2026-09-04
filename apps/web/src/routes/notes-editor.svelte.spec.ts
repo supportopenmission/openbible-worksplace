@@ -26,7 +26,7 @@ describe('notes editor Milkdown canvas controls', () => {
 		render(NotesEditorPage, { props: { data: { noteId: 'test-note' } } });
 		const toolbar = page.getByRole('toolbar', { name: 'Formatação da nota' });
 		await expect.element(toolbar).toBeInTheDocument();
-		for (const name of ['Negrito', 'Itálico', 'Título', 'Lista', 'Tarefas', 'Citação', 'Versículo']) {
+		for (const name of ['Negrito', 'Itálico', 'Título', 'Lista', 'Checklist', 'Citação', 'Versículo']) {
 			await expect.element(toolbar.getByRole('button', { name })).toBeInTheDocument();
 		}
 	});
@@ -38,7 +38,7 @@ describe('notes editor Milkdown canvas controls', () => {
 		const editor = page.getByRole('textbox');
 		await editor.click();
 		await userEvent.keyboard('{End}{Enter}Revisar nota');
-		await page.getByRole('toolbar', { name: 'Formatação da nota' }).getByRole('button', { name: 'Tarefas' }).click();
+		await page.getByRole('toolbar', { name: 'Formatação da nota' }).getByRole('button', { name: 'Checklist' }).click();
 		expect(
 			editor.element().querySelector('li[data-item-type="task"][data-checked="false"]')
 		).not.toBeNull();

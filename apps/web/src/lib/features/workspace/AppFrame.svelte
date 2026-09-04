@@ -121,7 +121,7 @@
 				</div>
 			</header>
 			<NetworkStatus />
-			<div class="shell-main">
+			<div class="shell-main" class:note-editor-shell={isNoteEditor}>
 				{@render children()}
 			</div>
 		</Sidebar.Inset>
@@ -267,6 +267,11 @@
 
 		.shell-main {
 			padding-bottom: calc(84px + env(safe-area-inset-bottom));
+		}
+
+		.shell-main.note-editor-shell {
+			overflow: hidden;
+			padding-bottom: 0;
 		}
 	}
 </style>

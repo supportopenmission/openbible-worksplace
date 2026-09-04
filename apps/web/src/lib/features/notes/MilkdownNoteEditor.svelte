@@ -9,6 +9,13 @@
 	import { verseNodeSchema, verseDirective } from './milkdown-verse-node';
 	import VerseSelector, { type VerseSelectionResult } from './VerseSelector.svelte';
 	import MilkdownMobileToolbar from './MilkdownMobileToolbar.svelte';
+	import { buildVerseInsertTransaction } from './milkdown-verse-insert';
+	import {
+		applyIosEditorInputAttributes,
+		createKeyboardInsetTracker,
+		NOTE_TOOLBAR_HEIGHT_PX,
+		setNoteKeyboardInset
+	} from './note-editor-viewport';
 
 	let {
 		markdown,
@@ -23,6 +30,7 @@
 	} = $props();
 
 	let host: HTMLDivElement;
+	let editorRoot: HTMLDivElement;
 	let editor: import('@milkdown/kit/core').Editor | null = null;
 	let coreModule: typeof import('@milkdown/kit/core') | null = null;
 	let commonmarkModule: typeof import('@milkdown/kit/preset/commonmark') | null = null;
@@ -195,9 +203,7 @@
 		const { editorViewCtx } = await import('@milkdown/kit/core');
 		editor.action((ctx) => {
 			const view = ctx.get(editorViewCtx);
-			const type = view.state.schema.nodes.verse;
-			if (!type) return;
-			const node = type.create({
+			const tr = buildVerseInsertTransaction(view.state, {
 				versionId: selection.versionId,
 				version: selection.version ?? '',
 				bookId: String(selection.bookId),
@@ -207,7 +213,8 @@
 				verseEnd: String(selection.verseEnd),
 				snapshotBody: selection.snapshot
 			});
-			view.dispatch(view.state.tr.replaceSelectionWith(node).scrollIntoView());
+			if (!tr) return;
+			view.dispatch(tr);
 			view.focus();
 		});
 		verseSelectorOpen = false;
@@ -245,7 +252,7 @@
 			]);
 			coreModule = core;
 			commonmarkModule = commonmarkPreset;
-			const { Editor, rootCtx, defaultValueCtx, editorViewCtx } = core;
+			const { Editor, rootCtx, defaultValueCtx, editorViewCtx, editorViewOptionsCtx } = core;
 			const { commonmark } = commonmarkPreset;
 			if (note && storage) {
 				saveService = createNoteEditorService({
@@ -259,6 +266,16 @@
 				.config((ctx) => {
 					ctx.set(rootCtx, host);
 					ctx.set(defaultValueCtx, note?.body ?? markdown ?? '');
+					ctx.set(editorViewOptionsCtx, {
+						attributes: {
+							autocomplete: 'off',
+							autocorrect: 'off',
+							autocapitalize: 'sentences',
+							spellcheck: 'true',
+							'data-1p-ignore': 'true',
+							'data-lpignore': 'true'
+						}
+					});
 					ctx.get(listenerCtx).markdownUpdated((_ctx, next, previous) => {
 						if (next === previous) return;
 						saveService?.scheduleSave(next);
@@ -285,13 +302,21 @@
 				.use(verseNodeSchema)
 				.use(listener);
 			await editor.create();
+			editor.action((ctx) => {
+				applyIosEditorInputAttributes(ctx.get(editorViewCtx).dom);
+			});
 			updateToolbarState();
 		} catch (error) {
 			initError = error instanceof Error ? error.message : 'Não foi possível abrir o editor.';
 		}
 
+		const stopKeyboardInset = createKeyboardInsetTracker((inset) => {
+			if (editorRoot) setNoteKeyboardInset(editorRoot, inset);
+		});
+
 		return () => {
 			query.removeEventListener('change', updateMobile);
+			stopKeyboardInset();
 		};
 	});
 
@@ -304,7 +329,16 @@
 
 <svelte:window onresize={repositionOverlays} onscroll={repositionOverlays} />
 
-<div class="milkdown-editor" data-testid="note-canvas" data-viewport-fill="true">
+<div
+	class="note-editor-viewport"
+	bind:this={editorRoot}
+	style:--note-toolbar-height="{NOTE_TOOLBAR_HEIGHT_PX}px"
+>
+<div
+	class="milkdown-editor"
+	data-testid="note-canvas"
+	data-viewport-fill="true"
+>
 	<div class="editor-status" aria-live="polite">
 		{#if saveStatus === 'saving'}Salvando…{:else if saveStatus === 'saved'}Salvo{:else if saveStatus === 'error'}Erro ao salvar{/if}
 	</div>
@@ -364,14 +398,90 @@
 {/if}
 
 <MilkdownMobileToolbar active={mobile} activeActions={toolbarActive} onAction={runToolbar} />
+</div>
 
 <style>
-	.milkdown-editor { position: relative; width: 100%; min-height: 60dvh; }
-	.editor-status { min-height: 20px; padding: 0 clamp(16px, 5vw, 48px); color: var(--muted-foreground); font-size: .75rem; text-align: right; }
+	.note-editor-viewport {
+		--note-keyboard-inset: 0px;
+		display: contents;
+	}
+
+	@media (max-width: 767px) {
+		.note-editor-viewport {
+			display: flex;
+			min-height: 0;
+			height: 100%;
+			flex: 1;
+			flex-direction: column;
+			overflow: hidden;
+		}
+	}
+
+	.milkdown-editor {
+		position: relative;
+		width: 100%;
+		min-height: 60dvh;
+	}
+
+	.editor-status {
+		flex-shrink: 0;
+		min-height: 20px;
+		padding: 0 clamp(16px, 5vw, 48px);
+		color: var(--muted-foreground);
+		font-size: .75rem;
+		text-align: right;
+	}
+
 	.editor-error { margin: 8px clamp(16px, 5vw, 48px); color: var(--destructive); }
 	.milkdown-host { width: 100%; min-height: 60dvh; }
 	:global(.milkdown-host .milkdown), :global(.milkdown-host .ProseMirror) { border: 0; outline: 0; background: transparent; box-shadow: none; }
-	:global(.milkdown-host .ProseMirror) { max-width: 800px; min-height: 60dvh; margin: 0 auto; padding: 8px clamp(16px, 5vw, 48px) 140px; color: var(--foreground); font-family: var(--font-sans); line-height: 1.7; }
+	:global(.milkdown-host .ProseMirror) {
+		max-width: 800px;
+		min-height: 60dvh;
+		margin: 0 auto;
+		padding: 8px clamp(16px, 5vw, 48px) 140px;
+		color: var(--foreground);
+		font-family: var(--font-sans);
+		line-height: 1.7;
+	}
+
+	@media (max-width: 767px) {
+		.milkdown-editor {
+			display: flex;
+			min-height: 0;
+			flex: 1;
+			flex-direction: column;
+			overflow: hidden;
+		}
+
+		.milkdown-host {
+			display: flex;
+			min-height: 0;
+			flex: 1;
+			flex-direction: column;
+			overflow: hidden;
+		}
+
+		:global(.milkdown-host .milkdown) {
+			display: flex;
+			min-height: 0;
+			flex: 1;
+			flex-direction: column;
+			overflow: hidden;
+		}
+
+		:global(.milkdown-host .ProseMirror) {
+			min-height: 0;
+			flex: 1;
+			overflow-y: auto;
+			overscroll-behavior: contain;
+			padding-bottom: calc(
+				max(64px + env(safe-area-inset-bottom, 0px), var(--note-keyboard-inset, 0px)) +
+					var(--note-toolbar-height, 56px) +
+					16px
+			);
+		}
+	}
 	:global(.milkdown-host .ProseMirror h1) { margin: 12px 0 24px; font-size: clamp(2rem, 5vw, 3rem); line-height: 1.1; letter-spacing: -.035em; }
 	:global(.milkdown-host .ProseMirror h2) { margin: 28px 0 12px; font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.2; letter-spacing: -.025em; }
 	:global(.milkdown-host .ProseMirror h3) { margin: 24px 0 8px; font-size: 1.25rem; line-height: 1.3; }

@@ -697,6 +697,14 @@ Blocos Svelte desta entrega: `MilkdownNoteEditor.svelte` (monta kit, nó verse, 
 - **Evidência**: testes focais Milkdown `11/11` aprovados; lint focal sem erros; `git diff --check` aprovado; build completo aprovado com permissões ampliadas (warnings preexistentes de `ConfigPage.svelte`); monitor de contexto `CURRENT`; documentação reconstruída e `--check` aprovado.
 - **Limite de verificação**: browser `cursor-ide-browser` indisponível por falha de registro do MCP nesta sessão; regressão completa reportou `189` testes aprovados e um erro não relacionado por Chromium ausente, portanto o Delivery Gate permanece `In Progress` até a conferência manual desktop/mobile.
 
+#### Correção pós-entrega — editor mobile iPhone (teclado, scroll, autofill, versículo)
+
+- **Data**: 2026-09-04
+- **Escopo**: AC-003, AC-004, AC-007, AC-013, AC-016; FR-004, FR-006; NFR-002, NFR-003.
+- **Correções**: `editorViewOptionsCtx` + attrs DOM desativam AutoFill/QuickType iOS (`autocomplete=off`, `autocorrect=off`, `data-1p-ignore`); toolbar usa `visualViewport` → `--note-keyboard-inset` e `bottom: max(nav, inset)` com `z-index: 50`; rota `/notes/[id]` e `AppFrame` bloqueiam scroll da página no mobile (overflow só no `.ProseMirror`); `insertVerse` insere parágrafo vazio após o fence e foca nele via `milkdown-verse-insert.ts`.
+- **Evidência**: `bun run test:tdd -- src/lib/features/notes/note-editor-viewport.test.ts src/lib/features/notes/milkdown-verse-node.test.ts src/lib/features/notes/MilkdownMobileToolbar.test.ts` exit 0 (11 testes); lint focal dos arquivos tocados exit 0; `svelte-autofixer` sem issues em `MilkdownNoteEditor.svelte` e `MilkdownMobileToolbar.svelte`; monitor de contexto `CURRENT`; `INTERFACE.md` atualizado.
+- **Limite de verificação**: conferência em iPhone físico ou simulador com teclado real não realizada nesta sessão; comportamento esperado documentado em `INTERFACE.md` e CSS/JS acima. Delivery Gate permanece `In Progress`.
+
 ### 14. Tarefas
 
 Formato:

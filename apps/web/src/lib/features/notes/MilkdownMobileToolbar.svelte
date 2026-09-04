@@ -50,12 +50,17 @@
 	.milkdown-toolbar {
 		position: fixed;
 		right: 0;
-		bottom: calc(64px + env(safe-area-inset-bottom, 0px));
 		left: 0;
+		z-index: 50;
+		bottom: max(
+			calc(64px + env(safe-area-inset-bottom, 0px)),
+			var(--note-keyboard-inset, 0px)
+		);
 		display: none;
 		border-top: 1px solid var(--border);
 		background: color-mix(in srgb, var(--background) 96%, transparent);
 		backdrop-filter: blur(10px);
+		transition: bottom 180ms ease;
 	}
 
 	.toolbar-scroll {
@@ -98,6 +103,10 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
+		.milkdown-toolbar {
+			transition: none;
+		}
+
 		.toolbar-scroll {
 			scroll-behavior: auto;
 		}
