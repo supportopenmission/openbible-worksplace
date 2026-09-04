@@ -2971,6 +2971,10 @@
 			margin-inline: 0;
 		}
 
+		.verse-list {
+			padding-right: 16px;
+		}
+
 		.reader-toolbar {
 			width: 100%;
 			padding-inline: 16px;
