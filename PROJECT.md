@@ -57,5 +57,5 @@ aplica destaques no SQLite auxiliar, copia a referência ou o texto e cria uma n
 com fence `:::verse` sem sair da rota. O workspace vive em pasta local (File System
 Access API) ou OPFS, com `.openbible/config.json`, `.openbible/preferences.json` e
 um `index.sqlite` auxiliar (`note_verse_ref` e `reader_highlight`).
-A aplicação web contém as rotas `/`, `/bible`, `/sermons`, `/study` e `/config`. Tema, tela inicial e posição do leitor são gravados no
+A aplicação web contém as rotas `/`, `/bible`, `/sermons`, `/study` e `/config`. A rota `/` é a home operacional com Continuar leitura, ações rápidas e recentes, sem redirecionamento por preferência. Tema e última leitura são gravados no
 workspace e cacheados no `localStorage` só para o primeiro paint.

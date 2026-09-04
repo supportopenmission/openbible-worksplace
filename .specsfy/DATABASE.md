@@ -31,7 +31,7 @@ como fontes locais somente leitura; o índice do workspace permanece auxiliar.
 | `bibles/*.sqlite` | `book`                       | `id`, `name`; `abbreviation` e `testament_id` opcionais | Um arquivo contém muitos livros; validada antes de entrar no catálogo                  |
 | `bibles/*.sqlite` | `verse`                      | `book_id`, `chapter`, `verse`, `text`                   | `verse.book_id` referencia `book.id`; consultas de capítulo e busca são parametrizadas |
 | `bibles/*.sqlite` | `metadata` (opcional)        | `key`, `value`                                          | `key = 'name'` fornece o nome da versão; o nome do arquivo é o fallback                |
-| Pasta/OPFS        | `.openbible/preferences.json` | `theme`, `initialRoute`, `readerSelection`             | Fonte File Over Apps das preferências; `localStorage` é cache para o primeiro paint   |
+| Pasta/OPFS        | `.openbible/preferences.json` | `theme`, `readerSelection` | Fonte File Over Apps das preferências; `localStorage` é cache para o primeiro paint (`initialRoute` removida em SPEC-0012) |
 | Pasta/OPFS        | `.openbible/index.sqlite`     | `note_verse_ref`, `reader_highlight` e índices auxiliares | Espelha fences `:::verse` e guarda destaques do leitor; **não** substitui o Markdown nem o SQLite bíblico |
 | Pasta/OPFS        | `notes/<noteId>.md`           | frontmatter YAML + corpo Markdown                      | Fonte File Over Apps das notas; H1 sincronizado com `title`; fences `:::verse` com snapshot no corpo                               |
 | Pasta/OPFS        | `trash/<noteId>.md`           | mesmo formato de `notes/`                              | Lixeira; arquivo original preservado até remoção manual futura                                                                      |
@@ -68,7 +68,10 @@ como fontes locais somente leitura; o índice do workspace permanece auxiliar.
 - A validação funcional do leitor exige as tabelas `book` e `verse` e as colunas
   mínimas listadas acima; arquivos incompatíveis são diagnosticados sem remover
   fontes válidas nem modificar qualquer SQLite.
-- Tema, tela inicial e última leitura ficam em `.openbible/preferences.json`.
+- Tema e última leitura ficam em `.openbible/preferences.json`.
+  A preferência de tela inicial (`initialRoute`) foi removida em SPEC-0012: a
+  rota `/` é sempre a home operacional e valores legados são tratados como
+  ausentes.
   O `localStorage` (`openbible.theme`, `openbible.initial-route`,
   `openbible.reader-selection`) é cache de primeiro paint e não substitui o arquivo.
 - No modo pasta local, o handle fica no IndexedDB e a permissão `readwrite` é
