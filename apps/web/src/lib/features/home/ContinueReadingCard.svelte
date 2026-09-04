@@ -92,13 +92,6 @@
 				{highlightTitle(continuation.highlight)}
 			{/if}
 		</h2>
-		<p class="continue-hint">
-			{#if continuation.kind === 'selection'}
-				Sua última passagem salva no leitor.
-			{:else}
-				Seu último destaque neste workspace.
-			{/if}
-		</p>
 		<Button href={resolve('/bible')}>
 			Continuar
 			<ArrowRight size={15} strokeWidth={1.75} aria-hidden="true" />
@@ -123,20 +116,13 @@
 	}
 
 	.continue-title {
-		margin: 0;
+		margin: 0 0 16px;
 		font-family: var(--font-mono);
 		font-size: 1.05rem;
 		font-weight: 600;
 		letter-spacing: -0.01em;
 		line-height: 1.4;
 		overflow-wrap: anywhere;
-	}
-
-	.continue-hint {
-		margin: 8px 0 16px;
-		color: var(--muted-foreground);
-		font-size: 0.85rem;
-		line-height: 1.55;
 	}
 
 	.continue-error {
