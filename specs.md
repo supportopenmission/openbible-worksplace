@@ -16,6 +16,7 @@
 | 09 | 0010-melhorar-experiencia-do-pwa | Complete | — |
 | 10 | 0011-desativar-zoom-no-pwa-e-drawer-90 | Complete | — |
 | 11 | 0001-onboarding-configuracao-armazenamento | Implementing | — |
+| 12 | 0012-pagina-inicial-operacional-do-openbible | Implementing | — |
 
 ## Marcos
 
