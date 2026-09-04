@@ -110,6 +110,11 @@
 		persistRatio();
 	}
 
+	function resetRatio() {
+		readerRatio = DEFAULT_READER_RATIO;
+		persistRatio();
+	}
+
 	function handleResizerKeydown(event: KeyboardEvent) {
 		const step = event.shiftKey ? 0.05 : 0.02;
 		if (event.key === 'ArrowLeft') {
@@ -200,8 +205,9 @@
 				onpointermove={handleResizerPointerMove}
 				onpointerup={finishResize}
 				onpointercancel={finishResize}
+				ondblclick={resetRatio}
 				onkeydown={handleResizerKeydown}
-			></button>
+			></div>
 			{#if showEditorPane && note && storage}
 				{@render notePane(note, storage)}
 			{:else if showListPane && listNotes}
@@ -222,7 +228,7 @@
 	.note-split {
 		display: grid;
 		width: 100%;
-		min-height: 0;
+		min-height: 100%;
 		flex: 1;
 		align-items: stretch;
 		grid-template-columns:
@@ -235,6 +241,7 @@
 		min-height: 0;
 		overflow-y: auto;
 		overscroll-behavior: contain;
+		padding-right: 16px;
 	}
 
 	.reader-pane :global(.reading-column) {
@@ -245,6 +252,8 @@
 
 	.split-resizer {
 		position: relative;
+		align-self: stretch;
+		min-height: 100%;
 		border: none;
 		padding: 0;
 		background: transparent;
@@ -254,9 +263,10 @@
 	}
 
 	.split-resizer::after {
+		/* A linha acompanha o respiro da página (8px em cima, 16px embaixo no split). */
 		position: absolute;
-		top: 0;
-		bottom: 0;
+		top: -8px;
+		bottom: -16px;
 		left: 50%;
 		width: 1px;
 		background: var(--border);

@@ -1762,6 +1762,12 @@
 		padding-bottom: 16px;
 	}
 
+	@media (min-width: 768px) {
+		.reader-page.with-note {
+			padding-left: 20px;
+		}
+	}
+
 	.text-action:hover {
 		text-decoration: underline;
 		text-underline-offset: 3px;
