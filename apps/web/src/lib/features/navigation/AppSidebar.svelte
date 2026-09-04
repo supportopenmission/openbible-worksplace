@@ -11,8 +11,8 @@
 		{ label: 'Bíblia', href: '/bible', icon: BookOpen },
 		{ label: 'Notas', href: '/notes', icon: NotebookPen },
 		{ label: 'Destaques', href: '/highlights', icon: Highlighter },
-		{ label: 'Sermões', href: '/sermons', icon: ScrollText },
-		{ label: 'Estudos', href: '/study', icon: GraduationCap, hideOnMobile: true },
+		{ label: 'Sermões', href: '/sermons', icon: ScrollText, disabled: true },
+		{ label: 'Estudos', href: '/study', icon: GraduationCap, hideOnMobile: true, disabled: true },
 		{ label: 'Configurações', href: '/config', icon: Settings }
 	];
 
@@ -45,13 +45,18 @@
 				{#each links as link (link.href)}
 					{@const Icon = link.icon}
 					{@const isActive = isLinkActive(link.href)}
+					{@const isDisabled = 'disabled' in link && link.disabled === true}
 					<Sidebar.MenuItem>
 						<Sidebar.MenuButton {isActive} class="nav-link" tooltipContent={link.label}>
 							{#snippet child({ props })}
 								<a
 									{...props}
-									href={resolve(link.href)}
+									href={isDisabled ? undefined : resolve(link.href)}
 									aria-current={isActive ? 'page' : undefined}
+									aria-disabled={isDisabled || undefined}
+									tabindex={isDisabled ? -1 : undefined}
+									title={isDisabled ? 'Em breve' : undefined}
+									onclick={isDisabled ? (event) => event.preventDefault() : undefined}
 								>
 									<Icon size={16} strokeWidth={1.75} aria-hidden="true" />
 									<span>{link.label}</span>
@@ -166,6 +171,14 @@
 	:global(.nav-link:hover) {
 		background: color-mix(in oklch, var(--sidebar-foreground) 6%, transparent);
 		color: var(--sidebar-foreground);
+	}
+
+	:global(.nav-link[aria-disabled='true']) {
+		opacity: 0.45;
+	}
+
+	:global(.nav-link[aria-disabled='true']:hover) {
+		background: transparent;
 	}
 
 	:global(.nav-link[data-active='true']) {
@@ -289,6 +302,14 @@
 		.mobile-nav-link:hover {
 			background: color-mix(in oklch, var(--foreground) 6%, transparent);
 			color: var(--foreground);
+		}
+
+		.mobile-nav-link[aria-disabled='true'] {
+			opacity: 0.45;
+		}
+
+		.mobile-nav-link[aria-disabled='true']:hover {
+			background: transparent;
 		}
 
 		.mobile-nav-link.active {
