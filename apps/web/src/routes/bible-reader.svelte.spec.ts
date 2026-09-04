@@ -200,11 +200,24 @@ describe('/bible', () => {
 			props: { storageOverride: createStorage(async () => ['ara.sqlite'], bibleBytes) }
 		});
 
+		await page.getByRole('button', { name: /abrir ações de leitura/i }).click();
 		await page.getByRole('button', { name: /buscar no texto/i }).click();
 		await expect.element(page.getByRole('dialog')).toHaveAttribute('data-slot', 'sheet-content');
 		await expect
 			.element(page.getByRole('searchbox', { name: 'Buscar no texto' }))
 			.toBeInTheDocument();
+	});
+
+	it('expands reader actions in a floating button on mobile', async () => {
+		await page.viewport(320, 900);
+		await render(Page, {
+			props: { storageOverride: createStorage(async () => ['ara.sqlite'], bibleBytes) }
+		});
+
+		await page.getByRole('button', { name: /abrir ações de leitura/i }).click();
+		await page.getByRole('button', { name: /destaques/i }).click();
+		const dialog = page.getByRole('dialog', { name: /destaques/i });
+		await expect.element(dialog).toBeInTheDocument();
 	});
 
 	it('moves from book selection to chapter selection in a desktop dialog', async () => {

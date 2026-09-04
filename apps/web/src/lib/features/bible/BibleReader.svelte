@@ -6,6 +6,7 @@
 		BookOpen,
 		ChevronDown,
 		Highlighter,
+		Menu,
 		Plus,
 		RefreshCw,
 		Search,
@@ -129,6 +130,7 @@
 	let searchLoading = $state(false);
 	let searchMessage = $state('');
 	let searchOpen = $state(false);
+	let fabOpen = $state(false);
 	let highlightsSheetOpen = $state(false);
 	let allHighlights = $state<ReaderHighlightRecord[]>([]);
 	let allHighlightsLoading = $state(false);
@@ -637,6 +639,20 @@
 	function openHighlightsSheet() {
 		highlightsSheetOpen = true;
 		void loadAllHighlights();
+	}
+
+	function openReaderSearch() {
+		fabOpen = false;
+		searchOpen = true;
+	}
+
+	function openReaderHighlights() {
+		fabOpen = false;
+		openHighlightsSheet();
+	}
+
+	function handleFabKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape') fabOpen = false;
 	}
 
 	async function openNoteFromVerse(verseNumber: number) {
@@ -1256,6 +1272,47 @@
 				</ButtonGroup>
 			</div>
 		</section>
+		<div class="reader-fab" class:fab-open={fabOpen} onkeydown={handleFabKeydown}>
+			<div class="fab-actions" aria-hidden={!fabOpen}>
+				<button
+					type="button"
+					class="fab-action"
+					tabindex={fabOpen ? 0 : -1}
+					onclick={openReaderSearch}
+					aria-label="Buscar no texto"
+				>
+					<span class="fab-label" aria-hidden="true">Buscar</span>
+					<span class="fab-circle" aria-hidden="true">
+						<Search size={16} strokeWidth={1.8} />
+					</span>
+				</button>
+				<button
+					type="button"
+					class="fab-action"
+					tabindex={fabOpen ? 0 : -1}
+					onclick={openReaderHighlights}
+					aria-label="Destaques"
+				>
+					<span class="fab-label" aria-hidden="true">Destaques</span>
+					<span class="fab-circle" aria-hidden="true">
+						<Highlighter size={16} strokeWidth={1.8} />
+					</span>
+				</button>
+			</div>
+			<button
+				type="button"
+				class="fab-main"
+				onclick={() => (fabOpen = !fabOpen)}
+				aria-expanded={fabOpen}
+				aria-label={fabOpen ? 'Fechar ações de leitura' : 'Abrir ações de leitura'}
+			>
+				{#if fabOpen}
+					<X size={18} strokeWidth={2} aria-hidden="true" />
+				{:else}
+					<Menu size={18} strokeWidth={2} aria-hidden="true" />
+				{/if}
+			</button>
+		</div>
 
 		{#if isMobile.current}
 			<Sheet.Root bind:open={searchOpen}>
@@ -2767,23 +2824,153 @@
 		color: var(--destructive);
 	}
 
+	.reader-fab {
+		display: none;
+	}
+
+	@media (max-width: 700px) {
+		.reader-fab {
+			position: fixed;
+			right: 16px;
+			bottom: calc(88px + env(safe-area-inset-bottom));
+			z-index: 30;
+			display: flex;
+			flex-direction: column;
+			align-items: flex-end;
+			gap: 12px;
+		}
+
+		.fab-main {
+			display: flex;
+			width: 48px;
+			height: 48px;
+			align-items: center;
+			justify-content: center;
+			border: 1px solid var(--border);
+			border-radius: 999px;
+			background: var(--primary);
+			padding: 0;
+			color: var(--primary-foreground);
+			cursor: pointer;
+		}
+
+		.fab-main svg {
+			display: block;
+		}
+
+		.fab-actions {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-end;
+			gap: 10px;
+			opacity: 0;
+			pointer-events: none;
+			transform: translateY(8px) scale(0.96);
+			transition:
+				opacity 180ms ease,
+				transform 180ms ease;
+		}
+
+		.fab-open .fab-actions {
+			opacity: 1;
+			pointer-events: auto;
+			transform: none;
+		}
+
+		.fab-action {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			border: 0;
+			background: transparent;
+			padding: 0;
+			color: var(--foreground);
+			font: inherit;
+			font-size: 0.78rem;
+			font-weight: 500;
+			cursor: pointer;
+		}
+
+		.fab-label {
+			border: 1px solid var(--border);
+			border-radius: 999px;
+			background: var(--background);
+			padding: 4px 10px;
+			line-height: 1.2;
+			white-space: nowrap;
+		}
+
+		.fab-circle {
+			display: flex;
+			width: 40px;
+			height: 40px;
+			align-items: center;
+			justify-content: center;
+			border: 1px solid var(--border);
+			border-radius: 999px;
+			background: var(--background);
+		}
+	}
+
 	@media (max-width: 700px) {
 		.reader-page {
 			padding-top: 14px;
+			padding-inline: 0;
+		}
+
+		.reading-column {
+			padding-bottom: 120px;
+		}
+
+		.verse-row {
+			width: 100%;
+			margin-inline: 0;
 		}
 
 		.reader-toolbar {
 			width: 100%;
+			padding-inline: 16px;
 		}
 
 		.toolbar-shell {
-			width: 100%;
+			justify-content: center;
+			min-width: min(290px, 100%);
 		}
 
 		:global(.reader-toolbar-group) {
-			display: flex;
+			display: grid;
+			grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+			grid-template-areas: 'prev book chapter version next';
+			gap: 2px 4px;
 			width: 100%;
-			border-radius: 12px;
+			border-radius: 16px;
+			padding: 4px;
+		}
+
+		:global(.reader-toolbar-group > :nth-child(1)) {
+			grid-area: prev;
+		}
+
+		:global(.reader-toolbar-group > :nth-child(5)) {
+			grid-area: next;
+		}
+
+		:global(.reader-toolbar-group > .book-choice) {
+			grid-area: book;
+			min-width: 0;
+		}
+
+		:global(.reader-toolbar-group > .chapter-choice) {
+			grid-area: chapter;
+		}
+
+		:global(.reader-toolbar-group > .version-choice) {
+			grid-area: version;
+		}
+
+		:global(.reader-toolbar-group > .toolbar-search-button),
+		:global(.reader-toolbar-group > .toolbar-highlights-button) {
+			display: none;
 		}
 
 		.toolbar-choice {
@@ -2890,7 +3077,8 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		.reader-toolbar,
-		.toolbar-shell {
+		.toolbar-shell,
+		.fab-actions {
 			transition: none;
 		}
 
