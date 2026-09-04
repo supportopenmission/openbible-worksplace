@@ -12,7 +12,7 @@ describe('milkdown mobile toolbar', () => {
 			'Itálico',
 			'Título',
 			'Lista',
-			'Tarefas',
+			'Checklist',
 			'Citação',
 			'Versículo'
 		]) {

@@ -5,7 +5,7 @@
 	import type { WorkspaceStorage } from '$lib/storage/types';
 	import type { Note } from './note-types';
 	import { createNoteEditorService, type SaveStatus } from './note-editor-service';
-	import { filterSlashItems, getSlashItems, milkdownSlashPlugin, moveSlashSelection, type MilkdownSlashItem } from './milkdown-slash';
+	import { filterSlashItems, getSlashItems, moveSlashSelection, type MilkdownSlashItem } from './milkdown-slash';
 	import { verseNodeSchema, verseDirective } from './milkdown-verse-node';
 	import VerseSelector, { type VerseSelectionResult } from './VerseSelector.svelte';
 	import MilkdownMobileToolbar from './MilkdownMobileToolbar.svelte';
@@ -34,11 +34,76 @@
 	let slashIndex = $state(0);
 	let mobile = $state(false);
 	let verseSelectorOpen = $state(false);
+	let slashPosition = $state<{ top: number; left: number; width: number; maxHeight: number } | null>(
+		null
+	);
+	let toolbarActive = $state<Record<string, boolean>>({});
 	let filteredItems = $derived(filterSlashItems(getSlashItems(), slashQuery));
 
 	function closeSlash() {
 		slashOpen = false;
 		slashIndex = 0;
+		slashPosition = null;
+	}
+
+	function positionSlashMenu(position: number) {
+		if (!editor || !coreModule || typeof window === 'undefined') return;
+		const { editorViewCtx } = coreModule;
+		editor.action((ctx) => {
+			const coords = ctx.get(editorViewCtx).coordsAtPos(position);
+			const padding = 12;
+			const gap = 6;
+			const width = Math.min(360, window.innerWidth - padding * 2);
+			const below = Math.max(0, window.innerHeight - coords.bottom - gap - padding);
+			const above = Math.max(0, coords.top - gap - padding);
+			const placeAbove = below < 180 && above > below;
+			const maxHeight = Math.max(120, Math.min(320, placeAbove ? above : below));
+			const left = Math.min(
+				Math.max(coords.left, padding),
+				window.innerWidth - width - padding
+			);
+			const top = placeAbove
+				? Math.max(padding, coords.top - gap - maxHeight)
+				: Math.min(coords.bottom + gap, window.innerHeight - padding - maxHeight);
+			slashPosition = { top, left, width, maxHeight };
+		});
+	}
+
+	function repositionOverlays() {
+		if (slashOpen && editor && coreModule && !mobile) {
+			const { editorViewCtx } = coreModule;
+			editor.action((ctx) => {
+				positionSlashMenu(ctx.get(editorViewCtx).state.selection.from);
+			});
+		}
+	}
+
+	function updateToolbarState() {
+		if (!editor || !coreModule) return;
+		const { editorViewCtx } = coreModule;
+		editor.action((ctx) => {
+			const { state } = ctx.get(editorViewCtx);
+			const resolvedFrom = state.selection.$from;
+			const active: Record<string, boolean> = {
+				bold: Boolean(state.schema.marks.strong?.isInSet(resolvedFrom.marks())),
+				italic: Boolean(state.schema.marks.emphasis?.isInSet(resolvedFrom.marks())),
+				heading: false,
+				bullet: false,
+				task: false,
+				quote: false,
+				verse: false
+			};
+			for (let depth = resolvedFrom.depth; depth > 0; depth -= 1) {
+				const node = resolvedFrom.node(depth);
+				if (node.type.name === 'heading') active.heading = true;
+				if (node.type.name === 'bullet_list') active.bullet = true;
+				if (node.type.name === 'list_item' && node.attrs.checked !== undefined) {
+					active.task = true;
+				}
+				if (node.type.name === 'blockquote') active.quote = true;
+			}
+			toolbarActive = active;
+		});
 	}
 
 	function runSlash(item: MilkdownSlashItem) {
@@ -87,6 +152,7 @@
 			}
 		});
 		closeSlash();
+		updateToolbarState();
 	}
 
 	function runToolbar(action: import('./milkdown-markdown-io').ToolbarAction) {
@@ -121,6 +187,7 @@
 			}
 			if (action === 'quote') commands.call(commonmark.wrapInBlockquoteCommand.key);
 		});
+		updateToolbarState();
 	}
 
 	async function insertVerse(selection: VerseSelectionResult) {
@@ -178,7 +245,7 @@
 			]);
 			coreModule = core;
 			commonmarkModule = commonmarkPreset;
-			const { Editor, rootCtx, defaultValueCtx } = core;
+			const { Editor, rootCtx, defaultValueCtx, editorViewCtx } = core;
 			const { commonmark } = commonmarkPreset;
 			if (note && storage) {
 				saveService = createNoteEditorService({
@@ -195,11 +262,20 @@
 					ctx.get(listenerCtx).markdownUpdated((_ctx, next, previous) => {
 						if (next === previous) return;
 						saveService?.scheduleSave(next);
-						const token = next.match(/(?:^|\s)(\/[^\s]*)\s*$/)?.[1];
+						const view = _ctx.get(editorViewCtx);
+						const { from } = view.state.selection;
+						const textBefore = view.state.doc.textBetween(
+							Math.max(0, from - 80),
+							from,
+							' ',
+							' '
+						);
+						const token = textBefore.match(/\/[^\s]*$/)?.[0];
 						if (token) {
 							slashQuery = token;
 							slashOpen = true;
 							slashIndex = 0;
+							positionSlashMenu(from);
 						} else closeSlash();
 					});
 				})
@@ -207,9 +283,9 @@
 				.use(gfm)
 				.use(verseDirective)
 				.use(verseNodeSchema)
-				.use(milkdownSlashPlugin)
 				.use(listener);
 			await editor.create();
+			updateToolbarState();
 		} catch (error) {
 			initError = error instanceof Error ? error.message : 'Não foi possível abrir o editor.';
 		}
@@ -226,6 +302,8 @@
 	});
 </script>
 
+<svelte:window onresize={repositionOverlays} onscroll={repositionOverlays} />
+
 <div class="milkdown-editor" data-testid="note-canvas" data-viewport-fill="true">
 	<div class="editor-status" aria-live="polite">
 		{#if saveStatus === 'saving'}Salvando…{:else if saveStatus === 'saved'}Salvo{:else if saveStatus === 'error'}Erro ao salvar{/if}
@@ -236,7 +314,15 @@
 	<div class="milkdown-host" bind:this={host}></div>
 
 	{#if slashOpen && !mobile}
-		<div class="slash-menu" role="listbox" aria-label="Comandos de bloco">
+		<div
+			class="slash-menu"
+			role="listbox"
+			aria-label="Comandos de bloco"
+			style:top={`${slashPosition?.top ?? 0}px`}
+			style:left={`${slashPosition?.left ?? 0}px`}
+			style:width={`${slashPosition?.width ?? 360}px`}
+			style:max-height={`${slashPosition?.maxHeight ?? 320}px`}
+		>
 			{#each filteredItems as item, index (item.id)}
 				<button
 					type="button"
@@ -253,8 +339,8 @@
 	{/if}
 </div>
 
-<Sheet.Root bind:open={slashOpen}>
-	{#if mobile}
+{#if mobile}
+	<Sheet.Root bind:open={slashOpen}>
 		<Sheet.Content side="bottom" class="slash-drawer">
 			<Sheet.Header>
 				<Sheet.Title>Comandos</Sheet.Title>
@@ -270,14 +356,14 @@
 				{/each}
 			</div>
 		</Sheet.Content>
-	{/if}
-</Sheet.Root>
+	</Sheet.Root>
+{/if}
 
 {#if storage}
 	<VerseSelector bind:open={verseSelectorOpen} {storage} onConfirm={insertVerse} onCancel={() => (verseSelectorOpen = false)} />
 {/if}
 
-<MilkdownMobileToolbar active={mobile} onAction={runToolbar} />
+<MilkdownMobileToolbar active={mobile} activeActions={toolbarActive} onAction={runToolbar} />
 
 <style>
 	.milkdown-editor { position: relative; width: 100%; min-height: 60dvh; }
@@ -285,12 +371,26 @@
 	.editor-error { margin: 8px clamp(16px, 5vw, 48px); color: var(--destructive); }
 	.milkdown-host { width: 100%; min-height: 60dvh; }
 	:global(.milkdown-host .milkdown), :global(.milkdown-host .ProseMirror) { border: 0; outline: 0; background: transparent; box-shadow: none; }
-	:global(.milkdown-host .ProseMirror) { max-width: 800px; min-height: 60dvh; margin: 0 auto; padding: 8px clamp(16px, 5vw, 48px) 140px; color: var(--foreground); font-family: var(--font-sans); line-height: 1.7; white-space: pre-wrap; }
+	:global(.milkdown-host .ProseMirror) { max-width: 800px; min-height: 60dvh; margin: 0 auto; padding: 8px clamp(16px, 5vw, 48px) 140px; color: var(--foreground); font-family: var(--font-sans); line-height: 1.7; }
 	:global(.milkdown-host .ProseMirror h1) { margin: 12px 0 24px; font-size: clamp(2rem, 5vw, 3rem); line-height: 1.1; letter-spacing: -.035em; }
+	:global(.milkdown-host .ProseMirror h2) { margin: 28px 0 12px; font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.2; letter-spacing: -.025em; }
+	:global(.milkdown-host .ProseMirror h3) { margin: 24px 0 8px; font-size: 1.25rem; line-height: 1.3; }
+	:global(.milkdown-host .ProseMirror p) { margin: 0 0 12px; }
+	:global(.milkdown-host .ProseMirror ul), :global(.milkdown-host .ProseMirror ol) { margin: 0 0 16px; padding-inline-start: 28px; }
+	:global(.milkdown-host .ProseMirror li) { padding-inline-start: 4px; }
+	:global(.milkdown-host .ProseMirror ul[data-type='taskList']) { padding-inline-start: 0; list-style: none; }
+	:global(.milkdown-host .ProseMirror li[data-item-checked]) { display: flex; gap: 8px; align-items: flex-start; }
+	:global(.milkdown-host .ProseMirror li[data-item-checked] > label) { flex: 0 0 auto; margin-top: .35em; }
+	:global(.milkdown-host .ProseMirror blockquote) { margin: 20px 0; border-inline-start: 2px solid var(--border); padding-inline-start: 18px; color: var(--muted-foreground); }
+	:global(.milkdown-host .ProseMirror pre) { margin: 20px 0; overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: color-mix(in srgb, var(--foreground) 5%, transparent); padding: 14px 16px; font-family: var(--font-mono); font-size: .875rem; line-height: 1.6; }
+	:global(.milkdown-host .ProseMirror code) { font-family: var(--font-mono); font-size: .9em; }
+	:global(.milkdown-host .ProseMirror hr) { margin: 28px 0; border: 0; border-top: 1px solid var(--border); }
+	:global(.milkdown-host .ProseMirror strong) { font-weight: 700; }
+	:global(.milkdown-host .ProseMirror em) { font-style: italic; }
 	:global(.milkdown-host .verse-block-callout) { margin: 24px 0; padding: 18px 20px; border-left: 2px solid var(--border); background: transparent; }
 	:global(.milkdown-host .verse-block-ref) { margin: 0 0 10px; color: var(--muted-foreground); font-family: var(--font-mono); font-size: .75rem; }
 	:global(.milkdown-host .verse-snapshot) { margin: 0; white-space: pre-wrap; color: var(--foreground); font-family: Georgia, serif; font-size: 1rem; line-height: 1.75; }
-	.slash-menu { position: absolute; top: 72px; left: 50%; width: min(360px, calc(100vw - 32px)); max-height: 320px; overflow-y: auto; transform: translateX(-50%); border: 1px solid var(--border); border-radius: var(--radius); background: var(--popover); padding: 6px; color: var(--popover-foreground); }
+	.slash-menu { position: fixed; z-index: 40; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--popover); padding: 6px; color: var(--popover-foreground); }
 	.slash-menu button { display: flex; width: 100%; flex-direction: column; gap: 2px; border: 0; border-radius: calc(var(--radius) - 2px); background: transparent; padding: 9px 10px; color: inherit; text-align: left; }
 	.slash-menu button.active, .slash-menu button:hover { background: var(--accent); }
 	.slash-menu span { color: var(--muted-foreground); font-size: .75rem; }

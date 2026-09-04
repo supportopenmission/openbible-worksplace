@@ -5,9 +5,11 @@
 
 	let {
 		active = true,
+		activeActions = {},
 		onAction = () => {}
 	}: {
 		active?: boolean;
+		activeActions?: Partial<Record<ToolbarAction, boolean>>;
 		onAction?: (action: ToolbarAction) => void;
 	} = $props();
 
@@ -16,7 +18,7 @@
 		{ id: 'italic', label: 'Itálico', icon: Italic },
 		{ id: 'heading', label: 'Título', icon: Heading1 },
 		{ id: 'bullet', label: 'Lista', icon: List },
-		{ id: 'task', label: 'Tarefas', icon: CheckSquare },
+		{ id: 'task', label: 'Checklist', icon: CheckSquare },
 		{ id: 'quote', label: 'Citação', icon: Quote },
 		{ id: 'verse', label: 'Versículo', icon: BookOpen }
 	] as const;
@@ -31,6 +33,8 @@
 					variant="ghost"
 					size="sm"
 					aria-label={action.label}
+					aria-pressed={activeActions[action.id] ?? false}
+					class={activeActions[action.id] ? 'active' : undefined}
 					title={action.label}
 					onclick={() => onAction(action.id)}
 				>
@@ -75,6 +79,16 @@
 		padding: 4px 8px;
 		font-size: 0.6875rem;
 		line-height: 1;
+	}
+
+	:global(.milkdown-toolbar button:focus-visible) {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	:global(.milkdown-toolbar button.active) {
+		background: var(--accent);
+		color: var(--accent-foreground);
 	}
 
 	@media (max-width: 767px) {

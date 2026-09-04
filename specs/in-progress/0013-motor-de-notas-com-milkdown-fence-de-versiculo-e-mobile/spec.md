@@ -689,6 +689,14 @@ Blocos Svelte desta entrega: `MilkdownNoteEditor.svelte` (monta kit, nó verse, 
 - **Comando**: `node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/defined/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md .`
 - **Achados**: Implementação, rastreabilidade e regressão da fatia aprovadas (30/30 IDs; 70 arquivos e 264 testes; build e lint focal GREEN). Delivery Gate permanece pendente porque os checks globais já existentes ainda falham fora da fatia: `check-types` com 21 erros e `lint` com 25 erros/445 avisos; nenhum erro aponta para os novos módulos Milkdown no typecheck e o lint focal não possui erros.
 
+#### Correção pós-entrega — slash, toolbar e formatação
+
+- **Data**: 2026-09-04
+- **Escopo**: AC-001, AC-002, AC-003, AC-007, AC-013, AC-014, AC-016; FR-003, FR-004, FR-006; NFR-002, NFR-003.
+- **Correções**: slash passou a consultar a seleção atual do ProseMirror e posicionar o menu por `coordsAtPos`; o plugin slash sem renderer foi removido do editor; o `Sheet` só é montado no mobile; a toolbar usa o rótulo Checklist, `aria-pressed`, estado ativo e safe area; o CSS do canvas passou a estilizar blocos CommonMark/GFM sem `white-space: pre-wrap` no ProseMirror.
+- **Evidência**: testes focais Milkdown `11/11` aprovados; lint focal sem erros; `git diff --check` aprovado; build completo aprovado com permissões ampliadas (warnings preexistentes de `ConfigPage.svelte`); monitor de contexto `CURRENT`; documentação reconstruída e `--check` aprovado.
+- **Limite de verificação**: browser `cursor-ide-browser` indisponível por falha de registro do MCP nesta sessão; regressão completa reportou `189` testes aprovados e um erro não relacionado por Chromium ausente, portanto o Delivery Gate permanece `In Progress` até a conferência manual desktop/mobile.
+
 ### 14. Tarefas
 
 Formato:

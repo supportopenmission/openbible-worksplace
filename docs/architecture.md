@@ -5,7 +5,7 @@
 
 | Tipo | Quantidade |
 | --- | --- |
-| Código | 413 |
+| Código | 411 |
 | Testes | 53 |
 
 ## Diagramas

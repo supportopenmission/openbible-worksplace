@@ -1,3 +1,5 @@
+import { slashFactory } from '@milkdown/kit/plugin/slash';
+
 export type MilkdownSlashId =
 	| 'verse'
 	| 'heading'
@@ -26,8 +28,6 @@ const ITEMS: MilkdownSlashItem[] = [
 	{ id: 'divider', label: 'Divisória', description: 'Separador horizontal', aliases: ['divisoria', 'divider', 'hr'] }
 ];
 
-export const milkdownSlashPlugin = slashFactory('openbible');
-
 export function getSlashItems(): MilkdownSlashItem[] {
 	return ITEMS.map((item) => ({ ...item, aliases: [...item.aliases] }));
 }
@@ -46,4 +46,9 @@ export function moveSlashSelection(count: number, current: number, direction: 'n
 	if (count <= 0) return 0;
 	return (current + (direction === 'next' ? 1 : -1) + count) % count;
 }
-import { slashFactory } from '@milkdown/kit/plugin/slash';
+/**
+ * Kept as a named factory for callers that need to integrate Milkdown's
+ * native slash plugin with a renderer. The note editor owns the accessible
+ * overlay and intentionally does not install this plugin without a renderer.
+ */
+export const milkdownSlashPlugin = slashFactory('openbible');
