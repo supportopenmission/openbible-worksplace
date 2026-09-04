@@ -435,6 +435,16 @@
 		background: var(--background);
 	}
 
+	:global(.highlight-detail-sheet) {
+		padding-bottom: calc(16px + env(safe-area-inset-bottom));
+	}
+
+	:global(.highlight-detail-sheet) .detail-meta,
+	:global(.highlight-detail-sheet) .detail-passage,
+	:global(.highlight-detail-sheet) .detail-actions {
+		margin-inline: 16px;
+	}
+
 	:global(.dark .highlight-detail-dialog),
 	:global(.dark .highlight-detail-sheet) {
 		border-color: #292929;
