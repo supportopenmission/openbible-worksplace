@@ -265,7 +265,9 @@ describe('/bible verse selection popover', () => {
 	) {
 		await page.viewport(viewportWidth, 900);
 		await render(Page, { props: { storageOverride: storage } });
-		await expect.element(page.getByText(/disse deus: haja luz/i)).toBeInTheDocument();
+		await expect
+			.element(page.getByRole('main').getByText(/disse deus: haja luz/i))
+			.toBeInTheDocument();
 		return storage;
 	}
 
@@ -405,7 +407,9 @@ describe('/bible multi-note verse selector', () => {
 		await seedMultiVerseNotes();
 		await page.viewport(viewportWidth, 900);
 		await render(Page, { props: { storageOverride: storage } });
-		await expect.element(page.getByText(/disse deus: haja luz/i)).toBeInTheDocument();
+		await expect
+			.element(page.getByRole('main').getByText(/disse deus: haja luz/i))
+			.toBeInTheDocument();
 		return storage;
 	}
 

@@ -42,7 +42,8 @@ entre dispositivos ainda não foram definidos.
 ## Contexto técnico
 
 Stack observada: Turborepo com SvelteKit, Svelte, TypeScript, Vite, Vitest,
-Playwright, Tailwind CSS e primitives locais de shadcn-svelte, usando Bun 1.4.0
+Playwright, Tailwind CSS e primitives locais de shadcn-svelte (incluindo
+Drawer e Select), usando Bun 1.4.0
 como gerenciador declarado. A aplicação será executável localmente via
 `localhost` ou hospedada na Cloudflare como PWA para mobile, com adapter oficial
 do SvelteKit. O app shell usa manifesto, service worker versionado, safe area e

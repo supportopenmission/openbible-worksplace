@@ -424,6 +424,16 @@
 	}
 
 	function firstSelection(nextCatalog: BibleCatalog): ReaderSelection | null {
+		const defaultId = workspace?.preferences.defaultBibleVersionId;
+		if (defaultId) {
+			const preferred = nextCatalog.versions.find(
+				(v) => v.id === defaultId || v.fileName === defaultId
+			);
+			if (preferred) {
+				const book = preferred.books.find((item) => item.chapters.length > 0);
+				if (book) return { versionId: preferred.id, bookId: book.id, chapter: book.chapters[0] };
+			}
+		}
 		for (const version of nextCatalog.versions) {
 			const book = version.books.find((item) => item.chapters.length > 0);
 			if (book) return { versionId: version.id, bookId: book.id, chapter: book.chapters[0] };

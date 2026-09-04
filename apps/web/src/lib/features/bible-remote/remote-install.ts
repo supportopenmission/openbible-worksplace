@@ -3,6 +3,7 @@ import type { ImportResult, WorkspaceStorage } from '$lib/storage/types';
 import { getSql } from '$lib/features/bible/bible-reader';
 import { downloadWithProgress, RemoteDownloadError } from './remote-download';
 import type { RemoteBibleFile } from './remote-manifest';
+import { populateTranslationsFromStorage } from '$lib/bible/parser/translations';
 
 export type RemoteInstallReason =
 	| 'invalid-sqlite'
@@ -139,7 +140,10 @@ export async function installRemoteBibles(
 				'.openbible/config.json',
 				`${JSON.stringify({ ...config, bibleImportStatus: status }, null, 2)}\n`
 			);
+			await populateTranslationsFromStorage(storage);
 		}
+	} else if (finalResults.some((result) => result.status === 'imported')) {
+		await populateTranslationsFromStorage(storage);
 	}
 
 	return finalResults;

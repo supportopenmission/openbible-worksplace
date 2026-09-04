@@ -1,6 +1,8 @@
 export interface NoteMeta {
 	id: string;
 	title: string;
+	description?: string;
+	pinned?: boolean;
 	createdAt: string;
 	updatedAt: string;
 	type: 'note';
@@ -14,6 +16,8 @@ export interface Note {
 	path: string;
 	id: string;
 	title: string;
+	description?: string;
+	pinned?: boolean;
 	createdAt: string;
 	updatedAt: string;
 }

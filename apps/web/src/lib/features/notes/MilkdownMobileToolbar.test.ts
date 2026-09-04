@@ -5,13 +5,19 @@ import { applyToolbarActionToMarkdown } from './milkdown-markdown-io';
 
 // SPECSFY: US-003 FR-004 NFR-002 AC-003
 describe('milkdown mobile toolbar', () => {
-	it('renders seven named actions above the navigation', () => {
+	it('does not render while the editor is not active', () => {
+		const { body } = render(MilkdownMobileToolbar, { props: { active: false } });
+		expect(body).not.toContain('milkdown-toolbar');
+	});
+
+	it('renders named block actions above the navigation', () => {
 		const { body } = render(MilkdownMobileToolbar);
 		for (const label of [
 			'Negrito',
 			'Itálico',
 			'Título',
 			'Lista',
+			'Lista numerada',
 			'Checklist',
 			'Citação',
 			'Versículo'
@@ -32,5 +38,9 @@ describe('toolbar markdown actions', () => {
 
 	it('turns the current line into a heading', () => {
 		expect(applyToolbarActionToMarkdown('hello', { from: 0, to: 5 }, 'heading')).toBe('# hello');
+	});
+
+	it('turns the current line into an ordered list item', () => {
+		expect(applyToolbarActionToMarkdown('hello', { from: 0, to: 5 }, 'ordered')).toBe('1. hello');
 	});
 });

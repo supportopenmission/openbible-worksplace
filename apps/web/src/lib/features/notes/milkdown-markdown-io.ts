@@ -1,13 +1,7 @@
 import { extractVerseFencesFromMarkdown } from './verse-block-extension';
 
 export type ToolbarAction =
-	| 'bold'
-	| 'italic'
-	| 'heading'
-	| 'bullet'
-	| 'task'
-	| 'quote'
-	| 'verse';
+	'bold' | 'italic' | 'heading' | 'bullet' | 'ordered' | 'task' | 'quote' | 'verse';
 
 export interface MarkdownSelection {
 	from: number;
@@ -15,8 +9,7 @@ export interface MarkdownSelection {
 }
 
 export type MarkdownPart =
-	| { type: 'markdown'; value: string }
-	| { type: 'verse'; value: string; index: number };
+	{ type: 'markdown'; value: string } | { type: 'verse'; value: string; index: number };
 
 const VERSE_FENCE = /:::verse\{[^}]*\}\s*\n[\s\S]*?\n:::/g;
 
@@ -71,10 +64,13 @@ export function applyToolbarActionToMarkdown(
 	}
 
 	const line = currentLineRange(markdown, { from, to });
-	const value = markdown.slice(line.start, line.end).replace(/^(?:#{1,6}|[-*>]|- \[[ xX]\])\s+/, '');
+	const value = markdown
+		.slice(line.start, line.end)
+		.replace(/^(?:#{1,6}|\d+\.|[-*>]|- \[[ xX]\])\s+/, '');
 	const prefix = {
 		heading: '# ',
 		bullet: '- ',
+		ordered: '1. ',
 		task: '- [ ] ',
 		quote: '> '
 	}[action];

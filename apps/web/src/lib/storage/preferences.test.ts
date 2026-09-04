@@ -33,7 +33,8 @@ describe('workspace preferences', () => {
 			version: 1,
 			theme: 'light',
 			initialRoute: null,
-			readerSelection: null
+			readerSelection: null,
+			defaultBibleVersionId: null
 		});
 		expect(storage.files.has('.openbible/preferences.json')).toBe(true);
 	});

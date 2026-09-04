@@ -38,6 +38,8 @@ export interface NoteEditorServiceOptions {
 export function createNoteEditorService(options: NoteEditorServiceOptions) {
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	let latestBody = options.note.body;
+	let latestTitle = options.note.title;
+	let latestDescription = options.note.description;
 	let disposed = false;
 	let pendingChanges = false;
 
@@ -46,12 +48,14 @@ export function createNoteEditorService(options: NoteEditorServiceOptions) {
 	}
 
 	async function persist(body: string): Promise<Note> {
-		const title = titleFromBody(body);
+		const extractedTitle = titleFromBody(body);
+		const effectiveTitle = extractedTitle ?? latestTitle ?? options.note.title;
 		const noteFile = syncTitleWithH1(
 			{
 				meta: {
 					id: options.note.id,
-					title: options.note.title,
+					title: effectiveTitle,
+					description: latestDescription,
 					createdAt: options.note.createdAt,
 					updatedAt: options.note.updatedAt,
 					type: 'note',
@@ -59,11 +63,12 @@ export function createNoteEditorService(options: NoteEditorServiceOptions) {
 				},
 				body
 			},
-			title ?? options.note.title
+			effectiveTitle
 		);
 		const saved = await saveNote(options.storage, {
 			...options.note,
 			title: noteFile.meta.title,
+			description: noteFile.meta.description,
 			body: noteFile.body,
 			content: noteFile.body,
 			meta: noteFile.meta,
@@ -103,6 +108,18 @@ export function createNoteEditorService(options: NoteEditorServiceOptions) {
 		}, DEBOUNCE_MS);
 	}
 
+	function updateTitle(title: string) {
+		latestTitle = title.trim() || options.note.title || 'Nova nota';
+		options.note.title = latestTitle;
+		scheduleSave(latestBody);
+	}
+
+	function updateDescription(description: string) {
+		latestDescription = description.trim() || undefined;
+		options.note.description = latestDescription;
+		scheduleSave(latestBody);
+	}
+
 	function dispose() {
 		if (debounceTimer) clearTimeout(debounceTimer);
 		debounceTimer = null;
@@ -111,5 +128,12 @@ export function createNoteEditorService(options: NoteEditorServiceOptions) {
 		if (bodyToFlush !== null) void persist(bodyToFlush).catch(() => {});
 	}
 
-	return { scheduleSave, saveNow, dispose, getStatus: () => latestBody };
+	return {
+		scheduleSave,
+		saveNow,
+		updateTitle,
+		updateDescription,
+		dispose,
+		getStatus: () => latestBody
+	};
 }

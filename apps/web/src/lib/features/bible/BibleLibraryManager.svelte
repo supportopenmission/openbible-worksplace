@@ -24,6 +24,23 @@
 		!!effectiveStorage && typeof effectiveStorage.deleteFile === 'function'
 	);
 
+	function autoReconcileDefaultVersion(currentEntries: LibraryEntry[]) {
+		if (!workspace) return;
+		const installed = currentEntries.filter((e) => e.status === 'installed');
+		if (installed.length === 1) {
+			if (workspace.preferences.defaultBibleVersionId !== installed[0].fileName) {
+				void workspace.updatePreferences({ defaultBibleVersionId: installed[0].fileName });
+			}
+		} else if (installed.length > 1) {
+			const current = workspace.preferences.defaultBibleVersionId;
+			if (!current || !installed.some((e) => e.fileName === current)) {
+				void workspace.updatePreferences({ defaultBibleVersionId: installed[0].fileName });
+			}
+		} else if (installed.length === 0 && workspace.preferences.defaultBibleVersionId) {
+			void workspace.updatePreferences({ defaultBibleVersionId: null });
+		}
+	}
+
 	async function loadEntries() {
 		const current = effectiveStorage;
 		if (!current) {
@@ -34,6 +51,7 @@
 		error = '';
 		try {
 			entries = await listLibraryEntries(current);
+			autoReconcileDefaultVersion(entries);
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Não foi possível listar as Bíblias.';
 		} finally {
@@ -63,6 +81,7 @@
 		try {
 			const result = await deleteBibleVersion(current, deleteTarget.fileName);
 			entries = entries.filter((entry) => entry.fileName !== result.name);
+			autoReconcileDefaultVersion(entries);
 			notice =
 				result.remaining === 0
 					? `${result.name} excluída. Nenhuma versão restante.`
@@ -74,6 +93,13 @@
 		} finally {
 			deleting = false;
 		}
+	}
+
+	async function handleSetDefault(fileName: string) {
+		if (!workspace) return;
+		await workspace.updatePreferences({ defaultBibleVersionId: fileName });
+		const found = entries.find((e) => e.fileName === fileName);
+		notice = `Versão "${found?.name || fileName}" definida como padrão.`;
 	}
 
 	function formatBytes(bytes: number): string {
@@ -104,9 +130,17 @@
 	{:else}
 		<ul class="library-list" aria-label="Bíblias instaladas">
 			{#each entries as entry (entry.fileName)}
+				{@const isInstalled = entry.status === 'installed'}
+				{@const installedCount = entries.filter((e) => e.status === 'installed').length}
+				{@const isDefault = isInstalled && (workspace?.preferences.defaultBibleVersionId === entry.fileName || installedCount === 1)}
 				<li class:invalid={entry.status === 'invalid'}>
 					<span class="entry-main">
-						<strong class="entry-name">{entry.name}</strong>
+						<div class="entry-title-row">
+							<strong class="entry-name">{entry.name}</strong>
+							{#if isDefault}
+								<span class="badge-default">Padrão</span>
+							{/if}
+						</div>
 						<small class="entry-meta">
 							{entry.fileName}
 							{#if entry.status === 'installed'}
@@ -116,17 +150,29 @@
 							{/if}
 						</small>
 					</span>
-					<Button
-						type="button"
-						variant="ghost"
-						size="sm"
-						onclick={() => (deleteTarget = entry)}
-						disabled={!canDelete || deleting}
-						aria-label={`Excluir ${entry.fileName}`}
-					>
-						<Trash2 size={15} strokeWidth={1.8} aria-hidden="true" />
-						Excluir
-					</Button>
+					<div class="entry-actions">
+						{#if isInstalled && !isDefault && installedCount > 1}
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onclick={() => void handleSetDefault(entry.fileName)}
+							>
+								Definir como padrão
+							</Button>
+						{/if}
+						<Button
+							type="button"
+							variant="ghost"
+							size="sm"
+							onclick={() => (deleteTarget = entry)}
+							disabled={!canDelete || deleting}
+							aria-label={`Excluir ${entry.fileName}`}
+						>
+							<Trash2 size={15} strokeWidth={1.8} aria-hidden="true" />
+							Excluir
+						</Button>
+					</div>
 				</li>
 			{/each}
 		</ul>
@@ -235,6 +281,29 @@
 		display: grid;
 		gap: 2px;
 		min-width: 0;
+	}
+	.entry-title-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+	.badge-default {
+		display: inline-flex;
+		align-items: center;
+		padding: 1px 6px;
+		border-radius: 4px;
+		font-size: 0.6875rem;
+		font-weight: 550;
+		background: color-mix(in srgb, var(--primary) 12%, transparent);
+		color: var(--primary);
+		border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+	}
+	.entry-actions {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		flex-shrink: 0;
 	}
 	.entry-name {
 		font-size: 0.85rem;

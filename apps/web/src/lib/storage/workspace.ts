@@ -151,5 +151,14 @@ export async function importBibleFiles(
 		);
 	}
 
+	if (results.some((result) => result.status === 'imported')) {
+		try {
+			const { populateTranslationsFromStorage } = await import('$lib/bible/parser/translations');
+			await populateTranslationsFromStorage(storage);
+		} catch {
+			// Não bloqueia o resultado da importação se a leitura do catálogo falhar
+		}
+	}
+
 	return results;
 }

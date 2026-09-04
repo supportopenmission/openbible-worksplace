@@ -1,5 +1,6 @@
 import initSqlJs from 'sql.js';
 import type { WorkspaceStorage } from '$lib/storage/types';
+import { populateTranslationsFromCatalog } from '$lib/bible/parser/translations';
 
 type SqlJs = Awaited<ReturnType<typeof initSqlJs>>;
 type SqlDatabase = InstanceType<SqlJs['Database']>;
@@ -165,6 +166,7 @@ export async function loadBibleCatalog(storage: WorkspaceStorage): Promise<Bible
 		}
 	}
 
+	populateTranslationsFromCatalog(versions);
 	return { versions, diagnostics };
 }
 

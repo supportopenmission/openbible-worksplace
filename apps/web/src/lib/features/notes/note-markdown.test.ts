@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { parseNoteFile, serializeNoteFile, syncTitleWithH1 } from './note-markdown';
+import {
+	extractContentFromNoteBody,
+	extractTitleFromMarkdown,
+	parseNoteFile,
+	serializeNoteFile,
+	syncTitleWithH1
+} from './note-markdown';
 import { roundtripMarkdown } from './milkdown-markdown-io';
 
 const TEMPLATE = `---
@@ -60,5 +66,52 @@ describe('milkdown files over app', () => {
 		expect(roundtripMarkdown(body)).toBe(body);
 		expect(file).toContain('title: "Salmo 23"');
 		expect(file).toContain('type: "note"');
+	});
+
+	it('parses and serializes description property in frontmatter', () => {
+		const source = `---
+title: "Nota com descrição"
+description: "Resumo da mensagem"
+createdAt: "2026-09-01T00:00:00.000Z"
+updatedAt: "2026-09-01T00:00:00.000Z"
+type: "note"
+---
+
+# Nota com descrição
+`;
+		const parsed = parseNoteFile(source);
+		expect(parsed.meta.description).toBe('Resumo da mensagem');
+		const serialized = serializeNoteFile(parsed);
+		expect(serialized).toContain('description: "Resumo da mensagem"');
+	});
+
+	it('parses and serializes pinned property in frontmatter', () => {
+		const source = `---
+title: "Nota fixada"
+pinned: "true"
+createdAt: "2026-09-01T00:00:00.000Z"
+updatedAt: "2026-09-01T00:00:00.000Z"
+type: "note"
+---
+
+# Nota fixada
+`;
+		const parsed = parseNoteFile(source);
+		expect(parsed.meta.pinned).toBe(true);
+		const serialized = serializeNoteFile(parsed);
+		expect(serialized).toContain('pinned: true');
+	});
+
+	it('extracts note body content by stripping leading H1', () => {
+		expect(extractContentFromNoteBody('# Título\n\nConteúdo da nota')).toBe('Conteúdo da nota');
+		expect(extractContentFromNoteBody('# Título\n')).toBe('');
+		expect(extractContentFromNoteBody('Conteúdo sem H1')).toBe('Conteúdo sem H1');
+		expect(extractContentFromNoteBody('')).toBe('');
+	});
+
+	it('extracts note title from markdown', () => {
+		expect(extractTitleFromMarkdown('# Minha Nota\n\ntexto')).toBe('Minha Nota');
+		expect(extractTitleFromMarkdown('texto sem título')).toBeNull();
+		expect(extractTitleFromMarkdown('')).toBeNull();
 	});
 });

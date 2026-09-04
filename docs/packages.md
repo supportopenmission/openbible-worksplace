@@ -36,6 +36,7 @@
 | Terceiro | desenvolvimento | tslib | 2.8.1 | Runtime library for TypeScript helper functions | https://github.com/Microsoft/tslib | https://github.com/Microsoft/tslib |
 | Terceiro | desenvolvimento | tw-animate-css | ^1.4.0 | TailwindCSS v4.0 compatible replacement for `tailwindcss-animate`. | Wombosvideo/tw-animate-css | — |
 | Terceiro | desenvolvimento | typescript | 7.0.2 | TypeScript is a language for application scale JavaScript development | https://github.com/microsoft/TypeScript | https://github.com/microsoft/TypeScript |
+| Terceiro | desenvolvimento | vaul-svelte | ^1.0.0-next.7 | Finalidade não descrita nos metadados locais. | github:huntabyte/vaul-svelte | — |
 | Terceiro | desenvolvimento | vite | 8.2.1 | Native-ESM powered web dev build tool | https://github.com/vitejs/vite | https://github.com/vitejs/vite |
 | Terceiro | desenvolvimento | vitest | 4.1.10 | Next generation testing framework powered by Vite | https://github.com/vitest-dev/vitest | https://github.com/vitest-dev/vitest |
 | Terceiro | desenvolvimento | vitest-browser-svelte | 3.0.0 | Render Svelte components in Vitest Browser Mode | https://github.com/vitest-community/vitest-browser-svelte | https://github.com/vitest-community/vitest-browser-svelte |

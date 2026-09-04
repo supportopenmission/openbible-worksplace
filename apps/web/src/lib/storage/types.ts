@@ -28,6 +28,7 @@ export interface WorkspacePreferences {
 	theme: Theme;
 	initialRoute: HomeRoutePreference | null;
 	readerSelection: ReaderSelectionPreference | null;
+	defaultBibleVersionId?: string | null;
 }
 
 export interface ImportResult {

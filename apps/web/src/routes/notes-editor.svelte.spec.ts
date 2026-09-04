@@ -27,7 +27,7 @@ describe('notes editor Milkdown canvas controls', () => {
 		const toolbar = page.getByRole('toolbar', { name: 'Formatação da nota' });
 		await expect.element(toolbar).toBeInTheDocument();
 		for (const name of ['Negrito', 'Itálico', 'Título', 'Lista', 'Checklist', 'Citação', 'Versículo']) {
-			await expect.element(toolbar.getByRole('button', { name })).toBeInTheDocument();
+			await expect.element(toolbar.getByRole('button', { name, exact: true })).toBeInTheDocument();
 		}
 	});
 
@@ -83,4 +83,62 @@ describe('notes editor Milkdown canvas controls', () => {
 		expect(rect.left).toBeGreaterThanOrEqual(0);
 		expect(rect.right).toBeLessThanOrEqual(window.innerWidth);
 	});
+
+	it('toggles task item to complete (checked: true) when task marker is clicked', async () => {
+		await page.viewport(390, 844);
+		render(NotesEditorPage, { props: { data: { noteId: 'task-toggle-note' } } });
+		const editor = page.getByRole('textbox');
+		await editor.click();
+		await userEvent.keyboard('{End}{Enter}Tarefa teste');
+		await page.getByRole('toolbar', { name: 'Formatação da nota' }).getByRole('button', { name: 'Checklist', exact: true }).click();
+
+		const taskItem = editor.element().querySelector<HTMLElement>('li[data-item-type="task"]');
+		expect(taskItem).not.toBeNull();
+		expect(taskItem?.getAttribute('data-checked')).toBe('false');
+
+		// Click on the task checkbox marker
+		const bounds = taskItem!.getBoundingClientRect();
+		taskItem!.dispatchEvent(
+			new MouseEvent('click', {
+				bubbles: true,
+				clientX: bounds.left - 10,
+				clientY: bounds.top + 10
+			})
+		);
+
+		await expect
+			.poll(() =>
+				editor.element().querySelector('li[data-item-type="task"]')?.getAttribute('data-checked')
+			)
+			.toBe('true');
+	});
+
+	it('automatically decorates bible references without modifying markdown text', async () => {
+		await page.viewport(1440, 900);
+		render(NotesEditorPage, { props: { data: { noteId: 'bible-ref-note' } } });
+		const editor = page.getByRole('textbox');
+		await editor.click();
+		await userEvent.keyboard('{End}{Enter}Estudando Gn 3.1 (ARA) e Jo 3.16.');
+
+		await expect
+			.poll(() => editor.element().querySelectorAll('.bible-reference').length)
+			.toBe(2);
+
+		const refs = editor.element().querySelectorAll<HTMLElement>('.bible-reference');
+		expect(refs[0].getAttribute('data-osis')).toBe('Gen.3.1');
+		expect(refs[0].getAttribute('data-version')).toBe('ARA');
+		expect(refs[0].getAttribute('data-raw')).toBe('Gn 3.1 (ARA)');
+
+		expect(refs[1].getAttribute('data-osis')).toBe('John.3.16');
+		expect(refs[1].getAttribute('data-raw')).toBe('Jo 3.16');
+
+		// Click on reference to open viewer dialog
+		refs[0].dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+		const dialog = page.getByRole('region', { name: 'Texto bíblico' });
+		await expect.element(dialog).toBeInTheDocument();
+		expect(dialog.element().textContent).toContain('Gênesis 3:1');
+		expect(dialog.element().textContent).toContain('ARA');
+		await expect.poll(() => dialog.element().textContent).toContain('serpente');
+	});
 });
+

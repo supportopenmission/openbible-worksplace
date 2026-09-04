@@ -64,3 +64,5 @@ manifests.
   e do split de notas no leitor, com `remark-directive` para roundtrip do fence
   `:::verse`. Tipex/TipTap permanecem temporariamente apenas em arquivos e
   testes legados até sua remoção segura após a regressão completa.
+- O seletor de versículos usa os primitives locais `Select` e `Drawer` do
+  shadcn-svelte; o Drawer depende de `vaul-svelte` para a interação móvel.

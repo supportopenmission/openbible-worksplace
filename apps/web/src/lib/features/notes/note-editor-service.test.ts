@@ -69,6 +69,26 @@ describe('milkdown autosave to yaml and index', () => {
 			splitMarkdownByVerseFences(body).filter((part) => part.type === 'verse')
 		).toHaveLength(1);
 	});
+
+	it('updates note description and persists into frontmatter on save', async () => {
+		const storage = memoryStorage();
+		const service = createNoteEditorService({ storage, note: NOTE });
+		service.updateDescription('Minha nova descrição de teste');
+		const saved = await service.saveNow();
+		expect(saved?.description).toBe('Minha nova descrição de teste');
+		expect(saved?.meta.description).toBe('Minha nova descrição de teste');
+	});
+
+	it('updates note title and persists into frontmatter and H1 on save', async () => {
+		const storage = memoryStorage();
+		const service = createNoteEditorService({ storage, note: NOTE });
+		service.updateTitle('Meu título renomeado');
+		const saved = await service.saveNow('Apenas o conteúdo sem H1');
+		expect(saved?.title).toBe('Meu título renomeado');
+		expect(saved?.meta.title).toBe('Meu título renomeado');
+		expect(saved?.body).toContain('# Meu título renomeado');
+		expect(saved?.body).toContain('Apenas o conteúdo sem H1');
+	});
 });
 
 // SPECSFY: US-001 FR-005 NFR-001 AC-011

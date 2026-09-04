@@ -58,6 +58,8 @@ function toNote(noteFile: NoteFile): Note {
 		path: meta.path,
 		id: meta.id,
 		title: meta.title,
+		description: meta.description,
+		pinned: meta.pinned,
 		createdAt: meta.createdAt,
 		updatedAt: meta.updatedAt
 	};
@@ -68,6 +70,8 @@ function noteFile(note: Note): NoteFile {
 		meta: {
 			id: note.id,
 			title: note.title,
+			description: note.description,
+			pinned: note.pinned,
 			createdAt: note.createdAt,
 			updatedAt: note.updatedAt,
 			type: 'note',
@@ -101,7 +105,12 @@ export async function listNotes(storage?: WorkspaceStorage): Promise<Note[]> {
 			// A malformed note remains on disk but cannot enter the active list.
 		}
 	}
-	return notes.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id));
+	return notes.sort((a, b) => {
+		const pinA = a.pinned ? 1 : 0;
+		const pinB = b.pinned ? 1 : 0;
+		if (pinB !== pinA) return pinB - pinA;
+		return b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id);
+	});
 }
 
 export async function createNote(storage?: WorkspaceStorage): Promise<Note> {

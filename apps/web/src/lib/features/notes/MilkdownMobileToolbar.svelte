@@ -1,5 +1,14 @@
 <script lang="ts">
-	import { Bold, CheckSquare, Heading1, Italic, List, Quote, BookOpen } from '@lucide/svelte';
+	import {
+		Bold,
+		CheckSquare,
+		Heading1,
+		Italic,
+		List,
+		ListOrdered,
+		Quote,
+		BookOpen
+	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import type { ToolbarAction } from './milkdown-markdown-io';
 
@@ -18,6 +27,7 @@
 		{ id: 'italic', label: 'Itálico', icon: Italic },
 		{ id: 'heading', label: 'Título', icon: Heading1 },
 		{ id: 'bullet', label: 'Lista', icon: List },
+		{ id: 'ordered', label: 'Lista numerada', icon: ListOrdered },
 		{ id: 'task', label: 'Checklist', icon: CheckSquare },
 		{ id: 'quote', label: 'Citação', icon: Quote },
 		{ id: 'verse', label: 'Versículo', icon: BookOpen }
@@ -52,10 +62,7 @@
 		right: 0;
 		left: 0;
 		z-index: 50;
-		bottom: max(
-			calc(64px + env(safe-area-inset-bottom, 0px)),
-			var(--note-keyboard-inset, 0px)
-		);
+		bottom: max(calc(64px + env(safe-area-inset-bottom, 0px)), var(--note-keyboard-inset, 0px));
 		display: none;
 		border-top: 1px solid var(--border);
 		background: color-mix(in srgb, var(--background) 96%, transparent);

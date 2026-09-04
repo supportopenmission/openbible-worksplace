@@ -26,19 +26,14 @@
 	const isHighlightsList = $derived(page.url.pathname === '/highlights');
 	const isBible = $derived(page.url.pathname === '/bible');
 	const isConfig = $derived(page.url.pathname === '/config');
-	const isNoteEditor = $derived(
-		page.url.pathname.startsWith('/notes/') && page.url.pathname !== '/notes'
-	);
+	const isNotes = $derived(page.url.pathname.startsWith('/notes'));
+	const isBare = $derived(isBible || isNotes);
 	const headerTitle = $derived(
-		isNoteEditor
-			? 'Nota'
-			: isNotesList
-				? 'Notas'
-				: isHighlightsList
-					? 'Destaques'
-					: isConfig
-						? 'Configurações'
-						: ''
+		isHighlightsList
+			? 'Destaques'
+			: isConfig
+				? 'Configurações'
+				: ''
 	);
 
 	function setNoteWidth(width: NoteEditorWidth) {
@@ -64,64 +59,20 @@
 {:else if workspace?.showShell}
 	<Sidebar.Provider bind:open={sidebarOpen} class="app-sidebar-provider">
 		<AppSidebar currentPath={page.url.pathname} />
-		<Sidebar.Inset class={isBible ? 'shell-content shell-bare' : 'shell-content'}>
-			<header class="desktop-header" class:header-overlay={isBible}>
-				<div class="header-context">
-					<Sidebar.Trigger aria-label="Alternar sidebar" title="Alternar sidebar" />
-					{#if notePageChrome.active}
-						<nav class="header-breadcrumb" aria-label="Breadcrumb">
-							<a href={resolve('/notes')}>Notas</a>
-							<span aria-hidden="true">/</span>
-							<span class="breadcrumb-current" aria-current="page">{notePageChrome.title}</span>
-						</nav>
-					{:else if headerTitle}
-						<span class="route-title">{headerTitle}</span>
-					{/if}
-				</div>
-				<div class="header-actions">
-					{#if notePageChrome.active}
-						<DropdownMenu.Root>
-							<DropdownMenu.Trigger>
-								{#snippet child({ props })}
-									<Button
-										{...props}
-										type="button"
-										variant="ghost"
-										size="icon-sm"
-										aria-label="Opções da nota"
-										title="Opções da nota"
-									>
-										<MoreHorizontal size={16} strokeWidth={1.8} aria-hidden="true" />
-									</Button>
-								{/snippet}
-							</DropdownMenu.Trigger>
-							<DropdownMenu.Content align="end" class="note-options-menu">
-								<DropdownMenu.Label>Largura do editor</DropdownMenu.Label>
-								<DropdownMenu.RadioGroup
-									value={notePageChrome.width}
-									onValueChange={(value) => value && setNoteWidth(value as NoteEditorWidth)}
-								>
-									{#each Object.entries(NOTE_EDITOR_WIDTHS) as [id, option] (id)}
-										<DropdownMenu.RadioItem value={id}>
-											<span class="width-option">
-												<span>{option.label}</span>
-												<span class="width-option-desc">{option.description}</span>
-											</span>
-										</DropdownMenu.RadioItem>
-									{/each}
-								</DropdownMenu.RadioGroup>
-							</DropdownMenu.Content>
-						</DropdownMenu.Root>
-					{:else if isNotesList}
-						<Button type="button" size="sm" onclick={handleCreateNote} disabled={creatingNote}>
-							<Plus size={15} strokeWidth={1.75} aria-hidden="true" />
-							Nova nota
-						</Button>
-					{/if}
-				</div>
-			</header>
+		<Sidebar.Inset class={isBare ? 'shell-content shell-bare' : 'shell-content'}>
+			{#if !isBare}
+				<header class="desktop-header">
+					<div class="header-context">
+						<Sidebar.Trigger aria-label="Alternar sidebar" title="Alternar sidebar" />
+						{#if headerTitle}
+							<span class="route-title">{headerTitle}</span>
+						{/if}
+					</div>
+					<div class="header-actions"></div>
+				</header>
+			{/if}
 			<NetworkStatus />
-			<div class="shell-main" class:note-editor-shell={isNoteEditor}>
+			<div class="shell-main" class:note-editor-shell={isNotes}>
 				{@render children()}
 			</div>
 		</Sidebar.Inset>
@@ -159,6 +110,11 @@
 		flex-direction: column;
 		overflow-y: auto;
 		overscroll-behavior: contain;
+	}
+
+	.shell-main.note-editor-shell {
+		overflow: hidden;
+		height: 100%;
 	}
 
 	.desktop-header {

@@ -33,6 +33,8 @@ function metaFrom(source: string, values: Record<string, string>): NoteMeta {
 	return {
 		id,
 		title: values.title ?? '',
+		description: values.description?.trim() || undefined,
+		pinned: values.pinned === 'true' || values.pinned === '1' ? true : undefined,
 		createdAt: values.createdAt ?? '',
 		updatedAt: values.updatedAt ?? '',
 		type: 'note',
@@ -58,6 +60,8 @@ export function serializeNoteFile(note: NoteFile): string {
 	return [
 		'---',
 		`title: ${quote(meta.title)}`,
+		...(meta.description ? [`description: ${quote(meta.description)}`] : []),
+		...(meta.pinned ? ['pinned: true'] : []),
 		`createdAt: ${quote(meta.createdAt)}`,
 		`updatedAt: ${quote(meta.updatedAt)}`,
 		'type: "note"',
@@ -76,4 +80,17 @@ export function syncTitleWithH1(note: NoteFile, title: string): NoteFile {
 			? note.body.replace(/^\s*#{2,6}\s+.+$/m, `# ${normalizedTitle}`)
 			: `# ${normalizedTitle}\n\n${note.body}`;
 	return { ...note, meta: { ...note.meta, title: normalizedTitle }, body };
+}
+
+export function extractContentFromNoteBody(body: string, _title?: string): string {
+	if (!body) return '';
+	let content = body.replace(FRONTMATTER, '');
+	content = content.replace(/^\s*#\s+[^\r\n]*(?:\r?\n)*/, '');
+	return content.replace(/^\n+/, '');
+}
+
+export function extractTitleFromMarkdown(source: string): string | null {
+	if (!source) return null;
+	const match = source.match(H1);
+	return match ? normalizeNoteTitle(match[1]) : null;
 }

@@ -12,6 +12,7 @@
 | npm | produção | @friendofsvelte/tipex | 0.2.0 | Finalidade não descrita nos metadados locais. | https://github.com/friendofsvelte/tipex |
 | npm | produção | @milkdown/kit | 7.22.1 | Finalidade não descrita nos metadados locais. | https://github.com/Milkdown/milkdown |
 | npm | produção | @tiptap/extension-highlight | 2.27.2 | highlight extension for tiptap | https://github.com/ueberdosis/tiptap |
+| npm | produção | bible-passage-reference-parser | 4.0.0 | Identifies and parses Bible references in 50 languages | https://github.com/openbibleinfo/Bible-Passage-Reference-Parser |
 | npm | produção | clsx | ^2.1.1 | A tiny (239B) utility for constructing className strings conditionally. | lukeed/clsx |
 | npm | produção | remark-directive | ^4.0.0 | remark plugin to support directives | remarkjs/remark-directive |
 | npm | produção | sql.js | ^1.14.2 | SQLite library with support for opening and writing databases, prepared statements, and more. This SQLite library is in pure javascript (compiled with emscripten). | http://github.com/sql-js/sql.js |
@@ -36,6 +37,7 @@
 | npm | desenvolvimento | tslib | 2.8.1 | Runtime library for TypeScript helper functions | https://github.com/Microsoft/tslib |
 | npm | desenvolvimento | tw-animate-css | ^1.4.0 | TailwindCSS v4.0 compatible replacement for `tailwindcss-animate`. | Wombosvideo/tw-animate-css |
 | npm | desenvolvimento | typescript | 7.0.2 | TypeScript is a language for application scale JavaScript development | https://github.com/microsoft/TypeScript |
+| npm | desenvolvimento | vaul-svelte | ^1.0.0-next.7 | Finalidade não descrita nos metadados locais. | github:huntabyte/vaul-svelte |
 | npm | desenvolvimento | vite | 8.2.1 | Native-ESM powered web dev build tool | https://github.com/vitejs/vite |
 | npm | desenvolvimento | vitest | 4.1.10 | Next generation testing framework powered by Vite | https://github.com/vitest-dev/vitest |
 | npm | desenvolvimento | vitest-browser-svelte | 3.0.0 | Render Svelte components in Vitest Browser Mode | https://github.com/vitest-community/vitest-browser-svelte |
