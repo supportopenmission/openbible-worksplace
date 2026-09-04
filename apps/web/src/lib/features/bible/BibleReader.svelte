@@ -87,6 +87,7 @@
 	} from './reader-verse-notes';
 	import { noteIdFromPath, recallReaderNote, rememberReaderNote } from './reader-note-session';
 	import SelectionActionPopover from './SelectionActionPopover.svelte';
+	import SelectionActionBar from './SelectionActionBar.svelte';
 	import VerseNoteSelector from './VerseNoteSelector.svelte';
 	import BibleNoteSplit from './BibleNoteSplit.svelte';
 	import HighlightsList from './HighlightsList.svelte';
@@ -1272,7 +1273,12 @@
 				</ButtonGroup>
 			</div>
 		</section>
-		<div class="reader-fab" class:fab-open={fabOpen} onkeydown={handleFabKeydown}>
+		<div
+			class="reader-fab"
+			class:fab-open={fabOpen}
+			class:fab-hidden={popoverOpen}
+			onkeydown={handleFabKeydown}
+		>
 			<div class="fab-actions" aria-hidden={!fabOpen}>
 				<button
 					type="button"
@@ -1677,20 +1683,36 @@
 			</main>
 		</BibleNoteSplit>
 
-		<SelectionActionPopover
-			open={popoverOpen}
-			anchor={popoverAnchor}
-			referenceLabel={selectionReference}
-			{activeStyleId}
-			errorMessage={popoverError}
-			busy={popoverBusy}
-			onApplyStyle={(styleId) => void applyStyle(styleId)}
-			onErase={() => void eraseStyle()}
-			onCopyReference={copyReference}
-			onCopyText={copyTextAndReference}
-			onCreateNote={() => void createNoteFromSelection()}
-			onClose={closePopover}
-		/>
+		{#if isMobile.current}
+			<SelectionActionBar
+				open={popoverOpen}
+				referenceLabel={selectionReference}
+				{activeStyleId}
+				errorMessage={popoverError}
+				busy={popoverBusy}
+				onApplyStyle={(styleId) => void applyStyle(styleId)}
+				onErase={() => void eraseStyle()}
+				onCopyReference={copyReference}
+				onCopyText={copyTextAndReference}
+				onCreateNote={() => void createNoteFromSelection()}
+				onClose={closePopover}
+			/>
+		{:else}
+			<SelectionActionPopover
+				open={popoverOpen}
+				anchor={popoverAnchor}
+				referenceLabel={selectionReference}
+				{activeStyleId}
+				errorMessage={popoverError}
+				busy={popoverBusy}
+				onApplyStyle={(styleId) => void applyStyle(styleId)}
+				onErase={() => void eraseStyle()}
+				onCopyReference={copyReference}
+				onCopyText={copyTextAndReference}
+				onCreateNote={() => void createNoteFromSelection()}
+				onClose={closePopover}
+			/>
+		{/if}
 
 		<VerseNoteSelector
 			open={verseNoteSelectorOpen}
@@ -2829,6 +2851,10 @@
 	}
 
 	@media (max-width: 700px) {
+		.reader-fab.fab-hidden {
+			display: none;
+		}
+
 		.reader-fab {
 			position: fixed;
 			right: 16px;

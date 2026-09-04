@@ -326,6 +326,19 @@ describe('/bible verse selection popover', () => {
 		expect(page.getByRole('button', { name: /copiar referência/i })).not.toBeInTheDocument();
 	});
 
+	it('shows a bottom action bar with highlight swatches on mobile', async () => {
+		await openGenesis1(320);
+		await page.getByText(/disse deus: haja luz/i).click();
+		const bar = page.getByRole('dialog', { name: /ações para/i });
+		await expect.element(bar).toBeInTheDocument();
+		await bar.getByRole('button', { name: /caneta dourada/i }).click();
+		await expect
+			.element(bar.getByRole('button', { name: /caneta dourada/i }))
+			.toHaveAttribute('aria-pressed', 'true');
+		await userEvent.keyboard('{Escape}');
+		expect(page.getByRole('dialog', { name: /ações para/i })).not.toBeInTheDocument();
+	});
+
 	it('shows a recoverable error when creating a note without write access', async () => {
 		// SPECSFY: US-004 FR-007 NFR-002 AC-020
 		const storage = createStorage(async () => ['ara.sqlite'], bibleBytes);
