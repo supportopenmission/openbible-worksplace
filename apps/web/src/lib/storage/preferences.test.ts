@@ -59,4 +59,15 @@ describe('workspace preferences', () => {
 			readerSelection: { versionId: 'ara.sqlite', bookId: 1, chapter: 2 }
 		});
 	});
+
+	it('accepts the system theme in the workspace file', async () => {
+		const storage = new MemoryStorage();
+
+		const preferences = await patchWorkspacePreferences(storage, { theme: 'system' });
+
+		expect(preferences.theme).toBe('system');
+		expect(
+			JSON.parse(new TextDecoder().decode(storage.files.get('.openbible/preferences.json')))
+		).toMatchObject({ theme: 'system' });
+	});
 });

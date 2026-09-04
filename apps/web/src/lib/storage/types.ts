@@ -1,3 +1,5 @@
+import type { Theme } from '$lib/theme/theme';
+
 export type StorageKind = 'local' | 'opfs';
 export type FileContent = string | Uint8Array;
 export type BibleImportStatus = 'pending' | 'complete' | 'partial';
@@ -23,7 +25,7 @@ export interface WorkspaceConfig {
 
 export interface WorkspacePreferences {
 	version: 1;
-	theme: 'light' | 'dark';
+	theme: Theme;
 	initialRoute: HomeRoutePreference | null;
 	readerSelection: ReaderSelectionPreference | null;
 }

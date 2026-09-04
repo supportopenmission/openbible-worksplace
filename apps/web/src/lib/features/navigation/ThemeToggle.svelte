@@ -2,10 +2,11 @@
 	import { Moon, Sun } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { getWorkspaceState } from '$lib/features/workspace/workspace-state.svelte';
-	import { applyTheme, readTheme, saveTheme, type Theme } from '$lib/theme/theme';
+	import { applyTheme, readTheme, resolveTheme, saveTheme, type Theme } from '$lib/theme/theme';
 
 	let theme = $state<Theme>('light');
 	const workspace = getWorkspaceState();
+	const effectiveTheme = $derived(resolveTheme(theme));
 
 	onMount(() => {
 		const syncTheme = () => {
@@ -36,16 +37,16 @@
 <button
 	class="theme-toggle"
 	type="button"
-	aria-label={theme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro'}
-	title={theme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro'}
+	aria-label={effectiveTheme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro'}
+	title={effectiveTheme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro'}
 	onclick={toggleTheme}
 >
-	{#if theme === 'light'}
+	{#if effectiveTheme === 'light'}
 		<Moon size={16} strokeWidth={1.8} />
 	{:else}
 		<Sun size={16} strokeWidth={1.8} />
 	{/if}
-	<span>{theme === 'light' ? 'Tema escuro' : 'Tema claro'}</span>
+	<span>{effectiveTheme === 'light' ? 'Tema escuro' : 'Tema claro'}</span>
 </button>
 
 <style>

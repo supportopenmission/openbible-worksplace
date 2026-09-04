@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import type { Component } from 'svelte';
-	import { resolve } from '$app/paths';
 	import { APP_VERSION } from '$lib/app-version';
 	import {
 		Bell,
@@ -11,10 +10,12 @@
 		ChevronRight,
 		Database,
 		House,
-		Info
+		Info,
+		SunMoon
 	} from '@lucide/svelte';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import AppearanceSettings from './AppearanceSettings.svelte';
 	import BibleLibraryManager from '$lib/features/bible/BibleLibraryManager.svelte';
 	import InitialScreenPicker from '$lib/features/navigation/InitialScreenPicker.svelte';
 	import {
@@ -27,9 +28,11 @@
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 
 	const isMobile = new IsMobile();
-	let activeTab = $state<'storage' | 'bibles' | 'stats' | 'home' | 'reminder'>('storage');
+	let activeTab = $state<'storage' | 'bibles' | 'stats' | 'home' | 'reminder' | 'appearance'>(
+		'storage'
+	);
 
-	type MobileSectionId = 'storage' | 'bibles' | 'stats' | 'home' | 'reminder' | 'about';
+	type MobileSectionId = 'storage' | 'bibles' | 'stats' | 'home' | 'reminder' | 'about' | 'appearance';
 
 	const mobileSections: Array<{ id: MobileSectionId; label: string; icon: Component }> = [
 		{ id: 'storage', label: 'Armazenamento', icon: Database },
@@ -37,6 +40,7 @@
 		{ id: 'stats', label: 'Estatísticas', icon: ChartColumn },
 		{ id: 'home', label: 'Tela inicial', icon: House },
 		{ id: 'reminder', label: 'Lembrete diário', icon: Bell },
+		{ id: 'appearance', label: 'Aparência', icon: SunMoon },
 		{ id: 'about', label: 'Sobre', icon: Info }
 	];
 
@@ -163,6 +167,8 @@
 							<InitialScreenPicker mode="config" embedded />
 						{:else if mobileSection === 'reminder'}
 							{@render reminderSettings()}
+						{:else if mobileSection === 'appearance'}
+							<AppearanceSettings />
 						{:else if mobileSection === 'about'}
 							<div class="about-settings">
 								<p class="about-version">OpenBible v{APP_VERSION}</p>
@@ -188,6 +194,7 @@
 				<Tabs.Trigger value="stats">Estatísticas</Tabs.Trigger>
 				<Tabs.Trigger value="home">Tela inicial</Tabs.Trigger>
 				<Tabs.Trigger value="reminder">Lembrete</Tabs.Trigger>
+				<Tabs.Trigger value="appearance">Aparência</Tabs.Trigger>
 			</Tabs.List>
 			<Tabs.Content value="storage" class="config-tab-panel">
 				<WorkspaceSettings embedded />
@@ -203,6 +210,9 @@
 			</Tabs.Content>
 			<Tabs.Content value="reminder" class="config-tab-panel">
 				{@render reminderSettings()}
+			</Tabs.Content>
+			<Tabs.Content value="appearance" class="config-tab-panel">
+				<AppearanceSettings />
 			</Tabs.Content>
 		</Tabs.Root>
 		<footer class="config-footer">

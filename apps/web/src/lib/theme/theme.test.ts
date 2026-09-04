@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { applyTheme, readTheme, saveTheme } from './theme';
+import { describe, expect, it, vi } from 'vitest';
+import { applyTheme, readTheme, resolveTheme, saveTheme } from './theme';
 
 function createStorage(initial: string | null = null): Storage {
 	let value = initial;
@@ -26,6 +26,28 @@ describe('theme preference', () => {
 
 		expect(saveTheme('dark', storage)).toBe(true);
 		expect(readTheme(storage)).toBe('dark');
+	});
+
+	it('saves and reads the system theme', () => {
+		const storage = createStorage();
+
+		expect(saveTheme('system', storage)).toBe(true);
+		expect(readTheme(storage)).toBe('system');
+	});
+
+	it('resolves the system theme from the OS preference', () => {
+		const matchMedia = vi.fn(() => ({
+			matches: true,
+			addEventListener: vi.fn(),
+			addListener: vi.fn()
+		}));
+		vi.stubGlobal('window', { matchMedia });
+
+		expect(resolveTheme('system')).toBe('dark');
+		expect(resolveTheme('light')).toBe('light');
+		expect(resolveTheme('dark')).toBe('dark');
+
+		vi.unstubAllGlobals();
 	});
 
 	// SPECSFY: US-003 FR-005 NFR-002 AC-010

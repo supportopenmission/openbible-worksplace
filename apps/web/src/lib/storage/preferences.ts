@@ -28,7 +28,8 @@ function decodeJson<T>(bytes: Uint8Array | null): T | null {
 function isPreferences(value: unknown): value is WorkspacePreferences {
 	if (!value || typeof value !== 'object') return false;
 	const preferences = value as Partial<WorkspacePreferences>;
-	const themeValid = preferences.theme === 'light' || preferences.theme === 'dark';
+	const themeValid =
+		preferences.theme === 'light' || preferences.theme === 'dark' || preferences.theme === 'system';
 	const routeValid =
 		preferences.initialRoute === null ||
 		preferences.initialRoute === 'bible' ||
