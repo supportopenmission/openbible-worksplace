@@ -12,7 +12,7 @@
 		{ label: 'Notas', href: '/notes', icon: NotebookPen },
 		{ label: 'Destaques', href: '/highlights', icon: Highlighter },
 		{ label: 'Sermões', href: '/sermons', icon: ScrollText },
-		{ label: 'Estudos', href: '/study', icon: GraduationCap },
+		{ label: 'Estudos', href: '/study', icon: GraduationCap, hideOnMobile: true },
 		{ label: 'Configurações', href: '/config', icon: Settings }
 	];
 
@@ -65,7 +65,7 @@
 </Sidebar.Root>
 
 <nav class="mobile-bottom-nav" aria-label="Navegação mobile" data-safe-area="bottom">
-	{#each links as link (link.href)}
+	{#each links.filter((link) => !('hideOnMobile' in link && link.hideOnMobile)) as link (link.href)}
 		{@const Icon = link.icon}
 		{@const isActive = isLinkActive(link.href)}
 		<a
@@ -242,7 +242,7 @@
 			left: 0;
 			z-index: 20;
 			display: grid;
-			grid-template-columns: repeat(6, minmax(0, 1fr));
+			grid-template-columns: repeat(5, minmax(0, 1fr));
 			border-top: 1px solid var(--border);
 			background: color-mix(in oklch, var(--background) 92%, transparent);
 			padding: 6px 8px max(6px, env(safe-area-inset-bottom));
