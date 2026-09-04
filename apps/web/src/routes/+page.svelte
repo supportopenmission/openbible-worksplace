@@ -9,7 +9,6 @@
 	import { homeRoutePath, readHomeRoute } from '$lib/navigation/home-preference';
 	import { detectStorageKind } from '$lib/storage/environment';
 	import {
-		chooseBrowserWorkspaceStorage,
 		chooseWorkspaceStorage,
 		createConfiguredStorage
 	} from '$lib/storage/storage-registry';
