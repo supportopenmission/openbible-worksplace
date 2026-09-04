@@ -82,7 +82,7 @@
 </script>
 
 <div class="notes-list">
-	<div class="notes-list-inner">
+	<div class="notes-list-inner" class:notes-list-empty={!loading && !error && notes.length === 0}>
 		{#if loading}
 			<p class="state-message" role="status" aria-live="polite">Carregando notas…</p>
 		{:else if error}
@@ -116,14 +116,31 @@
 
 <style>
 	.notes-list {
+		display: flex;
 		width: 100%;
+		flex: 1;
+		flex-direction: column;
 		padding: 8px clamp(18px, 5vw, 72px) 80px;
 	}
 
 	.notes-list-inner {
+		display: flex;
 		width: 100%;
 		max-width: min(100%, 1120px);
+		flex: 1;
+		flex-direction: column;
 		margin: 0 auto;
+	}
+
+	.notes-list-empty {
+		display: flex;
+		flex-direction: column;
+		min-height: calc(100dvh - 160px);
+	}
+
+	.notes-list-empty > :global(.card-list) {
+		flex: 1;
+		height: 100%;
 	}
 
 	.state-message,

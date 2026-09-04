@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import HighlightsList from '$lib/features/bible/HighlightsList.svelte';
+	import PageHeader from '$lib/features/navigation/PageHeader.svelte';
 	import { loadBibleCatalog } from '$lib/features/bible/bible-reader';
 	import { isSameReaderHighlight } from '$lib/features/bible/reader-highlights';
 	import {
@@ -71,12 +72,10 @@
 	<meta name="description" content="Consulte todos os destaques salvos no seu workspace OpenBible." />
 </svelte:head>
 
-<section class="highlights-page" aria-labelledby="highlights-page-title">
-	<header class="highlights-header">
-		<h1 id="highlights-page-title">Destaques</h1>
-		<p>Consulta workspace-wide dos destaques do leitor, em qualquer versão ou capítulo.</p>
-	</header>
-
+<section class="highlights-page" aria-label="Destaques">
+	<div class="highlights-page-title">
+		<PageHeader title="Destaques" />
+	</div>
 	{#if !workspace?.storage}
 		<p class="highlights-error" role="alert">
 			Workspace indisponível. Configure o armazenamento para consultar destaques.
@@ -86,7 +85,7 @@
 	{:else if errorMessage}
 		<p class="highlights-error" role="alert">{errorMessage}</p>
 	{:else}
-		<div class="highlights-collection">
+		<div class="highlights-collection" class:highlights-collection-empty={highlights.length === 0}>
 			<HighlightsList
 				{highlights}
 				{catalog}
@@ -106,23 +105,36 @@
 		padding: 28px clamp(18px, 5vw, 72px) 80px;
 	}
 
-	.highlights-header h1 {
-		margin: 0;
-		font-size: clamp(1.35rem, 2.4vw, 1.75rem);
-		font-weight: 600;
-		letter-spacing: -0.03em;
-	}
-
-	.highlights-header p {
-		margin: 8px 0 0;
-		max-width: 52ch;
-		color: var(--muted-foreground);
-		font-size: 0.84rem;
-		line-height: 1.55;
+	.highlights-page-title {
+		display: none;
+		width: 100%;
+		max-width: min(100%, 1120px);
+		margin: 0 auto;
+		padding: 20px 0 0;
 	}
 
 	.highlights-collection {
-		margin-top: 28px;
+		margin-top: 8px;
+	}
+
+	@media (max-width: 767px) {
+		.highlights-page {
+			padding-top: 0;
+		}
+
+		.highlights-page-title {
+			display: block;
+		}
+	}
+
+	.highlights-collection-empty {
+		display: flex;
+		min-height: calc(100dvh - 160px);
+	}
+
+	.highlights-collection-empty > :global([data-testid='highlights-empty']) {
+		width: 100%;
+		margin: auto;
 	}
 
 	.highlights-status {
