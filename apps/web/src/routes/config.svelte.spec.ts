@@ -45,6 +45,7 @@ describe('/config', () => {
 		const storageRow = page.getByRole('button', { name: 'Armazenamento' });
 		await expect.element(storageRow).toBeInTheDocument();
 		await expect.element(page.getByRole('button', { name: 'Tela inicial' })).toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: 'Sobre' })).toBeInTheDocument();
 
 		await storageRow.click();
 		await expect

@@ -10,7 +10,8 @@
 		ChevronLeft,
 		ChevronRight,
 		Database,
-		House
+		House,
+		Info
 	} from '@lucide/svelte';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -28,14 +29,15 @@
 	const isMobile = new IsMobile();
 	let activeTab = $state<'storage' | 'bibles' | 'stats' | 'home' | 'reminder'>('storage');
 
-	type MobileSectionId = 'storage' | 'bibles' | 'stats' | 'home' | 'reminder';
+	type MobileSectionId = 'storage' | 'bibles' | 'stats' | 'home' | 'reminder' | 'about';
 
 	const mobileSections: Array<{ id: MobileSectionId; label: string; icon: Component }> = [
 		{ id: 'storage', label: 'Armazenamento', icon: Database },
 		{ id: 'bibles', label: 'Bíblias', icon: BookOpen },
 		{ id: 'stats', label: 'Estatísticas', icon: ChartColumn },
 		{ id: 'home', label: 'Tela inicial', icon: House },
-		{ id: 'reminder', label: 'Lembrete diário', icon: Bell }
+		{ id: 'reminder', label: 'Lembrete diário', icon: Bell },
+		{ id: 'about', label: 'Sobre', icon: Info }
 	];
 
 	let mobileSection = $state<MobileSectionId | null>(null);
@@ -134,9 +136,6 @@
 						</button>
 					{/each}
 				</nav>
-				<footer class="config-footer">
-					<p>OpenBible v{APP_VERSION}</p>
-				</footer>
 			</div>
 		{:else}
 			{#key mobileSection}
@@ -169,6 +168,18 @@
 							<InitialScreenPicker mode="config" embedded />
 						{:else if mobileSection === 'reminder'}
 							{@render reminderSettings()}
+						{:else if mobileSection === 'about'}
+							<div class="about-settings">
+								<p class="about-version">OpenBible v{APP_VERSION}</p>
+								<p class="about-description">
+									Seu espaço local para ler a Bíblia, estudar e preparar o que você vai
+									compartilhar.
+								</p>
+								<p class="about-hint">
+									Seus dados ficam guardados neste dispositivo, no workspace que você
+									configurou. Sem conta e sem servidor.
+								</p>
+							</div>
 						{/if}
 					</div>
 				</div>
@@ -428,6 +439,33 @@
 		font-weight: 700;
 		letter-spacing: -0.03em;
 		line-height: 1.2;
+	}
+
+	.about-settings {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.about-version {
+		margin: 0;
+		font-family: var(--font-mono);
+		font-size: 0.8rem;
+		font-weight: 600;
+	}
+
+	.about-description {
+		margin: 0;
+		font-size: 0.9rem;
+		line-height: 1.6;
+	}
+
+	.about-hint {
+		max-width: 52ch;
+		margin: 0;
+		color: var(--muted-foreground);
+		font-size: 0.78rem;
+		line-height: 1.55;
 	}
 
 	.config-footer {
