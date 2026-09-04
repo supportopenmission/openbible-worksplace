@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { Plus } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import type { WorkspaceStorage } from '$lib/storage/types';
 	import NoteCardList from './NoteCardList.svelte';
-	import { listNotes, trashNote } from './notes-repository';
+	import { listNotes, createNote, trashNote } from './notes-repository';
 	import { deleteNoteVerseRefs } from './note-verse-index';
 	import type { Note } from './note-types';
 
@@ -23,6 +24,7 @@
 	let error = $state('');
 	let deleteTarget = $state<Note | null>(null);
 	let deleting = $state(false);
+	let creating = $state(false);
 
 	async function loadNotes() {
 		loading = true;
@@ -44,6 +46,21 @@
 	function openDeleteDialog(note: Note, event: MouseEvent) {
 		event.stopPropagation();
 		deleteTarget = note;
+	}
+
+	async function handleCreateNote() {
+		if (creating) return;
+		creating = true;
+		try {
+			const note = await createNote(storage);
+			onOpen(note.id);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : 'Não foi possível criar a nota.';
+			error = message;
+			onError?.(message);
+		} finally {
+			creating = false;
+		}
 	}
 
 	async function confirmDelete() {

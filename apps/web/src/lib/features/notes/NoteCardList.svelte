@@ -1,18 +1,23 @@
 <script lang="ts">
-	import { Pencil, Trash2 } from '@lucide/svelte';
+	import { NotebookPen, Pencil, Plus, Trash2 } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Empty from '$lib/components/ui/empty/index.js';
 	import type { Note } from './note-types';
 
 	let {
 		notes,
 		onOpen,
 		onDelete,
-		hideDelete = false
+		hideDelete = false,
+		onCreate,
+		creating = false
 	}: {
 		notes: Note[];
 		onOpen: (noteId: string) => void;
 		onDelete?: (note: Note, event: MouseEvent) => void;
 		hideDelete?: boolean;
+		onCreate?: () => void;
+		creating?: boolean;
 	} = $props();
 
 	function formatDate(iso: string): string {
@@ -59,7 +64,27 @@
 			{/if}
 		</article>
 	{:else}
-		<p class="empty">Nenhuma nota ainda.</p>
+		<div class="empty-wrap">
+			<Empty.Root data-testid="notes-empty">
+				<Empty.Header>
+					<Empty.Media variant="icon">
+						<NotebookPen size={16} strokeWidth={1.8} aria-hidden="true" />
+					</Empty.Media>
+					<Empty.Title>Nenhuma nota ainda.</Empty.Title>
+					<Empty.Description>
+						Crie sua primeira nota para registrar o que você está aprendendo.
+					</Empty.Description>
+				</Empty.Header>
+				{#if onCreate}
+					<Empty.Content>
+						<Button type="button" size="sm" onclick={onCreate} disabled={creating}>
+							<Plus size={15} strokeWidth={1.75} aria-hidden="true" />
+							Nova nota
+						</Button>
+					</Empty.Content>
+				{/if}
+			</Empty.Root>
+		</div>
 	{/each}
 </div>
 
