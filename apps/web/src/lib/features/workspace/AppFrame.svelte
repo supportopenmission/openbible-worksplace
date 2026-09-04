@@ -23,11 +23,21 @@
 
 	const isNotesList = $derived(page.url.pathname === '/notes');
 	const isHighlightsList = $derived(page.url.pathname === '/highlights');
+	const isBible = $derived(page.url.pathname === '/bible');
+	const isConfig = $derived(page.url.pathname === '/config');
 	const isNoteEditor = $derived(
 		page.url.pathname.startsWith('/notes/') && page.url.pathname !== '/notes'
 	);
 	const headerTitle = $derived(
-		isNoteEditor ? 'Nota' : isNotesList ? 'Notas' : isHighlightsList ? 'Destaques' : ''
+		isNoteEditor
+			? 'Nota'
+			: isNotesList
+				? 'Notas'
+				: isHighlightsList
+					? 'Destaques'
+					: isConfig
+						? 'Configurações'
+						: ''
 	);
 
 	function setNoteWidth(width: NoteEditorWidth) {
@@ -56,8 +66,8 @@
 {:else if workspace?.showShell}
 	<Sidebar.Provider bind:open={sidebarOpen} class="app-sidebar-provider">
 		<AppSidebar currentPath={page.url.pathname} />
-		<Sidebar.Inset class="shell-content">
-			<header class="desktop-header">
+		<Sidebar.Inset class={isBible ? 'shell-content shell-bare' : 'shell-content'}>
+			<header class="desktop-header" class:header-overlay={isBible}>
 				<div class="header-context">
 					<Sidebar.Trigger aria-label="Alternar sidebar" title="Alternar sidebar" />
 					{#if notePageChrome.active}
@@ -156,6 +166,10 @@
 		overflow: hidden;
 	}
 
+	:global(.shell-content.shell-bare) {
+		--shell-header-height: 0px;
+	}
+
 	.shell-main {
 		display: flex;
 		width: 100%;
@@ -179,6 +193,25 @@
 		border-bottom: none;
 		padding: 10px 16px;
 		background: var(--background);
+	}
+
+	.desktop-header.header-overlay {
+		position: absolute;
+		top: 0;
+		right: 0;
+		left: 0;
+		z-index: 40;
+		background: transparent;
+		pointer-events: none;
+	}
+
+	.header-overlay .header-context,
+	.header-overlay .header-actions {
+		pointer-events: auto;
+	}
+
+	:global(.desktop-header.header-overlay [data-slot='sidebar-trigger']) {
+		background: color-mix(in oklch, var(--background) 80%, transparent);
 	}
 
 	.header-context,
