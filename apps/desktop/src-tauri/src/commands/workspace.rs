@@ -84,6 +84,15 @@ pub struct WorkspaceContext {
 	pub lock: Option<WorkspaceLock>,
 }
 
+fn workspace_config(root: &Path) -> WorkspaceConfig {
+	WorkspaceConfig {
+		path: root.to_string_lossy().into_owned(),
+		storage_kind: "native".to_string(),
+		format_version: FORMAT_VERSION,
+		migration_state: MigrationState::NotStarted,
+	}
+}
+
 fn default_workspace_path() -> Result<PathBuf, CommandError> {
 	let home = std::env::var_os("HOME").ok_or_else(|| CommandError::new("home_unavailable", true))?;
 	Ok(PathBuf::from(home).join("Library/Application Support/OpenBible/workspace"))
@@ -119,6 +128,9 @@ pub fn initialize(context: &mut WorkspaceContext, preferred_path: Option<String>
 		None => default_workspace_path()?,
 	};
 	let root = validate_root(&path)?;
+	if context.root.as_deref() == Some(root.as_path()) && context.lock.is_some() {
+		return Ok(workspace_config(&root));
+	}
 	fs::create_dir_all(root.join(".openbible"))?;
 	fs::create_dir_all(root.join("bibles"))?;
 	fs::create_dir_all(root.join("notes"))?;
@@ -126,12 +138,7 @@ pub fn initialize(context: &mut WorkspaceContext, preferred_path: Option<String>
 	let lock = lock::acquire(&root)?;
 	context.root = Some(root.clone());
 	context.lock = Some(lock);
-	let config = WorkspaceConfig {
-		path: root.to_string_lossy().into_owned(),
-		storage_kind: "native".to_string(),
-		format_version: FORMAT_VERSION,
-		migration_state: MigrationState::NotStarted,
-	};
+	let config = workspace_config(&root);
 	let bytes = serde_json::to_vec_pretty(&config).map_err(|_| CommandError::new("config_encode_error", true))?;
 	atomic_write(&root.join(".openbible/config.json"), &bytes)?;
 	Ok(config)
