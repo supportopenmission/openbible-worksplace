@@ -1,6 +1,14 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { detectStorageKind } from '$lib/storage/environment';
+	import {
+		detectStorageKind,
+		rememberStoragePreference,
+		supportsFileSystemAccess
+	} from '$lib/storage/environment';
+	import { chooseLocalWorkspaceStorage } from '$lib/storage/local-storage';
+	import { createOpfsStorage } from '$lib/storage/opfs-storage';
+	import { prepareWorkspace } from '$lib/storage/workspace';
+	import type { StorageKind } from '$lib/storage/types';
 	import RemoteBibleImport from '$lib/features/bible-remote/RemoteBibleImport.svelte';
 	import { getWorkspaceState } from './workspace-state.svelte';
 
@@ -10,6 +18,8 @@
 
 	let busy = $state(false);
 	let persistMessage = $state('');
+	let switchingTo = $state<StorageKind | null>(null);
+	let switchMessage = $state('');
 
 	let kind = $derived(workspace?.storage?.kind ?? detectStorageKind());
 	let importLabel = $derived(
@@ -54,6 +64,33 @@
 					: error instanceof Error
 						? error.message
 						: 'Não foi possível acessar a pasta.';
+		} finally {
+			busy = false;
+		}
+	}
+
+	async function switchStorage(kind: StorageKind) {
+		if (!workspace || busy) return;
+		busy = true;
+		switchMessage = '';
+		try {
+			const next =
+				kind === 'local' ? await chooseLocalWorkspaceStorage() : await createOpfsStorage();
+			rememberStoragePreference(kind);
+			await prepareWorkspace(next);
+			await workspace.markConfigured(next);
+			switchingTo = null;
+			switchMessage =
+				kind === 'local'
+					? 'Workspace na pasta escolhida.'
+					: 'Workspace no armazenamento do navegador (OPFS).';
+		} catch (error) {
+			workspace.error =
+				error instanceof DOMException && error.name === 'AbortError'
+					? 'A troca de armazenamento foi cancelada.'
+					: error instanceof Error
+						? error.message
+						: 'Não foi possível trocar o armazenamento.';
 		} finally {
 			busy = false;
 		}
@@ -117,6 +154,65 @@
 		{#if workspace.error}
 			<p class="error" role="alert">{workspace.error}</p>
 		{/if}
+
+		<div class="switch-block">
+			<h3 class="switch-title">Trocar armazenamento</h3>
+			<p class="switch-hint">
+				Cada destino guarda arquivos próprios: a troca não migra nada e abre um workspace
+				vazio no novo destino.
+			</p>
+			{#if switchingTo === null}
+				<div class="actions">
+					{#if kind === 'local'}
+						<button
+							class="secondary"
+							type="button"
+							onclick={() => (switchingTo = 'opfs')}
+							disabled={busy}
+						>
+							Usar armazenamento do navegador
+						</button>
+					{:else if supportsFileSystemAccess()}
+						<button
+							class="secondary"
+							type="button"
+							onclick={() => (switchingTo = 'local')}
+							disabled={busy}
+						>
+							Usar pasta do computador
+						</button>
+					{/if}
+				</div>
+			{:else}
+				<p class="switch-confirm" role="alert">
+					Trocar para {switchingTo === 'local'
+						? 'uma pasta do computador'
+						: 'o armazenamento do navegador'}? Os arquivos do destino atual continuam onde
+					estão, sem migração.
+				</p>
+				<div class="actions">
+					<button
+						class="primary"
+						type="button"
+						onclick={() => switchStorage(switchingTo ?? 'opfs')}
+						disabled={busy}
+					>
+						Confirmar troca
+					</button>
+					<button
+						class="secondary"
+						type="button"
+						onclick={() => (switchingTo = null)}
+						disabled={busy}
+					>
+						Manter atual
+					</button>
+				</div>
+			{/if}
+			{#if switchMessage}
+				<p class="feedback" aria-live="polite">{switchMessage}</p>
+			{/if}
+		</div>
 
 		<div class="remote-block">
 			<RemoteBibleImport storage={workspace.storage} variant="config" />
@@ -268,6 +364,33 @@
 		margin-top: 28px;
 		padding-top: 24px;
 		border-top: 1px solid var(--border);
+	}
+
+	.switch-block {
+		margin-top: 28px;
+		padding-top: 24px;
+		border-top: 1px solid var(--border);
+	}
+
+	.switch-title {
+		margin: 0;
+		font-size: 0.95rem;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+	}
+
+	.switch-hint {
+		margin: 8px 0 0;
+		color: var(--muted-foreground);
+		font-size: 0.8rem;
+		line-height: 1.55;
+	}
+
+	.switch-confirm {
+		margin: 12px 0 0;
+		color: var(--foreground);
+		font-size: 0.82rem;
+		line-height: 1.55;
 	}
 
 	@media (max-width: 560px) {

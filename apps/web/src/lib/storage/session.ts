@@ -1,4 +1,4 @@
-import { detectStorageKind } from './environment';
+import { readStoragePreference, resolveStorageKind } from './environment';
 import {
 	createLocalStorageFromHandle,
 	loadLocalWorkspaceHandle,
@@ -57,12 +57,17 @@ export async function bootstrapWorkspace(
 		: await isStoragePersisted();
 
 	try {
-		if (detectStorageKind() === 'opfs') {
+		if (resolveStorageKind() === 'opfs') {
 			return await snapshotFromStorage(await createOpfsStorage(), persisted, null);
 		}
 
 		const handle = await loadLocalWorkspaceHandle();
-		if (!handle) return emptySnapshot({ status: 'unconfigured', persisted });
+		if (!handle) {
+			if (readStoragePreference() !== 'opfs') {
+				return emptySnapshot({ status: 'unconfigured', persisted });
+			}
+			return await snapshotFromStorage(await createOpfsStorage(), persisted, null);
+		}
 
 		const permission = options.requestPermission
 			? await requestLocalHandlePermission(handle)

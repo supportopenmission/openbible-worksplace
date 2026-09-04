@@ -11,7 +11,12 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import RemoteBibleImport from '$lib/features/bible-remote/RemoteBibleImport.svelte';
+	import { getDirectoryPickerError } from './onboarding-errors';
 	import { importBibleFiles, prepareWorkspace } from '$lib/storage/workspace';
+	import {
+		shouldOfferStorageChoice,
+		supportsFileSystemAccess
+	} from '$lib/storage/environment';
 	import type {
 		ImportResult,
 		ProgressCallback,
@@ -26,6 +31,7 @@
 		initialError = '',
 		initialStep = 'intro',
 		onChooseStorage = async () => null,
+		onChooseBrowserStorage = async () => null,
 		onComplete = () => undefined,
 		onDeferred = () => undefined
 	}: {
@@ -34,6 +40,7 @@
 		initialError?: string;
 		initialStep?: OnboardingStep;
 		onChooseStorage?: () => Promise<WorkspaceStorage | null>;
+		onChooseBrowserStorage?: () => Promise<WorkspaceStorage | null>;
 		onComplete?: (results: ImportResult[]) => void;
 		onDeferred?: () => void;
 	} = $props();
@@ -52,6 +59,7 @@
 	let statusMessage = $state('');
 	let fileInput = $state<HTMLInputElement | undefined>();
 	let displayedInitialError = $state('');
+	let localPickerFailed = $state(false);
 
 	$effect.pre(() => {
 		step = initialStep;
@@ -70,6 +78,12 @@
 
 	const copy = $derived(onboardingCopy[step]);
 	const stepNumber = $derived(steps.indexOf(step) + 1);
+	const offersStorageChoice = $derived(
+		storageMode === 'opfs' && shouldOfferStorageChoice()
+	);
+	const showBrowserStorageChoice = $derived(
+		step === 'storage' && (storageMode === 'opfs' ? offersStorageChoice : supportsFileSystemAccess())
+	);
 	const hasImported = $derived(results.some((result) => result.status === 'imported'));
 	const hasRejected = $derived(results.some((result) => result.status === 'rejected'));
 	const showProgress = $derived(
@@ -91,7 +105,7 @@
 
 	async function start() {
 		errorMessage = '';
-		if (storageMode === 'opfs') {
+		if (storageMode === 'opfs' && !offersStorageChoice) {
 			if (!selectedStorage) {
 				errorMessage = 'Não foi possível acessar o armazenamento deste navegador.';
 				return;
@@ -107,20 +121,35 @@
 
 	async function chooseFolder() {
 		errorMessage = '';
+		localPickerFailed = false;
 		try {
 			selectedStorage = await onChooseStorage();
 			if (!selectedStorage) {
 				errorMessage = 'Não foi possível acessar a pasta escolhida.';
+				localPickerFailed = true;
+				return;
+			}
+			await install(selectedStorage);
+		} catch (error) {
+			errorMessage = getDirectoryPickerError(error);
+			localPickerFailed = true;
+			await moveFocus();
+		}
+	}
+
+	async function chooseBrowserStorage() {
+		errorMessage = '';
+		localPickerFailed = false;
+		try {
+			selectedStorage = await onChooseBrowserStorage();
+			if (!selectedStorage) {
+				errorMessage = 'Não foi possível acessar o armazenamento deste navegador.';
 				return;
 			}
 			await install(selectedStorage);
 		} catch (error) {
 			errorMessage =
-				error instanceof DOMException && error.name === 'AbortError'
-					? 'A escolha da pasta foi cancelada. Escolha uma pasta para continuar.'
-					: error instanceof Error
-						? error.message
-						: 'Não foi possível configurar esta pasta.';
+				error instanceof Error ? error.message : 'Não foi possível configurar o armazenamento.';
 			await moveFocus();
 		}
 	}
@@ -278,28 +307,36 @@
 
 				{#if step === 'intro'}
 					<p class="storage-note">
-						{storageMode === 'opfs'
-							? 'Neste ambiente, os arquivos ficam no armazenamento privado do navegador.'
-							: 'Neste ambiente, você escolherá uma pasta local para guardar os arquivos.'}
+						{offersStorageChoice
+							? 'Neste app instalado, você escolherá entre uma pasta do computador e o armazenamento do navegador.'
+							: storageMode === 'opfs'
+								? 'Neste ambiente, os arquivos ficam no armazenamento privado do navegador.'
+								: 'Neste ambiente, você escolherá uma pasta local para guardar os arquivos.'}
 					</p>
 
 					<ul class="feature-list" aria-label="Como funciona">
 						<li>
-							<span class="feature-icon" aria-hidden="true"><FolderOpen size={16} strokeWidth={1.75} /></span>
+							<span class="feature-icon" aria-hidden="true"
+								><FolderOpen size={16} strokeWidth={1.75} /></span
+							>
 							<div>
 								<strong>Arquivos seus</strong>
 								<span>Markdown e SQLite ficam no armazenamento escolhido.</span>
 							</div>
 						</li>
 						<li>
-							<span class="feature-icon" aria-hidden="true"><FolderTree size={16} strokeWidth={1.75} /></span>
+							<span class="feature-icon" aria-hidden="true"
+								><FolderTree size={16} strokeWidth={1.75} /></span
+							>
 							<div>
 								<strong>Estrutura clara</strong>
 								<span>Pastas separadas para estudos, sermões, notas e anexos.</span>
 							</div>
 						</li>
 						<li>
-							<span class="feature-icon" aria-hidden="true"><Clock3 size={16} strokeWidth={1.75} /></span>
+							<span class="feature-icon" aria-hidden="true"
+								><Clock3 size={16} strokeWidth={1.75} /></span
+							>
 							<div>
 								<strong>Comece no seu ritmo</strong>
 								<span>Você pode importar Bíblias agora ou continuar depois.</span>
@@ -308,12 +345,19 @@
 					</ul>
 				{:else if step === 'storage'}
 					<div class="panel storage-choice">
-						<span class="panel-icon" aria-hidden="true"><FolderOpen size={18} strokeWidth={1.75} /></span>
+						<span class="panel-icon" aria-hidden="true"
+							><FolderOpen size={18} strokeWidth={1.75} /></span
+						>
 						<div>
 							<strong>Escolha uma pasta raiz</strong>
 							<span>O conteúdo existente será preservado.</span>
 						</div>
 					</div>
+					{#if showBrowserStorageChoice}
+						<p class="storage-alt">
+							Prefere não vincular uma pasta? Use o armazenamento privado do navegador.
+						</p>
+					{/if}
 				{:else if step === 'installing'}
 					<div class="panel operation-state" aria-live="polite">
 						<LoaderCircle class="spinner" size={22} strokeWidth={1.75} aria-hidden="true" />
@@ -325,10 +369,15 @@
 				{:else if step === 'import'}
 					{#if !importStarted}
 						<div class="panel import-choice">
-							<span class="panel-icon" aria-hidden="true"><Upload size={18} strokeWidth={1.75} /></span>
+							<span class="panel-icon" aria-hidden="true"
+								><Upload size={18} strokeWidth={1.75} /></span
+							>
 							<div>
 								<strong>Importe suas Bíblias quando estiver pronto</strong>
-								<span>Escolha arquivos do dispositivo ou a URL do bucket R2 nas abas abaixo. Você poderá adicionar mais arquivos ao workspace depois.</span>
+								<span
+									>Escolha arquivos do dispositivo ou a URL do bucket R2 nas abas abaixo. Você
+									poderá adicionar mais arquivos ao workspace depois.</span
+								>
 							</div>
 						</div>
 					{/if}
@@ -349,10 +398,18 @@
 									ondragover={(event) => event.preventDefault()}
 									ondrop={handleDrop}
 								>
-									<span class="dropzone-icon" aria-hidden="true"><Upload size={20} strokeWidth={1.75} /></span>
+									<span class="dropzone-icon" aria-hidden="true"
+										><Upload size={20} strokeWidth={1.75} /></span
+									>
 									<strong>Arraste seus arquivos SQLite</strong>
 									<span>ou selecione pelo diálogo de arquivos</span>
-									<Button variant="outline" size="sm" type="button" onclick={() => fileInput?.click()} disabled={processing}>
+									<Button
+										variant="outline"
+										size="sm"
+										type="button"
+										onclick={() => fileInput?.click()}
+										disabled={processing}
+									>
 										Selecionar arquivos
 									</Button>
 									<input
@@ -371,7 +428,10 @@
 									</div>
 								{/if}
 							{:else}
-								<p class="tab-hint">Clique em Importar agora para enviar arquivos do dispositivo, ou use a aba Bucket R2.</p>
+								<p class="tab-hint">
+									Clique em Importar agora para enviar arquivos do dispositivo, ou use a aba Bucket
+									R2.
+								</p>
 							{/if}
 						</Tabs.Content>
 						<Tabs.Content value="remote" forceMount class="import-tab-panel">
@@ -383,8 +443,14 @@
 						</Tabs.Content>
 					</Tabs.Root>
 				{:else if step === 'complete'}
-					<div class:partial={hasImported && hasRejected} class="panel result-card" aria-live="polite">
-						<span class="panel-icon" aria-hidden="true"><CheckCircle2 size={18} strokeWidth={1.75} /></span>
+					<div
+						class:partial={hasImported && hasRejected}
+						class="panel result-card"
+						aria-live="polite"
+					>
+						<span class="panel-icon" aria-hidden="true"
+							><CheckCircle2 size={18} strokeWidth={1.75} /></span
+						>
 						<div>
 							<strong
 								>{hasImported && hasRejected
@@ -436,9 +502,24 @@
 				{#if step === 'intro'}
 					<Button type="button" onclick={start} data-onboarding-focus>Começar</Button>
 				{:else if step === 'storage'}
-					<Button variant="outline" type="button" onclick={() => (step = 'intro')} disabled={processing}>
+					<Button
+						variant="outline"
+						type="button"
+						onclick={() => (step = 'intro')}
+						disabled={processing}
+					>
 						Voltar
 					</Button>
+					{#if showBrowserStorageChoice}
+						<Button
+							variant="outline"
+							type="button"
+							onclick={chooseBrowserStorage}
+							disabled={processing}
+						>
+							Usar armazenamento do navegador
+						</Button>
+					{/if}
 					<Button type="button" onclick={chooseFolder} data-onboarding-focus>Escolher pasta</Button>
 				{:else if step === 'installing'}
 					<Button type="button" disabled>Configurando...</Button>
@@ -475,11 +556,8 @@
 		z-index: 50;
 		display: grid;
 		place-items: center;
-		padding:
-			max(16px, env(safe-area-inset-top))
-			max(16px, env(safe-area-inset-right))
-			max(16px, env(safe-area-inset-bottom))
-			max(16px, env(safe-area-inset-left));
+		padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+			max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 	}
 
 	.onboarding-backdrop {
@@ -631,6 +709,13 @@
 		margin-top: 8px !important;
 		color: var(--foreground) !important;
 		font-size: 0.82rem !important;
+	}
+
+	.storage-alt {
+		margin: 12px 0 0;
+		color: var(--muted-foreground);
+		font-size: 0.8rem;
+		line-height: 1.5;
 	}
 
 	.feature-list {
