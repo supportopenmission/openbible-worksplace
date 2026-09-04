@@ -658,9 +658,14 @@
 		openHighlightsSheet();
 	}
 
-	function handleFabKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape') fabOpen = false;
-	}
+	$effect(() => {
+		if (!fabOpen || typeof window === 'undefined') return;
+		const closeOnEscape = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') fabOpen = false;
+		};
+		window.addEventListener('keydown', closeOnEscape);
+		return () => window.removeEventListener('keydown', closeOnEscape);
+	});
 
 	async function openNoteFromVerse(verseNumber: number) {
 		const ref = noteRefForVerse(verseNumber);
@@ -2895,10 +2900,6 @@
 			padding: 0;
 			color: var(--primary-foreground);
 			cursor: pointer;
-		}
-
-		.fab-main svg {
-			display: block;
 		}
 
 		.fab-actions {
