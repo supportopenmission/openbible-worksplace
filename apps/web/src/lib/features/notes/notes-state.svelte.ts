@@ -106,12 +106,22 @@ export function formatNoteDate(iso?: string): string {
 	}
 }
 
+export type NoteSortField = 'updatedAt' | 'createdAt' | 'title';
+export type NoteSortDirection = 'asc' | 'desc';
+
 class NotesState {
 	notes = $state<Note[]>([]);
 	loading = $state(false);
+	initialized = $state(false);
 	error = $state('');
 	searchQuery = $state('');
 	activeNoteId = $state<string | null>(null);
+
+	sortField = $state<NoteSortField>('updatedAt');
+	sortDirection = $state<NoteSortDirection>('desc');
+
+	selectionMode = $state(false);
+	selectedNoteIds = $state<string[]>([]);
 
 	filteredNotes = $derived.by(() => {
 		const q = this.searchQuery.trim().toLowerCase();
@@ -123,15 +133,78 @@ class NotesState {
 					const contentMatch = (note.content || note.body || '').toLowerCase().includes(q);
 					return titleMatch || descMatch || contentMatch;
 			  });
+
 		return [...list].sort((a, b) => {
 			const pinA = a.pinned ? 1 : 0;
 			const pinB = b.pinned ? 1 : 0;
 			if (pinB !== pinA) return pinB - pinA;
-			return b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id);
+
+			let comparison = 0;
+			if (this.sortField === 'title') {
+				const titleA = (a.title || '').trim().toLowerCase();
+				const titleB = (b.title || '').trim().toLowerCase();
+				comparison = titleA.localeCompare(titleB, 'pt-BR');
+			} else if (this.sortField === 'createdAt') {
+				const dateA = a.createdAt || '';
+				const dateB = b.createdAt || '';
+				comparison = dateA.localeCompare(dateB);
+			} else {
+				const dateA = a.updatedAt || '';
+				const dateB = b.updatedAt || '';
+				comparison = dateA.localeCompare(dateB);
+			}
+
+			if (this.sortDirection === 'desc') {
+				comparison = -comparison;
+			}
+
+			return comparison || a.id.localeCompare(b.id);
 		});
 	});
 
-	async loadNotes(storage: WorkspaceStorage) {
+	setSort(field: NoteSortField, direction: NoteSortDirection) {
+		this.sortField = field;
+		this.sortDirection = direction;
+	}
+
+	toggleSelectionMode() {
+		this.selectionMode = !this.selectionMode;
+		if (!this.selectionMode) {
+			this.selectedNoteIds = [];
+		}
+	}
+
+	toggleSelectNote(id: string) {
+		if (this.selectedNoteIds.includes(id)) {
+			this.selectedNoteIds = this.selectedNoteIds.filter((item) => item !== id);
+		} else {
+			this.selectedNoteIds = [...this.selectedNoteIds, id];
+		}
+	}
+
+	selectAllNotes() {
+		this.selectedNoteIds = this.filteredNotes.map((n) => n.id);
+	}
+
+	clearSelection() {
+		this.selectedNoteIds = [];
+	}
+
+	async deleteSelectedNotes(storage: WorkspaceStorage): Promise<number> {
+		const ids = [...this.selectedNoteIds];
+		if (ids.length === 0) return 0;
+		let count = 0;
+		for (const id of ids) {
+			const ok = await this.deleteNote(storage, id);
+			if (ok) count++;
+		}
+		this.selectedNoteIds = [];
+		this.selectionMode = false;
+		return count;
+	}
+
+	async loadNotes(storage: WorkspaceStorage, force = false) {
+		if (this.initialized && !force && !this.error) return;
 		this.loading = true;
 		this.error = '';
 		try {
@@ -140,6 +213,7 @@ class NotesState {
 			this.error = err instanceof Error ? err.message : 'Não foi possível carregar as notas.';
 		} finally {
 			this.loading = false;
+			this.initialized = true;
 		}
 	}
 

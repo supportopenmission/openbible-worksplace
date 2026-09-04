@@ -46,6 +46,7 @@
 					aria-pressed={activeActions[action.id] ?? false}
 					class={activeActions[action.id] ? 'active' : undefined}
 					title={action.label}
+					onmousedown={(e) => e.preventDefault()}
 					onclick={() => onAction(action.id)}
 				>
 					<action.icon aria-hidden="true" />

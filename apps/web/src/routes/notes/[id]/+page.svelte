@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { AlertCircle, Check, ChevronLeft, Loader2, MoreHorizontal, Trash2 } from '@lucide/svelte';
+	import { AlertCircle, BookOpen, Check, ChevronLeft, Loader2, MoreHorizontal, Pencil, Trash2 } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
@@ -38,6 +38,7 @@
 	let deleting = $state(false);
 	let saveStatus = $state<SaveStatus>('idle');
 	let lastSavedAt = $state<Date | null>(null);
+	let readOnly = $state(false);
 
 	async function seedFallbackNote(id: string): Promise<WorkspaceStorage> {
 		const files = new Map<string, Uint8Array>();
@@ -218,6 +219,21 @@
 		</div>
 		<div class="header-right">
 			{#if note}
+				<Button
+					type="button"
+					variant="ghost"
+					size="icon-sm"
+					aria-label={readOnly ? 'Alternar para modo de edição' : 'Alternar para modo de leitura'}
+					title={readOnly ? 'Modo de leitura (clique para editar)' : 'Modo de edição (clique para ler)'}
+					onclick={() => (readOnly = !readOnly)}
+				>
+					{#if readOnly}
+						<Pencil size={15} strokeWidth={1.8} aria-hidden="true" />
+					{:else}
+						<BookOpen size={15} strokeWidth={1.8} aria-hidden="true" />
+					{/if}
+				</Button>
+
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}
@@ -270,6 +286,7 @@
 		{:else}
 			<MilkdownNoteEditor
 				{note}
+				{readOnly}
 				storage={activeStorage}
 				onSaved={handleSaved}
 				onStatusChange={handleStatusChange}

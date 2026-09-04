@@ -21,7 +21,7 @@
 
 	$effect(() => {
 		const storage = workspace?.storage;
-		if (storage && notesState.notes.length === 0 && !notesState.loading) {
+		if (storage && !notesState.initialized && !notesState.loading) {
 			void notesState.loadNotes(storage);
 		}
 	});

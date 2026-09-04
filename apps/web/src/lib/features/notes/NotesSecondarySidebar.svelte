@@ -1,13 +1,32 @@
 <script lang="ts">
-	import { Pencil, Pin, PinOff, Plus, Search, Trash2, X } from '@lucide/svelte';
+	import {
+		ArrowUpDown,
+		Check,
+		CheckSquare,
+		MoreHorizontal,
+		Pencil,
+		Pin,
+		PinOff,
+		Plus,
+		Search,
+		Trash2,
+		X
+	} from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar';
-	import { notesState, getNoteSnippet, formatNoteDate } from './notes-state.svelte';
+	import {
+		notesState,
+		getNoteSnippet,
+		formatNoteDate,
+		type NoteSortField,
+		type NoteSortDirection
+	} from './notes-state.svelte';
 	import type { WorkspaceStorage } from '$lib/storage/types';
 	import type { Note } from './note-types';
 
@@ -31,6 +50,8 @@
 	let deleteDialogOpen = $state(false);
 	let noteToDelete = $state<Note | null>(null);
 	let deleting = $state(false);
+	let bulkDeleteDialogOpen = $state(false);
+	let bulkDeleting = $state(false);
 
 	async function handleCreate() {
 		if (creating) return;
@@ -90,6 +111,23 @@
 			noteToDelete = null;
 		}
 	}
+
+	async function confirmBulkDelete() {
+		if (!storage || notesState.selectedNoteIds.length === 0) return;
+		bulkDeleting = true;
+		const hadActiveSelected = Boolean(
+			activeNoteId && notesState.selectedNoteIds.includes(activeNoteId)
+		);
+		try {
+			await notesState.deleteSelectedNotes(storage);
+			bulkDeleteDialogOpen = false;
+			if (hadActiveSelected) {
+				await goto(resolve('/notes'));
+			}
+		} finally {
+			bulkDeleting = false;
+		}
+	}
 </script>
 
 <aside class="secondary-sidebar" aria-label="Todas as notas">
@@ -104,6 +142,66 @@
 			{/if}
 		</div>
 		<div class="header-right">
+			{#if !notesState.selectionMode}
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								type="button"
+								variant="ghost"
+								size="icon-sm"
+								aria-label="Ordenar notas"
+								title="Ordenar notas"
+							>
+								<ArrowUpDown size={15} strokeWidth={1.8} aria-hidden="true" />
+							</Button>
+						{/snippet}
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end" class="w-56">
+						<DropdownMenu.Label>Ordenar por</DropdownMenu.Label>
+						<DropdownMenu.RadioGroup
+							value={`${notesState.sortField}-${notesState.sortDirection}`}
+							onValueChange={(val) => {
+								if (!val) return;
+								const [field, dir] = val.split('-') as [NoteSortField, NoteSortDirection];
+								notesState.setSort(field, dir);
+							}}
+						>
+							<DropdownMenu.RadioItem value="updatedAt-desc">
+								Data de atualização (recentes)
+							</DropdownMenu.RadioItem>
+							<DropdownMenu.RadioItem value="updatedAt-asc">
+								Data de atualização (antigas)
+							</DropdownMenu.RadioItem>
+							<DropdownMenu.RadioItem value="createdAt-desc">
+								Data de criação (recentes)
+							</DropdownMenu.RadioItem>
+							<DropdownMenu.RadioItem value="createdAt-asc">
+								Data de criação (antigas)
+							</DropdownMenu.RadioItem>
+							<DropdownMenu.RadioItem value="title-asc">
+								Título (A-Z)
+							</DropdownMenu.RadioItem>
+							<DropdownMenu.RadioItem value="title-desc">
+								Título (Z-A)
+							</DropdownMenu.RadioItem>
+						</DropdownMenu.RadioGroup>
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+
+				<Button
+					type="button"
+					variant="ghost"
+					size="icon-sm"
+					aria-label="Selecionar notas"
+					title="Selecionar notas"
+					onclick={() => notesState.toggleSelectionMode()}
+					disabled={notesState.notes.length === 0}
+				>
+					<CheckSquare size={15} strokeWidth={1.8} aria-hidden="true" />
+				</Button>
+
 				<Button
 					type="button"
 					variant="default"
@@ -115,30 +213,78 @@
 				>
 					<Plus size={16} strokeWidth={2} aria-hidden="true" />
 				</Button>
-			</div>
-		</header>
+			{:else}
+				<Button
+					type="button"
+					variant="ghost"
+					size="sm"
+					class="text-xs h-7 px-2"
+					onclick={() => notesState.toggleSelectionMode()}
+				>
+					Concluir
+				</Button>
+			{/if}
+		</div>
+	</header>
 
-		<div class="search-bar-wrap">
-			<div class="search-box">
-				<Search size={14} strokeWidth={1.8} class="search-icon" aria-hidden="true" />
-				<input
-					type="text"
-					placeholder="Buscar notas..."
-					bind:value={notesState.searchQuery}
-					aria-label="Buscar notas"
-				/>
-				{#if notesState.searchQuery}
-					<button
-						type="button"
-						class="clear-search"
-						onclick={handleClearSearch}
-						aria-label="Limpar busca"
-					>
-						<X size={13} strokeWidth={2} aria-hidden="true" />
-					</button>
-				{/if}
+	<div class="search-bar-wrap">
+		<div class="search-box">
+			<Search size={14} strokeWidth={1.8} class="search-icon" aria-hidden="true" />
+			<input
+				type="text"
+				placeholder="Buscar notas..."
+				bind:value={notesState.searchQuery}
+				aria-label="Buscar notas"
+			/>
+			{#if notesState.searchQuery}
+				<button
+					type="button"
+					class="clear-search"
+					onclick={handleClearSearch}
+					aria-label="Limpar busca"
+				>
+					<X size={13} strokeWidth={2} aria-hidden="true" />
+				</button>
+			{/if}
+		</div>
+	</div>
+
+	{#if notesState.selectionMode}
+		<div class="selection-subbar">
+			<button
+				type="button"
+				class="selection-toggle-all"
+				onclick={() => {
+					if (
+						notesState.selectedNoteIds.length === notesState.filteredNotes.length &&
+						notesState.filteredNotes.length > 0
+					) {
+						notesState.clearSelection();
+					} else {
+						notesState.selectAllNotes();
+					}
+				}}
+			>
+				{notesState.selectedNoteIds.length === notesState.filteredNotes.length &&
+				notesState.filteredNotes.length > 0
+					? 'Desmarcar todas'
+					: 'Selecionar todas'}
+			</button>
+			<div class="selection-subbar-actions">
+				<span class="selection-count">{notesState.selectedNoteIds.length} selecionada(s)</span>
+				<Button
+					type="button"
+					variant="destructive"
+					size="xs"
+					disabled={notesState.selectedNoteIds.length === 0}
+					onclick={() => (bulkDeleteDialogOpen = true)}
+				>
+					<Trash2 size={12} class="mr-1" />
+					Apagar
+				</Button>
 			</div>
 		</div>
+	{/if}
 
 	<div class="sidebar-notes" role="listbox" aria-label="Lista de notas">
 		{#if notesState.loading && notesState.notes.length === 0}
@@ -169,30 +315,104 @@
 		{:else}
 			{#each notesState.filteredNotes as note (note.id)}
 				{@const isSelected = note.id === activeNoteId}
+				{@const isChecked = notesState.selectedNoteIds.includes(note.id)}
 				<ContextMenu.Root>
 					<ContextMenu.Trigger>
 						{#snippet child({ props })}
-							<button
+							<!-- svelte-ignore a11y_interactive_supports_focus -->
+							<div
 								{...props}
-								type="button"
 								class="note-item"
-								class:active={isSelected}
+								class:active={isSelected && !notesState.selectionMode}
 								class:pinned={note.pinned}
+								class:checked={isChecked}
 								role="option"
-								aria-selected={isSelected}
-								onclick={() => onSelect(note.id)}
+								tabindex="0"
+								aria-selected={notesState.selectionMode ? isChecked : isSelected}
+								onclick={() => {
+									if (notesState.selectionMode) {
+										notesState.toggleSelectNote(note.id);
+									} else {
+										onSelect(note.id);
+									}
+								}}
+								onkeydown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										e.preventDefault();
+										if (notesState.selectionMode) {
+											notesState.toggleSelectNote(note.id);
+										} else {
+											onSelect(note.id);
+										}
+									}
+								}}
 							>
-								<div class="note-item-header">
-									<div class="note-item-title-wrap">
-										{#if note.pinned}
-											<Pin size={11} class="pin-icon" aria-label="Nota fixada" title="Nota fixada" />
-										{/if}
-										<span class="note-item-title">{note.title || 'Sem título'}</span>
+								{#if notesState.selectionMode}
+									<div class="note-item-select" aria-hidden="true">
+										<div class="custom-checkbox" class:checked={isChecked}>
+											{#if isChecked}
+												<Check size={11} strokeWidth={3} />
+											{/if}
+										</div>
 									</div>
-									<span class="note-item-date">{formatNoteDate(note.updatedAt)}</span>
+								{/if}
+								<div class="note-item-content">
+									<div class="note-item-header">
+										<div class="note-item-title-wrap">
+											{#if note.pinned}
+												<Pin size={11} class="pin-icon" aria-label="Nota fixada" title="Nota fixada" />
+											{/if}
+											<span class="note-item-title">{note.title || 'Sem título'}</span>
+										</div>
+										<div class="note-item-header-meta">
+											<span class="note-item-date">{formatNoteDate(note.updatedAt)}</span>
+											{#if !notesState.selectionMode}
+												<DropdownMenu.Root>
+													<DropdownMenu.Trigger>
+														{#snippet child({ props: menuProps })}
+															<button
+																{...menuProps}
+																type="button"
+																class="note-item-menu-btn"
+																aria-label="Mais opções da nota"
+																onclick={(e) => e.stopPropagation()}
+															>
+																<MoreHorizontal size={13} strokeWidth={1.8} aria-hidden="true" />
+															</button>
+														{/snippet}
+													</DropdownMenu.Trigger>
+													<DropdownMenu.Content align="end">
+														<DropdownMenu.Item onclick={() => handleTogglePin(note)}>
+															{#if note.pinned}
+																<PinOff size={14} class="mr-2" />
+																<span>Desafixar do topo</span>
+															{:else}
+																<Pin size={14} class="mr-2" />
+																<span>Fixar no topo</span>
+															{/if}
+														</DropdownMenu.Item>
+														<DropdownMenu.Item onclick={() => openRenameDialog(note)}>
+															<Pencil size={14} class="mr-2" />
+															<span>Renomear</span>
+														</DropdownMenu.Item>
+														<DropdownMenu.Separator />
+														<DropdownMenu.Item
+															class="text-destructive focus:text-destructive"
+															onclick={() => openDeleteDialog(note)}
+														>
+															<Trash2 size={14} class="mr-2" />
+															<span>Apagar nota</span>
+														</DropdownMenu.Item>
+													</DropdownMenu.Content>
+												</DropdownMenu.Root>
+											{/if}
+										</div>
+									</div>
+									<p class="note-item-snippet">
+										{getNoteSnippet(note.content || note.body, note.title, note.description)}
+									</p>
 								</div>
-								<p class="note-item-snippet">{getNoteSnippet(note.content || note.body, note.title, note.description)}</p>
-							</button>
+							</div>
 						{/snippet}
 					</ContextMenu.Trigger>
 					<ContextMenu.Content>
@@ -263,6 +483,23 @@
 	</Dialog.Content>
 </Dialog.Root>
 
+<Dialog.Root bind:open={bulkDeleteDialogOpen}>
+	<Dialog.Content showCloseButton={true}>
+		<Dialog.Title>Apagar notas selecionadas</Dialog.Title>
+		<Dialog.Description>
+			Tem certeza que deseja apagar as {notesState.selectedNoteIds.length} notas selecionadas? Esta ação não pode ser desfeita.
+		</Dialog.Description>
+		<div class="dialog-actions">
+			<Button type="button" variant="outline" onclick={() => (bulkDeleteDialogOpen = false)}>
+				Cancelar
+			</Button>
+			<Button variant="destructive" onclick={confirmBulkDelete} disabled={bulkDeleting}>
+				{bulkDeleting ? 'Apagando…' : 'Apagar todas'}
+			</Button>
+		</div>
+	</Dialog.Content>
+</Dialog.Root>
+
 <style>
 	.secondary-sidebar {
 		display: flex;
@@ -325,7 +562,44 @@
 	.header-right {
 		display: flex;
 		align-items: center;
+		gap: 2px;
 		flex-shrink: 0;
+	}
+
+	.selection-subbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 6px 12px;
+		border-bottom: 1px solid var(--border);
+		background: color-mix(in srgb, var(--muted) 40%, transparent);
+		font-size: 0.75rem;
+		flex-shrink: 0;
+	}
+
+	.selection-toggle-all {
+		background: transparent;
+		border: 0;
+		padding: 0;
+		font-size: 0.75rem;
+		color: var(--foreground);
+		font-weight: 500;
+		cursor: pointer;
+	}
+
+	.selection-toggle-all:hover {
+		text-decoration: underline;
+	}
+
+	.selection-subbar-actions {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.selection-count {
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
 	}
 
 	.search-box {
@@ -395,16 +669,23 @@
 
 	.note-item {
 		display: flex;
-		flex-direction: column;
-		gap: 4px;
+		flex-direction: row;
+		align-items: flex-start;
+		gap: 8px;
 		width: 100%;
 		border: 1px solid transparent;
 		border-radius: 6px;
 		background: transparent;
-		padding: 9px 10px;
+		padding: 8px 10px;
 		text-align: left;
 		cursor: pointer;
 		transition: background-color 0.12s ease, border-color 0.12s ease;
+		outline: none;
+		box-sizing: border-box;
+	}
+
+	.note-item:focus-visible {
+		border-color: var(--ring);
 	}
 
 	.note-item:hover {
@@ -421,11 +702,48 @@
 		border-color: color-mix(in srgb, var(--border) 150%, transparent);
 	}
 
+	.note-item.checked {
+		background: color-mix(in srgb, var(--primary) 8%, var(--background));
+	}
+
+	.note-item-select {
+		display: flex;
+		align-items: center;
+		padding-top: 3px;
+		flex-shrink: 0;
+	}
+
+	.custom-checkbox {
+		width: 16px;
+		height: 16px;
+		border-radius: 4px;
+		border: 1.5px solid var(--muted-foreground);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.15s ease;
+		background: transparent;
+	}
+
+	.custom-checkbox.checked {
+		background: var(--primary);
+		border-color: var(--primary);
+		color: var(--primary-foreground);
+	}
+
+	.note-item-content {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		flex: 1;
+		min-width: 0;
+	}
+
 	.note-item-header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 8px;
+		gap: 6px;
 		width: 100%;
 	}
 
@@ -436,6 +754,45 @@
 		flex: 1;
 		min-width: 0;
 		overflow: hidden;
+	}
+
+	.note-item-header-meta {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		flex-shrink: 0;
+	}
+
+	.note-item-menu-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+		padding: 0;
+		border: 0;
+		border-radius: 4px;
+		background: transparent;
+		color: var(--muted-foreground);
+		cursor: pointer;
+		opacity: 0.6;
+		transition: opacity 0.15s ease, background-color 0.15s ease;
+	}
+
+	.note-item-menu-btn:hover {
+		opacity: 1;
+		background: var(--muted);
+		color: var(--foreground);
+	}
+
+	.note-item:hover .note-item-menu-btn {
+		opacity: 0.9;
+	}
+
+	@media (max-width: 767px) {
+		.note-item-menu-btn {
+			opacity: 1;
+		}
 	}
 
 	:global(.pin-icon) {

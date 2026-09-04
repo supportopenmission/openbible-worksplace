@@ -274,12 +274,14 @@
 			right: 0;
 			bottom: 0;
 			left: 0;
-			z-index: 20;
+			z-index: 60;
 			display: grid;
 			grid-template-columns: repeat(5, minmax(0, 1fr));
 			border-top: 1px solid var(--border);
 			background: color-mix(in oklch, var(--background) 92%, transparent);
-			padding: 6px 8px max(6px, env(safe-area-inset-bottom));
+			backdrop-filter: blur(12px);
+			-webkit-backdrop-filter: blur(12px);
+			padding: 6px 8px max(6px, env(safe-area-inset-bottom, 0px));
 		}
 
 		.mobile-nav-link {
@@ -347,6 +349,8 @@
 		}
 
 		.bible-home-circle {
+			position: relative;
+			z-index: 61;
 			display: flex;
 			width: 56px;
 			height: 56px;

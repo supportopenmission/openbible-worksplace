@@ -172,4 +172,106 @@ describe('notesState pinned and management operations', () => {
 		expect(filtered[0].id).toBe('nota-fixada-antiga');
 		expect(filtered[1].id).toBe('nota-normal-nova');
 	});
+
+	function createMockNote(fields: Partial<import('./note-types').Note> & { id: string; title: string }) {
+		const now = '2026-09-01T00:00:00.000Z';
+		const id = fields.id;
+		const title = fields.title;
+		const path = fields.path ?? `notes/${id}.md`;
+		const createdAt = fields.createdAt ?? now;
+		const updatedAt = fields.updatedAt ?? now;
+		const body = fields.body ?? '';
+		const content = fields.content ?? body;
+		const pinned = fields.pinned;
+		return {
+			id,
+			title,
+			path,
+			createdAt,
+			updatedAt,
+			body,
+			content,
+			pinned,
+			meta: {
+				id,
+				title,
+				path,
+				createdAt,
+				updatedAt,
+				pinned,
+				type: 'note' as const
+			},
+			...fields
+		};
+	}
+
+	it('sorts notes by title (asc/desc) while keeping pinned at top', async () => {
+		const { notesState } = await import('./notes-state.svelte');
+		notesState.notes = [
+			createMockNote({
+				id: 'nota-z',
+				title: 'Zebra',
+				createdAt: '2026-09-01T00:00:00.000Z',
+				updatedAt: '2026-09-01T00:00:00.000Z'
+			}),
+			createMockNote({
+				id: 'nota-a',
+				title: 'Abelha',
+				createdAt: '2026-09-02T00:00:00.000Z',
+				updatedAt: '2026-09-02T00:00:00.000Z'
+			}),
+			createMockNote({
+				id: 'nota-pinned-m',
+				title: 'Macaco Fixado',
+				pinned: true,
+				createdAt: '2026-09-03T00:00:00.000Z',
+				updatedAt: '2026-09-03T00:00:00.000Z'
+			})
+		];
+		notesState.searchQuery = '';
+
+		notesState.setSort('title', 'asc');
+		let filtered = notesState.filteredNotes;
+		expect(filtered[0].id).toBe('nota-pinned-m'); // Pinned stays on top
+		expect(filtered[1].id).toBe('nota-a');
+		expect(filtered[2].id).toBe('nota-z');
+
+		notesState.setSort('title', 'desc');
+		filtered = notesState.filteredNotes;
+		expect(filtered[0].id).toBe('nota-pinned-m');
+		expect(filtered[1].id).toBe('nota-z');
+		expect(filtered[2].id).toBe('nota-a');
+	});
+
+	it('supports multi-selection and bulk operations', async () => {
+		const { notesState } = await import('./notes-state.svelte');
+		notesState.notes = [
+			createMockNote({ id: 'n1', title: 'Nota 1' }),
+			createMockNote({ id: 'n2', title: 'Nota 2' }),
+			createMockNote({ id: 'n3', title: 'Nota 3' })
+		];
+		notesState.searchQuery = '';
+
+		expect(notesState.selectionMode).toBe(false);
+		notesState.toggleSelectionMode();
+		expect(notesState.selectionMode).toBe(true);
+
+		notesState.toggleSelectNote('n1');
+		expect(notesState.selectedNoteIds).toEqual(['n1']);
+
+		notesState.toggleSelectNote('n3');
+		expect(notesState.selectedNoteIds).toEqual(['n1', 'n3']);
+
+		notesState.toggleSelectNote('n1');
+		expect(notesState.selectedNoteIds).toEqual(['n3']);
+
+		notesState.selectAllNotes();
+		expect(notesState.selectedNoteIds).toHaveLength(3);
+
+		notesState.clearSelection();
+		expect(notesState.selectedNoteIds).toHaveLength(0);
+
+		notesState.toggleSelectionMode();
+		expect(notesState.selectionMode).toBe(false);
+	});
 });

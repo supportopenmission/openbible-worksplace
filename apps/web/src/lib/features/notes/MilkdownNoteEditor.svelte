@@ -29,12 +29,14 @@
 		markdown,
 		note,
 		storage,
+		readOnly = false,
 		onSaved,
 		onStatusChange
 	}: {
 		markdown?: string;
 		note?: Note;
 		storage?: WorkspaceStorage;
+		readOnly?: boolean;
 		onSaved?: (note: Note) => void;
 		onStatusChange?: (status: SaveStatus) => void;
 	} = $props();
@@ -69,6 +71,17 @@
 	} | null>(null);
 	let toolbarActive = $state<Record<string, boolean>>({});
 	let filteredItems = $derived(filterSlashItems(getSlashItems(), slashQuery));
+
+	$effect(() => {
+		const ro = readOnly;
+		if (editor && coreModule) {
+			const { editorViewCtx } = coreModule;
+			editor.action((ctx) => {
+				const view = ctx.get(editorViewCtx);
+				view.setProps({ editable: () => !ro });
+			});
+		}
+	});
 
 	$effect(() => {
 		if (note) {
@@ -148,6 +161,7 @@
 	}
 
 	function handleContainerClick(event: MouseEvent) {
+		if (readOnly) return;
 		const target = event.target as HTMLElement | null;
 		if (!target) return;
 		if (target === titleEl || target === descriptionEl) return;
@@ -224,6 +238,7 @@
 	}
 
 	function focusEditor() {
+		if (readOnly) return;
 		if (!editor || !coreModule) return;
 		const { editorViewCtx } = coreModule;
 		editor.action((ctx) => ctx.get(editorViewCtx).focus());
@@ -370,19 +385,28 @@
 	}
 
 	function handleEditorFocusIn(event: FocusEvent) {
+		if (readOnly) {
+			editingActive = false;
+			return;
+		}
 		const target = event.target;
 		if (target instanceof HTMLElement && target.closest('.ProseMirror, .milkdown-toolbar')) {
 			editingActive = true;
+		} else {
+			editingActive = false;
 		}
 	}
 
 	function handleEditorFocusOut(event: FocusEvent) {
 		const next = event.relatedTarget;
-		if (next instanceof Node && editorRoot?.contains(next)) return;
+		if (next instanceof HTMLElement && next.closest('.ProseMirror, .milkdown-toolbar')) {
+			return;
+		}
 		editingActive = false;
 	}
 
 	function handleTaskMarkerClick(event: MouseEvent) {
+		if (readOnly) return;
 		const target = event.target;
 		if (!(target instanceof HTMLElement) || !editor || !coreModule) return;
 		const item = target.closest<HTMLElement>('li[data-item-type="task"]');
@@ -497,6 +521,7 @@
 					ctx.set(rootCtx, host);
 					ctx.set(defaultValueCtx, initialContent);
 					ctx.set(editorViewOptionsCtx, {
+						editable: () => !readOnly,
 						attributes: {
 							autocomplete: 'off',
 							autocorrect: 'off',
@@ -575,8 +600,9 @@
 			<div class="note-header-fields">
 				<h1
 					bind:this={titleEl}
-					contenteditable="plaintext-only"
+					contenteditable={readOnly ? 'false' : 'plaintext-only'}
 					class="note-title"
+					class:readonly={readOnly}
 					data-placeholder="Sem título"
 					data-empty={!noteTitle.trim()}
 					oninput={handleTitleInput}
@@ -585,9 +611,10 @@
 
 				<p
 					bind:this={descriptionEl}
-					contenteditable="plaintext-only"
+					contenteditable={readOnly ? 'false' : 'plaintext-only'}
 					class="note-description"
-					data-placeholder="Adicione uma descrição…"
+					class:readonly={readOnly}
+					data-placeholder={readOnly ? '' : 'Adicione uma descrição…'}
 					data-empty={!noteDescription.trim()}
 					aria-label="Descrição da nota"
 					oninput={handleDescriptionInput}
@@ -658,7 +685,7 @@
 	<BibleReferenceViewer {storage} />
 
 	<MilkdownMobileToolbar
-		active={mobile}
+		active={mobile && editingActive && !readOnly}
 		activeActions={toolbarActive}
 		onAction={runToolbar}
 	/>
@@ -791,6 +818,25 @@
 		color: var(--muted-foreground);
 		opacity: 0.65;
 		pointer-events: none;
+	}
+
+	.note-title.readonly,
+	.note-description.readonly {
+		cursor: default;
+		user-select: text;
+	}
+
+	.note-description.readonly[data-empty="true"] {
+		display: none;
+	}
+
+	:global(.milkdown-host .ProseMirror[contenteditable="false"]) {
+		cursor: default;
+		user-select: text;
+	}
+
+	:global(.milkdown-host .ProseMirror[contenteditable="false"] .is-empty::before) {
+		display: none;
 	}
 
 	.milkdown-host {
