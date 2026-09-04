@@ -19,8 +19,10 @@ uma. Preserve decisões humanas nas seções livres deste arquivo.
 | Testes de navegador | Playwright 1.62.1 | `apps/web/package.json` e `playwright.config.ts` |
 | CSS | Tailwind CSS 4.3.3 | `apps/web/package.json`, `apps/web/vite.config.ts` e `apps/web/src/app.css` |
 | Primitives de interface | shadcn-svelte local, estilo Nova | `apps/web/components.json` e `apps/web/src/lib/components/ui/` |
-| Editor canvas | @friendofsvelte/tipex 0.2.0 | `apps/web/package.json` |
-| Extensão do editor | @tiptap/extension-highlight 2.27.2 | `apps/web/package.json` e `bun.lock` |
+| Editor Markdown principal | @milkdown/kit 7.22.1 | `apps/web/package.json`, `bun.lock` e `apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte` |
+| Parser de diretivas Markdown | remark-directive 4.0.0 | `apps/web/package.json`, `bun.lock` e `apps/web/src/lib/features/notes/milkdown-verse-node.ts` |
+| Editor legado (compatibilidade transitória) | @friendofsvelte/tipex 0.2.0 | `apps/web/package.json` e testes de caracterização legados |
+| Extensão legada do editor | @tiptap/extension-highlight 2.27.2 | `apps/web/package.json`, `bun.lock` e utilitário legado `verse-block-extension.ts` |
 <!-- specsfy:stack:end -->
 
 ## Decisões e observações do projeto
@@ -58,3 +60,7 @@ manifests.
   Exibida no rodapé da sidebar e em `/config`.
 - `bun.lock` foi verificado durante o setup desta tarefa; a implementação do
   seletor de pasta não altera a stack nem adiciona dependências.
+- A SPEC-0013 tornou `@milkdown/kit` 7.22.1 o motor principal de `/notes/[id]`
+  e do split de notas no leitor, com `remark-directive` para roundtrip do fence
+  `:::verse`. Tipex/TipTap permanecem temporariamente apenas em arquivos e
+  testes legados até sua remoção segura após a regressão completa.

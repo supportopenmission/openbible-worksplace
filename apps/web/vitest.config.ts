@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import { playwright } from '@vitest/browser-playwright';
 
 export default defineConfig({
+	optimizeDeps: {
+		include: ['@milkdown/kit/plugin/slash']
+	},
 	test: {
 		expect: { requireAssertions: true },
 		projects: [

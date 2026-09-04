@@ -5,7 +5,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
-	import NoteCanvasEditor from '$lib/features/notes/NoteCanvasEditor.svelte';
+	import MilkdownNoteEditor from '$lib/features/notes/MilkdownNoteEditor.svelte';
 	import NoteCardList from '$lib/features/notes/NoteCardList.svelte';
 	import type { Note } from '$lib/features/notes/note-types';
 	import type { WorkspaceStorage } from '$lib/storage/types';
@@ -150,7 +150,7 @@
 			</div>
 			<Button variant="ghost" size="sm" onclick={onClose}>Fechar nota</Button>
 		</div>
-		<NoteCanvasEditor note={openNote} storage={openStorage} {onSaved} />
+		<MilkdownNoteEditor note={openNote} storage={openStorage} {onSaved} />
 	</section>
 {/snippet}
 

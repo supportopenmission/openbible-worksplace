@@ -15,7 +15,7 @@ function titleFromBody(body: string): string | null {
 	return match ? match[1].trim() : null;
 }
 
-function verseRefsFromMarkdown(body: string, _notePath: string): VerseReferenceInput[] {
+function verseRefsFromMarkdown(body: string): VerseReferenceInput[] {
 	return extractVerseFencesFromMarkdown(body).map((fence, blockIndex) => ({
 		blockIndex,
 		versionId: fence.attrs.versionId,
@@ -32,12 +32,14 @@ export interface NoteEditorServiceOptions {
 	storage: WorkspaceStorage;
 	note: Note;
 	onStatusChange?: (status: SaveStatus) => void;
+	onSaved?: (note: Note) => void;
 }
 
 export function createNoteEditorService(options: NoteEditorServiceOptions) {
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	let latestBody = options.note.body;
 	let disposed = false;
+	let pendingChanges = false;
 
 	function setStatus(status: SaveStatus) {
 		options.onStatusChange?.(status);
@@ -67,7 +69,7 @@ export function createNoteEditorService(options: NoteEditorServiceOptions) {
 			meta: noteFile.meta,
 			updatedAt: noteFile.meta.updatedAt
 		});
-		const refs = verseRefsFromMarkdown(noteFile.body, saved.path);
+		const refs = verseRefsFromMarkdown(noteFile.body);
 		await persistNoteVerseRefsToWorkspace(options.storage, saved.path, refs);
 		options.note = saved;
 		return saved;
@@ -76,10 +78,14 @@ export function createNoteEditorService(options: NoteEditorServiceOptions) {
 	async function saveNow(body = latestBody): Promise<Note | null> {
 		if (disposed) return null;
 		latestBody = body;
+		if (debounceTimer) clearTimeout(debounceTimer);
+		debounceTimer = null;
 		setStatus('saving');
 		try {
 			const saved = await persist(body);
+			pendingChanges = false;
 			if (!disposed) setStatus('saved');
+			if (!disposed) options.onSaved?.(saved);
 			return saved;
 		} catch {
 			if (!disposed) setStatus('error');
@@ -89,6 +95,7 @@ export function createNoteEditorService(options: NoteEditorServiceOptions) {
 
 	function scheduleSave(body: string) {
 		latestBody = body;
+		pendingChanges = true;
 		if (debounceTimer) clearTimeout(debounceTimer);
 		setStatus('saving');
 		debounceTimer = setTimeout(() => {
@@ -97,8 +104,11 @@ export function createNoteEditorService(options: NoteEditorServiceOptions) {
 	}
 
 	function dispose() {
-		disposed = true;
 		if (debounceTimer) clearTimeout(debounceTimer);
+		debounceTimer = null;
+		const bodyToFlush = pendingChanges ? latestBody : null;
+		disposed = true;
+		if (bodyToFlush !== null) void persist(bodyToFlush).catch(() => {});
 	}
 
 	return { scheduleSave, saveNow, dispose, getStatus: () => latestBody };

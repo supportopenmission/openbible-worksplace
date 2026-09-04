@@ -17,6 +17,7 @@
 | 10 | 0011-desativar-zoom-no-pwa-e-drawer-90 | Complete | — |
 | 11 | 0001-onboarding-configuracao-armazenamento | Implementing | — |
 | 12 | 0012-pagina-inicial-operacional-do-openbible | Implementing | — |
+| 13 | 0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile | Implementing | — |
 
 ## Marcos
 

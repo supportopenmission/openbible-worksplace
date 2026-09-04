@@ -82,6 +82,10 @@ como fontes locais somente leitura; o índice do workspace permanece auxiliar.
   ele não é fonte de dados de domínio nem substitui o SQLite local.
 - Retenção, backup, exportação e sincronização ainda precisam de decisão
   específica.
+- A SPEC-0013 troca somente o motor visual das notas por Milkdown. O arquivo
+  `notes/<noteId>.md` mantém o mesmo YAML e fence `:::verse`; a reindexação após
+  autosave continua escrevendo `note_verse_ref` sem migration ou mudança de
+  schema.
 
 <!-- specsfy:conversation-data:start -->
 

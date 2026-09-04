@@ -272,7 +272,7 @@ describe('/bible verse selection popover', () => {
 	it('opens an action popover when a whole verse is selected', async () => {
 		// SPECSFY: US-001 FR-001 FR-002 NFR-001 AC-001
 		await openGenesis1();
-		await page.getByText(/disse deus: haja luz/i).click();
+		await page.getByRole('button', { name: /disse deus: haja luz/i }).click();
 		await expect.element(page.getByRole('button', { name: /copiar referência/i })).toBeInTheDocument();
 		await expect
 			.element(page.getByRole('button', { name: /copiar texto e referência/i }))
@@ -284,7 +284,7 @@ describe('/bible verse selection popover', () => {
 	it('shows a recoverable error when the clipboard is denied', async () => {
 		// SPECSFY: US-003 FR-006 NFR-002 AC-010
 		await openGenesis1();
-		await page.getByText(/disse deus: haja luz/i).click();
+		await page.getByRole('button', { name: /disse deus: haja luz/i }).click();
 		await page.getByRole('button', { name: /copiar referência/i }).click();
 		await expect.element(page.getByRole('alert')).toBeInTheDocument();
 	});
@@ -292,7 +292,7 @@ describe('/bible verse selection popover', () => {
 	it('creates a note in a desktop split without applying a highlight', async () => {
 		// SPECSFY: US-004 FR-002 FR-007 NFR-003 AC-011
 		await openGenesis1();
-		await page.getByText(/disse deus: haja luz/i).click();
+		await page.getByRole('button', { name: /disse deus: haja luz/i }).click();
 		await page.getByRole('button', { name: /criar nota/i }).click();
 		await expect
 			.element(page.getByRole('main').getByText(/disse deus: haja luz/i))
@@ -303,7 +303,7 @@ describe('/bible verse selection popover', () => {
 	it('keeps reader and note on tabs in a narrow viewport', async () => {
 		// SPECSFY: US-004 FR-007 AC-014
 		await openGenesis1(320);
-		await page.getByText(/disse deus: haja luz/i).click();
+		await page.getByRole('button', { name: /disse deus: haja luz/i }).click();
 		await page.getByRole('button', { name: /criar nota/i }).click();
 		await expect.element(page.getByRole('tab', { name: /bíblia/i })).toBeInTheDocument();
 		await expect.element(page.getByRole('tab', { name: /nota/i })).toBeInTheDocument();
@@ -320,7 +320,7 @@ describe('/bible verse selection popover', () => {
 	it('lets the keyboard open the popover and close it with Escape', async () => {
 		// SPECSFY: US-001 FR-002 NFR-001 AC-015
 		await openGenesis1();
-		await page.getByText(/disse deus: haja luz/i).click();
+		await page.getByRole('button', { name: /disse deus: haja luz/i }).click();
 		await expect.element(page.getByRole('button', { name: /copiar referência/i })).toBeInTheDocument();
 		await userEvent.keyboard('{Escape}');
 		expect(page.getByRole('button', { name: /copiar referência/i })).not.toBeInTheDocument();
@@ -328,7 +328,7 @@ describe('/bible verse selection popover', () => {
 
 	it('shows a bottom action bar with highlight swatches on mobile', async () => {
 		await openGenesis1(320);
-		await page.getByText(/disse deus: haja luz/i).click();
+		await page.getByRole('button', { name: /disse deus: haja luz/i }).click();
 		const bar = page.getByRole('dialog', { name: /ações para/i });
 		await expect.element(bar).toBeInTheDocument();
 		await bar.getByRole('button', { name: /caneta dourada/i }).click();
@@ -346,7 +346,7 @@ describe('/bible verse selection popover', () => {
 			throw new Error('somente leitura');
 		};
 		await openGenesis1(1440, storage);
-		await page.getByText(/disse deus: haja luz/i).click();
+		await page.getByRole('button', { name: /disse deus: haja luz/i }).click();
 		await page.getByRole('button', { name: /criar nota/i }).click();
 		await expect.element(page.getByRole('alert')).toBeInTheDocument();
 		expect(page.getByRole('region', { name: /nota/i })).not.toBeInTheDocument();

@@ -10,8 +10,10 @@
 | Terceiro | desenvolvimento | turbo | ^2.10.12 | Turborepo is the build system for coding agents. | https://github.com/vercel/turborepo | https://github.com/vercel/turborepo |
 | Terceiro | produção | @opencode-ai/plugin | 1.18.25 | Finalidade não descrita nos metadados locais. |  | — |
 | Terceiro | produção | @friendofsvelte/tipex | 0.2.0 | Finalidade não descrita nos metadados locais. | https://github.com/friendofsvelte/tipex | https://github.com/friendofsvelte/tipex |
+| Terceiro | produção | @milkdown/kit | 7.22.1 | Finalidade não descrita nos metadados locais. | https://github.com/Milkdown/milkdown | https://github.com/Milkdown/milkdown |
 | Terceiro | produção | @tiptap/extension-highlight | 2.27.2 | highlight extension for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
 | Terceiro | produção | clsx | ^2.1.1 | A tiny (239B) utility for constructing className strings conditionally. | lukeed/clsx | — |
+| Terceiro | produção | remark-directive | ^4.0.0 | remark plugin to support directives | remarkjs/remark-directive | — |
 | Terceiro | produção | sql.js | ^1.14.2 | SQLite library with support for opening and writing databases, prepared statements, and more. This SQLite library is in pure javascript (compiled with emscripten). | http://github.com/sql-js/sql.js | http://github.com/sql-js/sql.js |
 | Terceiro | produção | tailwind-merge | ^3.6.0 | Merge Tailwind CSS classes without style conflicts | https://github.com/dcastil/tailwind-merge | https://github.com/dcastil/tailwind-merge |
 | Terceiro | desenvolvimento | @internationalized/date | ^3.12.0 | Internationalized calendar, date, and time manipulation utilities | https://github.com/adobe/react-spectrum/tree/main/packages/@internationalized/date | https://github.com/adobe/react-spectrum/tree/main/packages/@internationalized/date |

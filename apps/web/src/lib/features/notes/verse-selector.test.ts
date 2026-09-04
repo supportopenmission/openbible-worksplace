@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { confirmVerseSelection, prefillFromReaderSelection, validateVerseRange } from './verse-selector';
+import { selectionToVerseAttrs } from './milkdown-verse-node';
 
 // SPECSFY: US-003 FR-004 FR-005 NFR-001 AC-006 AC-009
 describe('verse-selector validation and prefill', () => {
@@ -16,5 +17,81 @@ describe('verse-selector validation and prefill', () => {
 		const confirmed = confirmVerseSelection(prefilled, { versionId: 'acf.sqlite' });
 		expect(confirmed.versionId).toBe('acf.sqlite');
 		expect(initial.versionId).toBe('nvi.sqlite');
+	});
+});
+
+// SPECSFY: US-002 FR-006 NFR-003 AC-010
+describe('milkdown missing bible version', () => {
+	it('reports an explicit missing-version state instead of inventing text', () => {
+		const confirmed = confirmVerseSelection(
+			{
+				versionId: '',
+				bookId: 43,
+				book: 'João',
+				chapter: 3,
+				verseStart: 16,
+				verseEnd: 18
+			},
+			{}
+		);
+		expect(selectionToVerseAttrs(confirmed, [])).toEqual({
+			ok: false,
+			reason: 'missing-version'
+		});
+	});
+
+	it('resolves attrs when the version exists in the catalog', () => {
+		const confirmed = confirmVerseSelection(
+			{
+				versionId: 'nvi.sqlite',
+				bookId: 43,
+				book: 'João',
+				chapter: 3,
+				verseStart: 16,
+				verseEnd: 16
+			},
+			{}
+		);
+		expect(selectionToVerseAttrs(confirmed, ['nvi.sqlite'])).toEqual({
+			ok: true,
+			attrs: {
+				versionId: 'nvi.sqlite',
+				version: '',
+				bookId: '43',
+				book: 'João',
+				chapter: '3',
+				verseStart: '16',
+				verseEnd: '16'
+			}
+		});
+	});
+});
+
+// SPECSFY: US-002 FR-006 NFR-002 AC-017
+describe('milkdown selector reuse', () => {
+	it('maps confirmed dialog/sheet state to the same fence attrs', () => {
+		const confirmed = confirmVerseSelection(
+			{
+				versionId: 'acf.sqlite',
+				bookId: 1,
+				book: 'Gênesis',
+				chapter: 1,
+				verseStart: 1,
+				verseEnd: 2
+			},
+			{}
+		);
+		expect(selectionToVerseAttrs(confirmed, ['acf.sqlite'])).toEqual({
+			ok: true,
+			attrs: {
+				versionId: 'acf.sqlite',
+				version: '',
+				bookId: '1',
+				book: 'Gênesis',
+				chapter: '1',
+				verseStart: '1',
+				verseEnd: '2'
+			}
+		});
 	});
 });

@@ -10,8 +10,10 @@
 | npm | desenvolvimento | turbo | ^2.10.12 | Turborepo is the build system for coding agents. | https://github.com/vercel/turborepo |
 | npm | produção | @opencode-ai/plugin | 1.18.25 | Finalidade não descrita nos metadados locais. |  |
 | npm | produção | @friendofsvelte/tipex | 0.2.0 | Finalidade não descrita nos metadados locais. | https://github.com/friendofsvelte/tipex |
+| npm | produção | @milkdown/kit | 7.22.1 | Finalidade não descrita nos metadados locais. | https://github.com/Milkdown/milkdown |
 | npm | produção | @tiptap/extension-highlight | 2.27.2 | highlight extension for tiptap | https://github.com/ueberdosis/tiptap |
 | npm | produção | clsx | ^2.1.1 | A tiny (239B) utility for constructing className strings conditionally. | lukeed/clsx |
+| npm | produção | remark-directive | ^4.0.0 | remark plugin to support directives | remarkjs/remark-directive |
 | npm | produção | sql.js | ^1.14.2 | SQLite library with support for opening and writing databases, prepared statements, and more. This SQLite library is in pure javascript (compiled with emscripten). | http://github.com/sql-js/sql.js |
 | npm | produção | tailwind-merge | ^3.6.0 | Merge Tailwind CSS classes without style conflicts | https://github.com/dcastil/tailwind-merge |
 | npm | desenvolvimento | @internationalized/date | ^3.12.0 | Internationalized calendar, date, and time manipulation utilities | https://github.com/adobe/react-spectrum/tree/main/packages/@internationalized/date |

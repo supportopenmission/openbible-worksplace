@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { ChevronLeft } from '@lucide/svelte';
-	import NoteCanvasEditor from '$lib/features/notes/NoteCanvasEditor.svelte';
+	import MilkdownNoteEditor from '$lib/features/notes/MilkdownNoteEditor.svelte';
 	import { notePageChrome } from '$lib/features/notes/note-page-chrome.svelte';
 	import { createNote, readNote } from '$lib/features/notes/notes-repository';
 	import { serializeNoteFile } from '$lib/features/notes/note-markdown';
@@ -134,7 +134,7 @@
 	{:else if error || !note || !activeStorage}
 		<p class="state-message error" role="alert">{error || 'Nota não encontrada'}</p>
 	{:else}
-		<NoteCanvasEditor {note} storage={activeStorage} onSaved={handleSaved} />
+		<MilkdownNoteEditor {note} storage={activeStorage} onSaved={handleSaved} />
 	{/if}
 </div>
 

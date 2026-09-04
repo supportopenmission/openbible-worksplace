@@ -20,8 +20,10 @@
   },
   "dependencies": {
     "@friendofsvelte/tipex": "0.2.0",
+    "@milkdown/kit": "7.22.1",
     "@tiptap/extension-highlight": "2.27.2",
     "clsx": "^2.1.1",
+    "remark-directive": "^4.0.0",
     "sql.js": "^1.14.2",
     "tailwind-merge": "^3.6.0"
   },
