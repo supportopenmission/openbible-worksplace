@@ -2,12 +2,17 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { APP_VERSION } from '$lib/app-version';
 	import OnboardingModal from '$lib/features/onboarding/OnboardingModal.svelte';
 	import InitialScreenPicker from '$lib/features/navigation/InitialScreenPicker.svelte';
 	import { getWorkspaceState } from '$lib/features/workspace/workspace-state.svelte';
 	import { homeRoutePath, readHomeRoute } from '$lib/navigation/home-preference';
 	import { detectStorageKind } from '$lib/storage/environment';
-	import { chooseWorkspaceStorage, createConfiguredStorage } from '$lib/storage/storage-registry';
+	import {
+		chooseBrowserWorkspaceStorage,
+		chooseWorkspaceStorage,
+		createConfiguredStorage
+	} from '$lib/storage/storage-registry';
 	import { loadWorkspaceConfig } from '$lib/storage/workspace';
 	import type { StorageKind, WorkspaceStorage } from '$lib/storage/types';
 	import type { OnboardingStep } from '$lib/features/onboarding/onboarding-copy';
@@ -149,6 +154,7 @@
 			<div class="home-actions">
 				<InitialScreenPicker />
 			</div>
+			<p class="home-version">OpenBible v{APP_VERSION}</p>
 		</main>
 	{/if}
 {/if}
@@ -222,6 +228,15 @@
 
 	.home-actions {
 		min-width: 0;
+	}
+
+	.home-version {
+		grid-column: 1 / -1;
+		margin: 24px 0 0;
+		color: var(--muted-foreground);
+		font-family: var(--font-mono);
+		font-size: 0.68rem;
+		text-align: center;
 	}
 
 	@media (max-width: 1024px) {

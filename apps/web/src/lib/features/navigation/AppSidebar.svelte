@@ -222,6 +222,10 @@
 		display: none;
 	}
 
+	:global([data-collapsible='icon'] .sidebar-version) {
+		display: none;
+	}
+
 	.mobile-bottom-nav {
 		display: none;
 	}
