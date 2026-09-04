@@ -1,7 +1,17 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
+	import type { Component } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { APP_VERSION } from '$lib/app-version';
+	import {
+		Bell,
+		BookOpen,
+		ChartColumn,
+		ChevronLeft,
+		ChevronRight,
+		Database,
+		House
+	} from '@lucide/svelte';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import BibleLibraryManager from '$lib/features/bible/BibleLibraryManager.svelte';
@@ -17,6 +27,38 @@
 
 	const isMobile = new IsMobile();
 	let activeTab = $state<'storage' | 'bibles' | 'stats' | 'home' | 'reminder'>('storage');
+
+	type MobileSectionId = 'storage' | 'bibles' | 'stats' | 'home' | 'reminder';
+
+	const mobileSections: Array<{ id: MobileSectionId; label: string; icon: Component }> = [
+		{ id: 'storage', label: 'Armazenamento', icon: Database },
+		{ id: 'bibles', label: 'Bíblias', icon: BookOpen },
+		{ id: 'stats', label: 'Estatísticas', icon: ChartColumn },
+		{ id: 'home', label: 'Tela inicial', icon: House },
+		{ id: 'reminder', label: 'Lembrete diário', icon: Bell }
+	];
+
+	let mobileSection = $state<MobileSectionId | null>(null);
+	let mobileSubheading = $state<HTMLElement | null>(null);
+	const mobileSectionLabel = $derived(
+		mobileSections.find((section) => section.id === mobileSection)?.label ?? ''
+	);
+
+	function openMobileSection(id: MobileSectionId) {
+		mobileSection = id;
+		document.querySelector('.shell-main')?.scrollTo({ top: 0 });
+	}
+
+	function closeMobileSection() {
+		mobileSection = null;
+		document.querySelector('.shell-main')?.scrollTo({ top: 0 });
+	}
+
+	$effect(() => {
+		if (mobileSection) {
+			void tick().then(() => mobileSubheading?.focus({ preventScroll: true }));
+		}
+	});
 
 	let reminderEnabled = $state(false);
 	let reminderTime = $state('09:00');
@@ -68,28 +110,70 @@
 	</nav>
 
 	{#if isMobile.current}
-		<div class="config-sections">
-			<section class="config-section" aria-labelledby="config-storage-heading">
-				<h2 id="config-storage-heading" class="section-label">Armazenamento</h2>
-				<WorkspaceSettings embedded />
-			</section>
-			<section class="config-section" aria-labelledby="config-bibles-heading">
-				<h2 id="config-bibles-heading" class="section-label">Bíblias</h2>
-				<BibleLibraryManager />
-			</section>
-			<section class="config-section" aria-labelledby="config-stats-heading">
-				<h2 id="config-stats-heading" class="section-label">Estatísticas</h2>
-				<WorkspaceStats />
-			</section>
-			<section class="config-section" aria-labelledby="config-home-heading">
-				<h2 id="config-home-heading" class="section-label">Tela inicial</h2>
-				<InitialScreenPicker mode="config" embedded />
-			</section>
-			<section class="config-section" aria-labelledby="config-reminder-heading">
-				<h2 id="config-reminder-heading" class="section-label">Lembrete diário</h2>
-				{@render reminderSettings()}
-			</section>
-		</div>
+		{#if mobileSection === null}
+			<div class="config-index">
+				<h2 class="config-index-title">Configurações</h2>
+				<nav class="config-index-list" aria-label="Seções de configuração">
+					{#each mobileSections as section (section.id)}
+						{@const Icon = section.icon}
+						<button
+							type="button"
+							class="config-index-row"
+							onclick={() => openMobileSection(section.id)}
+						>
+							<span class="config-index-icon" aria-hidden="true">
+								<Icon size={15} strokeWidth={1.8} />
+							</span>
+							<span class="config-index-label">{section.label}</span>
+							<ChevronRight
+								size={16}
+								strokeWidth={1.8}
+								aria-hidden="true"
+								class="config-index-chevron"
+							/>
+						</button>
+					{/each}
+				</nav>
+				<footer class="config-footer">
+					<p>OpenBible v{APP_VERSION}</p>
+				</footer>
+			</div>
+		{:else}
+			{#key mobileSection}
+				<div class="config-subpage">
+					<button
+						type="button"
+						class="config-back"
+						onclick={closeMobileSection}
+						aria-label="Voltar para Configurações"
+					>
+						<ChevronLeft
+							size={18}
+							strokeWidth={2}
+							aria-hidden="true"
+							class="config-back-chevron"
+						/>
+						<span>Configurações</span>
+					</button>
+					<h2 class="config-subpage-title" bind:this={mobileSubheading} tabindex={-1}>
+						{mobileSectionLabel}
+					</h2>
+					<div class="config-subpage-body">
+						{#if mobileSection === 'storage'}
+							<WorkspaceSettings embedded />
+						{:else if mobileSection === 'bibles'}
+							<BibleLibraryManager />
+						{:else if mobileSection === 'stats'}
+							<WorkspaceStats />
+						{:else if mobileSection === 'home'}
+							<InitialScreenPicker mode="config" embedded />
+						{:else if mobileSection === 'reminder'}
+							{@render reminderSettings()}
+						{/if}
+					</div>
+				</div>
+			{/key}
+		{/if}
 	{:else}
 		<Tabs.Root bind:value={activeTab} class="config-tabs">
 			<Tabs.List variant="line" aria-label="Seções de configuração">
@@ -115,11 +199,10 @@
 				{@render reminderSettings()}
 			</Tabs.Content>
 		</Tabs.Root>
+		<footer class="config-footer">
+			<p>OpenBible v{APP_VERSION}</p>
+		</footer>
 	{/if}
-
-	<footer class="config-footer">
-		<p>OpenBible v{APP_VERSION}</p>
-	</footer>
 </div>
 
 {#snippet reminderSettings()}
@@ -248,28 +331,103 @@
 		outline: none;
 	}
 
-	.config-sections {
-		display: grid;
-		gap: 0;
+	.config-index-title {
+		margin: 12px 0 12px;
+		font-size: clamp(1.75rem, 4vw, 2.5rem);
+		font-weight: 600;
+		letter-spacing: -0.04em;
+		line-height: 1.1;
 	}
 
-	.config-section {
-		padding: 28px 0;
+	.config-index-list {
 		border-top: 1px solid var(--border);
 	}
 
-	.config-section:first-child {
-		padding-top: 4px;
-		border-top: 0;
+	.config-index-row {
+		display: flex;
+		width: 100%;
+		min-height: 52px;
+		align-items: center;
+		gap: 12px;
+		border: 0;
+		border-bottom: 1px solid var(--border);
+		background: transparent;
+		padding: 10px 4px;
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
 	}
 
-	.section-label {
-		margin: 0 0 18px;
+	.config-index-row:active {
+		background: color-mix(in oklch, var(--foreground) 5%, transparent);
+	}
+
+	.config-index-icon {
+		display: flex;
+		flex-shrink: 0;
+		width: 30px;
+		height: 30px;
+		align-items: center;
+		justify-content: center;
+		border-radius: 8px;
+		background: color-mix(in oklch, var(--foreground) 7%, transparent);
+	}
+
+	.config-index-label {
+		overflow: hidden;
+		min-width: 0;
+		flex: 1;
+		font-size: 0.92rem;
+		font-weight: 500;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	:global(.config-index-chevron) {
+		flex-shrink: 0;
 		color: var(--muted-foreground);
-		font-size: 0.66rem;
-		font-weight: 600;
-		letter-spacing: 0.07em;
-		text-transform: uppercase;
+	}
+
+	.config-subpage {
+		animation: config-push 180ms ease;
+	}
+
+	@keyframes config-push {
+		from {
+			opacity: 0;
+			transform: translateX(14px);
+		}
+	}
+
+	.config-back {
+		display: inline-flex;
+		align-items: center;
+		gap: 2px;
+		margin: 0 0 4px -8px;
+		border: 0;
+		background: transparent;
+		padding: 8px;
+		color: var(--muted-foreground);
+		font-size: 0.9rem;
+		font-weight: 500;
+		cursor: pointer;
+	}
+
+	.config-back:active {
+		color: var(--foreground);
+	}
+
+	:global(.config-back-chevron) {
+		flex-shrink: 0;
+	}
+
+	.config-subpage-title {
+		margin: 0 0 20px;
+		font-size: 1.5rem;
+		font-weight: 700;
+		letter-spacing: -0.03em;
+		line-height: 1.2;
 	}
 
 	.config-footer {
@@ -331,15 +489,19 @@
 		line-height: 1.55;
 	}
 
-	@media (max-width: 480px) {
-		.config-page {
-			padding-inline: 16px;
+	@media (max-width: 767px) {
+		.breadcrumb {
+			display: none;
 		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
 		:global(.config-tabs [data-slot='tabs-trigger']) {
 			transition: none;
+		}
+
+		.config-subpage {
+			animation: none;
 		}
 	}
 </style>

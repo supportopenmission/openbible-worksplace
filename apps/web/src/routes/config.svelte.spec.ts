@@ -13,6 +13,7 @@ describe('/config', () => {
 		await page.viewport(320, 900);
 		await render(ConfigPage);
 
+		await page.getByRole('button', { name: 'Tela inicial' }).click();
 		await page.getByRole('radio', { name: /ler a bíblia/i }).click();
 		await page.getByRole('button', { name: /salvar tela inicial/i }).click();
 
@@ -25,12 +26,13 @@ describe('/config', () => {
 		await page.viewport(320, 900);
 		await render(ConfigPage);
 
+		await page.getByRole('button', { name: 'Tela inicial' }).click();
 		await page.getByRole('button', { name: /remover preferência/i }).click();
 
 		await expect.element(page.getByText(/preferência removida/i)).toBeInTheDocument();
 	});
 
-	it('shows stacked sections on mobile with an accessible page title', async () => {
+	it('shows a section index on mobile with drill-down subpages and back', async () => {
 		await page.viewport(320, 900);
 		await render(ConfigPage);
 
@@ -38,11 +40,20 @@ describe('/config', () => {
 			.element(page.getByRole('heading', { name: 'Configurações', level: 1 }))
 			.toBeInTheDocument();
 		await expect
+			.element(page.getByRole('heading', { name: 'Configurações', level: 2 }))
+			.toBeInTheDocument();
+		const storageRow = page.getByRole('button', { name: 'Armazenamento' });
+		await expect.element(storageRow).toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: 'Tela inicial' })).toBeInTheDocument();
+
+		await storageRow.click();
+		await expect
 			.element(page.getByRole('heading', { name: 'Armazenamento', level: 2 }))
 			.toBeInTheDocument();
-		await expect
-			.element(page.getByRole('heading', { name: 'Tela inicial', level: 2 }))
-			.toBeInTheDocument();
+		expect(page.getByRole('button', { name: 'Tela inicial' })).not.toBeInTheDocument();
+
+		await page.getByRole('button', { name: /voltar para configurações/i }).click();
+		await expect.element(page.getByRole('button', { name: 'Tela inicial' })).toBeInTheDocument();
 	});
 
 	it('uses tabs on desktop and reveals the home panel on selection', async () => {
