@@ -149,6 +149,7 @@
 	}
 
 	:global(.shell-content) {
+		--shell-header-height: 48px;
 		min-width: 0;
 		height: 100%;
 		min-height: 0;

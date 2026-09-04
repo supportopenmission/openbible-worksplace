@@ -1659,7 +1659,7 @@
 		display: flex;
 		flex-direction: column;
 		width: 100%;
-		height: 100%;
+		min-height: 100%;
 		max-width: none;
 		margin: 0;
 		padding: 8px clamp(20px, 5vw, 64px) 80px;
@@ -1667,6 +1667,7 @@
 
 	.reader-page.with-note {
 		min-height: 0;
+		height: 100%;
 		flex: 1;
 		padding-bottom: 16px;
 	}
@@ -1848,7 +1849,7 @@
 
 	.reader-toolbar {
 		position: sticky;
-		top: 0;
+		top: calc(-1 * var(--shell-header-height, 48px));
 		z-index: 25;
 		display: flex;
 		order: -1;
@@ -1877,6 +1878,10 @@
 
 	.reader-toolbar.toolbar-hidden .toolbar-shell {
 		transform: translateY(calc(-100% - 12px));
+	}
+
+	.reader-page.with-note .reader-toolbar {
+		position: static;
 	}
 
 	:global(.reader-toolbar-group) {
@@ -2855,11 +2860,13 @@
 		}
 	}
 
-	@media (max-width: 380px) {
-		.reader-page {
-			padding-inline: 16px;
+	@media (max-width: 767px) {
+		.reader-toolbar {
+			top: 0;
 		}
+	}
 
+	@media (max-width: 380px) {
 		:global(.reader-toolbar-group) {
 			padding: 2px;
 		}
