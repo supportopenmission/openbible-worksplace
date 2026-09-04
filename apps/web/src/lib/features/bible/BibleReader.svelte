@@ -3074,6 +3074,16 @@
 			flex-direction: column;
 		}
 
+		.chapter-screen,
+		.version-screen {
+			display: flex;
+			min-height: 0;
+			flex: 1;
+			flex-direction: column;
+			max-height: none;
+			overflow-y: auto;
+		}
+
 		.chapter-grid {
 			grid-template-columns: repeat(5, minmax(0, 1fr));
 		}
