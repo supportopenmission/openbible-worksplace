@@ -9,7 +9,7 @@ function errorName(error: unknown): string | undefined {
 
 export function getDirectoryPickerError(error: unknown): string {
 	if (errorName(error) === 'AbortError') {
-		return 'A seleção da pasta não foi concluída. Se você clicou em “Selecionar”, o ambiente integrado pode não oferecer acesso a pastas. Abra o OpenBible no Chrome ou tente novamente.';
+		return 'A seleção da pasta foi cancelada. Escolha uma pasta para continuar ou tente novamente.';
 	}
 
 	if (error instanceof Error) return error.message;

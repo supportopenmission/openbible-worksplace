@@ -3,5 +3,5 @@
 	"identifier": "main-capability",
 	"description": "Permissões mínimas do shell OpenBible.",
 	"windows": ["main"],
-	"permissions": ["core:default"]
+	"permissions": ["core:default", "dialog:allow-open"]
 }

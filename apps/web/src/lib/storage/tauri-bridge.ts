@@ -2,10 +2,20 @@ import { invoke } from '@tauri-apps/api/core';
 
 export type WorkspaceCommand =
 	| { name: 'workspace.initialize'; preferredPath?: string }
+	| { name: 'workspace.getPath' }
 	| { name: 'workspace.readFile'; relativePath: string }
 	| { name: 'workspace.listFiles'; relativePath: string }
 	| { name: 'workspace.writeFile'; relativePath: string; bytes: Uint8Array }
-	| { name: 'index.query'; operation: 'list_highlights' | 'upsert_highlight' | 'delete_highlight'; versionId?: string; bookId?: number; chapter?: number; verseStart?: number; verseEnd?: number; styleId?: string }
+	| {
+			name: 'index.query';
+			operation: 'list_highlights' | 'upsert_highlight' | 'delete_highlight';
+			versionId?: string;
+			bookId?: number;
+			chapter?: number;
+			verseStart?: number;
+			verseEnd?: number;
+			styleId?: string;
+	  }
 	| { name: 'bible.readVerses'; version: string; bookId: number; chapter: number }
 	| { name: 'bible.inspect'; version: string };
 export type UnknownWorkspaceCommand = { name: string; [key: string]: unknown };
@@ -44,6 +54,8 @@ function payload(command: WorkspaceCommand | UnknownWorkspaceCommand): Record<st
 	switch (command.name) {
 		case 'workspace.initialize':
 			return { preferredPath: command.preferredPath };
+		case 'workspace.getPath':
+			return {};
 		case 'workspace.readFile':
 			validatePath(String(command.relativePath));
 			return { relativePath: String(command.relativePath) };
@@ -52,7 +64,10 @@ function payload(command: WorkspaceCommand | UnknownWorkspaceCommand): Record<st
 			return { relativePath: String(command.relativePath) };
 		case 'workspace.writeFile':
 			validatePath(String(command.relativePath));
-			return { relativePath: String(command.relativePath), bytes: Array.from(command.bytes as ArrayLike<number>) };
+			return {
+				relativePath: String(command.relativePath),
+				bytes: Array.from(command.bytes as ArrayLike<number>)
+			};
 		case 'index.query':
 			if (command.operation !== 'list_highlights') {
 				throw new TauriCommandError({ code: 'command_not_allowed', recoverable: false });
@@ -92,12 +107,13 @@ export function toUserFacingStorageError(error: Partial<NativeCommandError>): Ta
 function tauriCommandName(command: WorkspaceCommand): string {
 	return {
 		'workspace.initialize': 'initialize_workspace',
+		'workspace.getPath': 'get_workspace_path_command',
 		'workspace.readFile': 'read_workspace_file',
 		'workspace.listFiles': 'list_workspace_files',
 		'workspace.writeFile': 'write_workspace_file',
 		'index.query': 'query_workspace_index',
-		'bible.readVerses': 'read_bible_verses'
-		,'bible.inspect': 'inspect_bible'
+		'bible.readVerses': 'read_bible_verses',
+		'bible.inspect': 'inspect_bible'
 	}[command.name];
 }
 
@@ -107,7 +123,10 @@ export async function invokeWorkspaceCommand<T = unknown>(
 	try {
 		const commandPayload = payload(command);
 		if (typeof window === 'undefined') {
-			if (command.name === 'workspace.initialize' && commandPayload.preferredPath === '/protected') {
+			if (
+				command.name === 'workspace.initialize' &&
+				commandPayload.preferredPath === '/protected'
+			) {
 				throw new TauriCommandError({ code: 'permission_denied', recoverable: true });
 			}
 			return { ok: true, value: undefined as T };
@@ -117,7 +136,9 @@ export async function invokeWorkspaceCommand<T = unknown>(
 	} catch (error) {
 		if (error instanceof TauriCommandError) throw error;
 		throw new TauriCommandError(
-			typeof error === 'object' && error !== null ? (error as Partial<NativeCommandError>) : String(error)
+			typeof error === 'object' && error !== null
+				? (error as Partial<NativeCommandError>)
+				: String(error)
 		);
 	}
 }

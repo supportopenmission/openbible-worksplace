@@ -6,9 +6,11 @@ use std::sync::Mutex;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
 	tauri::Builder::default()
+		.plugin(tauri_plugin_dialog::init())
 		.manage(Mutex::new(WorkspaceContext::default()))
 		.invoke_handler(tauri::generate_handler![
 			commands::workspace::initialize_workspace,
+			commands::workspace::get_workspace_path_command,
 			commands::workspace::read_workspace_file,
 			commands::workspace::list_workspace_files,
 			commands::workspace::write_workspace_file,

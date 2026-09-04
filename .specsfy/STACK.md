@@ -24,10 +24,12 @@ uma. Preserve decisões humanas nas seções livres deste arquivo.
 | Editor legado (compatibilidade transitória) | @friendofsvelte/tipex 0.2.0 | `apps/web/package.json` e testes de caracterização legados |
 | Extensão legada do editor | @tiptap/extension-highlight 2.27.2 | `apps/web/package.json`, `bun.lock` e utilitário legado `verse-block-extension.ts` |
 | Desktop | Tauri 2.11.5 | `apps/desktop/src-tauri/Cargo.toml` e `apps/desktop/package.json` |
+| Diálogo nativo | tauri-plugin-dialog 2.7.3 | `apps/desktop/src-tauri/Cargo.toml`, `src-tauri/src/lib.rs` e `capabilities/default.json` |
 | Backend desktop | Rust 2021 + rusqlite 0.40.2 | `apps/desktop/src-tauri/Cargo.toml` |
 | Build macOS | Tauri universal-apple-darwin | `apps/desktop/package.json` scripts `build`/`build:debug` |
 | Adapter desktop | @sveltejs/adapter-static 3.0.8 | `apps/web/package.json` e `apps/web/svelte.config.js` |
 | Ponte web→desktop | @tauri-apps/api 2.11.1 | `apps/web/package.json` |
+| Seletor de pasta nativo | @tauri-apps/plugin-dialog 2.7.3 | `apps/web/package.json` e `apps/web/src/lib/storage/storage-registry.ts` |
 <!-- specsfy:stack:end -->
 
 ## Decisões e observações do projeto
@@ -50,8 +52,8 @@ manifests.
   `apps/web/svelte.config.js`.
 - A aplicação web publica um manifesto standalone e um service worker versionado
   para cache do app shell, rotas locais e assets estáticos após o primeiro acesso.
-- Tauri é o alvo confirmado para empacotamento desktop posterior; ainda não faz
-  parte da stack implementada.
+- Tauri é o shell desktop implementado para macOS e Linux; o plugin de diálogo
+  fornece a escolha nativa da pasta do workspace.
 - Dependências estruturais de `apps/web/package.json` (Vitest, Playwright,
   shadcn-svelte, Tipex, `@tiptap/extension-highlight`) reconciliadas no inventário
   após a SPEC-0006 em 2026-09-03; sem mudança de framework para a SPEC-0007.

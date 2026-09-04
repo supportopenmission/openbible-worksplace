@@ -2,10 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { getDirectoryPickerError } from './onboarding-errors';
 
 describe('onboarding directory picker errors', () => {
-	it('explains host permission failures instead of calling them cancellation', () => {
-		expect(getDirectoryPickerError({ name: 'AbortError' })).toMatch(
-			/ambiente integrado pode não oferecer acesso a pastas/
-		);
+	it('explains that folder selection was cancelled', () => {
+		expect(getDirectoryPickerError({ name: 'AbortError' })).toMatch(/foi cancelada/);
 	});
 
 	it('preserves useful errors from the picker', () => {

@@ -21,10 +21,17 @@ export function createTauriStorage(): WorkspaceStorage & { defaultWorkspacePath(
 		defaultWorkspacePath: () => DEFAULT_PATH,
 		ensureDirectory: async () => undefined,
 		writeFile: async (path, content) => {
-			await invokeWorkspaceCommand({ name: 'workspace.writeFile', relativePath: path, bytes: bytes(content) });
+			await invokeWorkspaceCommand({
+				name: 'workspace.writeFile',
+				relativePath: path,
+				bytes: bytes(content)
+			});
 		},
 		readFile: async (path) => {
-			const result = await invokeWorkspaceCommand<unknown>({ name: 'workspace.readFile', relativePath: path });
+			const result = await invokeWorkspaceCommand<unknown>({
+				name: 'workspace.readFile',
+				relativePath: path
+			});
 			return toBytes(result.value);
 		},
 		fileExists: async (path) => {
@@ -37,15 +44,26 @@ export function createTauriStorage(): WorkspaceStorage & { defaultWorkspacePath(
 			}
 		},
 		listFiles: async (path) => {
-			const result = await invokeWorkspaceCommand<unknown>({ name: 'workspace.listFiles', relativePath: path });
+			const result = await invokeWorkspaceCommand<unknown>({
+				name: 'workspace.listFiles',
+				relativePath: path
+			});
 			return Array.isArray(result.value) ? result.value.map(String) : [];
 		},
 		readBibleChapter: async (version, bookId, chapter) => {
-			const result = await invokeWorkspaceCommand<{ verse: number; text: string }[]>({ name: 'bible.readVerses', version, bookId, chapter });
+			const result = await invokeWorkspaceCommand<{ verse: number; text: string }[]>({
+				name: 'bible.readVerses',
+				version,
+				bookId,
+				chapter
+			});
 			return result.value ?? [];
 		},
 		inspectBible: async (version) => {
-			const result = await invokeWorkspaceCommand<{ name: string; books: { id: number; name: string; abbreviation: string; chapters: number[] }[] }>({ name: 'bible.inspect', version });
+			const result = await invokeWorkspaceCommand<{
+				name: string;
+				books: { id: number; name: string; abbreviation: string; chapters: number[] }[];
+			}>({ name: 'bible.inspect', version });
 			return result.value ?? { name: version, books: [] };
 		},
 		queryIndex: async (operation, record) => {
@@ -66,12 +84,27 @@ export function createTauriStorage(): WorkspaceStorage & { defaultWorkspacePath(
 
 export async function initializeNativeWorkspace(options: { path?: string } = {}) {
 	try {
-		const result = await invokeWorkspaceCommand({ name: 'workspace.initialize', preferredPath: options.path });
+		const result = await invokeWorkspaceCommand({
+			name: 'workspace.initialize',
+			preferredPath: options.path
+		});
 		return result.value;
 	} catch (error) {
-		if (error instanceof TauriCommandError && (error.code === 'io_error' || error.code === 'permission_denied')) {
-			throw new TauriCommandError({ code: 'permission_denied', message: 'Não foi possível acessar a pasta do workspace.', recoverable: true });
+		if (
+			error instanceof TauriCommandError &&
+			(error.code === 'io_error' || error.code === 'permission_denied')
+		) {
+			throw new TauriCommandError({
+				code: 'permission_denied',
+				message: 'Não foi possível acessar a pasta do workspace.',
+				recoverable: true
+			});
 		}
 		throw error;
 	}
+}
+
+export async function getNativeWorkspacePath(): Promise<string | null> {
+	const result = await invokeWorkspaceCommand<string | null>({ name: 'workspace.getPath' });
+	return result.value ?? null;
 }

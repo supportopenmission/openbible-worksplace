@@ -10,9 +10,10 @@
 | npm | desenvolvimento | turbo | ^2.10.12 | Turborepo is the build system for coding agents. | https://github.com/vercel/turborepo |
 | npm | produção | @opencode-ai/plugin | 1.18.25 | Finalidade não descrita nos metadados locais. |  |
 | npm | desenvolvimento | @tauri-apps/cli | ^2.11.4 | Command line interface for building Tauri apps | https://github.com/tauri-apps/tauri |
-| npm | produção | @tauri-apps/api | ^2.11.1 | Tauri API definitions | https://github.com/tauri-apps/tauri |
 | npm | produção | @friendofsvelte/tipex | 0.2.0 | Finalidade não descrita nos metadados locais. | https://github.com/friendofsvelte/tipex |
 | npm | produção | @milkdown/kit | 7.22.1 | Finalidade não descrita nos metadados locais. | https://github.com/Milkdown/milkdown |
+| npm | produção | @tauri-apps/api | ^2.11.1 | Tauri API definitions | https://github.com/tauri-apps/tauri |
+| npm | produção | @tauri-apps/plugin-dialog | ^2.7.3 | Finalidade não descrita nos metadados locais. | https://github.com/tauri-apps/plugins-workspace |
 | npm | produção | @tiptap/extension-highlight | 2.27.2 | highlight extension for tiptap | https://github.com/ueberdosis/tiptap |
 | npm | produção | bible-passage-reference-parser | ^4.0.0 | Identifies and parses Bible references (like John 3:16) in 50 languages. | git://github.com/openbibleinfo/Bible-Passage-Reference-Parser |
 | npm | produção | clsx | ^2.1.1 | A tiny (239B) utility for constructing className strings conditionally. | lukeed/clsx |

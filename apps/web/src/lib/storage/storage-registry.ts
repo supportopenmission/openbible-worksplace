@@ -1,17 +1,29 @@
-import { readStoragePreference, rememberStoragePreference, resolveStorageKind } from './environment';
+import {
+	readStoragePreference,
+	rememberStoragePreference,
+	resolveStorageKind
+} from './environment';
+import { open } from '@tauri-apps/plugin-dialog';
 import {
 	chooseLocalWorkspaceStorage,
 	createLocalStorageFromHandle,
 	loadLocalWorkspaceHandle
 } from './local-storage';
 import { createOpfsStorage } from './opfs-storage';
-import { createTauriStorage, initializeNativeWorkspace } from './tauri-storage';
+import {
+	createTauriStorage,
+	getNativeWorkspacePath,
+	initializeNativeWorkspace
+} from './tauri-storage';
 import { loadWorkspaceConfig } from './workspace';
+import { chooseNativeWorkspace } from './workspace-choice';
 import type { WorkspaceStorage } from './types';
 
 export async function createConfiguredStorage(): Promise<WorkspaceStorage | null> {
 	if (resolveStorageKind() === 'native') {
-		await initializeNativeWorkspace();
+		const path = await getNativeWorkspacePath();
+		if (!path) return null;
+		await initializeNativeWorkspace({ path });
 		return createTauriStorage();
 	}
 	if (resolveStorageKind() === 'opfs') return createOpfsStorage();
@@ -26,7 +38,12 @@ export async function createConfiguredStorage(): Promise<WorkspaceStorage | null
 
 export async function chooseWorkspaceStorage(): Promise<WorkspaceStorage> {
 	if (resolveStorageKind() === 'native') {
-		await initializeNativeWorkspace();
+		const path = await open({ directory: true, multiple: false });
+		if (typeof path !== 'string') {
+			throw new DOMException('A seleção da pasta foi cancelada.', 'AbortError');
+		}
+		const choice = chooseNativeWorkspace(path);
+		await initializeNativeWorkspace({ path: choice.path });
 		return createTauriStorage();
 	}
 	if (resolveStorageKind() === 'opfs') return createOpfsStorage();
