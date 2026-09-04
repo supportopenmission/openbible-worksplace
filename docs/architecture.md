@@ -5,8 +5,8 @@
 
 | Tipo | Quantidade |
 | --- | --- |
-| Código | 378 |
-| Testes | 32 |
+| Código | 384 |
+| Testes | 46 |
 
 ## Diagramas
 

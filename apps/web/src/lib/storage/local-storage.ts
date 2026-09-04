@@ -1,4 +1,5 @@
 import type { FileContent, WorkspaceStorage } from './types';
+import { clearStoragePreference } from './environment';
 
 const DATABASE_NAME = 'openbible-workspace';
 const STORE_NAME = 'handles';
@@ -119,6 +120,7 @@ export async function chooseLocalWorkspaceStorage(): Promise<WorkspaceStorage> {
 
 	const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
 	await saveLocalWorkspaceHandle(handle);
+	clearStoragePreference();
 	return directoryStorage(handle);
 }
 

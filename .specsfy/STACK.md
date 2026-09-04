@@ -9,7 +9,7 @@ uma. Preserve decisões humanas nas seções livres deste arquivo.
 | Camada | Tecnologia | Evidência |
 | --- | --- | --- |
 | Runtime | Node.js | `package.json` |
-| Gerenciador | Bun 1.4.0 | `package.json` (`devEngines.packageManager`) |
+| Gerenciador | Bun 1.4.0 | `package.json` (`devEngines.packageManager`) e `bun.lock` (`lockfileVersion`) |
 | Monorepo | Turborepo ^2.10.12 | `package.json` |
 | Framework | SvelteKit 2.70.2 | `apps/web/package.json` e `svelte.config.js` |
 | Biblioteca de interface | Svelte 5.56.9 | `package.json` (catalogo `sveltejs`) e `apps/web/package.json` |
@@ -56,3 +56,5 @@ manifests.
   (`version`), espelhado em `apps/web/src/lib/app-version.ts` (`APP_VERSION`)
   via `bun run version:sync [X.Y.Z]` (`apps/web/scripts/sync_app_version.mjs`).
   Exibida no rodapé da sidebar e em `/config`.
+- `bun.lock` foi verificado durante o setup desta tarefa; a implementação do
+  seletor de pasta não altera a stack nem adiciona dependências.

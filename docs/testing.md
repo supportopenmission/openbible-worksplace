@@ -3,7 +3,7 @@
 <!-- specsfy:documentator:start -->
 ## Resumo
 
-- Arquivos de teste: 32.
+- Arquivos de teste: 46.
 - Runner: não identificado.
 - Scripts: build: turbo run build; check-types: turbo run check-types; dev: turbo run dev; lint: turbo run lint; format: prettier --write .; format:check: prettier --check ..
 
@@ -23,6 +23,16 @@
 | apps/web/src/lib/features/bible-remote/remote-import.svelte.spec.ts |
 | apps/web/src/lib/features/bible-remote/remote-install.test.ts |
 | apps/web/src/lib/features/bible-remote/remote-manifest.test.ts |
+| apps/web/src/lib/features/config/config-page.spec.ts |
+| apps/web/src/lib/features/home/continue-reading-card.spec.ts |
+| apps/web/src/lib/features/home/home-continuation.spec.ts |
+| apps/web/src/lib/features/home/home-entry.spec.ts |
+| apps/web/src/lib/features/home/home-page.spec.ts |
+| apps/web/src/lib/features/home/home-recents.spec.ts |
+| apps/web/src/lib/features/home/home-states.spec.ts |
+| apps/web/src/lib/features/home/quick-actions.spec.ts |
+| apps/web/src/lib/features/home/recent-lists.spec.ts |
+| apps/web/src/lib/features/navigation/app-sidebar.spec.ts |
 | apps/web/src/lib/features/navigation/sidebar.test.ts |
 | apps/web/src/lib/features/notes/note-block-interactions.test.ts |
 | apps/web/src/lib/features/notes/note-markdown.test.ts |
@@ -31,8 +41,12 @@
 | apps/web/src/lib/features/notes/slash-verse-command.test.ts |
 | apps/web/src/lib/features/notes/verse-block-extension.test.ts |
 | apps/web/src/lib/features/notes/verse-selector.test.ts |
+| apps/web/src/lib/features/onboarding/onboarding-errors.test.ts |
+| apps/web/src/lib/features/onboarding/storage-choice.svelte.spec.ts |
+| apps/web/src/lib/features/workspace/workspace-state.test.ts |
 | apps/web/src/lib/features/workspace/workspace-stats.test.ts |
 | apps/web/src/lib/index.test.ts |
+| apps/web/src/lib/navigation/home-preference.spec.ts |
 | apps/web/src/lib/navigation/home-preference.test.ts |
 | apps/web/src/lib/pwa/daily-reminder.test.ts |
 | apps/web/src/lib/pwa/mobile-viewport.test.ts |

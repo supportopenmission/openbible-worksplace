@@ -13,7 +13,7 @@
 | Milestones | |
 | Definition Gate | Passed |
 | Plan Gate | Passed |
-| Delivery Gate | In Progress |
+| Delivery Gate | Pending |
 | Evidence Contract | 1 |
 | Interface para pessoas | Sim |
 | Atualizada em | 2026-09-01 |
@@ -59,7 +59,7 @@ A pessoa conclui um onboarding modal na aplicação web, configura a estrutura F
 
 #### Artefatos de pesquisa armazenados
 
-- Nenhum artefato externo; não houve consulta externa que exigisse cópia em `research/`.
+- `research/orca-fsa-permission.md` — comportamento observado e documentação do `AbortError` no navegador integrado.
 
 #### Dúvidas respondidas
 
@@ -81,6 +81,7 @@ A pessoa conclui um onboarding modal na aplicação web, configura a estrutura F
 - Onboarding modal na rota `/` de `apps/web`.
 - Detecção do modo local e PWA/hospedado conforme ambiente web.
 - Escolha da pasta raiz em localhost com `showDirectoryPicker`.
+- Fallback explícito para OPFS quando o ambiente integrado não consegue conceder acesso à pasta local.
 - Criação idempotente de `.openbible/`, diretórios de conteúdo, templates e `trash`.
 - Escrita dos JSON mínimos e criação do arquivo `index.sqlite` vazio.
 - Barra de progresso, estados de sucesso, erro e recuperação.
@@ -275,11 +276,27 @@ Feature: Acompanhar o onboarding
     And ações incompatíveis ficam desabilitadas até a operação terminar
 ```
 
+#### AC-010 — Fallback explícito para o armazenamento do navegador
+
+**Cobre**: US-001, FR-001, FR-003, FR-005, NFR-001, NFR-002
+
+```gherkin
+@US-001 @FR-001 @FR-003 @FR-005 @NFR-001 @NFR-002 @AC-010
+Feature: Recuperar falhas de configuração
+
+  Scenario: Continuar no ambiente integrado usando OPFS
+    Given que a seleção de pasta local falhou no ambiente integrado
+    When a pessoa escolhe explicitamente usar o armazenamento do navegador
+    Then a aplicação prepara a mesma estrutura no OPFS
+    And informa que os dados ficarão no armazenamento privado desta origem
+    And não mostra o onboarding novamente enquanto essa configuração puder ser reencontrada
+```
+
 ### 7. Requisitos
 
 #### Funcionais
 
-- **FR-001**: O sistema deve selecionar o backend de armazenamento da aplicação web: File System Access API em localhost e OPFS em PWA/hospedado; se localhost não suportar a API ou a permissão for negada, deve informar o erro e permitir nova tentativa.
+- **FR-001**: O sistema deve selecionar o backend de armazenamento da aplicação web: File System Access API em localhost e OPFS em PWA/hospedado; se localhost não suportar a API ou a permissão for negada, deve informar o erro, permitir nova tentativa e oferecer, mediante ação explícita, o OPFS como alternativa.
 - **FR-002**: O sistema deve criar de forma idempotente a árvore `.openbible/`, `bibles/`, `notes/theology/`, `notes/studies/`, `sermons/drafts/`, `sermons/preached/`, `sermons/series/`, `studies/characters/`, `studies/themes/`, `studies/books/`, `templates/`, `attachments/images/`, `attachments/audio/`, `attachments/pdf/`, `attachments/files/` e `trash/`, além de `config.json`, `sync.json`, `index.sqlite`, `templates/sermon.md`, `templates/study.md` e `templates/note.md`.
 - **FR-003**: O sistema deve salvar a configuração mínima com versão, backend, momento de configuração e status de importação (`pending`, `complete` ou `partial`), persistir a referência necessária para reencontrar o workspace local e não exibir o onboarding novamente quando a configuração puder ser lida.
 - **FR-004**: O sistema deve aceitar múltiplos arquivos com extensão `.sqlite` por diálogo ou arrastar/soltar, validar a assinatura `SQLite format 3\0`, copiar somente arquivos válidos sem nome já existente para `bibles/`, preservar arquivos existentes e produzir resultado individual por arquivo.
@@ -293,7 +310,7 @@ Feature: Acompanhar o onboarding
 #### Erros e casos-limite
 
 - Diálogo local cancelado ou permissão negada → manter o passo local aberto, mostrar erro acionável e não gravar configuração concluída.
-- File System Access API ausente em localhost → mostrar incompatibilidade e orientar tentativa em navegador compatível; não trocar silenciosamente para OPFS.
+- File System Access API ausente ou recusada em localhost → mostrar incompatibilidade, orientar tentativa em navegador compatível e oferecer OPFS somente por ação explícita; nunca trocar silenciosamente de backend.
 - Falha ao criar qualquer diretório/arquivo → interromper a instalação, preservar o que já foi criado, mostrar a etapa/erro e permitir tentar novamente de forma idempotente.
 - Arquivo sem extensão `.sqlite` ou sem assinatura SQLite → rejeitar individualmente e informar o motivo.
 - Nome já presente em `bibles/` → rejeitar individualmente como duplicado e não substituir o destino.
@@ -314,7 +331,8 @@ Feature: Acompanhar o onboarding
 - `apps/web/src/lib/storage/workspace.ts`: caso de uso que prepara a árvore, grava artefatos mínimos, atualiza status, valida SQLite e importa arquivos por adaptador.
 - `apps/web/src/lib/storage/opfs-storage.ts`: adaptador OPFS usando `navigator.storage.getDirectory()` e APIs de diretório/arquivo.
 - `apps/web/src/lib/storage/local-storage.ts`: adaptador localhost usando `showDirectoryPicker({ mode: 'readwrite' })` e armazenamento do `FileSystemDirectoryHandle` em IndexedDB para reencontro local.
-- `apps/web/src/lib/storage/environment.ts`: seleção explícita entre localhost e PWA/hospedado, sem fallback silencioso de localhost para OPFS.
+- `apps/web/src/lib/storage/environment.ts`: seleção explícita entre localhost e PWA/hospedado, além da preferência local que registra o fallback OPFS escolhido pela pessoa.
+- `apps/web/src/lib/storage/storage-registry.ts` e `session.ts`: criação e reencontro do workspace OPFS quando a preferência de fallback estiver registrada e a configuração puder ser lida.
 - `apps/web/src/lib/features/onboarding/OnboardingModal.svelte`: modal e estados da jornada, incluindo foco, progresso, importação e navegação.
 - `apps/web/src/lib/features/onboarding/onboarding-copy.ts`: textos e metadados dos passos para manter a página coordenadora simples.
 - `apps/web/src/routes/+page.svelte`: carrega o estado inicial, compõe o modal enquanto necessário e renderiza a superfície mínima do projeto após configuração.
@@ -337,6 +355,7 @@ Feature: Acompanhar o onboarding
 #### Views e experiência
 
 - `OnboardingModal.svelte`: cinco estados operacionais, `intro`, `storage`, `installing`, `import` e `complete`, com `error` associado a qualquer etapa. Em localhost mostra ação de escolher pasta; em PWA mostra que OPFS será usado. A importação tem input múltiplo e área de drop.
+- Quando a seleção local falhar, `OnboardingModal.svelte` mantém o passo aberto e oferece uma ação explícita para preparar o workspace no OPFS, com aviso sobre o escopo privado da origem.
 - `/` mostra a superfície inicial do projeto após o onboarding, o status de Bíblias e uma ação para importação posterior quando aplicável.
 
 #### Queries e repositórios
@@ -477,10 +496,10 @@ apps/web/src/
 ### 11. Estratégia TDD
 
 - **Unidade**: `workspace.ts` para árvore, artefatos, idempotência, validação de assinatura e estados; `environment.ts` para seleção de backend.
-- **Integração/contrato**: adaptadores OPFS/local com fakes de `FileSystemDirectoryHandle` e IndexedDB; nenhum servidor participa.
-- **BDD/aceite**: os nove cenários Gherkin AC-001 a AC-009 desta spec orientam casos TDD distintos, sem criação ou execução de arquivos `.feature`.
+- **Integração/contrato**: adaptadores OPFS/local com fakes de `FileSystemDirectoryHandle`, IndexedDB e preferência local; nenhum servidor participa.
+- **BDD/aceite**: os dez cenários Gherkin AC-001 a AC-010 desta spec orientam casos TDD distintos, sem criação ou execução de arquivos `.feature`.
 - **Runner TDD**: Vitest existente, materializado no script `apps/web/package.json` `test:tdd`.
-- **E2E**: Vitest Browser Mode com Playwright para a jornada do modal em `/` e os viewports 320px/1440px; os testes de browser usarão APIs de armazenamento injetáveis.
+- **E2E**: Vitest Browser Mode com Playwright para a jornada do modal em `/`, incluindo a ação de fallback OPFS, e os viewports 320px/1440px; os testes de browser usarão APIs de armazenamento injetáveis.
 - **Verificação manual**: somente revisão visual de diálogos nativos e comportamento real de permissão File System Access, pois o runner não controla de forma completa os diálogos do sistema.
 
 #### Evidência RED-GREEN-REFACTOR
@@ -496,39 +515,40 @@ apps/web/src/
 | US-001, US-002, FR-003, FR-005, NFR-001, NFR-002, AC-007 | AC-007 | `apps/web/src/routes/onboarding.svelte.spec.ts`, marcador `SPECSFY: US-001 US-002 FR-003 FR-005 NFR-001 NFR-002 AC-007` | RED: reabertura ausente | GREEN: teste browser de workspace configurado passou | Refactor/regressão T016: suite completa passou |
 | US-001, FR-002, FR-003, NFR-001, NFR-002, AC-008 | AC-008 | `apps/web/src/lib/storage/workspace.test.ts`, marcador `SPECSFY: US-001 FR-002 FR-003 NFR-001 NFR-002 AC-008` | RED: idempotência ausente | GREEN: teste de preservação idempotente passou | Refactor/regressão T016: suite completa passou |
 | US-001, US-002, FR-005, NFR-001, NFR-002, AC-009 | AC-009 | `apps/web/src/routes/onboarding.svelte.spec.ts`, marcador `SPECSFY: US-001 US-002 FR-005 NFR-001 NFR-002 AC-009` | RED: progresso/acessibilidade ausente | GREEN: teste browser de progresso/acessibilidade passou | Refactor/regressão T016: foco, overflow e estados conferidos visualmente |
+| US-001, FR-001, FR-003, FR-005, NFR-001, NFR-002, AC-010 | AC-010 | `apps/web/src/routes/onboarding.svelte.spec.ts`, marcador `SPECSFY: US-001 FR-001 FR-003 FR-005 NFR-001 NFR-002 AC-010` | RED: fallback OPFS explícito ausente | GREEN: teste browser do fallback passa após T018 | Refactor/regressão T020: reencontro no OPFS e aviso de escopo conferidos |
 
 ### 12. Plano de testes e rastreabilidade
 
 | Requisito | Cenário BDD | Nível | Arquivo/comando esperado | Evidência |
 | --- | --- | --- | --- | --- |
-| FR-001 | AC-001, AC-002, AC-003 | Unidade/integração | `apps/web/src/lib/storage/workspace.test.ts`; `npm --prefix apps/web run test:tdd` | Passed: adaptadores local/OPFS e erro recuperável cobertos; 13 testes passaram |
+| FR-001 | AC-001, AC-002, AC-003, AC-010 | Unidade/integração/browser | `apps/web/src/lib/storage/workspace.test.ts`; `apps/web/src/lib/storage/environment.test.ts`; `apps/web/src/routes/onboarding.svelte.spec.ts` | Passed: seleção local, OPFS, preferência explícita e fallback cobertos |
 | FR-002 | AC-001, AC-002, AC-008 | Unidade | `apps/web/src/lib/storage/workspace.test.ts`; `npm --prefix apps/web run test:tdd` | Passed: árvore, artefatos e idempotência cobertos; 13 testes passaram |
 | FR-003 | AC-001, AC-002, AC-004, AC-007, AC-008 | Unidade/browser | `apps/web/src/lib/storage/workspace.test.ts`, `apps/web/src/routes/onboarding.svelte.spec.ts` | Passed: configuração, status pendente e reabertura cobertos; 13 testes passaram |
 | FR-004 | AC-004, AC-005, AC-006 | Unidade/browser | `apps/web/src/lib/storage/workspace.test.ts`, `apps/web/src/routes/onboarding.svelte.spec.ts` | Passed: seleção, assinatura, duplicidade, lote parcial e lote sem importação válida cobertos |
-| FR-005 | AC-003, AC-004, AC-005, AC-006, AC-009 | Browser | `apps/web/src/routes/onboarding.svelte.spec.ts`; `npm --prefix apps/web run test:tdd` | Passed: estados, adiamento, progresso e acessibilidade cobertos; 13 testes passaram |
-| NFR-001 | AC-001 a AC-009 | Browser/inspeção | Vitest Browser Mode; revisão 320px e 1440px | Passed: foco inicial, foco visível, overflow e composição conferidos em 320px e 1440px |
-| NFR-002 | AC-001 a AC-009 | Unidade/integração/browser | testes de adaptadores e observação de rede no browser | Passed: operações usam adaptadores locais sem fetch/XHR de conteúdo e continuam após rejeições |
+| FR-005 | AC-003, AC-004, AC-005, AC-006, AC-009, AC-010 | Browser | `apps/web/src/routes/onboarding.svelte.spec.ts`; `npm --prefix apps/web run test:tdd` | Passed: erro recuperável, fallback, estados e ações do onboarding cobertos |
+| NFR-001 | AC-001 a AC-010 | Browser/inspeção | Vitest Browser Mode; revisão 320px e 1440px | Passed: ação OPFS, foco, quebra e overflow conferidos |
+| NFR-002 | AC-001 a AC-010 | Unidade/integração/browser | testes de adaptadores e observação de rede no browser | Passed: fallback usa storage local e não faz requisição de conteúdo |
 
 ### 13. Validações
 
 #### Gate do Ato I — Definição
 
 - **Resultado**: READY
-- **Comando**: `node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/draft/0001-onboarding-configuracao-armazenamento/spec.md --allow-draft` e revisão PROD/ARCH/SEC conforme `.agents/skills/specsfy-04-validate/references/review-lenses.md`
-- **Achados**: Nenhum BLOCKER ou WARNING; interface, dados, erros, escopo e restrições estão definidos. Validação estrutural passou em 2026-09-01.
+- **Comando**: `node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/in-progress/0001-onboarding-configuracao-armazenamento/spec.md --allow-draft` e revisão PROD/ARCH/SEC conforme `.agents/skills/specsfy-04-validate/references/review-lenses.md`
+- **Achados**: Nenhum BLOCKER ou WARNING; AC-010 define o fallback explícito para OPFS, incluindo aviso de escopo da origem e reencontro da configuração. Validação estrutural passou em 2026-09-04.
 - Findings especializados, quando aplicáveis, seguem `FIND-PROD|ARCH|SEC-NNN`, severidade `P1|P2|P3`, estado `Open|Resolved|Accepted`, refs e evidência.
 
 #### Gate do Ato II — Plano
 
 - **Resultado**: Passed
-- **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/defined/0001-onboarding-configuracao-armazenamento/spec.md --allow-draft`, `node .agents/skills/specsfy-05-tasks/scripts/validate_interface_tasks.mjs specs/defined/0001-onboarding-configuracao-armazenamento/spec.md` e `node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/defined/0001-onboarding-configuracao-armazenamento/spec.md .`
-- **Achados**: Nenhum; 16 tarefas, 9 predecessores TDD concluídos com RED, 18/18 IDs cobertos e duas telas com tarefas explícitas. Aprovado em 2026-09-01.
+- **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/in-progress/0001-onboarding-configuracao-armazenamento/spec.md --allow-draft` e `node .agents/skills/specsfy-05-tasks/scripts/validate_interface_tasks.mjs specs/in-progress/0001-onboarding-configuracao-armazenamento/spec.md`
+- **Achados**: Nenhum; 23 tarefas, 12 predecessores TDD e AC-010 coberto com teste browser, persistência e bootstrap. Aprovado em 2026-09-04.
 
 #### Gate do Ato III — Entrega
 
 - **Resultado**: In Progress
-- **Comandos**: `npm --prefix apps/web run test:tdd`, `npm --prefix apps/web run check-types`, `npm --prefix apps/web run build`, `bunx prettier --check ...`, `node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/in-progress/0001-onboarding-configuracao-armazenamento/spec.md . --full-chain`, `node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project /home/claudio/Projects/openbible-worksplace --check`
-- **Achados**: 13/13 testes, tipos, build, Prettier, documentação, validadores de spec, interface, evidência e rastreabilidade passaram. A revisão visual em 320px/1440px passou. O lint permanece bloqueado antes da análise por `typescript-eslint 8.67.0` não suportar TypeScript 7.0.2; falha preexistente do ambiente, sem erro novo atribuído à feature.
+- **Comandos**: `npm --prefix apps/web run test:tdd -- --project server`, `npm --prefix apps/web run test:tdd -- src/routes/onboarding.svelte.spec.ts`, `npm --prefix apps/web run test:tdd`, `npm --prefix apps/web run build`, `bunx prettier --check ...`, `node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project /Users/claudio/Projects/openbible-worksplace --check`
+- **Achados**: Testes focalizados passaram (141 unitários e 10 browser do onboarding); a regressão completa teve 48 arquivos/210 testes aprovados e 2 falhas preexistentes em `notes-editor.svelte.spec.ts`. Build e documentação passaram. `check-types` continua com falhas preexistentes de shadcn/Svelte e SQLite; a auditoria global ainda aponta marcadores órfãos de outras specs e AC históricos sem resultado formal.
 
 ### 14. Tarefas
 
@@ -676,9 +696,68 @@ apps/web/src/
   - [x] **IMPROVE**: Corrigidos o falso erro no primeiro acesso local, o status `pending` quando nenhum arquivo é importado, o foco inicial, o reset visual do `<dialog>`, a mensagem de cancelamento e a indicação de falha de cópia.
   <!-- specsfy:evidence {"task":"T016","refs":["US-001","US-002","FR-001","FR-002","FR-003","FR-004","FR-005","NFR-001","NFR-002","AC-001","AC-002","AC-003","AC-004","AC-005","AC-006","AC-007","AC-008","AC-009"],"files":["apps/web/src/routes/+page.svelte","apps/web/src/lib/features/onboarding/OnboardingModal.svelte","apps/web/src/lib/storage/workspace.ts","apps/web/src/lib/storage/workspace.test.ts","INTERFACE.md","docs/application.md",".specsfy/PACKAGES.md"],"commands":[{"run":"npm --prefix apps/web run test:tdd","exit":0},{"run":"npm --prefix apps/web run check-types","exit":0},{"run":"npm --prefix apps/web run build","exit":0},{"run":"bunx prettier --check apps/web/src/lib/storage/workspace.ts apps/web/src/lib/storage/workspace.test.ts apps/web/src/lib/features/onboarding/OnboardingModal.svelte apps/web/src/routes/+page.svelte","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project /home/claudio/Projects/openbible-worksplace --check","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project /home/claudio/Projects/openbible-worksplace --check","exit":0},{"run":"node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/in-progress/0001-onboarding-configuracao-armazenamento/spec.md --allow-draft","exit":0},{"run":"node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/in-progress/0001-onboarding-configuracao-armazenamento/spec.md --allow-draft","exit":0},{"run":"node .agents/skills/specsfy-05-tasks/scripts/validate_interface_tasks.mjs specs/in-progress/0001-onboarding-configuracao-armazenamento/spec.md","exit":0},{"run":"node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/in-progress/0001-onboarding-configuracao-armazenamento/spec.md . --full-chain","exit":0},{"run":"node .agents/skills/specsfy-07-implement/scripts/verify_evidence.mjs specs/in-progress/0001-onboarding-configuracao-armazenamento/spec.md .","exit":0}]} -->
 
+- [x] T017 [TEST] [TDD] [US-001] Provar o fallback explícito para OPFS após falha local em `apps/web/src/routes/onboarding.svelte.spec.ts` — Refs: US-001, FR-001, FR-003, FR-005, NFR-001, NFR-002, AC-010 — Depends: none
+  - [x] **PREP**: Ler AC-010 e confirmar a ação explícita, o aviso de armazenamento privado e a permanência do modal.
+  - [x] **EXECUTE**: Escrever o caso browser com marcador `SPECSFY: US-001 FR-001 FR-003 FR-005 NFR-001 NFR-002 AC-010`, sem `.feature`.
+  - [x] **VERIFY**: Teste browser passou após a implementação, confirmando o contrato de fallback.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia, quebra e overflow do erro e da ação alternativa nos viewports 320px e 1440px.
+  - [x] **EVIDENCE**: Registrar comando, resultado GREEN e estado visual na seção 11.
+  - [x] **IMPROVE**: Manter o teste focado no fluxo de recuperação e evitar acoplamento ao picker nativo.
+
+- [x] T018 [TEST] [TDD] [US-001] Provar a persistência da escolha OPFS em `apps/web/src/lib/storage/environment.test.ts` — Refs: US-001, FR-001, FR-003, NFR-002, AC-010 — Depends: none
+  - [x] **PREP**: Ler AC-010 e definir o contrato da chave de preferência sem acoplar o teste ao navegador integrado.
+  - [x] **EXECUTE**: Escrever o caso Vitest com marcador `SPECSFY: US-001 FR-001 FR-003 NFR-002 AC-010` para salvar, ler e limpar a preferência OPFS.
+  - [x] **VERIFY**: RED observado antes da implementação; 5 testes de storage/session passaram após a implementação.
+  - [x] **VISUAL**: Não aplicável; o caso cobre somente o contrato de persistência.
+  - [x] **EVIDENCE**: Registrar comando, RED e GREEN na seção 11.
+  - [x] **IMPROVE**: Cobrir localStorage indisponível sem introduzir estado global compartilhado.
+
+- [x] T019 [TEST] [TDD] [US-001] Provar o reencontro de uma configuração OPFS no bootstrap em `apps/web/src/lib/storage/session.test.ts` — Refs: US-001, FR-001, FR-003, NFR-002, AC-007, AC-010 — Depends: none
+  - [x] **PREP**: Confirmar AC-007/AC-010 e separar a configuração OPFS da existência de handle local.
+  - [x] **EXECUTE**: Escrever o caso Vitest com marcador `SPECSFY: US-001 FR-001 FR-003 NFR-002 AC-007 AC-010` para reencontrar o workspace OPFS quando a preferência estiver registrada.
+  - [x] **VERIFY**: RED observado antes da implementação; bootstrap OPFS passou após a implementação.
+  - [x] **VISUAL**: Não aplicável; o caso cobre somente o bootstrap de storage.
+  - [x] **EVIDENCE**: Registrar comando, RED e GREEN na seção 11.
+  - [x] **IMPROVE**: Manter o caminho de permissão local existente sem regressão.
+
+- [x] T020 [CODE] [US-001] Persistir a escolha explícita do backend OPFS e reencontrá-la em `apps/web/src/lib/storage/environment.ts`, `storage-registry.ts`, `session.ts` e `local-storage.ts` — Refs: US-001, FR-001, FR-003, NFR-002, AC-001, AC-007, AC-010 — Depends: T017, T018, T019
+  - [x] **PREP**: Confirmar RED de AC-010 e o contrato de reencontro sem confundir uma pasta local existente.
+  - [x] **EXECUTE**: Adicionar marcador local da escolha OPFS, limpar o marcador ao selecionar pasta real e carregar configuração OPFS somente quando a escolha estiver registrada.
+  - [x] **VERIFY**: 5 testes unitários de storage/session passaram; o fallback não faz rede.
+  - [x] **VISUAL**: Não aplicável; esta tarefa altera apenas persistência e registro de storage.
+  - [x] **EVIDENCE**: `build_documentation.mjs --check` passou; arquivos e comandos registrados.
+  - [x] **IMPROVE**: Isolar a chave de preferência em funções testáveis e tolerantes a `localStorage` indisponível.
+  <!-- specsfy:evidence {"task":"T020","refs":["US-001","FR-001","FR-003","NFR-002","AC-001","AC-007","AC-010"],"files":["apps/web/src/lib/storage/environment.ts","apps/web/src/lib/storage/storage-registry.ts","apps/web/src/lib/storage/session.ts","apps/web/src/lib/storage/local-storage.ts"],"commands":[{"run":"npm --prefix apps/web run test:tdd -- --project server src/lib/storage/environment.test.ts src/lib/storage/session.test.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project /Users/claudio/Projects/openbible-worksplace --check","exit":0}]} -->
+
+- [x] T021 [CODE] [US-001] Expor a ação de fallback OPFS no onboarding e coordenar sua instalação em `apps/web/src/lib/features/onboarding/OnboardingModal.svelte` e `apps/web/src/routes/+page.svelte` — Refs: US-001, FR-001, FR-003, FR-005, NFR-001, NFR-002, AC-003, AC-010 — Depends: T017, T018, T019, T020
+  - [x] **PREP**: Confirmar o cenário browser RED e preservar seleção local como primeira ação.
+  - [x] **EXECUTE**: Adicionar callback explícito, botão acessível após falha e aviso de que o OPFS é privado desta origem; reutilizar `prepareWorkspace`.
+  - [x] **VERIFY**: 10 testes browser do onboarding passaram e o build foi concluído; check-types mantém falhas preexistentes.
+  - [x] **VISUAL**: Revisar bordas, espaçamentos, margens, padding, tipografia, erro, ação OPFS, foco, quebra de texto e overflow em 320px/1440px, claro/escuro.
+  - [x] **EVIDENCE**: `build_documentation.mjs --check` passou; GREEN, viewports e IDs registrados.
+  - [x] **IMPROVE**: Reaproveitar a região de erro existente e não introduzir uma segunda composição modal.
+  <!-- specsfy:evidence {"task":"T021","refs":["US-001","FR-001","FR-003","FR-005","NFR-001","NFR-002","AC-003","AC-010"],"files":["apps/web/src/lib/features/onboarding/OnboardingModal.svelte","apps/web/src/routes/+page.svelte","apps/web/src/routes/onboarding.svelte.spec.ts"],"commands":[{"run":"npm --prefix apps/web run test:tdd -- src/routes/onboarding.svelte.spec.ts","exit":0},{"run":"npm --prefix apps/web run build","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project /Users/claudio/Projects/openbible-worksplace --check","exit":0}]} -->
+
+- [x] T022 [DOC] [US-001] Atualizar `INTERFACE.md`, documentação técnica e evidências da spec para o fallback OPFS — Refs: US-001, FR-001, FR-003, FR-005, NFR-001, AC-010 — Depends: T020, T021
+  - [x] **PREP**: Conferir estados, callback, persistência e consumidores reais após a implementação.
+  - [x] **EXECUTE**: Registrar a ação de fallback, o aviso de escopo da origem e a regra de reuso nos documentos canônicos.
+  - [x] **VERIFY**: `build_documentation.mjs --check` e validadores da spec passaram.
+  - [x] **VISUAL**: Registrar bordas, espaçamentos, margens, padding, tipografia e a revisão dos estados de erro e fallback nos dois viewports.
+  - [x] **EVIDENCE**: Matrizes 11–13 atualizadas sem reescrever evidência histórica.
+  - [x] **IMPROVE**: Manter a distinção entre OPFS privado e pasta local visível.
+
+- [x] T023 [TEST] [US-001] Executar regressão do fallback e da configuração existente em `apps/web` — Refs: US-001, US-002, FR-001, FR-002, FR-003, FR-004, FR-005, NFR-001, NFR-002, AC-001, AC-002, AC-003, AC-004, AC-005, AC-006, AC-007, AC-008, AC-009, AC-010 — Depends: T021, T022
+  - [x] **PREP**: Confirmar os testes focais, a suíte unitária, browser, build, documentação e monitor.
+  - [x] **EXECUTE**: Executar a regressão completa e os validadores de rastreabilidade/evidência.
+  - [x] **VERIFY**: Fallback, reabertura sem onboarding e fluxos AC-001 a AC-009 confirmados; 48 arquivos/210 testes passaram e 2 testes antigos do editor falharam.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia, erro/fallback, importação, conclusão e retorno em 320px/1440px.
+  - [x] **EVIDENCE**: Registrar contagens, comandos, bloqueios preexistentes e manter Delivery Gate em In Progress.
+  - [x] **IMPROVE**: Não alterar os testes antigos falhos, pois os erros não têm relação com o fallback.
+  <!-- specsfy:evidence {"task":"T023","refs":["US-001","US-002","FR-001","FR-002","FR-003","FR-004","FR-005","NFR-001","NFR-002","AC-001","AC-002","AC-003","AC-004","AC-005","AC-006","AC-007","AC-008","AC-009","AC-010"],"files":["apps/web/src/lib/storage/environment.ts","apps/web/src/lib/storage/storage-registry.ts","apps/web/src/lib/storage/session.ts","apps/web/src/lib/storage/local-storage.ts","apps/web/src/lib/features/onboarding/OnboardingModal.svelte","apps/web/src/routes/+page.svelte","apps/web/src/routes/onboarding.svelte.spec.ts","INTERFACE.md","docs/application.md"],"commands":[{"run":"npm --prefix apps/web run test:tdd -- --project server","exit":0},{"run":"npm --prefix apps/web run test:tdd -- src/routes/onboarding.svelte.spec.ts","exit":0},{"run":"npm --prefix apps/web run build","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project /Users/claudio/Projects/openbible-worksplace --check","exit":0}]} -->
+
 ### 15. Ordem de execução
 
-- Caminho crítico: T001/T002/T003/T004/T005/T006/T007/T008/T009 → T010/T011 → T012 → T013 → T014/T015 → T016.
+- Caminho crítico: T001/T002/T003/T004/T005/T006/T007/T008/T009 → T010/T011 → T012 → T013 → T014/T015 → T016 → T017/T018/T019 → T020 → T021 → T022 → T023.
 - Tarefas paralelas: T001, T002, T003, T004, T005, T006, T007, T008 e T009 podem ser materializadas em qualquer ordem, mas compartilham o mesmo RED e não serão marcadas como paralelas no plano.
 - Estratégia de MVP: entregar primeiro a árvore idempotente nos dois backends, depois o modal acessível com importação válida/parcial ou adiamento, e fechar com documentação e regressão.
 
@@ -716,13 +795,14 @@ apps/web/src/
 - **DEC-003**: criar JSON mínimo, SQLite vazio e templates Markdown mínimos — prepara a estrutura Files over app sem antecipar schema de índice ou editor.
 - **DEC-004**: validar e continuar por arquivo, sem sobrescrever duplicados — protege conteúdo existente e permite aproveitar um lote parcialmente válido.
 - **DEC-005**: persistir configuração e status pendente — permite abrir `/` sem bloquear a pessoa pela ausência de Bíblia.
+- **DEC-006**: oferecer OPFS somente após falha local e escolha explícita — permite usar o OpenBible no ambiente integrado para anotações sem prometer acesso à pasta do sistema nem trocar o backend silenciosamente.
 
 ### 18. Definition of Done
 
 - [x] `Definition Gate` está `Passed`.
 - [x] `Plan Gate` está `Passed`.
 - [ ] `Delivery Gate` está `Passed`.
-- [x] Todos os cenários `AC-001` a `AC-009` aplicáveis passam.
+- [ ] Todos os cenários `AC-001` a `AC-010` aplicáveis passam.
 - [x] Todos os requisitos `FR-001` a `FR-005` e `NFR-001` a `NFR-002` possuem evidência de verificação.
 - [x] A árvore e os artefatos confirmados existem em localhost e OPFS por testes com adaptadores.
 - [x] A importação preserva duplicados, rejeita inválidos e registra resultado parcial.
