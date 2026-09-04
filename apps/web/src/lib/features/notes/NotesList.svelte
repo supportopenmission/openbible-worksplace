@@ -91,9 +91,25 @@
 				<Button type="button" variant="outline" onclick={loadNotes}>Tentar novamente</Button>
 			</div>
 		{:else}
-			<NoteCardList {notes} {onOpen} onDelete={openDeleteDialog} />
+			<NoteCardList
+				{notes}
+				{onOpen}
+				onDelete={openDeleteDialog}
+				onCreate={handleCreateNote}
+				creating={creating}
+			/>
 		{/if}
 	</div>
+	<button
+		type="button"
+		class="notes-fab"
+		onclick={handleCreateNote}
+		disabled={creating}
+		aria-label="Nova nota"
+		title="Nova nota"
+	>
+		<Plus size={18} strokeWidth={2} aria-hidden="true" />
+	</button>
 </div>
 
 <Dialog.Root open={deleteTarget !== null} onOpenChange={(value) => !value && (deleteTarget = null)}>
@@ -173,9 +189,37 @@
 		margin-top: 20px;
 	}
 
+	.notes-fab {
+		display: none;
+	}
+
+	@media (max-width: 767px) {
+		.notes-fab {
+			position: fixed;
+			right: 16px;
+			bottom: calc(88px + env(safe-area-inset-bottom));
+			z-index: 30;
+			display: flex;
+			width: 48px;
+			height: 48px;
+			align-items: center;
+			justify-content: center;
+			border: 1px solid var(--border);
+			border-radius: 999px;
+			background: var(--primary);
+			padding: 0;
+			color: var(--primary-foreground);
+			cursor: pointer;
+		}
+
+		.notes-fab:disabled {
+			opacity: 0.6;
+		}
+	}
+
 	@media (max-width: 767px) {
 		.notes-list {
-			padding: 0 16px calc(96px + env(safe-area-inset-bottom));
+			padding: 0 clamp(18px, 5vw, 72px) calc(96px + env(safe-area-inset-bottom));
 		}
 	}
 </style>

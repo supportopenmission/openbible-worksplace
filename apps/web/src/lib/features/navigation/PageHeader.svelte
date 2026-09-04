@@ -60,6 +60,7 @@
 	}
 
 	h1 {
+		width: 100%;
 		margin: 0;
 		font-size: clamp(1.75rem, 4vw, 2.5rem);
 		font-weight: 600;
@@ -87,12 +88,17 @@
 	@media (max-width: 767px) {
 		.header-row {
 			flex-direction: column;
-			gap: 16px;
+			align-items: stretch;
+			gap: 12px;
+		}
+
+		.header-text {
+			width: 100%;
+			flex: none;
 		}
 
 		.header-actions {
-			width: 100%;
-			padding-top: 0;
+			display: none;
 		}
 	}
 </style>
