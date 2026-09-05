@@ -62,6 +62,7 @@
 	let slashIndex = $state(0);
 	let mobile = $state(false);
 	let editingActive = $state(false);
+	let toolbarOpen = $state(false);
 	let verseSelectorOpen = $state(false);
 	let slashPosition = $state<{
 		top: number;
@@ -399,10 +400,14 @@
 
 	function handleEditorFocusOut(event: FocusEvent) {
 		const next = event.relatedTarget;
-		if (next instanceof HTMLElement && next.closest('.ProseMirror, .milkdown-toolbar')) {
+		if (
+			next instanceof HTMLElement &&
+			next.closest('.ProseMirror, .milkdown-toolbar, .milkdown-toolbar-fab')
+		) {
 			return;
 		}
 		editingActive = false;
+		toolbarOpen = false;
 	}
 
 	function handleTaskMarkerClick(event: MouseEvent) {
@@ -526,6 +531,8 @@
 							autocomplete: 'off',
 							autocorrect: 'off',
 							autocapitalize: 'sentences',
+							enterkeyhint: 'enter',
+							inputmode: 'text',
 							spellcheck: 'true',
 							'data-1p-ignore': 'true',
 							'data-lpignore': 'true'
@@ -602,24 +609,30 @@
 					bind:this={titleEl}
 					contenteditable={readOnly ? 'false' : 'plaintext-only'}
 					class="note-title"
+					tabindex="-1"
 					class:readonly={readOnly}
 					data-placeholder="Sem título"
 					data-empty={!noteTitle.trim()}
 					oninput={handleTitleInput}
 					onkeydown={handleTitleKeydown}
-				>{noteTitle}</h1>
+				>
+					{noteTitle}
+				</h1>
 
 				<p
 					bind:this={descriptionEl}
 					contenteditable={readOnly ? 'false' : 'plaintext-only'}
 					class="note-description"
+					tabindex="-1"
 					class:readonly={readOnly}
 					data-placeholder={readOnly ? '' : 'Adicione uma descrição…'}
 					data-empty={!noteDescription.trim()}
 					aria-label="Descrição da nota"
 					oninput={handleDescriptionInput}
 					onkeydown={handleDescriptionKeydown}
-				>{noteDescription}</p>
+				>
+					{noteDescription}
+				</p>
 			</div>
 
 			<div class="milkdown-host" bind:this={host}></div>
@@ -685,10 +698,13 @@
 	<BibleReferenceViewer {storage} />
 
 	<MilkdownMobileToolbar
-		active={mobile && !readOnly}
+		active={mobile && !readOnly && editingActive}
+		visible={toolbarOpen}
 		disabled={!editingActive}
 		activeActions={toolbarActive}
 		onAction={runToolbar}
+		onToggle={() => (toolbarOpen = !toolbarOpen)}
+		onClose={() => (toolbarOpen = false)}
 	/>
 </div>
 
@@ -749,10 +765,11 @@
 	@media (max-width: 767px) {
 		.note-container {
 			max-width: none;
-			padding: 16px 16px calc(
-				max(64px + env(safe-area-inset-bottom, 0px), var(--note-keyboard-inset, 0px)) +
-					var(--note-toolbar-height, 56px) + 16px
-			);
+			padding: 16px 16px
+				calc(
+					max(64px + env(safe-area-inset-bottom, 0px), var(--note-keyboard-inset, 0px)) +
+						var(--note-toolbar-height, 56px) + 16px
+				);
 		}
 	}
 
@@ -780,7 +797,7 @@
 		word-break: break-word;
 	}
 
-	.note-title[data-empty="true"]::before {
+	.note-title[data-empty='true']::before {
 		content: attr(data-placeholder);
 		position: absolute;
 		left: 0;
@@ -811,7 +828,7 @@
 		color: var(--foreground);
 	}
 
-	.note-description[data-empty="true"]::before {
+	.note-description[data-empty='true']::before {
 		content: attr(data-placeholder);
 		position: absolute;
 		left: 0;
@@ -827,16 +844,16 @@
 		user-select: text;
 	}
 
-	.note-description.readonly[data-empty="true"] {
+	.note-description.readonly[data-empty='true'] {
 		display: none;
 	}
 
-	:global(.milkdown-host .ProseMirror[contenteditable="false"]) {
+	:global(.milkdown-host .ProseMirror[contenteditable='false']) {
 		cursor: default;
 		user-select: text;
 	}
 
-	:global(.milkdown-host .ProseMirror[contenteditable="false"] .is-empty::before) {
+	:global(.milkdown-host .ProseMirror[contenteditable='false'] .is-empty::before) {
 		display: none;
 	}
 
@@ -964,7 +981,9 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		transition: border-color 0.15s ease, background-color 0.15s ease;
+		transition:
+			border-color 0.15s ease,
+			background-color 0.15s ease;
 	}
 	:global(.milkdown-host .ProseMirror li[data-item-type='task']:hover::before) {
 		border-color: var(--foreground);
@@ -977,7 +996,9 @@
 		background-position: center;
 		background-size: 13px 13px;
 	}
-	:global(.dark .milkdown-host .ProseMirror li[data-item-type='task'][data-checked='true']::before) {
+	:global(
+		.dark .milkdown-host .ProseMirror li[data-item-type='task'][data-checked='true']::before
+	) {
 		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
 	}
 	:global(.milkdown-host .ProseMirror li[data-item-type='task'][data-checked='true'] > *) {
@@ -990,7 +1011,9 @@
 		text-decoration-style: dotted;
 		text-underline-offset: 3px;
 		text-decoration-color: var(--muted-foreground);
-		transition: color 0.15s ease, text-decoration-color 0.15s ease;
+		transition:
+			color 0.15s ease,
+			text-decoration-color 0.15s ease;
 	}
 	:global(.milkdown-host .ProseMirror .bible-reference:hover) {
 		color: var(--primary, #000);

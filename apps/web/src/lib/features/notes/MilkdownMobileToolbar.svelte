@@ -7,21 +7,28 @@
 		List,
 		ListOrdered,
 		Quote,
-		BookOpen
+		BookOpen,
+		X
 	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import type { ToolbarAction } from './milkdown-markdown-io';
 
 	let {
 		active = true,
+		visible = true,
 		disabled = false,
 		activeActions = {},
-		onAction = () => {}
+		onAction = () => {},
+		onToggle = () => {},
+		onClose = () => {}
 	}: {
 		active?: boolean;
+		visible?: boolean;
 		disabled?: boolean;
 		activeActions?: Partial<Record<ToolbarAction, boolean>>;
 		onAction?: (action: ToolbarAction) => void;
+		onToggle?: () => void;
+		onClose?: () => void;
 	} = $props();
 
 	const actions = [
@@ -37,27 +44,55 @@
 </script>
 
 {#if active}
-	<div class="milkdown-toolbar" role="toolbar" aria-label="Formatação da nota">
-		<div class="toolbar-scroll">
-			{#each actions as action (action.id)}
+	{#if visible}
+		<div class="milkdown-toolbar" role="toolbar" aria-label="Formatação da nota">
+			<div class="toolbar-scroll">
+				{#each actions as action (action.id)}
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						aria-label={action.label}
+						aria-pressed={activeActions[action.id] ?? false}
+						{disabled}
+						class={activeActions[action.id] ? 'active' : undefined}
+						title={action.label}
+						onmousedown={(e) => e.preventDefault()}
+						onclick={() => onAction(action.id)}
+					>
+						<action.icon aria-hidden="true" />
+						<span>{action.label}</span>
+					</Button>
+				{/each}
 				<Button
 					type="button"
 					variant="ghost"
-					size="sm"
-					aria-label={action.label}
-					aria-pressed={activeActions[action.id] ?? false}
-					disabled={disabled}
-					class={activeActions[action.id] ? 'active' : undefined}
-					title={action.label}
+					size="icon-sm"
+					class="toolbar-close"
+					aria-label="Fechar barra de ferramentas"
+					title="Fechar barra de ferramentas"
 					onmousedown={(e) => e.preventDefault()}
-					onclick={() => onAction(action.id)}
+					onclick={onClose}
 				>
-					<action.icon aria-hidden="true" />
-					<span>{action.label}</span>
+					<X aria-hidden="true" />
 				</Button>
-			{/each}
+			</div>
 		</div>
-	</div>
+	{:else}
+		<Button
+			type="button"
+			variant="outline"
+			size="icon"
+			class="milkdown-toolbar-fab"
+			aria-label="Abrir ferramentas de formatação"
+			aria-expanded="false"
+			title="Abrir ferramentas de formatação"
+			onmousedown={(e) => e.preventDefault()}
+			onclick={onToggle}
+		>
+			<List aria-hidden="true" />
+		</Button>
+	{/if}
 {/if}
 
 <style>
@@ -72,6 +107,23 @@
 		background: color-mix(in srgb, var(--background) 96%, transparent);
 		backdrop-filter: blur(10px);
 		transition: bottom 180ms ease;
+	}
+
+	:global(.milkdown-toolbar-fab) {
+		position: fixed;
+		right: max(12px, env(safe-area-inset-right, 0px));
+		bottom: max(calc(64px + env(safe-area-inset-bottom, 0px)), var(--note-keyboard-inset, 0px));
+		z-index: 50;
+		width: 44px;
+		height: 44px;
+		border-color: var(--border);
+		background: color-mix(in srgb, var(--background) 96%, transparent);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
+		box-shadow: 0 2px 12px color-mix(in srgb, var(--foreground) 12%, transparent);
+		transition:
+			bottom 180ms ease,
+			background-color 120ms ease;
 	}
 
 	.toolbar-scroll {
@@ -102,19 +154,27 @@
 		outline-offset: 2px;
 	}
 
+	:global(.milkdown-toolbar .toolbar-close) {
+		align-self: center;
+		flex: 0 0 auto;
+		margin-inline: 4px;
+	}
+
 	:global(.milkdown-toolbar button.active) {
 		background: var(--accent);
 		color: var(--accent-foreground);
 	}
 
 	@media (max-width: 767px) {
-		.milkdown-toolbar {
+		.milkdown-toolbar,
+		:global(.milkdown-toolbar-fab) {
 			display: block;
 		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.milkdown-toolbar {
+		.milkdown-toolbar,
+		:global(.milkdown-toolbar-fab) {
 			transition: none;
 		}
 

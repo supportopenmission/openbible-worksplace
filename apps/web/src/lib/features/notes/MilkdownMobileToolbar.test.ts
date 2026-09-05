@@ -26,6 +26,13 @@ describe('milkdown mobile toolbar', () => {
 		}
 		expect(body).toContain('milkdown-toolbar');
 	});
+
+	it('renders a compact toggle when the formatting tray is collapsed', () => {
+		const { body } = render(MilkdownMobileToolbar, { props: { visible: false } });
+		expect(body).toContain('milkdown-toolbar-fab');
+		expect(body).toContain('Abrir ferramentas de formatação');
+		expect(body).not.toContain('role="toolbar"');
+	});
 });
 
 // SPECSFY: US-003 FR-004 NFR-002 NFR-003 AC-016

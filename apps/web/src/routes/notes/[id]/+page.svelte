@@ -3,7 +3,16 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { AlertCircle, BookOpen, Check, ChevronLeft, Loader2, MoreHorizontal, Pencil, Trash2 } from '@lucide/svelte';
+	import {
+		AlertCircle,
+		BookOpen,
+		Check,
+		ChevronLeft,
+		Loader2,
+		MoreHorizontal,
+		Pencil,
+		Trash2
+	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
@@ -224,7 +233,9 @@
 					variant="ghost"
 					size="icon-sm"
 					aria-label={readOnly ? 'Alternar para modo de edição' : 'Alternar para modo de leitura'}
-					title={readOnly ? 'Modo de leitura (clique para editar)' : 'Modo de edição (clique para ler)'}
+					title={readOnly
+						? 'Modo de leitura (clique para editar)'
+						: 'Modo de edição (clique para ler)'}
 					onclick={() => (readOnly = !readOnly)}
 				>
 					{#if readOnly}
@@ -395,7 +406,7 @@
 		min-height: 0;
 		overflow-y: auto;
 		overscroll-behavior: contain;
-		padding-bottom: 24px;
+		padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
 	}
 
 	.note-footer {
@@ -482,6 +493,11 @@
 
 		.note-footer {
 			display: none;
+		}
+
+		.note-pane-body {
+			overflow: hidden;
+			padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
 		}
 	}
 </style>

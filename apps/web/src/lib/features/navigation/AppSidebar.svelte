@@ -47,8 +47,27 @@
 		return [link];
 	});
 	const update = getAppUpdateState();
+	let mobileNavReady = $state(false);
 	onMount(() => {
 		if (detectStorageKind() === 'native') void checkForAppUpdate();
+
+		// Nudge the fixed layer after the standalone PWA viewport settles.
+		// iOS can resolve safe-area insets one frame after the first paint.
+		const frame = requestAnimationFrame(() => (mobileNavReady = true));
+		const viewport = window.visualViewport;
+		const refresh = () => {
+			requestAnimationFrame(() => (mobileNavReady = true));
+		};
+		viewport?.addEventListener('resize', refresh);
+		viewport?.addEventListener('scroll', refresh);
+		window.addEventListener('orientationchange', refresh);
+
+		return () => {
+			cancelAnimationFrame(frame);
+			viewport?.removeEventListener('resize', refresh);
+			viewport?.removeEventListener('scroll', refresh);
+			window.removeEventListener('orientationchange', refresh);
+		};
 	});
 </script>
 
@@ -120,7 +139,12 @@
 	<Sidebar.Rail />
 </Sidebar.Root>
 
-<nav class="mobile-bottom-nav" aria-label="Navegação mobile" data-safe-area="bottom">
+<nav
+	class="mobile-bottom-nav"
+	class:viewport-ready={mobileNavReady}
+	aria-label="Navegação mobile"
+	data-safe-area="bottom"
+>
 	{#each mobileLinks as link (link.href)}
 		{@const Icon = link.icon}
 		{@const isActive = isLinkActive(link.href)}
@@ -339,7 +363,16 @@
 			background: color-mix(in oklch, var(--background) 92%, transparent);
 			backdrop-filter: blur(12px);
 			-webkit-backdrop-filter: blur(12px);
+			/* Composited fixed layer avoids the first-paint offset in standalone iOS PWAs. */
+			transform: translate3d(0, 0, 0);
+			-webkit-backface-visibility: hidden;
+			backface-visibility: hidden;
+			min-height: calc(64px + env(safe-area-inset-bottom, 0px));
 			padding: 6px 8px max(6px, env(safe-area-inset-bottom, 0px));
+		}
+
+		.mobile-bottom-nav.viewport-ready {
+			transform: translate3d(0, 0, 0.001px);
 		}
 
 		.mobile-nav-link {

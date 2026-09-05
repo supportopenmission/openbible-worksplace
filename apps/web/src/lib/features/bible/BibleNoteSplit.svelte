@@ -148,7 +148,9 @@
 				{/if}
 				<p class="note-pane-title" title={openNote.title}>{openNote.title}</p>
 			</div>
-			<Button variant="ghost" size="sm" onclick={onClose}>Fechar nota</Button>
+			<Button variant="ghost" size="sm" class="note-pane-close" onclick={onClose}
+				>Fechar nota</Button
+			>
 		</div>
 		<MilkdownNoteEditor note={openNote} storage={openStorage} {onSaved} />
 	</section>
@@ -290,12 +292,28 @@
 		min-width: 0;
 		min-height: 0;
 		flex-direction: column;
-		gap: 12px;
+		gap: 0;
 		padding-left: 16px;
 	}
 
 	.note-pane-editor {
 		overflow: hidden;
+	}
+
+	.note-pane-editor :global(.note-editor-viewport) {
+		display: flex;
+		min-height: 0;
+		flex: 1;
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	.note-pane-editor :global(.milkdown-editor) {
+		min-height: 0;
+		flex: 1;
+		overflow-y: auto;
+		overflow-x: hidden;
+		overscroll-behavior: contain;
 	}
 
 	.note-pane-list {
@@ -306,11 +324,14 @@
 	.note-pane-header {
 		display: flex;
 		flex-shrink: 0;
-		align-items: flex-start;
+		align-items: center;
 		justify-content: space-between;
 		gap: 12px;
+		height: 48px;
+		min-height: 48px;
+		padding: 0 16px;
 		border-bottom: 1px solid var(--border);
-		padding-bottom: 10px;
+		background: var(--background);
 	}
 
 	.note-pane-heading {
@@ -318,7 +339,7 @@
 		min-width: 0;
 		flex: 1;
 		flex-direction: column;
-		gap: 6px;
+		gap: 2px;
 	}
 
 	.note-pane-heading :global(.back-to-list) {
@@ -342,6 +363,11 @@
 		letter-spacing: -0.01em;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	:global(.note-pane-close) {
+		flex-shrink: 0;
+		color: var(--muted-foreground);
 	}
 
 	:global(.note-split-tabs) {
@@ -399,8 +425,12 @@
 
 	@media (max-width: 767px) {
 		.note-pane {
-			gap: 10px;
+			gap: 0;
 			padding-left: 0;
+		}
+
+		.note-pane-header {
+			padding-inline: 12px;
 		}
 	}
 

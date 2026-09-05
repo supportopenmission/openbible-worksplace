@@ -21,12 +21,29 @@ describe('notes editor Milkdown canvas controls', () => {
 	});
 
 	// SPECSFY: US-003 FR-004 NFR-002 NFR-003 AC-003 AC-016
-	it('exposes the seven accessible mobile formatting actions', async () => {
+	it('reveals formatting actions only after the editor receives a cursor', async () => {
 		await page.viewport(390, 844);
 		render(NotesEditorPage, { props: { data: { noteId: 'test-note' } } });
+		const editor = page.getByRole('textbox');
+		await expect
+			.element(page.getByRole('button', { name: 'Abrir ferramentas de formatação' }))
+			.not.toBeInTheDocument();
+		await editor.click();
+		await expect
+			.element(page.getByRole('button', { name: 'Abrir ferramentas de formatação' }))
+			.toBeInTheDocument();
+		await page.getByRole('button', { name: 'Abrir ferramentas de formatação' }).click();
 		const toolbar = page.getByRole('toolbar', { name: 'Formatação da nota' });
 		await expect.element(toolbar).toBeInTheDocument();
-		for (const name of ['Negrito', 'Itálico', 'Título', 'Lista', 'Checklist', 'Citação', 'Versículo']) {
+		for (const name of [
+			'Negrito',
+			'Itálico',
+			'Título',
+			'Lista',
+			'Checklist',
+			'Citação',
+			'Versículo'
+		]) {
 			await expect.element(toolbar.getByRole('button', { name, exact: true })).toBeInTheDocument();
 		}
 	});
@@ -38,7 +55,11 @@ describe('notes editor Milkdown canvas controls', () => {
 		const editor = page.getByRole('textbox');
 		await editor.click();
 		await userEvent.keyboard('{End}{Enter}Revisar nota');
-		await page.getByRole('toolbar', { name: 'Formatação da nota' }).getByRole('button', { name: 'Checklist' }).click();
+		await page.getByRole('button', { name: 'Abrir ferramentas de formatação' }).click();
+		await page
+			.getByRole('toolbar', { name: 'Formatação da nota' })
+			.getByRole('button', { name: 'Checklist' })
+			.click();
 		expect(
 			editor.element().querySelector('li[data-item-type="task"][data-checked="false"]')
 		).not.toBeNull();
@@ -51,7 +72,9 @@ describe('notes editor Milkdown canvas controls', () => {
 		const editor = page.getByRole('textbox');
 		await editor.click();
 		await userEvent.keyboard('{End}{Enter}/h2');
-		await expect.element(page.getByRole('listbox', { name: 'Comandos de bloco' })).toBeInTheDocument();
+		await expect
+			.element(page.getByRole('listbox', { name: 'Comandos de bloco' }))
+			.toBeInTheDocument();
 		await userEvent.keyboard('{Enter}');
 
 		const heading = page.getByRole('heading', { level: 2 });
@@ -76,7 +99,10 @@ describe('notes editor Milkdown canvas controls', () => {
 	it('keeps the measured formatting toolbar inside the viewport', async () => {
 		await page.viewport(390, 844);
 		render(NotesEditorPage, { props: { data: { noteId: 'toolbar-position-note' } } });
+		const editor = page.getByRole('textbox');
 		const toolbar = page.getByRole('toolbar', { name: 'Formatação da nota' });
+		await editor.click();
+		await page.getByRole('button', { name: 'Abrir ferramentas de formatação' }).click();
 		await expect.element(toolbar).toBeInTheDocument();
 
 		const rect = toolbar.element().getBoundingClientRect();
@@ -90,7 +116,11 @@ describe('notes editor Milkdown canvas controls', () => {
 		const editor = page.getByRole('textbox');
 		await editor.click();
 		await userEvent.keyboard('{End}{Enter}Tarefa teste');
-		await page.getByRole('toolbar', { name: 'Formatação da nota' }).getByRole('button', { name: 'Checklist', exact: true }).click();
+		await page.getByRole('button', { name: 'Abrir ferramentas de formatação' }).click();
+		await page
+			.getByRole('toolbar', { name: 'Formatação da nota' })
+			.getByRole('button', { name: 'Checklist', exact: true })
+			.click();
 
 		const taskItem = editor.element().querySelector<HTMLElement>('li[data-item-type="task"]');
 		expect(taskItem).not.toBeNull();
@@ -120,9 +150,7 @@ describe('notes editor Milkdown canvas controls', () => {
 		await editor.click();
 		await userEvent.keyboard('{End}{Enter}Estudando Gn 3.1 (ARA) e Jo 3.16.');
 
-		await expect
-			.poll(() => editor.element().querySelectorAll('.bible-reference').length)
-			.toBe(2);
+		await expect.poll(() => editor.element().querySelectorAll('.bible-reference').length).toBe(2);
 
 		const refs = editor.element().querySelectorAll<HTMLElement>('.bible-reference');
 		expect(refs[0].getAttribute('data-osis')).toBe('Gen.3.1');
@@ -141,4 +169,3 @@ describe('notes editor Milkdown canvas controls', () => {
 		await expect.poll(() => dialog.element().textContent).toContain('serpente');
 	});
 });
-

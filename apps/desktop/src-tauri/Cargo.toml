@@ -1,6 +1,6 @@
 [package]
 name = "openbible-desktop"
-version = "0.5.2"
+version = "0.5.3"
 description = "OpenBible native macOS shell"
 authors = ["OpenBible"]
 edition = "2021"
