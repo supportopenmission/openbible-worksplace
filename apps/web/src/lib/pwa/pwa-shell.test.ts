@@ -46,6 +46,17 @@ describe('pwa shell', () => {
 		expect(frame).not.toContain('mobile-header');
 	});
 
+	// SPECSFY: US-002 FR-002 FR-004 NFR-003 AC-004
+	it('deixa o provider adaptar a altura no mobile', async () => {
+		const frame = await readFile(APP_FRAME, 'utf8');
+		const providerStyles = frame.match(
+			/:global\(\.app-sidebar-provider\)\s*\{([\s\S]*?)\n\s*\}/
+		)?.[1];
+
+		expect(providerStyles).toBeDefined();
+		expect(providerStyles).not.toMatch(/(^|\n)\s*height\s*:/);
+	});
+
 	// SPECSFY: US-001 US-002 FR-002 FR-004 NFR-001 NFR-003 AC-004
 	it('estende o tema sob notch e barra com safe-area', async () => {
 		const html = await readFile(APP_HTML, 'utf8');

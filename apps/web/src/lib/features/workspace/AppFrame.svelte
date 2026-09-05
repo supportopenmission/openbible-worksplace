@@ -80,7 +80,6 @@
 <style>
 	:global(.app-sidebar-provider) {
 		min-height: 100dvh;
-		height: 100dvh;
 		overflow: hidden;
 		background: var(--background);
 	}
