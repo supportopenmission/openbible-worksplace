@@ -5,18 +5,18 @@
 | Formato | Specsfy/2.0 |
 | ID | SPEC-0013 |
 | Slug | 0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile |
-| Status | Implementing |
+| Status | Defined |
 | Effort | 8 |
 | Effort updated at | 2026-09-04 |
 | Effort rationale | Troca do motor Tipex/TipTap por Milkdown com nó custom :::verse, slash desktop, drawer + toolbar mobile, paridade de autosave/H1/YAML/índice e remoção do motor antigo. |
 | ClickUp Task | |
 | Milestones | |
 | Definition Gate | Passed |
-| Plan Gate | Passed |
-| Delivery Gate | In Progress |
+| Plan Gate | Pending |
+| Delivery Gate | Pending |
 | Evidence Contract | 1 |
 | Interface para pessoas | Sim |
-| Atualizada em | 2026-09-04 |
+| Atualizada em | 2026-09-05 |
 
 ## Ato I — Definir
 
@@ -28,7 +28,7 @@ O editor atual de notas usa Tipex sobre TipTap com conversão HTML intermediári
 
 #### Resultado desejado
 
-Trocar só o motor de `/notes/[id]` para Milkdown (`@milkdown/kit` com CommonMark, slash e nó custom de versículo), mantendo rotas, listagem, lixeira, YAML vigente, H1 sincronizado, índice auxiliar e canvas full-bleed. No desktop o `/` abre slash menu; no mobile o `/` abre drawer bottom sheet e uma toolbar de formatação fica acima da barra de navegação.
+Trocar só o motor de `/notes/[id]` para Milkdown (`@milkdown/kit` com CommonMark, slash e nó custom de versículo), mantendo rotas, listagem, lixeira, YAML vigente, H1 sincronizado, índice auxiliar e canvas full-bleed. No desktop o `/` abre slash menu; no mobile o `/` oculta o teclado virtual antes de abrir o drawer bottom sheet e uma toolbar de formatação fica acima da barra de navegação.
 
 #### Métricas de sucesso
 
@@ -42,7 +42,7 @@ Trocar só o motor de `/notes/[id]` para Milkdown (`@milkdown/kit` com CommonMar
 
 - **R-001**: Milkdown integra ao SvelteKit como editor Markdown por plugins? → Sim; `@milkdown/kit 7.22.1` ESM com `preset/commonmark`, `preset/gfm`, `plugin/slash`, `plugin/listener` e `transformer` sobre ProseMirror + remark; componente Svelte gerencia host DOM e ciclo de vida. Impacto: base da troca sem React.
 - **R-002**: Fence `:::verse{attrs}` com snapshot pode virar nó custom com roundtrip sem perda? → Sim, com schema ProseMirror dedicado + parser/serializador que preserva atributos (`versionId`, `version`, `bookId`, `book`, `chapter`, `verseStart`, `verseEnd`) e corpo snapshot; fallback preserva texto quando o fence é inválido. Impacto: paridade com `verse-block-extension.ts`.
-- **R-003**: Drawer mobile 90dvh e toolbar acima da navegação seguem padrões vigentes? → Sim; `Sheet` com `side=bottom` em 90dvh e `safe-area-inset-bottom` já usados em `VerseSelector` e `BibleReader`; toolbar é barra Svelte própria acima da barra mobile. Impacto: sem novo padrão de overlay.
+- **R-003**: Drawer mobile 90dvh e toolbar acima da navegação seguem padrões vigentes? → Sim; `Sheet` com `side=bottom` em 90dvh e `safe-area-inset-bottom` já usados em `VerseSelector` e `BibleReader`; toolbar é barra Svelte própria acima da barra mobile. Ao abrir o drawer de slash, o teclado virtual deve ser ocultado para não competir com a superfície de comandos. Impacto: sem novo padrão de overlay.
 - Para claim material, uso futuro: `**R-00X** [critical] claim — Verdict: verified|refuted|unverifiable — Confidence: high|medium|low — Evidence: research/caminho#locator — Budget: usado/limite`.
 
 #### Fontes e contexto consultados
@@ -73,6 +73,7 @@ Trocar só o motor de `/notes/[id]` para Milkdown (`@milkdown/kit` com CommonMar
 - **Q**: E as notas existentes? → **A**: Abertura direta sem migração, mesmo fence e índice (Q6).
 - **Q**: Qual stack Milkdown? → **A**: `@milkdown/kit` + CommonMark + slash + verse custom (Q7).
 - **Q**: Como insere versículo? → **A**: Reaproveitar `VerseSelector` Dialog/Sheet com preview (Q8).
+- **Pedido de correção recebido em 2026-09-05**: “no mobile no editor das notas, quando usarmo  / slash commands ocultar o teclado, pois abre um drawer.” → **A**: Ao detectar `/` no editor mobile, desfocar o editor para ocultar o teclado virtual antes de exibir o drawer, preservando a seleção atual para executar o comando.
 
 #### Dúvidas abertas
 
@@ -85,7 +86,7 @@ Trocar só o motor de `/notes/[id]` para Milkdown (`@milkdown/kit` com CommonMar
 - Trocar o motor de `/notes/[id]` de Tipex/TipTap para Milkdown com Markdown como fonte direta.
 - Nó custom `verse` com parse/render de `:::verse{attrs}` + snapshot e fallback sem perda.
 - Slash menu desktop filtrável (`/`, `/versiculo`, `/verse`) com 7 grupos de blocos.
-- Drawer mobile bottom sheet 90dvh com mesma lista + busca ao digitar `/`.
+- Drawer mobile bottom sheet 90dvh com mesma lista + busca ao digitar `/`; o teclado virtual é ocultado antes da abertura do drawer.
 - Toolbar mobile com 7 ações acima da barra de navegação.
 - YAML vigente, H1 sincronizado, autosave com debounce, reindexação de `note_verse_ref`.
 - Canvas full-bleed sem moldura/card/borda; reaproveitar `VerseSelector` e `VerseBlockView`.
@@ -163,10 +164,11 @@ Feature: Slash de blocos no desktop
 @US-002 @FR-003 @NFR-002 @AC-002
 Feature: Drawer de comandos no mobile
 
-  Scenario: digitar barra abre bottom sheet
+  Scenario: digitar barra abre bottom sheet sem teclado virtual
     Given a nota aberta no Milkdown em viewport mobile
     When a pessoa digita "/"
-    Then abre bottom sheet 90dvh com a mesma lista do desktop e busca
+    Then o teclado virtual é ocultado
+    And abre bottom sheet 90dvh com a mesma lista do desktop e busca
     And Escape fecha sem inserir bloco
 ```
 
@@ -416,7 +418,7 @@ Feature: Markdown legível
 
 - **FR-001**: O sistema deve editar notas no Milkdown (`@milkdown/kit` + CommonMark/GFM) lendo e gravando Markdown direto, sem HTML intermediário como fonte.
 - **FR-002**: O sistema deve representar o versículo como nó custom `verse` com parse/render de `:::verse{versionId, version, bookId, book, chapter, verseStart, verseEnd}` + snapshot, roundtrip sem perda e fallback que preserva texto inválido.
-- **FR-003**: O sistema deve oferecer slash menu desktop filtrável e drawer mobile bottom sheet 90dvh com mesma lista (versículo, títulos, listas, checklist, citação, código, divisória) e busca, com teclado completo.
+- **FR-003**: O sistema deve oferecer slash menu desktop filtrável e drawer mobile bottom sheet 90dvh com mesma lista (versículo, títulos, listas, checklist, citação, código, divisória) e busca, com teclado completo; no mobile, deve ocultar o teclado virtual antes de abrir o drawer ao detectar `/`.
 - **FR-004**: O sistema deve exibir toolbar mobile com negrito, itálico, título, lista, checklist, citação e versículo acima da barra de navegação quando o editor está ativo.
 - **FR-005**: O sistema deve persistir `notes/<id>.md` com YAML (`title`, `createdAt`, `updatedAt`, `type`), H1 sincronizado, autosave com debounce e reindexação de `note_verse_ref` após cada save.
 - **FR-006**: O sistema deve manter canvas full-bleed sem moldura e reaproveitar `VerseSelector` (Dialog desktop / Sheet mobile) com preview, validação de intervalo e versão por bloco.
@@ -424,7 +426,7 @@ Feature: Markdown legível
 #### Não funcionais
 
 - **NFR-001**: Abertura e salvamento sem migração nem escrita redundante; preview usa snapshot; consultas OpenLP só no seletor/alteração. **Verificação**: inspeção de nota longa legada + teste Vitest de debounce/índice + medição manual de abertura.
-- **NFR-002**: Operação por teclado, toque, foco visível, Escape, nomes acessíveis e `aria-live` em slash, drawer, toolbar, seletor e salvamento. **Verificação**: checklist manual teclado/mobile + testes de componente Vitest + inspeção de roles.
+- **NFR-002**: Operação por teclado, toque, foco visível, Escape, nomes acessíveis e `aria-live` em slash, drawer, toolbar, seletor e salvamento; a abertura do drawer de slash no mobile não mantém o teclado virtual aberto. **Verificação**: checklist manual teclado/mobile + testes de componente Vitest + inspeção de roles.
 - **NFR-003**: Markdown legível fora do app; temas claro/escuro com tokens; `prefers-reduced-motion` sem animação espúria; sem React e sem marca Vercel. **Verificação**: leitura do `.md` fora do app + inspeção visual claro/escuro + teste de mídia reduzida.
 
 #### Erros e casos-limite
@@ -545,7 +547,7 @@ apps/web/src/lib/features/notes/
 
 #### Fluxo de informação e navegação
 
-- Chega por `/notes` → abre `/notes/[id]`; mobile tem voltar `Todas as notas`. Edita no canvas; `/` abre slash (desktop) ou drawer (mobile); toolbar formata sem `/`; `Versículo` abre `VerseSelector` (Dialog/Sheet); confirmar insere fence no cursor; autosave persiste YAML+H1+índice; erro mostra retry sem descartar. Breadcrumb: shell global vigente; rota de nota exibe retorno `Todas as notas` no mobile e título da nota no documento.
+- Chega por `/notes` → abre `/notes/[id]`; mobile tem voltar `Todas as notas`. Edita no canvas; `/` abre slash (desktop) ou oculta o teclado e abre drawer (mobile); toolbar formata sem `/`; `Versículo` abre `VerseSelector` (Dialog/Sheet); confirmar insere fence no cursor; autosave persiste YAML+H1+índice; erro mostra retry sem descartar. Breadcrumb: shell global vigente; rota de nota exibe retorno `Todas as notas` no mobile e título da nota no documento.
 
 #### Menus e navegação principal
 
@@ -672,22 +674,23 @@ Blocos Svelte desta entrega: `MilkdownNoteEditor.svelte` (monta kit, nó verse, 
 #### Gate do Ato I — Definição
 
 - **Resultado**: Passed
-- **Comando**: `node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/defined/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md --allow-draft`
-- **Achados**: VALID DRAFT; cobertura US/FR/NFR ≥3 ACs (US-001:8, US-002:8, US-003:5, FR-001:5, FR-002:6, FR-003:3, FR-004:4, FR-005:5, FR-006:6, NFR-001:5, NFR-002:6, NFR-003:8; 18 ACs). Lentes PROD/ARCH/SEC sem P1 Open.
-- **FIND-ARCH-001** [P2] [Accepted] Remoção do Tipex só após paridade para não quebrar `BibleNoteSplit` — Refs: FR-001, FR-006 — Evidence: specs/defined/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md:814 — Effect: risco de regressão no leitor — Suggestion: manter Tipex até GREEN+T007, decisão DEC-005 aceita.
-- **FIND-PROD-001** [P3] [Accepted] `milkdown.dev` retornou só casca na consulta; evidência normativa é npm+README — Refs: FR-001 — Evidence: specs/defined/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/research/milkdown-kit-7.22.1.md:16 — Effect: nenhum bloqueio; versão 7.22.1 MIT registrada — Suggestion: nenhuma ação.
+- **Data**: 2026-09-05
+- **Comando**: `node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md --allow-draft` e `node .agents/skills/specsfy-04-validate/scripts/review_findings.mjs specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md --root /home/claudio/Projects/openbible-worksplace`
+- **Achados**: VALID DRAFT; AC-002, FR-003 e NFR-002 descrevem a ocultação do teclado antes do drawer; cobertura US/FR/NFR ≥3 ACs preservada (US-001:8, US-002:8, US-003:5, FR-001:5, FR-002:6, FR-003:3, FR-004:4, FR-005:5, FR-006:6, NFR-001:5, NFR-002:6, NFR-003:8; 18 ACs); lentes PROD/ARCH/SEC sem P1 Open.
+- **FIND-ARCH-001** [P2] [Accepted] Remoção do Tipex só após paridade para não quebrar `BibleNoteSplit` — Refs: FR-001, FR-006 — Evidence: specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md:814 — Effect: risco de regressão no leitor — Suggestion: manter Tipex até GREEN+T007, decisão DEC-005 aceita.
+- **FIND-PROD-001** [P3] [Accepted] `milkdown.dev` retornou só casca na consulta; evidência normativa é npm+README — Refs: FR-001 — Evidence: specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/research/milkdown-kit-7.22.1.md:16 — Effect: nenhum bloqueio; versão 7.22.1 MIT registrada — Suggestion: nenhuma ação.
 
 #### Gate do Ato II — Plano
 
-- **Resultado**: Passed
-- **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/defined/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md`
-- **Achados**: 26 tarefas válidas (18 TDD com RED registrado, 4 CODE, 3 DOC e 1 TEST final); 30/30 IDs da spec cobertos; Interface nas tarefas: OK.
+- **Resultado**: Pending
+- **Data**: 2026-09-05
+- **Achados**: O plano anterior permanece preservado como evidência histórica, mas foi invalidado pela mudança de comportamento em AC-002/FR-003/NFR-002; a reconciliação deve adicionar RED TDD e implementação para ocultar o teclado.
 
 #### Gate do Ato III — Entrega
 
 - **Resultado**: Pending
-- **Comando**: `node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/defined/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md .`
-- **Achados**: Implementação, rastreabilidade e regressão da fatia aprovadas (30/30 IDs; 70 arquivos e 264 testes; build e lint focal GREEN). Delivery Gate permanece pendente porque os checks globais já existentes ainda falham fora da fatia: `check-types` com 21 erros e `lint` com 25 erros/445 avisos; nenhum erro aponta para os novos módulos Milkdown no typecheck e o lint focal não possui erros.
+- **Data**: 2026-09-05
+- **Achados**: A evidência anterior de implementação e regressão permanece preservada nas correções históricas, mas o Delivery Gate aguarda a nova prova de AC-002/FR-003/NFR-002.
 
 #### Correção pós-entrega — slash, toolbar e formatação
 
@@ -704,6 +707,14 @@ Blocos Svelte desta entrega: `MilkdownNoteEditor.svelte` (monta kit, nó verse, 
 - **Correções**: `editorViewOptionsCtx` + attrs DOM desativam AutoFill/QuickType iOS (`autocomplete=off`, `autocorrect=off`, `data-1p-ignore`); toolbar usa `visualViewport` → `--note-keyboard-inset` e `bottom: max(nav, inset)` com `z-index: 50`; rota `/notes/[id]` e `AppFrame` bloqueiam scroll da página no mobile (overflow só no `.ProseMirror`); `insertVerse` insere parágrafo vazio após o fence e foca nele via `milkdown-verse-insert.ts`.
 - **Evidência**: `bun run test:tdd -- src/lib/features/notes/note-editor-viewport.test.ts src/lib/features/notes/milkdown-verse-node.test.ts src/lib/features/notes/MilkdownMobileToolbar.test.ts` exit 0 (11 testes); lint focal dos arquivos tocados exit 0; `svelte-autofixer` sem issues em `MilkdownNoteEditor.svelte` e `MilkdownMobileToolbar.svelte`; monitor de contexto `CURRENT`; `INTERFACE.md` atualizado.
 - **Limite de verificação**: conferência em iPhone físico ou simulador com teclado real não realizada nesta sessão; comportamento esperado documentado em `INTERFACE.md` e CSS/JS acima. Delivery Gate permanece `In Progress`.
+
+#### Correção solicitada — teclado ao abrir slash no drawer mobile
+
+- **Data**: 2026-09-05
+- **Escopo**: AC-002, AC-013; FR-003; NFR-002.
+- **Pedido preservado**: “no mobile no editor das notas, quando usarmo  / slash commands ocultar o teclado, pois abre um drawer.”
+- **Mudança normativa**: ao detectar `/` no editor mobile, o teclado virtual deve ser ocultado antes da abertura do drawer; a seleção atual do ProseMirror deve permanecer disponível para o comando escolhido.
+- **Estado**: Pendente de teste TDD, implementação, regressão e revisão visual.
 
 ### 14. Tarefas
 
@@ -954,9 +965,43 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
   - [x] **IMPROVE**: Removido landmark redundante do editor, adicionado `white-space: pre-wrap`, corrigido flush/callback do autosave ao desmontar e atualizados testes de regressão para o novo motor.
 <!-- specsfy:evidence {"task":"T026","refs":["US-001","US-002","US-003","FR-001","FR-002","FR-003","FR-004","FR-005","FR-006","NFR-001","NFR-002","NFR-003","AC-001","AC-002","AC-003","AC-004","AC-005","AC-006","AC-007","AC-008","AC-009","AC-010","AC-011","AC-012","AC-013","AC-014","AC-015","AC-016","AC-017","AC-018"],"files":["apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte","apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte","apps/web/src/routes/notes-editor.svelte.spec.ts","apps/web/src/routes/bible-reader.svelte.spec.ts","PROJECT.md"],"commands":[{"run":"bun run test:unit","exit":0},{"run":"bunx eslint src/lib/features/notes/MilkdownNoteEditor.svelte src/lib/features/notes/MilkdownMobileToolbar.svelte src/lib/features/notes/milkdown-markdown-io.ts src/lib/features/notes/milkdown-slash.ts src/lib/features/notes/milkdown-verse-node.ts src/lib/features/notes/note-editor-service.ts src/routes/notes-editor.svelte.spec.ts src/routes/bible-reader.svelte.spec.ts","exit":0},{"run":"bun run build","exit":0}]} -->
 
+#### Correção pós-entrega — slash mobile
+
+- [ ] T027 [TEST] [TDD] [US-002] Derivar teste de AC-002 para confirmar que o editor perde foco e o teclado virtual é ocultado antes do drawer em `apps/web/src/routes/notes-editor.svelte.spec.ts` — Refs: US-002, FR-003, NFR-002, AC-002, AC-013 — Depends: none
+  - [x] **PREP**: Ler o Gherkin atualizado de AC-002 e confirmar o runner Vitest Browser/Playwright e a preservação da seleção.
+  - [ ] **EXECUTE**: Adicionar o caso com marcador próprio `SPECSFY-MILKDOWN-019`, sem criar ou executar `.feature`.
+  - [ ] **VERIFY**: Observar RED com `bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts`, pois o editor ainda mantém foco ao abrir o drawer.
+  - [ ] **VISUAL**: Não aplicável: a tarefa materializa o contrato de foco/teclado; a revisão visual ocorrerá na tarefa de implementação.
+  - [ ] **EVIDENCE**: Registrar o resultado RED, o comando e os IDs AC-002/AC-013, FR-003 e NFR-002.
+  - [ ] **IMPROVE**: Manter a prova no teste de rota para observar o comportamento integrado do drawer, em vez de simular somente um `blur` isolado.
+
+- [ ] T028 [CODE] [US-002] Desfocar o DOM do ProseMirror ao detectar `/` no mobile antes de abrir o drawer, preservando a seleção para o comando escolhido em `apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte` — Refs: US-002, FR-003, NFR-002, AC-002, AC-013 — Depends: T002, T013, T027
+  - [ ] **PREP**: Confirmar o RED de T027, o listener `markdownUpdated`, a detecção de `mobile` e o foco atual do editor.
+  - [ ] **EXECUTE**: Aplicar o menor ajuste de produção para desfocar o editor antes de `slashOpen = true`, sem refocar automaticamente nem perder a seleção ProseMirror.
+  - [ ] **VERIFY**: Executar teste focal, lint dos arquivos tocados e build; confirmar que o drawer continua abrindo e os comandos continuam operáveis.
+  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em 390×844 claro/escuro, drawer 90dvh com teclado fechado, safe area, foco visível no campo de busca e ausência de overflow; validar desktop sem mudança no slash flutuante.
+  - [ ] **EVIDENCE**: Registrar comandos, resultados, IDs e a inspeção de foco/teclado nas seções 11–13; reconstruir `docs/` antes de concluir.
+  - [ ] **IMPROVE**: Registrar a melhoria aplicada ou justificar por que nenhuma melhoria segura adicional foi necessária.
+
+- [ ] T029 [DOC] [US-002] Atualizar o mapa de interface para registrar que o slash mobile oculta o teclado antes do `Sheet` em `INTERFACE.md` — Refs: US-002, FR-003, NFR-002, AC-002 — Depends: T028
+  - [ ] **PREP**: Conferir os consumidores reais de `MilkdownNoteEditor` e `Sheet` em `INTERFACE.md` e no código.
+  - [ ] **EXECUTE**: Atualizar as linhas do editor e da tela de notas com o comportamento de foco/teclado, preservando o texto humano fora dos blocos gerenciados.
+  - [ ] **VERIFY**: Confirmar que arquivos, estados, consumidores e regra de reuso continuam reais e que o monitor de contexto permanece `CURRENT`.
+  - [ ] **VISUAL**: Não aplicável: a tarefa altera somente o inventário textual da interface.
+  - [ ] **EVIDENCE**: Registrar o arquivo atualizado, o monitor e os IDs cobertos.
+  - [ ] **IMPROVE**: Manter a regra junto do bloco e da tela consumidores para evitar documentação duplicada.
+
+- [ ] T030 [TEST] [US-002] Executar regressão focal, rastreabilidade e revisão visual da correção de slash mobile em `apps/web/src/routes/notes-editor.svelte.spec.ts` e `apps/web/src/lib/features/notes/` — Refs: US-001, US-002, US-003, FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, NFR-001, NFR-002, NFR-003, AC-001, AC-002, AC-003, AC-004, AC-005, AC-006, AC-007, AC-008, AC-009, AC-010, AC-011, AC-012, AC-013, AC-014, AC-015, AC-016, AC-017, AC-018 — Depends: T028, T029
+  - [ ] **PREP**: Confirmar T027–T029 concluídas, comandos de Vitest, lint, typecheck, build e rastreabilidade disponíveis.
+  - [ ] **EXECUTE**: Rodar a regressão da fatia e revisar `PROJECT.md` quanto a impacto material; não criar nova capacidade fora da finalidade existente.
+  - [ ] **VERIFY**: Teste focal e regressão relacionada aprovados; registrar e separar falhas globais preexistentes, se reaparecerem.
+  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em desktop 1280×900 e mobile 390×844, claro/escuro, zoom 200%, foco/Escape, drawer sem teclado e ausência de overflow, respeitando reduced motion.
+  - [ ] **EVIDENCE**: Registrar resultados de testes, lint, build, traceabilidade, monitor, documentação e revisão visual com os IDs completos.
+  - [ ] **IMPROVE**: Aplicar uma melhoria segura identificada na regressão ou registrar justificativa concreta para nenhuma melhoria.
+
 ### 15. Ordem de execução
 
-- Caminho crítico: T001–T018 (RED) → T019 → T020 → T021 → T023 → T022 → T026.
+- Caminho crítico: T001–T018 (RED) → T019 → T020 → T021 → T023 → T022 → T026 → T027 (RED) → T028 → T029 → T030.
 - Tarefas paralelas: T024 e T025 com `[P]` após seus CODEs (arquivos distintos, sem estado compartilhado); TDDs T001–T018 sem `[P]` porque compartilham arquivos de teste por grupo.
 - Estratégia de MVP: US-001 + US-002 entregam o núcleo Files over app com versículo; US-003 completa a paridade mobile com toolbar.
 
@@ -992,6 +1037,7 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
 - **DEC-003**: Slash desktop + drawer mobile 90dvh com mesma lista e toolbar com 7 ações acima da navegação — porque unifica inserção e formatação nos dois viewports; alternativa de menu flutuante mobile descartada por conflito com teclado.
 - **DEC-004**: Reaproveitar `VerseSelector` Dialog/Sheet e `VerseBlockView` — porque mantém validação, preview e acessibilidade já entregues; alternativa de seletor novo duplicaria fluxo.
 - **DEC-005**: Remover Tipex/TipTap do editor só após paridade com regressão — porque `BibleNoteSplit` consome o editor; remoção imediata quebraria o leitor.
+- **DEC-006**: Ao abrir o drawer de slash no mobile, desfocar o editor para ocultar o teclado virtual — porque o drawer é a superfície ativa de comandos e o teclado aberto reduz sua área útil; a seleção do ProseMirror permanece como origem da inserção.
 
 ### 18. Definition of Done
 

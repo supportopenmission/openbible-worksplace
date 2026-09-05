@@ -95,6 +95,24 @@ describe('notes editor Milkdown canvas controls', () => {
 		expect(drawer.element().getBoundingClientRect().height).toBeGreaterThanOrEqual(750);
 	});
 
+	// SPECSFY: US-002 FR-003 NFR-002 AC-002 AC-013
+	it('blurs the editor before opening the mobile slash drawer', async () => {
+		await page.viewport(390, 844);
+		render(NotesEditorPage, { props: { data: { noteId: 'mobile-slash-keyboard-note' } } });
+		const editor = page.getByRole('textbox');
+		let drawerWasVisibleWhenEditorBlurred = false;
+		editor.element().addEventListener('blur', () => {
+			drawerWasVisibleWhenEditorBlurred = document.querySelector('[role="dialog"]') !== null;
+		});
+
+		await editor.click();
+		await userEvent.keyboard('{End}{Enter}/');
+
+		await expect.element(page.getByRole('dialog', { name: 'Comandos' })).toBeInTheDocument();
+		expect(drawerWasVisibleWhenEditorBlurred).toBe(false);
+		expect(document.activeElement).not.toBe(editor.element());
+	});
+
 	// SPECSFY: US-003 FR-004 NFR-002 NFR-003 AC-003 AC-016
 	it('keeps the measured formatting toolbar inside the viewport', async () => {
 		await page.viewport(390, 844);
