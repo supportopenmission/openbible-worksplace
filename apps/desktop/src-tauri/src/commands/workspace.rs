@@ -219,8 +219,28 @@ pub fn inspect_bible_impl(context: &WorkspaceContext, version: String) -> Result
 	let relative = relative_path(&format!("bibles/{version}"))?;
 	let connection = Connection::open_with_flags(root.join(relative), rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY).map_err(|_| CommandError::new("sqlite_error", true))?;
 	let name = connection.query_row("SELECT value FROM metadata WHERE key = 'name' LIMIT 1", [], |row| row.get::<_, String>(0)).unwrap_or(version);
-	let mut books_query = connection.prepare("SELECT id, name, COALESCE(abbreviation, '') FROM book ORDER BY id").map_err(|_| CommandError::new("sqlite_error", true))?;
-	let book_rows = books_query.query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?, row.get::<_, String>(2)?))).map_err(|_| CommandError::new("sqlite_error", true))?.collect::<Result<Vec<_>, _>>().map_err(|_| CommandError::new("sqlite_error", true))?;
+	let book_columns = table_columns(&connection, "book")?;
+	let has_abbreviation = book_columns.iter().any(|column| column.eq_ignore_ascii_case("abbreviation"));
+	let mut books_query = connection
+		.prepare(if has_abbreviation {
+			"SELECT id, name, abbreviation FROM book ORDER BY id"
+		} else {
+			"SELECT id, name FROM book ORDER BY id"
+		})
+		.map_err(|_| CommandError::new("sqlite_error", true))?;
+	let book_rows = if has_abbreviation {
+		books_query
+			.query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?, row.get::<_, Option<String>>(2)?.unwrap_or_default())))
+			.map_err(|_| CommandError::new("sqlite_error", true))?
+			.collect::<Result<Vec<_>, _>>()
+			.map_err(|_| CommandError::new("sqlite_error", true))?
+	} else {
+		books_query
+			.query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?, String::new())))
+			.map_err(|_| CommandError::new("sqlite_error", true))?
+			.collect::<Result<Vec<_>, _>>()
+			.map_err(|_| CommandError::new("sqlite_error", true))?
+	};
 	drop(books_query);
 	let mut books = Vec::with_capacity(book_rows.len());
 	for (id, book_name, abbreviation) in book_rows {
@@ -229,6 +249,20 @@ pub fn inspect_bible_impl(context: &WorkspaceContext, version: String) -> Result
 		books.push(BibleBookInfo { id, name: book_name, abbreviation, chapters });
 	}
 	Ok(BibleInfo { name, books })
+}
+
+fn table_columns(connection: &Connection, table: &str) -> Result<Vec<String>, CommandError> {
+	let pragma = match table {
+		"book" | "verse" => format!("PRAGMA table_info({table})"),
+		_ => return Err(CommandError::new("command_not_allowed", false)),
+	};
+	let mut statement = connection.prepare(&pragma).map_err(|_| CommandError::new("sqlite_error", true))?;
+	let columns = statement
+		.query_map([], |row| row.get::<_, String>(1))
+		.map_err(|_| CommandError::new("sqlite_error", true))?
+		.collect::<Result<Vec<_>, _>>()
+		.map_err(|_| CommandError::new("sqlite_error", true))?;
+	Ok(columns)
 }
 
 #[tauri::command]
