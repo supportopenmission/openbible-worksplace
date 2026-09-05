@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tauri dev",
-    "build": "tauri build --target universal-apple-darwin",
-    "build:debug": "tauri build --debug --target universal-apple-darwin",
+    "build": "tauri build --target universal-apple-darwin --bundles app,dmg",
+    "build:debug": "tauri build --debug --target universal-apple-darwin --bundles app,dmg",
     "build:linux": "tauri build --bundles deb,appimage"
   },
   "devDependencies": {
