@@ -9,12 +9,14 @@
 		ChevronLeft,
 		ChevronRight,
 		Database,
+		Download,
 		Info,
 		SunMoon
 	} from '@lucide/svelte';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import AppearanceSettings from './AppearanceSettings.svelte';
+	import UpdateSettings from './UpdateSettings.svelte';
 	import BibleLibraryManager from '$lib/features/bible/BibleLibraryManager.svelte';
 	import {
 		getReminderConfig,
@@ -26,11 +28,12 @@
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 
 	const isMobile = new IsMobile();
-	let activeTab = $state<'storage' | 'bibles' | 'stats' | 'reminder' | 'appearance'>(
+	let activeTab = $state<'storage' | 'bibles' | 'stats' | 'reminder' | 'appearance' | 'updates'>(
 		'storage'
 	);
 
-	type MobileSectionId = 'storage' | 'bibles' | 'stats' | 'reminder' | 'about' | 'appearance';
+	type MobileSectionId =
+		'storage' | 'bibles' | 'stats' | 'reminder' | 'about' | 'appearance' | 'updates';
 
 	const mobileSections: Array<{ id: MobileSectionId; label: string; icon: Component }> = [
 		{ id: 'storage', label: 'Armazenamento', icon: Database },
@@ -38,6 +41,7 @@
 		{ id: 'stats', label: 'Estatísticas', icon: ChartColumn },
 		{ id: 'reminder', label: 'Lembrete diário', icon: Bell },
 		{ id: 'appearance', label: 'Aparência', icon: SunMoon },
+		{ id: 'updates', label: 'Atualizações', icon: Download },
 		{ id: 'about', label: 'Sobre', icon: Info }
 	];
 
@@ -73,7 +77,8 @@
 		const config = getReminderConfig();
 		reminderEnabled = config.enabled;
 		reminderTime = config.time;
-		reminderPermission = typeof Notification === 'undefined' ? 'unsupported' : Notification.permission;
+		reminderPermission =
+			typeof Notification === 'undefined' ? 'unsupported' : Notification.permission;
 	});
 
 	async function handleReminderToggle(event: Event) {
@@ -97,7 +102,8 @@
 				: 'Lembrete desativado.';
 			window.dispatchEvent(new CustomEvent('openbible:reminder-changed'));
 		} catch (error) {
-			reminderMessage = error instanceof Error ? error.message : 'Não foi possível salvar o lembrete.';
+			reminderMessage =
+				error instanceof Error ? error.message : 'Não foi possível salvar o lembrete.';
 		} finally {
 			reminderSaving = false;
 		}
@@ -142,12 +148,7 @@
 						onclick={closeMobileSection}
 						aria-label="Voltar para Configurações"
 					>
-						<ChevronLeft
-							size={18}
-							strokeWidth={2}
-							aria-hidden="true"
-							class="config-back-chevron"
-						/>
+						<ChevronLeft size={18} strokeWidth={2} aria-hidden="true" class="config-back-chevron" />
 						<span>Configurações</span>
 					</button>
 					<h2 class="config-subpage-title" bind:this={mobileSubheading} tabindex={-1}>
@@ -164,6 +165,8 @@
 							{@render reminderSettings()}
 						{:else if mobileSection === 'appearance'}
 							<AppearanceSettings />
+						{:else if mobileSection === 'updates'}
+							<UpdateSettings />
 						{:else if mobileSection === 'about'}
 							<div class="about-settings">
 								<p class="about-version">OpenBible v{APP_VERSION}</p>
@@ -172,8 +175,8 @@
 									compartilhar.
 								</p>
 								<p class="about-hint">
-									Seus dados ficam guardados neste dispositivo, no workspace que você
-									configurou. Sem conta e sem servidor.
+									Seus dados ficam guardados neste dispositivo, no workspace que você configurou.
+									Sem conta e sem servidor.
 								</p>
 							</div>
 						{/if}
@@ -189,6 +192,7 @@
 				<Tabs.Trigger value="stats">Estatísticas</Tabs.Trigger>
 				<Tabs.Trigger value="reminder">Lembrete</Tabs.Trigger>
 				<Tabs.Trigger value="appearance">Aparência</Tabs.Trigger>
+				<Tabs.Trigger value="updates">Atualizações</Tabs.Trigger>
 			</Tabs.List>
 			<Tabs.Content value="storage" class="config-tab-panel">
 				<WorkspaceSettings embedded />
@@ -204,6 +208,9 @@
 			</Tabs.Content>
 			<Tabs.Content value="appearance" class="config-tab-panel">
 				<AppearanceSettings />
+			</Tabs.Content>
+			<Tabs.Content value="updates" class="config-tab-panel">
+				<UpdateSettings />
 			</Tabs.Content>
 		</Tabs.Root>
 		<footer class="config-footer">
@@ -236,15 +243,14 @@
 		{/if}
 		{#if reminderPermission === 'denied'}
 			<p class="reminder-hint">
-				As notificações estão bloqueadas no navegador. Libere a permissão para receber o
-				lembrete.
+				As notificações estão bloqueadas no navegador. Libere a permissão para receber o lembrete.
 			</p>
 		{:else if reminderPermission === 'unsupported'}
 			<p class="reminder-hint">Este navegador não oferece notificações locais.</p>
 		{/if}
 		<p class="reminder-hint">
-			Sem servidor: o aviso aparece neste dispositivo enquanto o app estiver aberto. No iOS,
-			o sistema pode não entregar com o app fechado.
+			Sem servidor: o aviso aparece neste dispositivo enquanto o app estiver aberto. No iOS, o
+			sistema pode não entregar com o app fechado.
 		</p>
 	</div>
 {/snippet}

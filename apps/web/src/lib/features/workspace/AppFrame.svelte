@@ -8,6 +8,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import AppSidebar from '$lib/features/navigation/AppSidebar.svelte';
+	import UpdateDialog from '$lib/features/config/UpdateDialog.svelte';
 	import { createNote } from '$lib/features/notes/notes-repository';
 	import { NOTE_EDITOR_WIDTHS, type NoteEditorWidth } from '$lib/features/notes/note-editor-layout';
 	import { notePageChrome } from '$lib/features/notes/note-page-chrome.svelte';
@@ -28,13 +29,7 @@
 	const isConfig = $derived(page.url.pathname === '/config');
 	const isNotes = $derived(page.url.pathname.startsWith('/notes'));
 	const isBare = $derived(isBible || isNotes);
-	const headerTitle = $derived(
-		isHighlightsList
-			? 'Destaques'
-			: isConfig
-				? 'Configurações'
-				: ''
-	);
+	const headerTitle = $derived(isHighlightsList ? 'Destaques' : isConfig ? 'Configurações' : '');
 
 	function setNoteWidth(width: NoteEditorWidth) {
 		notePageChrome.setWidth(width);
@@ -77,6 +72,7 @@
 			</div>
 		</Sidebar.Inset>
 	</Sidebar.Provider>
+	<UpdateDialog />
 {:else}
 	{@render children()}
 {/if}

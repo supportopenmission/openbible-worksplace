@@ -1,6 +1,6 @@
 [package]
 name = "openbible-desktop"
-version = "0.5.0"
+version = "0.5.2"
 description = "OpenBible native macOS shell"
 authors = ["OpenBible"]
 edition = "2021"
@@ -20,3 +20,5 @@ thiserror = "2"
 libc = "0.2"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
 tauri-plugin-dialog = "2.7.3"
+tauri-plugin-updater = "2.11.0"
+tauri-plugin-process = "2.3.1"

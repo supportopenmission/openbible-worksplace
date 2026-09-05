@@ -25,13 +25,28 @@ jobs:
             apps/desktop/src-tauri/target
           key: macos-tauri-${{ runner.arch }}-${{ hashFiles('**/Cargo.lock', 'bun.lock') }}
       - run: bun install --frozen-lockfile
-      - run: bun run --cwd apps/desktop build
+      - name: Build signed macOS updater artifacts
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            bun run --cwd apps/desktop build
+          else
+            bun run --cwd apps/desktop build -- --no-sign
+          fi
       - name: Archive macOS app
         run: ditto -c -k --sequesterRsrc --keepParent apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/OpenBible.app OpenBible_${GITHUB_REF_NAME}_universal.app.zip
       - uses: actions/upload-artifact@v4
         with:
           name: openbible-macos-universal
           path: OpenBible_*_universal.app.zip
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          name: openbible-macos-updater
+          path: |
+            apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/*.tar.gz
+            apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/*.tar.gz.sig
 
   build-linux:
     runs-on: ubuntu-22.04
@@ -65,13 +80,23 @@ jobs:
             apps/desktop/src-tauri/target
           key: linux-tauri-${{ hashFiles('**/Cargo.lock', 'bun.lock') }}
       - run: bun install --frozen-lockfile
-      - run: bun run --cwd apps/desktop build:linux
+      - name: Build signed Linux updater artifacts
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            bun run --cwd apps/desktop build:linux
+          else
+            bun run --cwd apps/desktop build:linux -- --no-sign
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: openbible-linux-packages
           path: |
             apps/desktop/src-tauri/target/release/bundle/deb/*.deb
             apps/desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+            apps/desktop/src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz
+            apps/desktop/src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz.sig
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -95,6 +120,30 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const root = 'release-assets';
+          const files = fs.readdirSync(root, { recursive: true }).map((file) => path.join(root, file)).filter((file) => fs.statSync(file).isFile());
+          const find = (suffix) => files.find((file) => file.endsWith(suffix));
+          const mac = find('.app.tar.gz');
+          const linux = find('.AppImage.tar.gz');
+          if (!mac || !linux || !fs.existsSync(`${mac}.sig`) || !fs.existsSync(`${linux}.sig`)) throw new Error('Updater artifacts not found');
+          const ref = process.env.GITHUB_REF_NAME;
+          const base = `https://github.com/${process.env.GITHUB_REPOSITORY}/releases/download/${ref}/`;
+          const platform = (artifact) => ({ url: `${base}${path.basename(artifact)}`, signature: fs.readFileSync(`${artifact}.sig`, 'utf8').trim() });
+          const latest = {
+            version: ref.replace(/^v/, ''),
+            notes: `OpenBible ${ref}`,
+            pub_date: new Date().toISOString(),
+            platforms: {
+              'darwin-aarch64': platform(mac),
+              'darwin-x86_64': platform(mac),
+              'linux-x86_64': platform(linux)
+            }
+          };
+          fs.writeFileSync(path.join(root, 'latest.json'), `${JSON.stringify(latest, null, 2)}\n`);
+          NODE
           mapfile -d '' assets < <(find release-assets -type f -print0)
           test "${#assets[@]}" -gt 0
           gh release upload "${GITHUB_REF_NAME}" --clobber --repo "${GITHUB_REPOSITORY}" "${assets[@]}"

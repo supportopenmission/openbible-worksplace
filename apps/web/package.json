@@ -1,6 +1,6 @@
 {
   "name": "web",
-  "version": "0.5.0",
+  "version": "0.5.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -23,6 +23,8 @@
     "@milkdown/kit": "7.22.1",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-dialog": "^2.7.3",
+    "@tauri-apps/plugin-process": "^2.3.1",
+    "@tauri-apps/plugin-updater": "^2.11.0",
     "@tiptap/extension-highlight": "2.27.2",
     "bible-passage-reference-parser": "^4.0.0",
     "clsx": "^2.1.1",

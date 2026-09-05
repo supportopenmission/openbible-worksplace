@@ -14,6 +14,8 @@
 | npm | produção | @milkdown/kit | 7.22.1 | Finalidade não descrita nos metadados locais. | https://github.com/Milkdown/milkdown |
 | npm | produção | @tauri-apps/api | ^2.11.1 | Tauri API definitions | https://github.com/tauri-apps/tauri |
 | npm | produção | @tauri-apps/plugin-dialog | ^2.7.3 | Finalidade não descrita nos metadados locais. | https://github.com/tauri-apps/plugins-workspace |
+| npm | produção | @tauri-apps/plugin-process | ^2.3.1 | Finalidade não descrita nos metadados locais. | https://github.com/tauri-apps/plugins-workspace |
+| npm | produção | @tauri-apps/plugin-updater | ^2.11.0 | Finalidade não descrita nos metadados locais. | https://github.com/tauri-apps/plugins-workspace |
 | npm | produção | @tiptap/extension-highlight | 2.27.2 | highlight extension for tiptap | https://github.com/ueberdosis/tiptap |
 | npm | produção | bible-passage-reference-parser | ^4.0.0 | Identifies and parses Bible references (like John 3:16) in 50 languages. | git://github.com/openbibleinfo/Bible-Passage-Reference-Parser |
 | npm | produção | clsx | ^2.1.1 | A tiny (239B) utility for constructing className strings conditionally. | lukeed/clsx |

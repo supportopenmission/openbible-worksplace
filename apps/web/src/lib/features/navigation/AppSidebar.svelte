@@ -1,8 +1,24 @@
 <script lang="ts">
-	import { BookOpen, GraduationCap, Highlighter, House, NotebookPen, ScrollText, Settings } from '@lucide/svelte';
+	import { onMount } from 'svelte';
+	import {
+		BookOpen,
+		Download,
+		GraduationCap,
+		Highlighter,
+		House,
+		NotebookPen,
+		ScrollText,
+		Settings
+	} from '@lucide/svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import { resolve } from '$app/paths';
 	import { APP_VERSION } from '$lib/app-version';
+	import { detectStorageKind } from '$lib/storage/environment';
+	import {
+		checkForAppUpdate,
+		getAppUpdateState,
+		openAppUpdateDialog
+	} from '$lib/updates/app-updates.svelte';
 	import ThemeToggle from './ThemeToggle.svelte';
 
 	let { currentPath = '/' }: { currentPath?: string } = $props();
@@ -29,6 +45,10 @@
 		const link = links.find((item) => item.href === href);
 		if (!link || ('hideOnMobile' in link && link.hideOnMobile)) return [];
 		return [link];
+	});
+	const update = getAppUpdateState();
+	onMount(() => {
+		if (detectStorageKind() === 'native') void checkForAppUpdate();
 	});
 </script>
 
@@ -67,6 +87,29 @@
 					</Sidebar.MenuItem>
 				{/each}
 			</Sidebar.Menu>
+			{#if update.status === 'available'}
+				<Sidebar.Menu class="update-menu">
+					<Sidebar.MenuItem>
+						<Sidebar.MenuButton
+							class="nav-link update-link"
+							tooltipContent="Atualização disponível"
+						>
+							{#snippet child({ props })}
+								<button
+									{...props}
+									type="button"
+									onclick={openAppUpdateDialog}
+									aria-label={`Abrir atualização v${update.version}`}
+								>
+									<Download size={16} strokeWidth={1.75} aria-hidden="true" />
+									<span>Atualização disponível</span>
+									<small class="update-badge">v{update.version}</small>
+								</button>
+							{/snippet}
+						</Sidebar.MenuButton>
+					</Sidebar.MenuItem>
+				</Sidebar.Menu>
+			{/if}
 		</Sidebar.Group>
 	</Sidebar.Content>
 
@@ -197,6 +240,21 @@
 		width: 2px;
 		border-radius: 1px;
 		background: var(--sidebar-foreground);
+	}
+
+	:global(.update-link button) {
+		width: 100%;
+		color: var(--sidebar-foreground);
+	}
+
+	.update-badge {
+		margin-inline-start: auto;
+		border: 1px solid color-mix(in oklch, var(--sidebar-foreground) 22%, transparent);
+		border-radius: 999px;
+		padding: 1px 5px;
+		font-family: var(--font-mono);
+		font-size: 0.62rem;
+		font-weight: 600;
 	}
 
 	:global(.sidebar-footer) {

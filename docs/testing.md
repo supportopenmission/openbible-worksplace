@@ -3,7 +3,7 @@
 <!-- specsfy:documentator:start -->
 ## Resumo
 
-- Arquivos de teste: 62.
+- Arquivos de teste: 63.
 - Runner: não identificado.
 - Scripts: build: turbo run build; check-types: turbo run check-types; dev: turbo run dev; lint: turbo run lint; format: prettier --write .; format:check: prettier --check ..
 
@@ -71,6 +71,7 @@
 | apps/web/src/lib/pwa/pwa.test.ts |
 | apps/web/src/lib/pwa/service-worker-registration.test.ts |
 | apps/web/src/lib/theme/theme.test.ts |
+| apps/web/src/lib/updates/app-updates.test.ts |
 <!-- specsfy:documentator:end -->
 
 ## Suíte browser da aplicação web

@@ -30,6 +30,8 @@ uma. Preserve decisões humanas nas seções livres deste arquivo.
 | Adapter desktop | @sveltejs/adapter-static 3.0.8 | `apps/web/package.json` e `apps/web/svelte.config.js` |
 | Ponte web→desktop | @tauri-apps/api 2.11.1 | `apps/web/package.json` |
 | Seletor de pasta nativo | @tauri-apps/plugin-dialog 2.7.3 | `apps/web/package.json` e `apps/web/src/lib/storage/storage-registry.ts` |
+| Atualização nativa | tauri-plugin-updater 2.11.0 + @tauri-apps/plugin-updater 2.11.0 | `apps/desktop/src-tauri/Cargo.toml`, `apps/desktop/src-tauri/src/lib.rs`, `apps/web/package.json` e `apps/web/src/lib/updates/app-updates.svelte.ts` |
+| Reinício pós-atualização | tauri-plugin-process 2.3.1 + @tauri-apps/plugin-process 2.3.1 | `apps/desktop/src-tauri/Cargo.toml`, `apps/desktop/src-tauri/src/lib.rs` e `apps/web/src/lib/updates/app-updates.svelte.ts` |
 <!-- specsfy:stack:end -->
 
 ## Decisões e observações do projeto
@@ -61,7 +63,7 @@ manifests.
   `apps/web/static/logo-minimal.png` (marca branca em fundo preto com área de
   segurança para maskable); o manifesto segue `standalone` com `purpose any
   maskable`.
-- Versão visível do app em `0.5.0`: canônico em `apps/web/package.json`
+- Versão visível do app em `0.5.2`: canônico em `apps/web/package.json`
   (`version`), espelhado em `apps/web/src/lib/app-version.ts` (`APP_VERSION`)
   via `bun run version:sync [X.Y.Z]` (`apps/web/scripts/sync_app_version.mjs`).
   Exibida no rodapé da sidebar e em `/config`.

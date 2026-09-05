@@ -9,11 +9,11 @@
 
 | Arquivo |
 | --- |
-| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/0.CibKAC3J.css |
+| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/0.PqGtc5Na.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/2.DMkUyxGK.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/3.Btp-QOwP.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/4.VziT5_9B.css |
-| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/5.CsFvk5Gk.css |
+| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/5.YS-0RwGV.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/6.BhpxEd8l.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/7.DV0zDaev.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/8.D9AiRqIN.css |
@@ -22,11 +22,11 @@
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/PageHeader.D4E2QHx-.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/ProductPage.Bt54Nk6E.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/RemoteBibleImport.CJit26Yt.css |
-| apps/web/.svelte-kit/output/client/_app/immutable/assets/0.CibKAC3J.css |
+| apps/web/.svelte-kit/output/client/_app/immutable/assets/0.PqGtc5Na.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/2.DMkUyxGK.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/3.Btp-QOwP.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/4.VziT5_9B.css |
-| apps/web/.svelte-kit/output/client/_app/immutable/assets/5.CsFvk5Gk.css |
+| apps/web/.svelte-kit/output/client/_app/immutable/assets/5.YS-0RwGV.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/6.BhpxEd8l.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/7.DV0zDaev.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/8.D9AiRqIN.css |
@@ -40,14 +40,14 @@
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/PageHeader.D4E2QHx-.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/ProductPage.Bt54Nk6E.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/RemoteBibleImport.CJit26Yt.css |
-| apps/web/.svelte-kit/output/server/_app/immutable/assets/_layout.STKC0XqJ.css |
+| apps/web/.svelte-kit/output/server/_app/immutable/assets/_layout.CDoRBH2w.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_layout.vlsEFOgY.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.BhpxEd8l.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.Btp-QOwP.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.CGU19SLp.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.CULOTDuU.css |
-| apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.CsFvk5Gk.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.CthUTkGy.css |
+| apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.YS-0RwGV.css |
 | apps/web/.svelte-kit/tauri/_app/immutable/assets/0.CibKAC3J.css |
 | apps/web/.svelte-kit/tauri/_app/immutable/assets/2.DMkUyxGK.css |
 | apps/web/.svelte-kit/tauri/_app/immutable/assets/3.Btp-QOwP.css |
