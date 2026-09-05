@@ -165,6 +165,13 @@ pub fn list_files(context: &WorkspaceContext, path: String) -> Result<Vec<String
 	Ok(files)
 }
 
+pub fn delete_file(context: &WorkspaceContext, path: String) -> Result<(), CommandError> {
+	let root = require_root(context)?;
+	let relative = relative_path(&path)?;
+	fs::remove_file(root.join(relative))?;
+	Ok(())
+}
+
 pub fn write_file(context: &WorkspaceContext, path: String, bytes: Vec<u8>) -> Result<FileWriteResult, CommandError> {
 	let root = require_root(context)?;
 	let relative = relative_path(&path)?;
@@ -281,6 +288,12 @@ pub fn read_workspace_file(state: tauri::State<'_, Mutex<WorkspaceContext>>, rel
 pub fn list_workspace_files(state: tauri::State<'_, Mutex<WorkspaceContext>>, relative_path: String) -> Result<Vec<String>, CommandError> {
 	let context = state.lock().map_err(|_| CommandError::new("state_error", true))?;
 	list_files(&context, relative_path)
+}
+
+#[tauri::command]
+pub fn delete_workspace_file(state: tauri::State<'_, Mutex<WorkspaceContext>>, relative_path: String) -> Result<(), CommandError> {
+	let context = state.lock().map_err(|_| CommandError::new("state_error", true))?;
+	delete_file(&context, relative_path)
 }
 
 #[tauri::command]

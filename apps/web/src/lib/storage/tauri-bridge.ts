@@ -4,6 +4,7 @@ export type WorkspaceCommand =
 	| { name: 'workspace.initialize'; preferredPath?: string }
 	| { name: 'workspace.readFile'; relativePath: string }
 	| { name: 'workspace.listFiles'; relativePath: string }
+	| { name: 'workspace.deleteFile'; relativePath: string }
 	| { name: 'workspace.writeFile'; relativePath: string; bytes: Uint8Array }
 	| {
 			name: 'index.query';
@@ -59,6 +60,9 @@ function payload(command: WorkspaceCommand | UnknownWorkspaceCommand): Record<st
 		case 'workspace.listFiles':
 			validatePath(String(command.relativePath));
 			return { relativePath: String(command.relativePath) };
+		case 'workspace.deleteFile':
+			validatePath(String(command.relativePath));
+			return { relativePath: String(command.relativePath) };
 		case 'workspace.writeFile':
 			validatePath(String(command.relativePath));
 			return {
@@ -107,6 +111,7 @@ function tauriCommandName(command: WorkspaceCommand): string {
 		'workspace.initialize': 'initialize_workspace',
 		'workspace.readFile': 'read_workspace_file',
 		'workspace.listFiles': 'list_workspace_files',
+		'workspace.deleteFile': 'delete_workspace_file',
 		'workspace.writeFile': 'write_workspace_file',
 		'index.query': 'query_workspace_index',
 		'bible.readVerses': 'read_bible_verses',

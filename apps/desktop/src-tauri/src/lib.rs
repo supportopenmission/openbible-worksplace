@@ -14,6 +14,7 @@ pub fn run() {
 			commands::workspace::initialize_workspace,
 			commands::workspace::read_workspace_file,
 			commands::workspace::list_workspace_files,
+			commands::workspace::delete_workspace_file,
 			commands::workspace::write_workspace_file,
 			commands::workspace::query_workspace_index,
 			commands::workspace::read_bible_verses,

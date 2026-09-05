@@ -11,4 +11,16 @@ describe('typed Tauri bridge', () => {
 
 		expect(result.ok).toBe(true);
 	});
+
+	it('allows deleting only a validated workspace-relative file', async () => {
+		const result = await invokeWorkspaceCommand({
+			name: 'workspace.deleteFile',
+			relativePath: 'notes/example.md'
+		});
+
+		expect(result.ok).toBe(true);
+		await expect(
+			invokeWorkspaceCommand({ name: 'workspace.deleteFile', relativePath: '../outside.md' })
+		).rejects.toMatchObject({ code: 'path_outside_workspace' });
+	});
 });

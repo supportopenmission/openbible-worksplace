@@ -38,6 +38,24 @@ fn initialize_requires_an_explicit_workspace_path() {
 }
 
 #[test]
+fn delete_file_removes_a_workspace_relative_file() {
+	// SPECSFY: US-001 FR-002 NFR-003 AC-004
+	let workspace = std::env::temp_dir().join(format!("openbible-delete-test-{}", std::process::id()));
+	let mut context = crate::commands::workspace::WorkspaceContext::default();
+	crate::commands::workspace::initialize(&mut context, Some(workspace.to_string_lossy().into_owned()))
+		.expect("initialize workspace");
+	std::fs::write(workspace.join("notes/example.md"), "note").expect("create note fixture");
+
+	crate::commands::workspace::delete_file(&context, "notes/example.md".into()).expect("delete note");
+
+	assert!(!workspace.join("notes/example.md").exists());
+	if let Some(lock) = context.lock.take() {
+		crate::commands::lock::release(lock).expect("release lock");
+	}
+	let _ = std::fs::remove_dir_all(workspace);
+}
+
+#[test]
 fn inspect_bible_accepts_openlp_schema_without_abbreviation() {
 	// SPECSFY: US-001 FR-002 NFR-003 AC-004
 	let workspace = std::env::temp_dir().join(format!("openbible-bible-test-{}", std::process::id()));

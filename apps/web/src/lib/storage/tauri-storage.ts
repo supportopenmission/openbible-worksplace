@@ -49,6 +49,9 @@ export function createTauriStorage(): WorkspaceStorage {
 			});
 			return Array.isArray(result.value) ? result.value.map(String) : [];
 		},
+		deleteFile: async (path) => {
+			await invokeWorkspaceCommand({ name: 'workspace.deleteFile', relativePath: path });
+		},
 		readBibleChapter: async (version, bookId, chapter) => {
 			const result = await invokeWorkspaceCommand<{ verse: number; text: string }[]>({
 				name: 'bible.readVerses',
