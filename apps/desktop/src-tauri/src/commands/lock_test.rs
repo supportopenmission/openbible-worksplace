@@ -26,3 +26,13 @@ fn initialize_is_idempotent_for_the_active_workspace() {
 	}
 	let _ = std::fs::remove_dir_all(workspace);
 }
+
+#[test]
+fn initialize_requires_an_explicit_workspace_path() {
+	// SPECSFY: US-001 FR-001 NFR-002 AC-002
+	let mut context = crate::commands::workspace::WorkspaceContext::default();
+	let error = crate::commands::workspace::initialize(&mut context, None)
+		.expect_err("native initialization must require the selected folder");
+
+	assert_eq!(error.code, "workspace_path_required");
+}

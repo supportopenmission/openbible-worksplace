@@ -80,7 +80,7 @@ export class WorkspaceState {
 	}
 
 	async reconnectFolder() {
-		const storage = await chooseWorkspaceStorage();
+		const storage = await chooseWorkspaceStorage(this.storage?.kind);
 		await prepareWorkspace(storage);
 		await this.markConfigured(storage);
 	}

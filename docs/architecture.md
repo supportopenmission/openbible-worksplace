@@ -24,6 +24,8 @@ classDiagram
 ## Contexto confirmado
 
 - `apps/web` é a aplicação SvelteKit do produto.
+- `apps/desktop` é uma casca Tauri que reutiliza a interface web; no runtime nativo,
+  a pasta escolhida no onboarding é a raiz única de Markdown, JSON e SQLite.
 - Pacotes compartilhados restantes: `eslint-config` e `typescript-config`.
 - A persistência File Over Apps usa pasta local ou OPFS: Markdown/JSON no
   workspace, SQLite bíblico somente leitura em `bibles/` e `index.sqlite` auxiliar.

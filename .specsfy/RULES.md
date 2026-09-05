@@ -9,6 +9,7 @@ manifests dos workspaces.
 - Manter Markdown com YAML frontmatter como fonte primária dos sermões, estudos e notas; usar SQLite local apenas para índices, destaques e dados auxiliares.
 
 - Gravar tema, tela inicial e última leitura em `.openbible/preferences.json` no workspace; o `localStorage` é cache de primeiro paint, não a fonte File Over Apps.
+- No desktop Tauri, a pasta escolhida pela pessoa é a raiz única de dados Files Over App; `localStorage` pode guardar somente o ponteiro do caminho para reabrir o workspace, nunca notas, configurações ou bancos fora dessa pasta.
 
 - Revalidar a permissão da pasta local após reload e pedir `navigator.storage.persist()` no origin para reduzir eviction do OPFS e do IndexedDB.
 

@@ -61,12 +61,12 @@ manifests.
   `apps/web/static/logo-minimal.png` (marca branca em fundo preto com área de
   segurança para maskable); o manifesto segue `standalone` com `purpose any
   maskable`.
-- Versão visível do app em `0.4.0`: canônico em `apps/web/package.json`
+- Versão visível do app em `0.5.0`: canônico em `apps/web/package.json`
   (`version`), espelhado em `apps/web/src/lib/app-version.ts` (`APP_VERSION`)
   via `bun run version:sync [X.Y.Z]` (`apps/web/scripts/sync_app_version.mjs`).
   Exibida no rodapé da sidebar e em `/config`.
-- `bun.lock` foi verificado durante o setup desta tarefa; a implementação do
-  seletor de pasta não altera a stack nem adiciona dependências.
+- `bun.lock` foi verificado durante o setup desta tarefa; o seletor de pasta usa
+  `@tauri-apps/plugin-dialog` no shell nativo e não altera a stack web.
 - A SPEC-0013 tornou `@milkdown/kit` 7.22.1 o motor principal de `/notes/[id]`
   e do split de notas no leitor, com `remark-directive` para roundtrip do fence
   `:::verse`. Tipex/TipTap permanecem temporariamente apenas em arquivos e

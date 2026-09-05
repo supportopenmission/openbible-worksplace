@@ -1,7 +1,7 @@
 import { invokeWorkspaceCommand, TauriCommandError } from './tauri-bridge';
 import type { FileContent, WorkspaceStorage } from './types';
 
-const DEFAULT_PATH = '~/Library/Application Support/OpenBible/workspace';
+const NATIVE_WORKSPACE_PATH_KEY = 'openbible:native-workspace-path';
 
 function bytes(content: FileContent): Uint8Array {
 	return typeof content === 'string' ? new TextEncoder().encode(content) : content;
@@ -14,11 +14,10 @@ function toBytes(value: unknown): Uint8Array | null {
 	return null;
 }
 
-export function createTauriStorage(): WorkspaceStorage & { defaultWorkspacePath(): string } {
+export function createTauriStorage(): WorkspaceStorage {
 	return {
 		kind: 'native',
 		label: 'Pasta do computador',
-		defaultWorkspacePath: () => DEFAULT_PATH,
 		ensureDirectory: async () => undefined,
 		writeFile: async (path, content) => {
 			await invokeWorkspaceCommand({
@@ -104,7 +103,45 @@ export async function initializeNativeWorkspace(options: { path?: string } = {})
 	}
 }
 
-export async function getNativeWorkspacePath(): Promise<string | null> {
-	const result = await invokeWorkspaceCommand<string | null>({ name: 'workspace.getPath' });
-	return result.value ?? null;
+export function readNativeWorkspacePath(): string | null {
+	const storage = nativeWorkspaceStorage();
+	if (!storage) return null;
+	try {
+		const value = storage.getItem(NATIVE_WORKSPACE_PATH_KEY);
+		return value && isAbsoluteNativePath(value) ? value : null;
+	} catch {
+		return null;
+	}
+}
+
+export function rememberNativeWorkspacePath(path: string): void {
+	const storage = nativeWorkspaceStorage();
+	if (!storage || !isAbsoluteNativePath(path)) return;
+	try {
+		storage.setItem(NATIVE_WORKSPACE_PATH_KEY, path);
+	} catch {
+		// A indisponibilidade do cache do webview não impede o workspace atual.
+	}
+}
+
+export function clearNativeWorkspacePath(): void {
+	const storage = nativeWorkspaceStorage();
+	if (!storage) return;
+	try {
+		storage.removeItem(NATIVE_WORKSPACE_PATH_KEY);
+	} catch {
+		// A indisponibilidade do cache do webview não impede o workspace atual.
+	}
+}
+
+function nativeWorkspaceStorage(): Storage | null {
+	try {
+		return typeof window !== 'undefined' ? window.localStorage : globalThis.localStorage;
+	} catch {
+		return null;
+	}
+}
+
+function isAbsoluteNativePath(path: string): boolean {
+	return path.startsWith('/') || /^[A-Za-z]:[\\/]/.test(path);
 }

@@ -93,40 +93,6 @@ fn workspace_config(root: &Path) -> WorkspaceConfig {
 	}
 }
 
-fn default_workspace_path() -> Result<PathBuf, CommandError> {
-	let home = std::env::var_os("HOME").ok_or_else(|| CommandError::new("home_unavailable", true))?;
-	Ok(PathBuf::from(home).join("Library/Application Support/OpenBible/workspace"))
-}
-
-fn workspace_settings_path() -> Result<PathBuf, CommandError> {
-	let home = std::env::var_os("HOME").ok_or_else(|| CommandError::new("home_unavailable", true))?;
-	Ok(PathBuf::from(home).join("Library/Application Support/OpenBible/last-workspace.json"))
-}
-
-fn read_saved_workspace_path() -> Result<Option<PathBuf>, CommandError> {
-	let path = workspace_settings_path()?;
-	let bytes = match fs::read(path) {
-		Ok(bytes) => bytes,
-		Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-		Err(error) => return Err(error.into()),
-	};
-	let value = serde_json::from_slice::<serde_json::Value>(&bytes).ok();
-	let Some(value) = value.and_then(|value| value.get("path").and_then(|path| path.as_str()).map(PathBuf::from)) else {
-		return Ok(None);
-	};
-	Ok(value.is_absolute().then_some(value))
-}
-
-fn save_workspace_path(root: &Path) -> Result<(), CommandError> {
-	let path = workspace_settings_path()?;
-	if let Some(parent) = path.parent() {
-		fs::create_dir_all(parent)?;
-	}
-	let bytes = serde_json::to_vec_pretty(&serde_json::json!({ "path": root }))
-		.map_err(|_| CommandError::new("config_encode_error", true))?;
-	atomic_write(&path, &bytes)
-}
-
 fn validate_root(path: &Path) -> Result<PathBuf, CommandError> {
 	if path.as_os_str().is_empty() || !path.is_absolute() {
 		return Err(CommandError::new("invalid_workspace", true));
@@ -152,10 +118,9 @@ fn require_root(context: &WorkspaceContext) -> Result<&Path, CommandError> {
 }
 
 pub fn initialize(context: &mut WorkspaceContext, preferred_path: Option<String>) -> Result<WorkspaceConfig, CommandError> {
-	let path = match preferred_path {
-		Some(value) => PathBuf::from(value),
-		None => default_workspace_path()?,
-	};
+	let path = preferred_path
+		.map(PathBuf::from)
+		.ok_or_else(|| CommandError::new("workspace_path_required", true))?;
 	let root = validate_root(&path)?;
 	if context.root.as_deref() == Some(root.as_path()) && context.lock.is_some() {
 		return Ok(workspace_config(&root));
@@ -170,19 +135,7 @@ pub fn initialize(context: &mut WorkspaceContext, preferred_path: Option<String>
 	let config = workspace_config(&root);
 	let bytes = serde_json::to_vec_pretty(&config).map_err(|_| CommandError::new("config_encode_error", true))?;
 	atomic_write(&root.join(".openbible/config.json"), &bytes)?;
-	save_workspace_path(&root)?;
 	Ok(config)
-}
-
-pub fn get_workspace_path() -> Result<Option<String>, CommandError> {
-	if let Some(path) = read_saved_workspace_path()? {
-		return Ok(Some(path.to_string_lossy().into_owned()));
-	}
-	let default = default_workspace_path()?;
-	if default.join(".openbible/config.json").is_file() {
-		return Ok(Some(default.to_string_lossy().into_owned()));
-	}
-	Ok(None)
 }
 
 fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), CommandError> {
@@ -282,11 +235,6 @@ pub fn inspect_bible_impl(context: &WorkspaceContext, version: String) -> Result
 pub fn initialize_workspace(state: tauri::State<'_, Mutex<WorkspaceContext>>, preferred_path: Option<String>) -> Result<WorkspaceConfig, CommandError> {
 	let mut context = state.lock().map_err(|_| CommandError::new("state_error", true))?;
 	initialize(&mut context, preferred_path)
-}
-
-#[tauri::command]
-pub fn get_workspace_path_command() -> Result<Option<String>, CommandError> {
-	get_workspace_path()
 }
 
 #[tauri::command]

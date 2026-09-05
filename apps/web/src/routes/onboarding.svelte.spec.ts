@@ -58,9 +58,7 @@ describe('OpenBible onboarding', () => {
 
 		expect(chooseStorage).toHaveBeenCalledOnce();
 		expect(page.getByRole('dialog')).toBeInTheDocument();
-		await expect
-			.element(page.getByText(/ambiente integrado pode não oferecer acesso a pastas/i))
-			.toBeInTheDocument();
+		await expect.element(page.getByText(/seleção da pasta foi cancelada/i)).toBeInTheDocument();
 	});
 
 	it('offers explicit OPFS fallback after the integrated picker fails', async () => {

@@ -2,7 +2,6 @@ import { invoke } from '@tauri-apps/api/core';
 
 export type WorkspaceCommand =
 	| { name: 'workspace.initialize'; preferredPath?: string }
-	| { name: 'workspace.getPath' }
 	| { name: 'workspace.readFile'; relativePath: string }
 	| { name: 'workspace.listFiles'; relativePath: string }
 	| { name: 'workspace.writeFile'; relativePath: string; bytes: Uint8Array }
@@ -54,8 +53,6 @@ function payload(command: WorkspaceCommand | UnknownWorkspaceCommand): Record<st
 	switch (command.name) {
 		case 'workspace.initialize':
 			return { preferredPath: command.preferredPath };
-		case 'workspace.getPath':
-			return {};
 		case 'workspace.readFile':
 			validatePath(String(command.relativePath));
 			return { relativePath: String(command.relativePath) };
@@ -93,6 +90,7 @@ function payload(command: WorkspaceCommand | UnknownWorkspaceCommand): Record<st
 export function toUserFacingStorageError(error: Partial<NativeCommandError>): TauriCommandError {
 	const messages: Record<string, string> = {
 		permission_denied: 'Não foi possível acessar a pasta do workspace.',
+		workspace_path_required: 'Escolha uma pasta para abrir o workspace.',
 		workspace_locked: 'Este workspace já está aberto em outra janela.',
 		sqlite_invalid: 'O banco SQLite não pôde ser lido.',
 		command_not_allowed: 'Operação não permitida.'
@@ -107,7 +105,6 @@ export function toUserFacingStorageError(error: Partial<NativeCommandError>): Ta
 function tauriCommandName(command: WorkspaceCommand): string {
 	return {
 		'workspace.initialize': 'initialize_workspace',
-		'workspace.getPath': 'get_workspace_path_command',
 		'workspace.readFile': 'read_workspace_file',
 		'workspace.listFiles': 'list_workspace_files',
 		'workspace.writeFile': 'write_workspace_file',

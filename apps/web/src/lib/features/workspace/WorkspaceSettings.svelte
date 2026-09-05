@@ -6,8 +6,8 @@
 		supportsFileSystemAccess
 	} from '$lib/storage/environment';
 	import { chooseLocalWorkspaceStorage } from '$lib/storage/local-storage';
-import { createOpfsStorage } from '$lib/storage/opfs-storage';
-import { createTauriStorage, initializeNativeWorkspace } from '$lib/storage/tauri-storage';
+	import { createOpfsStorage } from '$lib/storage/opfs-storage';
+	import { chooseWorkspaceStorage } from '$lib/storage/storage-registry';
 	import { prepareWorkspace } from '$lib/storage/workspace';
 	import type { StorageKind } from '$lib/storage/types';
 	import RemoteBibleImport from '$lib/features/bible-remote/RemoteBibleImport.svelte';
@@ -79,7 +79,7 @@ import { createTauriStorage, initializeNativeWorkspace } from '$lib/storage/taur
 				kind === 'local'
 					? await chooseLocalWorkspaceStorage()
 					: kind === 'native'
-						? (await initializeNativeWorkspace(), createTauriStorage())
+						? await chooseWorkspaceStorage('native')
 						: await createOpfsStorage();
 			rememberStoragePreference(kind);
 			await prepareWorkspace(next);
@@ -111,22 +111,24 @@ import { createTauriStorage, initializeNativeWorkspace } from '$lib/storage/taur
 				<p class="eyebrow">Workspace</p>
 				<h2 id="workspace-settings-heading">Onde seus arquivos ficam</h2>
 				<p class="intro">
-					Markdown, JSON e SQLite permanecem no armazenamento escolhido. As preferências também ficam
-					em <code>.openbible/preferences.json</code>.
+					Markdown, JSON e SQLite permanecem no armazenamento escolhido. As preferências também
+					ficam em <code>.openbible/preferences.json</code>.
 				</p>
 			</div>
 		{:else}
 			<h2 id="workspace-settings-heading" class="sr-only">Armazenamento do workspace</h2>
 			<p class="panel-lead">
-				Seus arquivos e preferências ficam em <code>.openbible/preferences.json</code> dentro do
-				workspace escolhido.
+				Seus arquivos e preferências ficam em <code>.openbible/preferences.json</code> dentro do workspace
+				escolhido.
 			</p>
 		{/if}
 
 		<dl class="facts">
 			<div>
 				<dt>Tipo</dt>
-				<dd>{kind === 'native' || kind === 'local' ? 'Pasta do computador' : 'OPFS do navegador'}</dd>
+				<dd>
+					{kind === 'native' || kind === 'local' ? 'Pasta do computador' : 'OPFS do navegador'}
+				</dd>
 			</div>
 			<div>
 				<dt>Nome</dt>
@@ -161,22 +163,31 @@ import { createTauriStorage, initializeNativeWorkspace } from '$lib/storage/taur
 		{#if workspace.error}
 			<div class="error-block" role="alert">
 				<p class="error">{workspace.error}</p>
-				<button class="secondary" type="button" onclick={() => workspace.boot({ requestPermission: true })} disabled={busy}>
+				<button
+					class="secondary"
+					type="button"
+					onclick={() => workspace.boot({ requestPermission: true })}
+					disabled={busy}
+				>
 					Tentar novamente
 				</button>
 			</div>
 		{/if}
 		{#if kind === 'native' && workspace.config?.migrationState}
 			<p class="feedback" aria-live="polite">
-				Migração: {workspace.config.migrationState === 'completed' ? 'concluída' : workspace.config.migrationState === 'error' ? 'precisa ser repetida' : 'não iniciada'}.
+				Migração: {workspace.config.migrationState === 'completed'
+					? 'concluída'
+					: workspace.config.migrationState === 'error'
+						? 'precisa ser repetida'
+						: 'não iniciada'}.
 			</p>
 		{/if}
 
 		<div class="switch-block">
 			<h3 class="switch-title">Trocar armazenamento</h3>
 			<p class="switch-hint">
-				Cada destino guarda arquivos próprios: a troca não migra nada e abre um workspace
-				vazio no novo destino.
+				Cada destino guarda arquivos próprios: a troca não migra nada e abre um workspace vazio no
+				novo destino.
 			</p>
 			{#if switchingTo === null}
 				<div class="actions">
@@ -204,8 +215,8 @@ import { createTauriStorage, initializeNativeWorkspace } from '$lib/storage/taur
 				<p class="switch-confirm" role="alert">
 					Trocar para {switchingTo === 'local'
 						? 'uma pasta do computador'
-						: 'o armazenamento do navegador'}? Os arquivos do destino atual continuam onde
-					estão, sem migração.
+						: 'o armazenamento do navegador'}? Os arquivos do destino atual continuam onde estão,
+					sem migração.
 				</p>
 				<div class="actions">
 					<button

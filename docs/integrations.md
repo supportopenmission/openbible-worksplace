@@ -17,7 +17,8 @@ Valores de ambiente e integrações são documentados apenas pelos nomes declara
 - O preview de produção da aplicação web usa `bun run --cwd apps/web preview`,
   que recompila com o adapter Cloudflare e inicia `wrangler dev --local`; não
   usar `vite preview` para essa saída.
-- O empacotamento desktop com Tauri está planejado para uma etapa posterior e
-  ainda não existe no código atual.
+- O empacotamento desktop usa Tauri 2 como casca; o plugin de diálogo abre o
+  seletor nativo de pasta e o shell mantém somente um ponteiro local para
+  reencontrar a raiz escolhida. Os dados do workspace permanecem nessa pasta.
 - Nenhuma credencial, variável de ambiente ou integração de backend foi
   identificada no código atual.

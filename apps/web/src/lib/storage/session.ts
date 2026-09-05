@@ -6,8 +6,11 @@ import {
 	requestLocalHandlePermission
 } from './local-storage';
 import { createOpfsStorage } from './opfs-storage';
-import { createTauriStorage } from './tauri-storage';
-import { getNativeWorkspacePath, initializeNativeWorkspace } from './tauri-storage';
+import {
+	createTauriStorage,
+	initializeNativeWorkspace,
+	readNativeWorkspacePath
+} from './tauri-storage';
 import { isStoragePersisted, requestPersistentStorage } from './persistent-storage';
 import { DEFAULT_PREFERENCES, loadWorkspacePreferences } from './preferences';
 import type { WorkspaceSnapshot, WorkspaceStorage } from './types';
@@ -60,7 +63,7 @@ export async function bootstrapWorkspace(
 
 	try {
 		if (resolveStorageKind() === 'native') {
-			const path = await getNativeWorkspacePath();
+			const path = readNativeWorkspacePath();
 			if (!path) return emptySnapshot({ status: 'unconfigured', persisted });
 			await initializeNativeWorkspace({ path });
 			return await snapshotFromStorage(createTauriStorage(), persisted, 'granted');

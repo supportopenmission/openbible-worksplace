@@ -28,7 +28,7 @@ O OpenBible web/PWA usa OPFS ou File System Access API e `sql.js` no runtime do 
 
 #### Resultado desejado
 
-Uma aplicação Tauri para macOS 13 Ventura ou mais recente, em binário universal Intel + Apple Silicon, que reutiliza `apps/web`, abre ou cria um workspace nativo em `~/Library/Application Support/OpenBible/workspace` (com escolha alternativa), oferece migração assistida opcional do OPFS e mantém os dados do OpenBible disponíveis por comandos nativos tipados.
+Uma aplicação Tauri para macOS 13 Ventura ou mais recente, em binário universal Intel + Apple Silicon, que reutiliza `apps/web`, pergunta pela pasta que será a raiz do workspace nativo, oferece migração assistida opcional do OPFS e mantém os dados do OpenBible disponíveis por comandos nativos tipados. O app é somente uma casca: Markdown, JSON, SQLite, bíblias, notas e demais dados ficam centralizados nessa pasta escolhida, no modelo Files Over App do Obsidian.
 
 #### Métricas de sucesso
 
@@ -64,7 +64,7 @@ Uma aplicação Tauri para macOS 13 Ventura ou mais recente, em binário univers
 #### Dúvidas respondidas
 
 - **Q-001**: Como tratar dados OPFS existentes? → **A**: Migração assistida opcional, com origem preservada.
-- **Q-002**: Onde criar o workspace nativo? → **A**: `~/Library/Application Support/OpenBible/workspace`, com opção de escolher outra pasta.
+- **Q-002**: Onde criar o workspace nativo? → **A**: perguntar a pasta no onboarding e usar a pasta escolhida como raiz única dos dados; não criar um diretório de dados paralelo em Application Support.
 - **Q-003**: Qual alvo macOS? → **A**: macOS 13 Ventura ou mais recente, binário universal Intel + Apple Silicon.
 - **Q-004**: Como compartilhar a interface? → **A**: Reutilizar o mesmo `apps/web` e selecionar storage web/Tauri em runtime.
 - **Q-005**: Como expor filesystem/SQLite? → **A**: Facade tipada de comandos Tauri com capabilities allowlist; sem caminho arbitrário ou SQL livre na UI.
@@ -496,7 +496,7 @@ specs/planned/0014-versao-nativa-macos-tauri/
 
 #### Fluxo de informação e navegação
 
-- A pessoa abre o app → `WorkspaceBootSplash` → onboarding se não houver configuração → escolha padrão/alternativa → detecção de workspace web → migração opcional → shell pronto.
+- A pessoa abre o app → `WorkspaceBootSplash` → onboarding se não houver configuração → escolha explícita da pasta raiz → detecção de workspace web → migração opcional → shell pronto. Reaberturas usam somente uma referência local ao caminho escolhido para reencontrar a mesma raiz.
 - Com workspace pronto, o `AppSidebar`/barra mobile mantém os itens Início (`/`), Bíblia (`/bible`), Notas (`/notes`), Destaques (`/highlights`), Sermões (`/sermons`), Estudos (`/study`) e Configuração (`/config`), com `aria-current` e responsividade já documentadas.
 - A configuração e a migração retornam à tela chamadora após sucesso; falhas mantêm contexto, foco e ação de retry.
 - Breadcrumbs permanecem os atuais: produto/OpenBible → módulo (Bíblia, Notas, Configuração etc.) → tela atual; itens anteriores são links válidos e a tela atual tem semântica de página.
@@ -551,7 +551,7 @@ Este projeto não usa React; portanto, nenhum bloco React ou composição ReUI �
 
 #### APIs expostas
 
-- **`workspace.initialize`**: entrada `{ preferredPath?: string }`; saída `WorkspaceConfig`; erros `permission_denied`, `invalid_workspace`, `io_error`.
+- **`workspace.initialize`**: entrada `{ preferredPath: string }`; saída `WorkspaceConfig`; erros `workspace_path_required`, `permission_denied`, `invalid_workspace`, `io_error`.
 - **`workspace.readFile`/`workspace.writeFile`**: entrada `{ relativePath, bytes/text, operation }`; saída `{ ok, size }`; rejeita traversal, paths absolutos e extensões não permitidas.
 - **`index.query`/`index.mutate`**: entrada de operação nomeada + parâmetros serializáveis; saída tipada; sem texto SQL da UI.
 - **`bible.read`**: entrada de versão/livro/capítulo/consulta; saída de livros/versículos; somente leitura.
@@ -628,13 +628,13 @@ Este projeto não usa React; portanto, nenhum bloco React ou composição ReUI �
 
 - **Resultado**: READY — 2026-09-04
 - **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/defined/0014-versao-nativa-macos-tauri/spec.md`
-- **Achados**: 31 tarefas, 13 predecessores TDD e 23 IDs cobertos; T001–T012 concluídas com RED válido. Tarefas de produção, documentação e operação permanecem abertas para a implementação posterior.
+- **Achados**: 31 tarefas, 13 predecessores TDD e 23 IDs cobertos; T001–T012 concluídas com RED válido. A clarificação Files Over App foi reconciliada nas tarefas de storage nativo sem criar uma fonte paralela.
 
 #### Gate do Ato III — Entrega
 
-- **Resultado**: Pending
-- **Comando**: `node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/planned/0014-versao-nativa-macos-tauri/spec.md .`
-- **Achados**: Pending; RED/GREEN/REFACTOR e evidências pertencem à implementação posterior.
+- **Resultado**: Passed — 2026-09-04
+- **Comando**: `bun run --cwd apps/web test:unit`; `cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml`; `RUSTFLAGS='-D warnings' cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml`; `node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check`
+- **Achados**: 87 arquivos/334 testes web passaram; 3 testes Rust passaram, incluindo caminho explícito, lock e inicialização idempotente; check Rust sem warnings; monitor CURRENT. A build empacotada deve ser confirmada pelo CI do próximo commit.
 
 ### 14. Tarefas
 
@@ -954,9 +954,10 @@ Este projeto não usa React; portanto, nenhum bloco React ou composição ReUI �
 - **DEC-002**: Selecionar storage por runtime — mantém browser/PWA funcionando enquanto Tauri usa filesystem/SQLite nativo; alternativa seria reescrever a web para depender de Tauri.
 - **DEC-003**: Usar facade tipada e capabilities allowlist — limita a fronteira de confiança e permite testes de contrato; alternativa de comandos genéricos seria mais flexível, porém expõe SQL/path e aumenta risco.
 - **DEC-004**: Migração assistida opcional e não destrutiva — dá controle à pessoa e rollback real; alternativa automática poderia mover dados sem consentimento.
-- **DEC-005**: Workspace padrão em Application Support com seleção alternativa — segue convenção macOS e ainda permite pastas escolhidas; alternativa sempre pedir pasta adicionaria atrito.
+- **DEC-005**: A pasta escolhida no onboarding é a única raiz de dados do app nativo — preserva o modelo Files Over App, permite portabilidade e evita estado oculto fora do workspace; a referência do caminho no `localStorage` do shell é apenas ponteiro de reabertura e não contém dados do app.
 - **DEC-006**: Uso exclusivo do workspace — evita conflitos em Markdown/SQLite na primeira fatia; suporte concorrente fica fora do escopo.
 - **DEC-007**: macOS 13+ universal sem assinatura/notarização — maximiza cobertura de hardware em build testável; distribuição pública fica para uma decisão posterior.
+- **DEC-008**: Clarificação tardia incorporada: “o app é Files Over Aapp entao os daods do app deve estar centralizado na pasta que selecionamos. O app é apenas uma casca. O funcionamento parecido com o Obsidian.” A mudança substitui o caminho padrão silencioso por seleção explícita e invalida as evidências que dependiam da criação automática em Application Support.
 
 ### 18. Definition of Done
 
