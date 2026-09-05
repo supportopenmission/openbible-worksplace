@@ -9,4 +9,21 @@ describe('native workspace interaction states', () => {
 		expect(states.lockConflict).toMatchObject({ ariaLive: 'assertive', focusTarget: 'retry' });
 		expect(states.permissionDenied.animation).toBe('none');
 	});
+
+	// SPECSFY: US-002 FR-002 FR-004 NFR-001 NFR-003 AC-007
+	it('preserva o registro e oferece recuperação para ausência e manifesto inválido', () => {
+		const states = nativeWorkspaceStates({ reducedMotion: true }) as ReturnType<typeof nativeWorkspaceStates> & {
+			unavailable?: { ariaLive: string; actions: string[] };
+			invalid?: { ariaLive: string; actions: string[] };
+		};
+
+		expect(states.unavailable).toMatchObject({
+			ariaLive: 'assertive',
+			actions: expect.arrayContaining(['retry', 'choose-other'])
+		});
+		expect(states.invalid).toMatchObject({
+			ariaLive: 'assertive',
+			actions: expect.arrayContaining(['reconnect', 'choose-other'])
+		});
+	});
 });

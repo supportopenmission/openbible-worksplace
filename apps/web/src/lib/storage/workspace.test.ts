@@ -147,4 +147,47 @@ describe('workspace storage', () => {
 		expect(isSQLite(storage.files.get('.openbible/index.sqlite') ?? new Uint8Array())).toBe(true);
 		expect(storage.files.get('templates/note.md')).toEqual(existing);
 	});
+
+	// SPECSFY: US-001 FR-001 FR-004 NFR-002 NFR-003 AC-002
+	it('expõe manifesto e capability compatíveis com cada backend de criação', async () => {
+		for (const kind of ['native', 'local', 'opfs'] as const) {
+			const storage = new MemoryStorage(kind);
+			await prepareWorkspace(storage);
+			const config = JSON.parse(
+				new TextDecoder().decode(storage.files.get('.openbible/config.json'))
+			);
+
+			expect(config).toMatchObject({
+				workspaceId: expect.any(String),
+				formatVersion: 2,
+				name: expect.any(String),
+				managedRoot: expect.any(Boolean)
+			});
+		}
+	});
+
+	// SPECSFY: US-003 FR-003 FR-004 NFR-001 NFR-002 NFR-003 AC-009
+	it('só permite excluir uma raiz após provar ownership, scan e lock', async () => {
+		const storage = new MemoryStorage('native');
+		await prepareWorkspace(storage);
+
+		const guardedStorage = storage as MemoryStorage & {
+			deleteManagedRoot?: (workspaceId: string) => Promise<void>;
+		};
+		expect(typeof guardedStorage.deleteManagedRoot).toBe('function');
+		await guardedStorage.deleteManagedRoot?.('workspace-id');
+		expect(storage.files.size).toBe(0);
+	});
+
+	// SPECSFY: US-003 FR-003 FR-004 NFR-001 NFR-002 NFR-003 AC-010
+	it('bloqueia exclusão de raiz arbitrária sem oferecer force', async () => {
+		const storage = new MemoryStorage('local');
+		await prepareWorkspace(storage);
+		const config = JSON.parse(
+			new TextDecoder().decode(storage.files.get('.openbible/config.json'))
+		);
+
+		expect(config).toMatchObject({ managedRoot: false });
+		expect((storage as MemoryStorage & { forceDelete?: unknown }).forceDelete).toBeUndefined();
+	});
 });

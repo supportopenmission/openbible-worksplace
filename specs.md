@@ -20,6 +20,11 @@
 | 13 | 0012-pagina-inicial-operacional-do-openbible | Implementing | — |
 | 14 | 0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile | Implementing | — |
 | 15 | 0014-versao-nativa-macos-tauri | Complete | — |
+| 16 | 0016-multiplos-workspaces-modelo-vaults | Planned | — |
+| 17 | 0017-formatos-portateis-indice-reconstruivel | Planned | — |
+| 18 | 0018-backup-restauracao-workspace-pwa | Planned | — |
+| 19 | 0019-sincronizacao-local-first-automerge | Planned | — |
+| 20 | 0020-agentes-ia-locais-controlados-workspace | Planned | — |
 
 ## Marcos
 

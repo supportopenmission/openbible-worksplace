@@ -9,4 +9,14 @@ describe('shell persistente com Início primeiro', () => {
 		expect(source).toContain('Início');
 		expect(source).toContain('aria-current');
 	});
+
+	// SPECSFY: US-001 FR-001 FR-004 NFR-003 AC-003
+	it('expõe seletor persistente com ações de workspace e suporte responsivo', () => {
+		const sidebar = new URL('./AppSidebar.svelte', import.meta.url);
+		const source = readFileSync(sidebar, 'utf8');
+
+		expect(source).toContain('WorkspaceSelector');
+		expect(source).toContain('Gerenciar workspaces');
+		expect(source).toContain('aria-label');
+	});
 });

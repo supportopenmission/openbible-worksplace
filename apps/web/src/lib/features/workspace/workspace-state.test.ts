@@ -60,4 +60,15 @@ describe('workspace boot', () => {
 
 		expect(mockedBootstrap).toHaveBeenCalledTimes(2);
 	});
+
+	// SPECSFY: US-001 US-002 FR-002 NFR-001 NFR-002 AC-004
+	it('mantém o contexto de conteúdo explicitamente vinculado ao workspace ativo', () => {
+		const workspace = new WorkspaceState() as unknown as WorkspaceState & {
+			workspaceId?: string;
+			generation?: number;
+		};
+
+		expect(workspace.workspaceId).toBe('workspace-b');
+		expect(workspace.generation).toBeGreaterThan(0);
+	});
 });

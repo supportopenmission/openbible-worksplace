@@ -121,3 +121,27 @@ describe('markdown without literal tags', () => {
 		expect(markdown).toContain('Primeira linha.');
 	});
 });
+
+// SPECSFY: US-004 FR-005 NFR-002 NFR-004 AC-012
+describe('offline portable PDF fallback', () => {
+	it('keeps video title and URL without requiring a remote iframe', () => {
+		const markdown = buildExportMarkdown(VIDEO_NOTE, () => []);
+
+		expect(markdown).toContain('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+		expect(markdown).toContain('Vídeo do YouTube');
+		expect(markdown).not.toContain('<iframe');
+	});
+});
+
+// SPECSFY: US-004 FR-003 FR-005 NFR-002 NFR-004 AC-013
+describe('derived external export', () => {
+	it('uses visible Markdown fallback and does not replace the canonical source', () => {
+		const source = VIDEO_NOTE;
+		const exported = buildExportMarkdown(source, () => []);
+
+		expect(exported).toContain('[Vídeo do YouTube]');
+		expect(exported).toContain('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+		expect(exported).not.toContain('<iframe');
+		expect(source).toBe(VIDEO_NOTE);
+	});
+});

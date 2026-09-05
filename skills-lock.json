@@ -102,10 +102,22 @@
       "sourceType": "local",
       "computedHash": "5603e268e6691827abfe09717009b3a6cbd1fa75cfb9f479121eb62c9057e71c"
     },
+    "specsfy-specialist-design-system": {
+      "source": "promovaweb/specsfy",
+      "sourceType": "github",
+      "skillPath": "specialists/specsfy-specialist-design-system/SKILL.md",
+      "computedHash": "cc555257a179e7ed33a7dfe5bd5e1c02c2a1d219150a6cd99f84d76ea1a6dda2"
+    },
     "specsfy-specialist-domain-modeling": {
       "source": "../../../../tmp/specsfy-install-3veyU8/checkout/specialists",
       "sourceType": "local",
       "computedHash": "b021b258a4cb645f2e77a5814f51870fd48b2f8fe068a125213c5b7f4486ed54"
+    },
+    "specsfy-specialist-interface-experience": {
+      "source": "promovaweb/specsfy",
+      "sourceType": "github",
+      "skillPath": "specialists/specsfy-specialist-interface-experience/SKILL.md",
+      "computedHash": "0768469d74c5f24363a66537501c1f4709de8714a2536dc9b1840fe65469ae68"
     },
     "specsfy-specialist-react": {
       "source": "../../../../tmp/specsfy-install-3veyU8/checkout/specialists",
@@ -136,6 +148,18 @@
       "source": "../../../../tmp/specsfy-install-a7a7Di/checkout/specialists",
       "sourceType": "local",
       "computedHash": "ec05b80438b270da1c8d540e2d6d674a17d2e091453e784abb0ce8d9f94fb155"
+    },
+    "specsfy-specialist-ui-design": {
+      "source": "promovaweb/specsfy",
+      "sourceType": "github",
+      "skillPath": "example/.agents/skills/specsfy-specialist-ui-design/SKILL.md",
+      "computedHash": "0b279a8847fd8a11d39d3eeae8bd11c30d56bda154b455f95fcfbaeea607e383"
+    },
+    "specsfy-specialist-ux-design": {
+      "source": "promovaweb/specsfy",
+      "sourceType": "github",
+      "skillPath": "example/.agents/skills/specsfy-specialist-ux-design/SKILL.md",
+      "computedHash": "01d4fee4ab3de80e1d0ac078c83f8c4bbafa4904beddf50d168c491d6cd86c84"
     },
     "specsfy-update-spec": {
       "source": "../../../../tmp/specsfy-install-Vx3BbV/checkout/skills",
