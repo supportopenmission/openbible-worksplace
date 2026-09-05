@@ -21,7 +21,12 @@
 	import { notePageChrome } from '$lib/features/notes/note-page-chrome.svelte';
 	import { createNote, readNote } from '$lib/features/notes/notes-repository';
 	import { serializeNoteFile } from '$lib/features/notes/note-markdown';
-	import { NOTE_EDITOR_WIDTHS, type NoteEditorWidth } from '$lib/features/notes/note-editor-layout';
+	import {
+		NOTE_EDITOR_WIDTHS,
+		readNoteToolbarEnabled,
+		saveNoteToolbarEnabled,
+		type NoteEditorWidth
+	} from '$lib/features/notes/note-editor-layout';
 	import { notesState } from '$lib/features/notes/notes-state.svelte';
 	import type { Note } from '$lib/features/notes/note-types';
 	import { getWorkspaceState } from '$lib/features/workspace/workspace-state.svelte';
@@ -48,6 +53,7 @@
 	let saveStatus = $state<SaveStatus>('idle');
 	let lastSavedAt = $state<Date | null>(null);
 	let readOnly = $state(false);
+	let toolbarEnabled = $state(readNoteToolbarEnabled());
 
 	async function seedFallbackNote(id: string): Promise<WorkspaceStorage> {
 		const files = new Map<string, Uint8Array>();
@@ -166,6 +172,11 @@
 		}
 	}
 
+	function setToolbarEnabled(enabled: boolean) {
+		toolbarEnabled = enabled;
+		saveNoteToolbarEnabled(enabled);
+	}
+
 	function formatSavedTime(date: Date | null): string {
 		if (!date || isNaN(date.getTime())) return '';
 		return new Intl.DateTimeFormat('pt-BR', {
@@ -276,6 +287,13 @@
 							{/each}
 						</DropdownMenu.RadioGroup>
 						<DropdownMenu.Separator />
+						<DropdownMenu.CheckboxItem
+							checked={toolbarEnabled}
+							onCheckedChange={(checked) => setToolbarEnabled(checked === true)}
+						>
+							<span>Barra de formatação</span>
+						</DropdownMenu.CheckboxItem>
+						<DropdownMenu.Separator />
 						<DropdownMenu.Item
 							class="text-destructive focus:text-destructive"
 							onclick={() => (deleteDialogOpen = true)}
@@ -298,6 +316,7 @@
 			<MilkdownNoteEditor
 				{note}
 				{readOnly}
+				{toolbarEnabled}
 				storage={activeStorage}
 				onSaved={handleSaved}
 				onStatusChange={handleStatusChange}

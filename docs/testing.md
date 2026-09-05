@@ -3,7 +3,7 @@
 <!-- specsfy:documentator:start -->
 ## Resumo
 
-- Arquivos de teste: 63.
+- Arquivos de teste: 64.
 - Runner: não identificado.
 - Scripts: build: turbo run build; check-types: turbo run check-types; dev: turbo run dev; lint: turbo run lint; format: prettier --write .; format:check: prettier --check ..
 
@@ -16,6 +16,7 @@
 | apps/web/src/lib/bible/repository/bible-repository.test.ts |
 | apps/web/src/lib/bible/stores/bible-reference-viewer.test.ts |
 | apps/web/src/lib/features/bible/bible-library.test.ts |
+| apps/web/src/lib/features/bible/bible-note-split.test.ts |
 | apps/web/src/lib/features/bible/bible-reader.test.ts |
 | apps/web/src/lib/features/bible/highlights-page.test.ts |
 | apps/web/src/lib/features/bible/reader-highlights-repository.test.ts |

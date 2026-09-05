@@ -1,4 +1,5 @@
 const NOTE_EDITOR_WIDTH_KEY = 'openbible:note-editor-width';
+const NOTE_TOOLBAR_ENABLED_KEY = 'openbible:note-toolbar-enabled';
 
 export type NoteEditorWidth = 'default' | 'wide' | 'full';
 
@@ -26,6 +27,24 @@ export function saveNoteEditorWidth(width: NoteEditorWidth): void {
 	if (typeof window === 'undefined') return;
 	try {
 		window.localStorage.setItem(NOTE_EDITOR_WIDTH_KEY, width);
+	} catch {
+		// Private browsing may deny localStorage.
+	}
+}
+
+export function readNoteToolbarEnabled(): boolean {
+	if (typeof window === 'undefined') return true;
+	try {
+		return window.localStorage.getItem(NOTE_TOOLBAR_ENABLED_KEY) !== 'false';
+	} catch {
+		return true;
+	}
+}
+
+export function saveNoteToolbarEnabled(enabled: boolean): void {
+	if (typeof window === 'undefined') return;
+	try {
+		window.localStorage.setItem(NOTE_TOOLBAR_ENABLED_KEY, String(enabled));
 	} catch {
 		// Private browsing may deny localStorage.
 	}

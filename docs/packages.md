@@ -8,7 +8,7 @@
 | Terceiro | desenvolvimento | prettier | 3.9.6 | Prettier is an opinionated code formatter | prettier/prettier | — |
 | Terceiro | desenvolvimento | prettier-plugin-svelte | catalog:sveltejs | Svelte plugin for prettier | https://github.com/sveltejs/prettier-plugin-svelte | https://github.com/sveltejs/prettier-plugin-svelte |
 | Terceiro | desenvolvimento | turbo | ^2.10.12 | Turborepo is the build system for coding agents. | https://github.com/vercel/turborepo | https://github.com/vercel/turborepo |
-| Terceiro | produção | @opencode-ai/plugin | 1.18.26 | Finalidade não descrita nos metadados locais. |  | — |
+| Terceiro | produção | @opencode-ai/plugin | 1.18.25 | Finalidade não descrita nos metadados locais. |  | — |
 | Terceiro | desenvolvimento | @tauri-apps/cli | ^2.11.4 | Command line interface for building Tauri apps | https://github.com/tauri-apps/tauri | https://github.com/tauri-apps/tauri |
 | Terceiro | produção | @friendofsvelte/tipex | 0.2.0 | Finalidade não descrita nos metadados locais. | https://github.com/friendofsvelte/tipex | https://github.com/friendofsvelte/tipex |
 | Terceiro | produção | @milkdown/kit | 7.22.1 | Finalidade não descrita nos metadados locais. | https://github.com/Milkdown/milkdown | https://github.com/Milkdown/milkdown |
@@ -59,18 +59,18 @@
 | Terceiro | desenvolvimento | typescript | 5.9.3 | TypeScript is a language for application scale JavaScript development | https://github.com/microsoft/TypeScript | https://github.com/microsoft/TypeScript |
 | Terceiro | desenvolvimento | typescript-eslint | 8.67.0 | Tooling which enables you to use TypeScript with ESLint | https://github.com/typescript-eslint/typescript-eslint | https://github.com/typescript-eslint/typescript-eslint |
 | Terceiro | transitiva | @ai-sdk/provider | 3.0.8 | Finalidade não descrita nos metadados locais. | https://github.com/vercel/ai | https://github.com/vercel/ai |
-| Terceiro | transitiva | @msgpackr-extract/msgpackr-extract-darwin-arm64 | 3.0.4 | Finalidade não descrita nos metadados locais. |  | — |
+| Terceiro | transitiva | @msgpackr-extract/msgpackr-extract-darwin-arm64 | 3.0.4 | Platform specific binary for msgpackr-extract on darwin OS with arm64 architecture | http://github.com/kriszyp/msgpackr-extract | http://github.com/kriszyp/msgpackr-extract |
 | Terceiro | transitiva | @msgpackr-extract/msgpackr-extract-darwin-x64 | 3.0.4 | Finalidade não descrita nos metadados locais. |  | — |
 | Terceiro | transitiva | @msgpackr-extract/msgpackr-extract-linux-arm | 3.0.4 | Finalidade não descrita nos metadados locais. |  | — |
 | Terceiro | transitiva | @msgpackr-extract/msgpackr-extract-linux-arm64 | 3.0.4 | Finalidade não descrita nos metadados locais. |  | — |
-| Terceiro | transitiva | @msgpackr-extract/msgpackr-extract-linux-x64 | 3.0.4 | Platform specific binary for msgpackr-extract on linux OS with x64 architecture | http://github.com/kriszyp/msgpackr-extract | http://github.com/kriszyp/msgpackr-extract |
+| Terceiro | transitiva | @msgpackr-extract/msgpackr-extract-linux-x64 | 3.0.4 | Finalidade não descrita nos metadados locais. |  | — |
 | Terceiro | transitiva | @msgpackr-extract/msgpackr-extract-win32-x64 | 3.0.4 | Finalidade não descrita nos metadados locais. |  | — |
-| Terceiro | transitiva | @opencode-ai/plugin | 1.18.26 | Finalidade não descrita nos metadados locais. |  | — |
-| Terceiro | transitiva | @opencode-ai/sdk | 1.18.26 | Finalidade não descrita nos metadados locais. |  | — |
+| Terceiro | transitiva | @opencode-ai/plugin | 1.18.25 | Finalidade não descrita nos metadados locais. |  | — |
+| Terceiro | transitiva | @opencode-ai/sdk | 1.18.25 | Finalidade não descrita nos metadados locais. |  | — |
 | Terceiro | transitiva | @standard-schema/spec | 1.1.0 | A family of specs for interoperable TypeScript | https://github.com/standard-schema/standard-schema | https://github.com/standard-schema/standard-schema |
 | Terceiro | transitiva | cross-spawn | 7.0.6 | Cross platform child_process#spawn and child_process#spawnSync | git@github.com:moxystudio/node-cross-spawn | git@github.com:moxystudio/node-cross-spawn |
 | Terceiro | transitiva | detect-libc | 2.1.2 | Node.js module to detect the C standard library (libc) implementation family and version | git://github.com/lovell/detect-libc | git://github.com/lovell/detect-libc |
-| Terceiro | transitiva | effect | 4.0.0-beta.83 | The missing standard library for TypeScript, for writing production-grade software. | https://github.com/Effect-TS/effect | https://github.com/Effect-TS/effect |
+| Terceiro | transitiva | effect | 4.0.0-beta.83 | The missing standard library for TypeScript, for writing production-grade software. | https://github.com/Effect-TS/effect-smol | https://github.com/Effect-TS/effect-smol |
 | Terceiro | transitiva | fast-check | 4.9.0 | Property based testing framework for JavaScript (like QuickCheck) | https://github.com/dubzzz/fast-check | https://github.com/dubzzz/fast-check |
 | Terceiro | transitiva | find-my-way-ts | 0.1.6 | Crazy fast http radix based router | https://github.com/tim-smart/find-my-way-ts | https://github.com/tim-smart/find-my-way-ts |
 | Terceiro | transitiva | ini | 7.0.0 | An ini encoder/decoder for node | https://github.com/npm/ini | https://github.com/npm/ini |

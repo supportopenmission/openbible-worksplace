@@ -15,6 +15,7 @@
 
 	let {
 		active = true,
+		enabled = true,
 		visible = true,
 		disabled = false,
 		activeActions = {},
@@ -23,6 +24,7 @@
 		onClose = () => {}
 	}: {
 		active?: boolean;
+		enabled?: boolean;
 		visible?: boolean;
 		disabled?: boolean;
 		activeActions?: Partial<Record<ToolbarAction, boolean>>;
@@ -43,7 +45,7 @@
 	] as const;
 </script>
 
-{#if active}
+{#if active && enabled}
 	{#if visible}
 		<div class="milkdown-toolbar" role="toolbar" aria-label="Formatação da nota">
 			<div class="toolbar-scroll">
@@ -101,18 +103,19 @@
 
 <style>
 	.milkdown-toolbar {
-		position: fixed;
+		position: sticky;
+		top: 0;
 		right: 0;
 		left: 0;
 		z-index: 45;
-		bottom: max(calc(58px + env(safe-area-inset-bottom, 0px)), var(--note-keyboard-inset, 0px));
+		width: 100%;
 		display: none;
 		border-top: 1px solid var(--border);
 		background: color-mix(in oklch, var(--background) 95%, transparent);
 		backdrop-filter: blur(16px);
 		-webkit-backdrop-filter: blur(16px);
-		box-shadow: 0 -1px 4px color-mix(in oklch, var(--foreground) 4%, transparent);
-		transition: bottom 180ms ease;
+		box-shadow: 0 1px 4px color-mix(in oklch, var(--foreground) 4%, transparent);
+		transition: background-color 120ms ease;
 	}
 
 	:global(.milkdown-toolbar-fab) {
@@ -175,7 +178,9 @@
 		font-weight: 500;
 		line-height: 1;
 		color: var(--muted-foreground);
-		transition: background-color 120ms ease, color 120ms ease;
+		transition:
+			background-color 120ms ease,
+			color 120ms ease;
 	}
 
 	:global(.milkdown-toolbar button:hover) {

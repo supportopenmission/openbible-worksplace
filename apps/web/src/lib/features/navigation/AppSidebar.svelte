@@ -47,8 +47,43 @@
 		return [link];
 	});
 	const update = getAppUpdateState();
+	let mobileNavRepaint = $state(false);
 	onMount(() => {
 		if (detectStorageKind() === 'native') void checkForAppUpdate();
+
+		// iOS can keep a fixed layer at the old visual-viewport position after
+		// the standalone PWA or its system chrome settles. Toggle only the
+		// compositing depth so the layer is repainted without moving visually.
+		let frame = 0;
+		let pending = false;
+		const refresh = () => {
+			if (pending) return;
+			pending = true;
+			const repaint = () => {
+				pending = false;
+				mobileNavRepaint = !mobileNavRepaint;
+			};
+			if (typeof requestAnimationFrame === 'function') {
+				frame = requestAnimationFrame(repaint);
+			} else {
+				repaint();
+			}
+		};
+
+		const viewport = window.visualViewport;
+		refresh();
+		viewport?.addEventListener('resize', refresh);
+		viewport?.addEventListener('scroll', refresh);
+		window.addEventListener('resize', refresh);
+		window.addEventListener('orientationchange', refresh);
+
+		return () => {
+			if (frame) cancelAnimationFrame(frame);
+			viewport?.removeEventListener('resize', refresh);
+			viewport?.removeEventListener('scroll', refresh);
+			window.removeEventListener('resize', refresh);
+			window.removeEventListener('orientationchange', refresh);
+		};
 	});
 </script>
 
@@ -122,6 +157,7 @@
 
 <nav
 	class="mobile-bottom-nav"
+	class:viewport-repaint={mobileNavRepaint}
 	aria-label="Navegação mobile"
 	data-safe-area="bottom"
 >
@@ -344,8 +380,15 @@
 			background: color-mix(in oklch, var(--background) 92%, transparent);
 			backdrop-filter: blur(12px);
 			-webkit-backdrop-filter: blur(12px);
+			transform: translate3d(0, 0, 0);
+			-webkit-backface-visibility: hidden;
+			backface-visibility: hidden;
 			min-height: calc(56px + env(safe-area-inset-bottom, 0px));
 			padding: 4px 8px max(10px, env(safe-area-inset-bottom, 0px));
+		}
+
+		.mobile-bottom-nav.viewport-repaint {
+			transform: translate3d(0, 0, 0.001px);
 		}
 
 		.mobile-nav-link {

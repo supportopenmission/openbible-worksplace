@@ -68,9 +68,16 @@
 		removeHighlight,
 		type ReaderHighlightRecord
 	} from './reader-highlights-repository';
-	import { createNote, loadNoteSummariesForPaths, readNote, saveNote } from '$lib/features/notes/notes-repository';
+	import {
+		createNote,
+		loadNoteSummariesForPaths,
+		readNote,
+		saveNote
+	} from '$lib/features/notes/notes-repository';
+	import { notesState } from '$lib/features/notes/notes-state.svelte';
 	import type { Note } from '$lib/features/notes/note-types';
 	import {
+		deleteNoteVerseRefs,
 		persistNoteVerseRefsToWorkspace,
 		readChapterNoteVerseRefs,
 		type NoteVerseRef
@@ -154,6 +161,9 @@
 	let popoverBusy = $state(false);
 	let splitNote = $state<Note | null>(null);
 	let splitNoteList = $state<Note[] | null>(null);
+	let splitTab = $state<'bible' | 'note'>('note');
+	let splitDeleteTarget = $state<Note | null>(null);
+	let splitDeleting = $state(false);
 	/** Espelha o `showSplit` do BibleNoteSplit no desktop: a toolbar mora no tile. */
 	const desktopSplitActive = $derived(
 		!isMobile.current &&
@@ -682,6 +692,7 @@
 		const currentStorage = storage;
 		if (!ref || !currentStorage) return;
 		splitNoteList = null;
+		splitTab = 'note';
 		const cached = recallReaderNote(ref.notePath);
 		if (cached) {
 			splitNote = cached;
@@ -710,6 +721,7 @@
 		const currentStorage = storage;
 		if (!currentStorage) return;
 		splitNoteList = null;
+		splitTab = 'note';
 		const cached = recallReaderNote(summary.notePath);
 		if (cached) {
 			splitNote = cached;
@@ -749,6 +761,7 @@
 		}
 		splitNote = null;
 		splitNoteList = notes;
+		splitTab = 'note';
 	}
 
 	async function handleNoteIconClick(verseNumber: number, anchor: HTMLElement) {
@@ -789,11 +802,40 @@
 	function closeSplitPanel() {
 		splitNote = null;
 		splitNoteList = null;
+		splitDeleteTarget = null;
+		splitTab = 'note';
+	}
+
+	function requestSplitDelete(note: Note) {
+		splitDeleteTarget = note;
+	}
+
+	async function confirmSplitDelete() {
+		const target = splitDeleteTarget;
+		const currentStorage = storage;
+		if (!target || !currentStorage || splitDeleting) return;
+		splitDeleting = true;
+		try {
+			const deleted = await notesState.deleteNote(currentStorage, target.id);
+			if (!deleted) return;
+			await deleteNoteVerseRefs(target.path);
+			splitDeleteTarget = null;
+			splitNote = null;
+			splitNoteList = splitNoteList?.filter((item) => item.id !== target.id) ?? null;
+			chapterNoteRefs = await readChapterNoteVerseRefs(currentStorage, {
+				versionId: selectedVersionId,
+				bookId: selectedBookId ?? 0,
+				chapter: selectedChapter ?? 0
+			});
+		} finally {
+			splitDeleting = false;
+		}
 	}
 
 	function handleListNoteSelected(note: Note) {
 		rememberReaderNote(note);
 		splitNote = note;
+		splitTab = 'note';
 	}
 
 	function backToVerseNoteList() {
@@ -1144,7 +1186,9 @@
 	{:else if state === 'empty'}
 		<Empty.Root class="bible-empty">
 			<Empty.Header>
-				<Empty.Media variant="icon"><BookOpen size={16} strokeWidth={1.8} aria-hidden="true" /></Empty.Media>
+				<Empty.Media variant="icon"
+					><BookOpen size={16} strokeWidth={1.8} aria-hidden="true" /></Empty.Media
+				>
 				<h2 class="bible-empty-title" data-slot="empty-title">Nenhuma Bíblia instalada</h2>
 				<Empty.Description>
 					Você ainda não tem nenhuma Bíblia neste workspace.
@@ -1207,102 +1251,105 @@
 				class:toolbar-hidden={!toolbarVisible}
 				aria-label="Controles do leitor"
 			>
-			<div class="toolbar-shell">
-				<ButtonGroup class="reader-toolbar-group" aria-label="Navegação da Bíblia">
-					<Button
-						variant="ghost"
-						size="icon-sm"
-						class="toolbar-nav-button"
-						disabled={!previousChapter || chapterLoading}
-						onclick={() => moveChapter(previousChapter)}
-						aria-label="Capítulo anterior"
-						title="Capítulo anterior"
-					>
-						<ArrowLeft size={16} strokeWidth={1.8} aria-hidden="true" />
-					</Button>
-					<button
-						class="toolbar-choice book-choice"
-						type="button"
-						data-slot="button"
-						onclick={() => openSelector('book')}
-						aria-haspopup="dialog"
-						aria-expanded={selectorOpen && selectorMode === 'book'}
-						aria-label="Livro"
-						title="Selecionar livro"
-					>
-						<span>{selectedBook.name}</span>
-						<ChevronDown size={13} strokeWidth={1.8} aria-hidden="true" class="choice-chevron" />
-					</button>
-					<button
-						class="toolbar-choice chapter-choice"
-						type="button"
-						data-slot="button"
-						onclick={() => openSelector('chapter')}
-						aria-haspopup="dialog"
-						aria-expanded={selectorOpen && selectorMode === 'chapter'}
-						aria-label="Capítulo"
-						title="Selecionar capítulo"
-					>
-						<span>{selectedChapter}</span>
-						<ChevronDown size={13} strokeWidth={1.8} aria-hidden="true" class="choice-chevron" />
-					</button>
-					<button
-						class="toolbar-choice version-choice"
-						type="button"
-						data-slot="button"
-						onclick={() => openSelector('version')}
-						aria-label="Versão"
-						role="combobox"
-						aria-haspopup="dialog"
-						aria-controls="bible-selector"
-						aria-expanded={selectorOpen && selectorMode === 'version'}
-						title={selectedVersion.name}
-					>
-						<span class="version-label">{displayVersionAbbreviation(selectedVersion)}</span>
-						<ChevronDown size={13} strokeWidth={1.8} aria-hidden="true" class="choice-chevron" />
-					</button>
-					<Button
-						variant="ghost"
-						size="icon-sm"
-						class="toolbar-nav-button"
-						disabled={!nextChapter || chapterLoading}
-						onclick={() => moveChapter(nextChapter)}
-						aria-label="Próximo capítulo"
-						title="Próximo capítulo"
-					>
-						<ArrowRight size={16} strokeWidth={1.8} aria-hidden="true" />
-					</Button>
-					<Button
-						variant="ghost"
-						size="icon-sm"
-						class="toolbar-search-button"
-						onclick={() => (searchOpen = true)}
-						aria-label="Buscar no texto"
-						title="Buscar no texto"
-					>
-						<Search size={16} strokeWidth={1.8} aria-hidden="true" />
-					</Button>
-					<Button
-						variant="ghost"
-						size="icon-sm"
-						class="toolbar-highlights-button"
-						onclick={() => openHighlightsSheet()}
-						aria-label="Destaques"
-						title="Destaques"
-					>
-						<Highlighter size={16} strokeWidth={1.8} aria-hidden="true" />
-					</Button>
-				</ButtonGroup>
-			</div>
+				<div class="toolbar-shell">
+					<ButtonGroup class="reader-toolbar-group" aria-label="Navegação da Bíblia">
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							class="toolbar-nav-button"
+							disabled={!previousChapter || chapterLoading}
+							onclick={() => moveChapter(previousChapter)}
+							aria-label="Capítulo anterior"
+							title="Capítulo anterior"
+						>
+							<ArrowLeft size={16} strokeWidth={1.8} aria-hidden="true" />
+						</Button>
+						<button
+							class="toolbar-choice book-choice"
+							type="button"
+							data-slot="button"
+							onclick={() => openSelector('book')}
+							aria-haspopup="dialog"
+							aria-expanded={selectorOpen && selectorMode === 'book'}
+							aria-label="Livro"
+							title="Selecionar livro"
+						>
+							<span>{selectedBook.name}</span>
+							<ChevronDown size={13} strokeWidth={1.8} aria-hidden="true" class="choice-chevron" />
+						</button>
+						<button
+							class="toolbar-choice chapter-choice"
+							type="button"
+							data-slot="button"
+							onclick={() => openSelector('chapter')}
+							aria-haspopup="dialog"
+							aria-expanded={selectorOpen && selectorMode === 'chapter'}
+							aria-label="Capítulo"
+							title="Selecionar capítulo"
+						>
+							<span>{selectedChapter}</span>
+							<ChevronDown size={13} strokeWidth={1.8} aria-hidden="true" class="choice-chevron" />
+						</button>
+						<button
+							class="toolbar-choice version-choice"
+							type="button"
+							data-slot="button"
+							onclick={() => openSelector('version')}
+							aria-label="Versão"
+							role="combobox"
+							aria-haspopup="dialog"
+							aria-controls="bible-selector"
+							aria-expanded={selectorOpen && selectorMode === 'version'}
+							title={selectedVersion.name}
+						>
+							<span class="version-label">{displayVersionAbbreviation(selectedVersion)}</span>
+							<ChevronDown size={13} strokeWidth={1.8} aria-hidden="true" class="choice-chevron" />
+						</button>
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							class="toolbar-nav-button"
+							disabled={!nextChapter || chapterLoading}
+							onclick={() => moveChapter(nextChapter)}
+							aria-label="Próximo capítulo"
+							title="Próximo capítulo"
+						>
+							<ArrowRight size={16} strokeWidth={1.8} aria-hidden="true" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							class="toolbar-search-button"
+							onclick={() => (searchOpen = true)}
+							aria-label="Buscar no texto"
+							title="Buscar no texto"
+						>
+							<Search size={16} strokeWidth={1.8} aria-hidden="true" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							class="toolbar-highlights-button"
+							onclick={() => openHighlightsSheet()}
+							aria-label="Destaques"
+							title="Destaques"
+						>
+							<Highlighter size={16} strokeWidth={1.8} aria-hidden="true" />
+						</Button>
+					</ButtonGroup>
+				</div>
 			</section>
 		{/snippet}
-		{#if !desktopSplitActive}
+		{#if !desktopSplitActive && !(isMobile.current && (splitNote !== null || splitNoteList !== null))}
 			{@render readerToolbar()}
 		{/if}
 		<div
 			class="reader-fab"
 			class:fab-open={fabOpen}
-			class:fab-hidden={popoverOpen}
+			class:fab-hidden={popoverOpen ||
+				(isMobile.current &&
+					(splitNote !== null || splitNoteList !== null) &&
+					splitTab !== 'bible')}
 		>
 			<div class="fab-actions" aria-hidden={!fabOpen}>
 				<button
@@ -1600,10 +1647,12 @@
 			note={splitNote}
 			listNotes={splitNoteList}
 			{storage}
-			toolbar={desktopSplitActive ? readerToolbar : null}
+			toolbar={readerToolbar}
 			onClose={closeSplitPanel}
 			onBackToList={backToVerseNoteList}
 			onSaved={(note) => (splitNote = note)}
+			onDelete={requestSplitDelete}
+			onTabChange={(tab) => (splitTab = tab)}
 			onSelectListNote={handleListNoteSelected}
 		>
 			<main class="reading-column" aria-labelledby="chapter-heading">
@@ -1751,6 +1800,29 @@
 			onViewAll={() => void openAllNotesForVerse()}
 			onClose={closeVerseNoteSelector}
 		/>
+
+		<Dialog.Root
+			open={splitDeleteTarget !== null}
+			onOpenChange={(value) => !value && (splitDeleteTarget = null)}
+		>
+			<Dialog.Content showCloseButton={true}>
+				<Dialog.Title>Apagar nota</Dialog.Title>
+				<Dialog.Description>
+					Esta ação move <strong>{splitDeleteTarget?.title || 'Sem título'}</strong> para a lixeira. Deseja
+					continuar?
+				</Dialog.Description>
+				<div class="dialog-actions">
+					<Button variant="outline" onclick={() => (splitDeleteTarget = null)}>Cancelar</Button>
+					<Button
+						variant="destructive"
+						onclick={() => void confirmSplitDelete()}
+						disabled={splitDeleting}
+					>
+						{splitDeleting ? 'Apagando…' : 'Apagar'}
+					</Button>
+				</div>
+			</Dialog.Content>
+		</Dialog.Root>
 	{:else}
 		<section class="state-panel" aria-live="polite">
 			<h2>Nenhum capítulo disponível</h2>

@@ -18,7 +18,6 @@
 	import {
 		applyIosEditorInputAttributes,
 		createKeyboardInsetTracker,
-		NOTE_TOOLBAR_HEIGHT_PX,
 		setNoteKeyboardInset
 	} from './note-editor-viewport';
 	import { bibleReferencePlugin, BibleReferenceViewer, openBibleReference } from '$lib/bible';
@@ -30,6 +29,7 @@
 		note,
 		storage,
 		readOnly = false,
+		toolbarEnabled = true,
 		onSaved,
 		onStatusChange
 	}: {
@@ -37,6 +37,7 @@
 		note?: Note;
 		storage?: WorkspaceStorage;
 		readOnly?: boolean;
+		toolbarEnabled?: boolean;
 		onSaved?: (note: Note) => void;
 		onStatusChange?: (status: SaveStatus) => void;
 	} = $props();
@@ -72,6 +73,10 @@
 	} | null>(null);
 	let toolbarActive = $state<Record<string, boolean>>({});
 	let filteredItems = $derived(filterSlashItems(getSlashItems(), slashQuery));
+
+	$effect(() => {
+		if (!toolbarEnabled) toolbarOpen = false;
+	});
 
 	$effect(() => {
 		const ro = readOnly;
@@ -593,12 +598,19 @@
 
 <svelte:window onresize={repositionOverlays} onscroll={repositionOverlays} />
 
-<div
-	class="note-editor-viewport"
-	bind:this={editorRoot}
-	style:--note-toolbar-height="{NOTE_TOOLBAR_HEIGHT_PX}px"
->
+<div class="note-editor-viewport" bind:this={editorRoot}>
 	<div class="milkdown-editor" data-testid="note-canvas" data-viewport-fill="true">
+		<MilkdownMobileToolbar
+			active={mobile && !readOnly && editingActive}
+			enabled={toolbarEnabled}
+			visible={toolbarOpen}
+			disabled={!editingActive}
+			activeActions={toolbarActive}
+			onAction={runToolbar}
+			onToggle={() => (toolbarOpen = !toolbarOpen)}
+			onClose={() => (toolbarOpen = false)}
+		/>
+
 		{#if initError}
 			<p class="editor-error" role="alert">{initError}</p>
 		{/if}
@@ -696,16 +708,6 @@
 	{/if}
 
 	<BibleReferenceViewer {storage} />
-
-	<MilkdownMobileToolbar
-		active={mobile && !readOnly && editingActive}
-		visible={toolbarOpen}
-		disabled={!editingActive}
-		activeActions={toolbarActive}
-		onAction={runToolbar}
-		onToggle={() => (toolbarOpen = !toolbarOpen)}
-		onClose={() => (toolbarOpen = false)}
-	/>
 </div>
 
 <style>
@@ -769,10 +771,7 @@
 		.note-container {
 			max-width: none;
 			padding: 16px 16px
-				calc(
-					max(64px + env(safe-area-inset-bottom, 0px), var(--note-keyboard-inset, 0px)) +
-						var(--note-toolbar-height, 56px) + 16px
-				);
+				calc(max(64px + env(safe-area-inset-bottom, 0px), var(--note-keyboard-inset, 0px)) + 16px);
 		}
 	}
 

@@ -1,13 +1,18 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { onMount } from 'svelte';
-	import { ArrowLeft } from '@lucide/svelte';
+	import { ArrowLeft, MoreHorizontal, Trash2 } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 	import MilkdownNoteEditor from '$lib/features/notes/MilkdownNoteEditor.svelte';
 	import NoteCardList from '$lib/features/notes/NoteCardList.svelte';
 	import type { Note } from '$lib/features/notes/note-types';
+	import {
+		readNoteToolbarEnabled,
+		saveNoteToolbarEnabled
+	} from '$lib/features/notes/note-editor-layout';
 	import type { WorkspaceStorage } from '$lib/storage/types';
 
 	const SPLIT_RATIO_KEY = 'openbible:reader-split-ratio';
@@ -24,7 +29,9 @@
 		onClose,
 		onBackToList,
 		onSaved,
+		onDelete,
 		onSelectListNote,
+		onTabChange,
 		children
 	}: {
 		note: Note | null;
@@ -35,7 +42,9 @@
 		onClose: () => void;
 		onBackToList?: () => void;
 		onSaved?: (note: Note) => void;
+		onDelete?: (note: Note) => void;
 		onSelectListNote?: (note: Note) => void;
+		onTabChange?: (tab: 'bible' | 'note') => void;
 		children: Snippet;
 	} = $props();
 
@@ -48,6 +57,8 @@
 	);
 
 	let readerRatio = $state(DEFAULT_READER_RATIO);
+	let activeMobileTab = $state<'bible' | 'note'>('note');
+	let toolbarEnabled = $state(readNoteToolbarEnabled());
 	let splitShell = $state<HTMLElement | null>(null);
 	let resizing = $state(false);
 
@@ -134,6 +145,11 @@
 			onSelectListNote?.(selected);
 		}
 	}
+
+	function setToolbarEnabled(enabled: boolean) {
+		toolbarEnabled = enabled;
+		saveNoteToolbarEnabled(enabled);
+	}
 </script>
 
 {#snippet notePane(openNote: Note, openStorage: WorkspaceStorage)}
@@ -148,11 +164,45 @@
 				{/if}
 				<p class="note-pane-title" title={openNote.title}>{openNote.title}</p>
 			</div>
-			<Button variant="ghost" size="sm" class="note-pane-close" onclick={onClose}
-				>Fechar nota</Button
-			>
+			<div class="note-pane-actions">
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								type="button"
+								variant="ghost"
+								size="icon-sm"
+								aria-label="Opções da nota"
+								title="Opções da nota"
+							>
+								<MoreHorizontal size={16} strokeWidth={1.8} aria-hidden="true" />
+							</Button>
+						{/snippet}
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end">
+						<DropdownMenu.CheckboxItem
+							checked={toolbarEnabled}
+							onCheckedChange={(checked) => setToolbarEnabled(checked === true)}
+						>
+							<span>Barra de formatação</span>
+						</DropdownMenu.CheckboxItem>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item
+							class="text-destructive focus:text-destructive"
+							onclick={() => onDelete?.(openNote)}
+						>
+							<Trash2 size={14} aria-hidden="true" />
+							<span>Apagar nota</span>
+						</DropdownMenu.Item>
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+				<Button variant="ghost" size="sm" class="note-pane-close" onclick={onClose}
+					>Fechar nota</Button
+				>
+			</div>
 		</div>
-		<MilkdownNoteEditor note={openNote} storage={openStorage} {onSaved} />
+		<MilkdownNoteEditor note={openNote} storage={openStorage} {onSaved} {toolbarEnabled} />
 	</section>
 {/snippet}
 
@@ -175,12 +225,16 @@
 	{@render children()}
 {:else if isMobile.current}
 	<div class="note-split-shell">
-		<Tabs.Root value="note" class="note-split-tabs">
-			<Tabs.List>
+		<Tabs.Root
+			bind:value={activeMobileTab}
+			class="note-split-tabs"
+			onValueChange={(value) => onTabChange?.(value as 'bible' | 'note')}
+		>
+			<Tabs.List class="note-split-tab-list">
 				<Tabs.Trigger value="bible">Bíblia</Tabs.Trigger>
 				<Tabs.Trigger value="note">Nota</Tabs.Trigger>
 			</Tabs.List>
-			<Tabs.Content value="bible">{@render children()}</Tabs.Content>
+			<Tabs.Content value="bible">{@render toolbar?.()}{@render children()}</Tabs.Content>
 			<Tabs.Content value="note">
 				{#if showEditorPane && note && storage}
 					{@render notePane(note, storage)}
@@ -410,6 +464,13 @@
 		color: var(--muted-foreground);
 	}
 
+	.note-pane-actions {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		flex-shrink: 0;
+	}
+
 	:global(.note-split-tabs) {
 		display: flex;
 		width: 100%;
@@ -422,6 +483,11 @@
 	:global(.note-split-tabs [data-slot='tabs-list']) {
 		flex-shrink: 0;
 		width: 100%;
+	}
+
+	:global(.note-split-tab-list) {
+		padding-top: 8px;
+		padding-inline: 12px;
 	}
 
 	:global(.note-split-tabs [data-slot='tabs-content']) {

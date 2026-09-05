@@ -5,16 +5,12 @@ import { fileURLToPath } from 'node:url';
 const APP_HTML = fileURLToPath(new URL('../../app.html', import.meta.url));
 const APP_CSS = fileURLToPath(new URL('../../app.css', import.meta.url));
 const MANIFEST = fileURLToPath(new URL('../../../static/manifest.webmanifest', import.meta.url));
-const APP_FRAME = fileURLToPath(
-	new URL('../features/workspace/AppFrame.svelte', import.meta.url)
-);
+const APP_FRAME = fileURLToPath(new URL('../features/workspace/AppFrame.svelte', import.meta.url));
 const APP_SIDEBAR = fileURLToPath(
 	new URL('../features/navigation/AppSidebar.svelte', import.meta.url)
 );
 const FAVICON = fileURLToPath(new URL('../../../static/favicon.png', import.meta.url));
-const APPLE_TOUCH = fileURLToPath(
-	new URL('../../../static/apple-touch-icon.png', import.meta.url)
-);
+const APPLE_TOUCH = fileURLToPath(new URL('../../../static/apple-touch-icon.png', import.meta.url));
 
 async function readPngSize(path: string): Promise<{ width: number; height: number }> {
 	const bytes = await readFile(path);
@@ -85,5 +81,13 @@ describe('pwa shell', () => {
 		expect(sidebar).toContain('mobile-bottom-nav');
 		expect(sidebar).toContain('safe-area-inset-bottom');
 		expect(sidebar).toContain('aria-current');
+	});
+
+	// SPECSFY: US-002 FR-002 FR-004 NFR-003 AC-012
+	it('recompõe a barra quando o visual viewport do iOS muda', async () => {
+		const sidebar = await readFile(APP_SIDEBAR, 'utf8');
+		expect(sidebar).toContain('visualViewport');
+		expect(sidebar).toContain('viewport-repaint');
+		expect(sidebar).toContain('translate3d(0, 0, 0.001px)');
 	});
 });
