@@ -94,9 +94,9 @@ jobs:
           name: openbible-linux-packages
           path: |
             apps/desktop/src-tauri/target/release/bundle/deb/*.deb
+            apps/desktop/src-tauri/target/release/bundle/deb/*.deb.sig
             apps/desktop/src-tauri/target/release/bundle/appimage/*.AppImage
-            apps/desktop/src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz
-            apps/desktop/src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz.sig
+            apps/desktop/src-tauri/target/release/bundle/appimage/*.AppImage.sig
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -127,7 +127,7 @@ jobs:
           const files = fs.readdirSync(root, { recursive: true }).map((file) => path.join(root, file)).filter((file) => fs.statSync(file).isFile());
           const find = (suffix) => files.find((file) => file.endsWith(suffix));
           const mac = find('.app.tar.gz');
-          const linux = find('.AppImage.tar.gz');
+          const linux = find('.AppImage');
           if (!mac || !linux || !fs.existsSync(`${mac}.sig`) || !fs.existsSync(`${linux}.sig`)) throw new Error('Updater artifacts not found');
           const ref = process.env.GITHUB_REF_NAME;
           const base = `https://github.com/${process.env.GITHUB_REPOSITORY}/releases/download/${ref}/`;
