@@ -134,11 +134,15 @@
 									{...props}
 									type="button"
 									onclick={openAppUpdateDialog}
-									aria-label={`Abrir atualização v${update.version}`}
+									aria-label={update.version
+										? `Abrir atualização v${update.version}`
+										: 'Abrir atualização do OpenBible'}
 								>
 									<Download size={16} strokeWidth={1.75} aria-hidden="true" />
 									<span>Atualização disponível</span>
-									<small class="update-badge">v{update.version}</small>
+									<small class="update-badge"
+										>{update.version ? `v${update.version}` : 'Nova'}</small
+									>
 								</button>
 							{/snippet}
 						</Sidebar.MenuButton>

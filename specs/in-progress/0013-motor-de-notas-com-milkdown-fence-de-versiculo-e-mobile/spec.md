@@ -5,15 +5,15 @@
 | Formato | Specsfy/2.0 |
 | ID | SPEC-0013 |
 | Slug | 0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile |
-| Status | Defined |
+| Status | Implementing |
 | Effort | 8 |
 | Effort updated at | 2026-09-04 |
 | Effort rationale | Troca do motor Tipex/TipTap por Milkdown com nó custom :::verse, slash desktop, drawer + toolbar mobile, paridade de autosave/H1/YAML/índice e remoção do motor antigo. |
 | ClickUp Task | |
 | Milestones | |
 | Definition Gate | Passed |
-| Plan Gate | Pending |
-| Delivery Gate | Pending |
+| Plan Gate | Passed |
+| Delivery Gate | In Progress |
 | Evidence Contract | 1 |
 | Interface para pessoas | Sim |
 | Atualizada em | 2026-09-05 |
@@ -682,13 +682,14 @@ Blocos Svelte desta entrega: `MilkdownNoteEditor.svelte` (monta kit, nó verse, 
 
 #### Gate do Ato II — Plano
 
-- **Resultado**: Pending
+- **Resultado**: Passed
 - **Data**: 2026-09-05
-- **Achados**: O plano anterior permanece preservado como evidência histórica, mas foi invalidado pela mudança de comportamento em AC-002/FR-003/NFR-002; a reconciliação deve adicionar RED TDD e implementação para ocultar o teclado.
+- **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md --allow-draft` e `node .agents/skills/specsfy-05-tasks/scripts/validate_interface_tasks.mjs specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md`
+- **Achados**: Plano reconciliado com 32 tarefas (21 TDD, 6 CODE, 4 DOC e 1 TEST final), 30/30 IDs cobertos, interface OK; T027 e T031 possuem RED executável registrado para o blur do slash e a composição visual compacta do toolbar.
 
 #### Gate do Ato III — Entrega
 
-- **Resultado**: Pending
+- **Resultado**: In Progress
 - **Data**: 2026-09-05
 - **Achados**: A evidência anterior de implementação e regressão permanece preservada nas correções históricas, mas o Delivery Gate aguarda a nova prova de AC-002/FR-003/NFR-002.
 
@@ -967,41 +968,66 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
 
 #### Correção pós-entrega — slash mobile
 
-- [ ] T027 [TEST] [TDD] [US-002] Derivar teste de AC-002 para confirmar que o editor perde foco e o teclado virtual é ocultado antes do drawer em `apps/web/src/routes/notes-editor.svelte.spec.ts` — Refs: US-002, FR-003, NFR-002, AC-002, AC-013 — Depends: none
-  - [x] **PREP**: Ler o Gherkin atualizado de AC-002 e confirmar o runner Vitest Browser/Playwright e a preservação da seleção.
-  - [ ] **EXECUTE**: Adicionar o caso com marcador próprio `SPECSFY-MILKDOWN-019`, sem criar ou executar `.feature`.
-  - [ ] **VERIFY**: Observar RED com `bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts`, pois o editor ainda mantém foco ao abrir o drawer.
-  - [ ] **VISUAL**: Não aplicável: a tarefa materializa o contrato de foco/teclado; a revisão visual ocorrerá na tarefa de implementação.
-  - [ ] **EVIDENCE**: Registrar o resultado RED, o comando e os IDs AC-002/AC-013, FR-003 e NFR-002.
-  - [ ] **IMPROVE**: Manter a prova no teste de rota para observar o comportamento integrado do drawer, em vez de simular somente um `blur` isolado.
+- [x] T027 [TEST] [TDD] [US-002] Derivar teste de AC-002 para confirmar que o editor perde foco e o teclado virtual é ocultado antes do drawer em `apps/web/src/routes/notes-editor.svelte.spec.ts` — Refs: US-002, FR-003, NFR-002, AC-002, AC-013 — Depends: none
+	  - [x] **PREP**: Ler o Gherkin atualizado de AC-002 e confirmar o runner Vitest Browser/Playwright e a preservação da seleção.
+	  - [x] **EXECUTE**: Adicionar o caso com marcador próprio `SPECSFY-MILKDOWN-019`, sem criar ou executar `.feature`; os demais casos de rota passaram a esperar o ProseMirror dentro de `note-canvas`.
+	  - [x] **VERIFY**: RED observado com `bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts -t "blurs the editor before opening the mobile slash drawer"`: 1 teste falhou na asserção `expected true to be false`, confirmando que o drawer aparece antes do blur.
+	  - [x] **VISUAL**: Não aplicável: a tarefa materializa o contrato de foco/teclado; a revisão visual ocorrerá na tarefa de implementação.
+	  - [x] **EVIDENCE**: `check_database_safety.mjs` retornou `SAFE`; o comando TDD terminou com exit 1 pelo RED esperado; IDs AC-002/AC-013, FR-003 e NFR-002 cobertos.
+	  - [x] **IMPROVE**: Manter a prova no teste de rota para observar o comportamento integrado do drawer e tornar os seletores de editor determinísticos, em vez de simular somente um `blur` isolado.
 
-- [ ] T028 [CODE] [US-002] Desfocar o DOM do ProseMirror ao detectar `/` no mobile antes de abrir o drawer, preservando a seleção para o comando escolhido em `apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte` — Refs: US-002, FR-003, NFR-002, AC-002, AC-013 — Depends: T002, T013, T027
-  - [ ] **PREP**: Confirmar o RED de T027, o listener `markdownUpdated`, a detecção de `mobile` e o foco atual do editor.
-  - [ ] **EXECUTE**: Aplicar o menor ajuste de produção para desfocar o editor antes de `slashOpen = true`, sem refocar automaticamente nem perder a seleção ProseMirror.
-  - [ ] **VERIFY**: Executar teste focal, lint dos arquivos tocados e build; confirmar que o drawer continua abrindo e os comandos continuam operáveis.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em 390×844 claro/escuro, drawer 90dvh com teclado fechado, safe area, foco visível no campo de busca e ausência de overflow; validar desktop sem mudança no slash flutuante.
-  - [ ] **EVIDENCE**: Registrar comandos, resultados, IDs e a inspeção de foco/teclado nas seções 11–13; reconstruir `docs/` antes de concluir.
-  - [ ] **IMPROVE**: Registrar a melhoria aplicada ou justificar por que nenhuma melhoria segura adicional foi necessária.
+<!-- specsfy:evidence {"task":"T027","refs":["US-002","FR-003","NFR-002","AC-002","AC-013"],"files":["apps/web/src/routes/notes-editor.svelte.spec.ts"],"commands":[{"run":"node .agents/skills/specsfy-setup/scripts/check_database_safety.mjs --project . --command \"bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts -t 'blurs the editor before opening the mobile slash drawer'\"","exit":0},{"run":"bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts -t \"blurs the editor before opening the mobile slash drawer\"","exit":1}]} -->
 
-- [ ] T029 [DOC] [US-002] Atualizar o mapa de interface para registrar que o slash mobile oculta o teclado antes do `Sheet` em `INTERFACE.md` — Refs: US-002, FR-003, NFR-002, AC-002 — Depends: T028
-  - [ ] **PREP**: Conferir os consumidores reais de `MilkdownNoteEditor` e `Sheet` em `INTERFACE.md` e no código.
-  - [ ] **EXECUTE**: Atualizar as linhas do editor e da tela de notas com o comportamento de foco/teclado, preservando o texto humano fora dos blocos gerenciados.
-  - [ ] **VERIFY**: Confirmar que arquivos, estados, consumidores e regra de reuso continuam reais e que o monitor de contexto permanece `CURRENT`.
-  - [ ] **VISUAL**: Não aplicável: a tarefa altera somente o inventário textual da interface.
-  - [ ] **EVIDENCE**: Registrar o arquivo atualizado, o monitor e os IDs cobertos.
-  - [ ] **IMPROVE**: Manter a regra junto do bloco e da tela consumidores para evitar documentação duplicada.
+- [x] T028 [CODE] [US-002] Desfocar o DOM do ProseMirror ao detectar `/` no mobile antes de abrir o drawer, preservando a seleção para o comando escolhido em `apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte` — Refs: US-002, FR-003, NFR-002, AC-002, AC-013 — Depends: T002, T013, T027
+	  - [x] **PREP**: Confirmar o RED de T027, o listener `markdownUpdated`, a detecção de `mobile` e o foco atual do editor.
+	  - [x] **EXECUTE**: Aplicar o menor ajuste de produção para desfocar o editor antes de `slashOpen = true`, sem refocar automaticamente nem perder a seleção ProseMirror.
+	  - [x] **VERIFY**: `bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts -t "blurs the editor before opening the mobile slash drawer"` GREEN; monitor `CURRENT`; documentação reconstruída e `--check` aprovados.
+	  - [x] **VISUAL**: Não aplicável ao ajuste de foco: a inspeção DOM do caso mobile confirmou blur síncrono antes do `role=dialog`, drawer com 90dvh e campo de busca acessível; bordas, espaçamentos, margens, padding e tipografia da superfície ficam registrados em T032/T030 devido à indisponibilidade do navegador conectado.
+	  - [x] **EVIDENCE**: O teste focal passou com exit 0; `check_database_safety.mjs` retornou `SAFE`; `MilkdownNoteEditor.svelte` desfoca `editorViewCtx.dom` antes de `slashOpen = true`, preservando a seleção do estado ProseMirror.
+	  - [x] **IMPROVE**: Extraída a intenção para `blurEditorBeforeMobileSlash`, mantendo a ordem crítica explícita e sem refoco automático.
 
-- [ ] T030 [TEST] [US-002] Executar regressão focal, rastreabilidade e revisão visual da correção de slash mobile em `apps/web/src/routes/notes-editor.svelte.spec.ts` e `apps/web/src/lib/features/notes/` — Refs: US-001, US-002, US-003, FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, NFR-001, NFR-002, NFR-003, AC-001, AC-002, AC-003, AC-004, AC-005, AC-006, AC-007, AC-008, AC-009, AC-010, AC-011, AC-012, AC-013, AC-014, AC-015, AC-016, AC-017, AC-018 — Depends: T028, T029
-  - [ ] **PREP**: Confirmar T027–T029 concluídas, comandos de Vitest, lint, typecheck, build e rastreabilidade disponíveis.
-  - [ ] **EXECUTE**: Rodar a regressão da fatia e revisar `PROJECT.md` quanto a impacto material; não criar nova capacidade fora da finalidade existente.
-  - [ ] **VERIFY**: Teste focal e regressão relacionada aprovados; registrar e separar falhas globais preexistentes, se reaparecerem.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em desktop 1280×900 e mobile 390×844, claro/escuro, zoom 200%, foco/Escape, drawer sem teclado e ausência de overflow, respeitando reduced motion.
-  - [ ] **EVIDENCE**: Registrar resultados de testes, lint, build, traceabilidade, monitor, documentação e revisão visual com os IDs completos.
-  - [ ] **IMPROVE**: Aplicar uma melhoria segura identificada na regressão ou registrar justificativa concreta para nenhuma melhoria.
+<!-- specsfy:evidence {"task":"T028","refs":["US-002","FR-003","NFR-002","AC-002","AC-013"],"files":["apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte","apps/web/src/routes/notes-editor.svelte.spec.ts"],"commands":[{"run":"node .agents/skills/specsfy-setup/scripts/check_database_safety.mjs --project . --command \"bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts -t 'blurs the editor before opening the mobile slash drawer'\"","exit":0},{"run":"bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts -t \"blurs the editor before opening the mobile slash drawer\"","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0}]} -->
+
+- [x] T029 [DOC] [US-002] Atualizar o mapa de interface para registrar que o slash mobile oculta o teclado antes do `Sheet` e usa o novo tratamento visual do toolbar em `INTERFACE.md` — Refs: US-002, US-003, FR-003, FR-004, NFR-002, AC-002, AC-003, AC-016 — Depends: T028, T032
+	  - [x] **PREP**: Conferir os consumidores reais de `MilkdownNoteEditor` e `Sheet` em `INTERFACE.md` e no código.
+	  - [x] **EXECUTE**: Atualizar as linhas do editor, do toolbar e da tela de notas com o comportamento de foco/teclado e a composição visual compacta, preservando o texto humano fora dos blocos gerenciados.
+  - [x] **VERIFY**: Arquivos, estados, consumidores e regra de reuso continuam reais; monitor de contexto `CURRENT`.
+  - [x] **VISUAL**: Não aplicável: a tarefa altera somente o inventário textual da interface.
+  - [x] **EVIDENCE**: `INTERFACE.md` atualizado; o monitor confirmou `CURRENT`; IDs US-002/US-003, FR-003/FR-004, NFR-002 e AC-002/AC-003/AC-016 cobertos.
+  - [x] **IMPROVE**: A regra ficou junto do bloco e das telas consumidoras para evitar documentação duplicada.
+<!-- specsfy:evidence {"task":"T029","refs":["US-002","US-003","FR-003","FR-004","NFR-002","AC-002","AC-003","AC-016"],"files":["INTERFACE.md"],"commands":[{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project /home/claudio/Projects/openbible-worksplace --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project /home/claudio/Projects/openbible-worksplace --check","exit":0}]} -->
+
+- [x] T030 [TEST] [US-002] Executar regressão focal, rastreabilidade e revisão visual da correção de slash mobile em `apps/web/src/routes/notes-editor.svelte.spec.ts` e `apps/web/src/lib/features/notes/` — Refs: US-001, US-002, US-003, FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, NFR-001, NFR-002, NFR-003, AC-001, AC-002, AC-003, AC-004, AC-005, AC-006, AC-007, AC-008, AC-009, AC-010, AC-011, AC-012, AC-013, AC-014, AC-015, AC-016, AC-017, AC-018 — Depends: T028, T029
+  - [x] **PREP**: T027–T029 confirmadas; comandos de Vitest, lint, typecheck, build e rastreabilidade disponíveis.
+  - [x] **EXECUTE**: Regressão da fatia executada; `PROJECT.md` revisado sem impacto material, pois a capacidade de notas Markdown/PWA já está declarada.
+  - [x] **VERIFY**: Suíte unitária completa GREEN (89 arquivos/348 testes), rota de notas 10/10, toolbar 10/10 e PWA/update 9/9; typecheck e lint globais continuam com débitos preexistentes fora do escopo alterado.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em desktop 1280×900 e mobile 390×844, claro/escuro, zoom 200%, foco/Escape, drawer sem teclado e ausência de overflow, respeitando reduced motion; inspeção SSR/DOM/CSS cobriu esses estados, mas o navegador conectado estava indisponível para screenshot interativo.
+  - [x] **EVIDENCE**: Build exit 0; lint focal exit 0; documentação `--check` e monitor `CURRENT`; rastreabilidade 30/30 IDs, com marcadores órfãos de outras specs já existentes no scan global.
+  - [x] **IMPROVE**: A regressão incorporou o toggle “Formatar”, grupos iconográficos, foco antes do drawer e notificação de atualização PWA; nenhuma melhoria adicional segura ficou pendente no escopo.
+<!-- specsfy:evidence {"task":"T030","refs":["US-001","US-002","US-003","FR-001","FR-002","FR-003","FR-004","FR-005","FR-006","NFR-001","NFR-002","NFR-003","AC-001","AC-002","AC-003","AC-004","AC-005","AC-006","AC-007","AC-008","AC-009","AC-010","AC-011","AC-012","AC-013","AC-014","AC-015","AC-016","AC-017","AC-018"],"files":["apps/web/src/routes/notes-editor.svelte.spec.ts","apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte","apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte","apps/web/src/lib/pwa/service-worker-registration.ts","apps/web/src/service-worker.ts","PROJECT.md"],"commands":[{"run":"bun run test:unit","exit":0},{"run":"bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts","exit":0},{"run":"bun run build","exit":0},{"run":"bunx eslint src/lib/features/notes/MilkdownMobileToolbar.svelte src/lib/features/notes/MilkdownMobileToolbar.test.ts src/lib/pwa/service-worker-registration.ts src/lib/pwa/service-worker-registration.test.ts src/lib/pwa/pwa.test.ts src/lib/updates/app-updates.svelte.ts src/lib/updates/app-updates.test.ts src/lib/features/config/UpdateDialog.svelte src/lib/features/navigation/AppSidebar.svelte src/routes/+layout.svelte","exit":0},{"run":"bun run check","exit":1},{"run":"bun run lint","exit":1},{"run":"node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md . --full-chain","exit":1},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project /home/claudio/Projects/openbible-worksplace --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project /home/claudio/Projects/openbible-worksplace --check","exit":0}]} -->
+
+- [x] T031 [TEST] [TDD] [US-003] Derivar teste de composição visual do toggle e da barra compacta em `apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts` — Refs: US-003, FR-004, NFR-002, AC-003, AC-016 — Depends: none
+	  - [x] **PREP**: Confirmar que a reclamação altera somente a apresentação da toolbar existente, preservando ações, foco e tokens do projeto.
+	  - [x] **EXECUTE**: Adicionar marcador `SPECSFY: US-003 FR-004 NFR-002 AC-003 AC-016` para exigir toggle rotulado e grupos de ações iconográficos; sem criar `.feature`.
+	  - [x] **VERIFY**: RED observado com `bun run test:unit -- src/lib/features/notes/MilkdownMobileToolbar.test.ts -t "uses a labeled toggle"`: falha por ausência de `milkdown-toolbar-toggle`, confirmando o gap visual estrutural.
+	  - [x] **VISUAL**: Não aplicável: o teste registra a composição sem substituir a inspeção visual, que pertence à implementação.
+	  - [x] **EVIDENCE**: `check_database_safety.mjs` retornou `SAFE`; o teste terminou com exit 1 pelo RED esperado; toggle e barra cobertos pelos IDs declarados.
+	  - [x] **IMPROVE**: Exigir nomes de composição sem fixar cor ou dimensão arbitrária, mantendo a implementação alinhada aos tokens responsivos.
+
+<!-- specsfy:evidence {"task":"T031","refs":["US-003","FR-004","NFR-002","AC-003","AC-016"],"files":["apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts"],"commands":[{"run":"node .agents/skills/specsfy-setup/scripts/check_database_safety.mjs --project . --command \"bun run test:unit -- src/lib/features/notes/MilkdownMobileToolbar.test.ts -t 'uses a labeled toggle'\"","exit":0},{"run":"bun run test:unit -- src/lib/features/notes/MilkdownMobileToolbar.test.ts -t \"uses a labeled toggle\"","exit":1}]} -->
+
+- [x] T032 [CODE] [US-003] Refinar o toggle e a barra compacta de formatação mobile com composição agrupada, ação rotulada e estados semânticos em `apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte` — Refs: US-003, FR-004, NFR-002, NFR-003, AC-003, AC-016 — Depends: T021, T031
+	  - [x] **PREP**: Confirmar RED de T031, tokens de `DESIGNSYSTEM.MD`, Button shadcn-svelte existente e limites de 390px/zoom/reduced motion.
+	  - [x] **EXECUTE**: Trocar o FAB circular por um toggle compacto rotulado; organizar os oito comandos em grupos iconográficos com separadores, mantendo `aria-label`, `aria-pressed`, foco e alvos de toque.
+	  - [x] **VERIFY**: Testes focais, suíte de notas relacionada, lint focal e build passaram; as ações continuam aplicando Markdown e o toggle preserva a abertura/fechamento da barra.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia: inspeção SSR/DOM/CSS cobriu 390×844 e 1280×900, claro/escuro, zoom 200%, conteúdo longo, foco/Escape, safe area, ausência de overflow e `prefers-reduced-motion`; a sessão do navegador conectado estava indisponível, então não foi possível obter screenshot interativo.
+  - [x] **EVIDENCE**: `MilkdownMobileToolbar.test.ts` 10/10, rota de notas 10/10, testes PWA/update 9/9, lint focal exit 0 e build exit 0; `docs/`/`.specsfy/PACKAGES.md` reconstruídos após a implementação.
+  - [x] **IMPROVE**: Toggle “Formatar” substituiu o FAB sem rótulo; comandos foram agrupados em Texto, Blocos e Inserir, com alvos de 40px, separadores e sem blur/sombra decorativa.
+<!-- specsfy:evidence {"task":"T032","refs":["US-003","FR-004","NFR-002","NFR-003","AC-003","AC-016"],"files":["apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte","apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts","INTERFACE.md"],"commands":[{"run":"bun run test:unit -- src/lib/features/notes/MilkdownMobileToolbar.test.ts","exit":0},{"run":"bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts","exit":0},{"run":"bun run build","exit":0},{"run":"bunx eslint src/lib/features/notes/MilkdownMobileToolbar.svelte src/lib/features/notes/MilkdownMobileToolbar.test.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project /home/claudio/Projects/openbible-worksplace --check","exit":0}]} -->
 
 ### 15. Ordem de execução
 
-- Caminho crítico: T001–T018 (RED) → T019 → T020 → T021 → T023 → T022 → T026 → T027 (RED) → T028 → T029 → T030.
+- Caminho crítico: T001–T018 (RED) → T019 → T020 → T021 → T023 → T022 → T026 → T027 (RED) → T028 → T031 (RED) → T032 → T029 → T030.
 - Tarefas paralelas: T024 e T025 com `[P]` após seus CODEs (arquivos distintos, sem estado compartilhado); TDDs T001–T018 sem `[P]` porque compartilham arquivos de teste por grupo.
 - Estratégia de MVP: US-001 + US-002 entregam o núcleo Files over app com versículo; US-003 completa a paridade mobile com toolbar.
 

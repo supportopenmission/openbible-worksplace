@@ -29,6 +29,16 @@ describe('PWA app shell', () => {
 		expect(source).toContain('CACHE_NAME');
 	});
 
+	// SPECSFY: US-002 FR-004 FR-007 NFR-002 AC-008 AC-012
+	it('rotates the app shell cache so generated CSS and JavaScript become current', () => {
+		const source = readFileSync(serviceWorkerPath, 'utf8');
+
+		expect(source).toContain('const CACHE_NAME = `openbible-${version}`');
+		expect(source).toContain('const PRECACHE_ASSETS = [...build, ...files, ...prerendered]');
+		expect(source).toContain("key.startsWith('openbible-') && key !== CACHE_NAME");
+		expect(source).toContain('async function cacheFirstAsset');
+	});
+
 	// SPECSFY: US-002 FR-004 FR-007 NFR-002 AC-004 AC-008 AC-012
 	it('keeps all local product routes in the offline contract', () => {
 		const source = readFileSync(serviceWorkerPath, 'utf8');

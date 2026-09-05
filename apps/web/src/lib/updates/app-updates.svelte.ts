@@ -41,6 +41,17 @@ export function openAppUpdateDialog(): void {
 	}
 }
 
+export function markPwaUpdateAvailable(): AppUpdateState {
+	pendingNativeUpdate = null;
+	state.status = 'available';
+	state.version = null;
+	state.progress = 0;
+	state.error = '';
+	state.notes =
+		'Uma nova versão está disponível. Ela atualiza o app shell e os arquivos CSS e JavaScript.';
+	return state;
+}
+
 export async function checkForAppUpdate(): Promise<AppUpdateState> {
 	if (state.status === 'checking' || state.status === 'downloading') return state;
 	state.status = 'checking';

@@ -3,11 +3,17 @@ import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import NotesEditorPage from './notes/[id]/+page.svelte';
 
+async function getNoteEditor() {
+	const editor = page.getByTestId('note-canvas').getByRole('textbox');
+	await expect.element(editor).toBeInTheDocument();
+	return editor;
+}
+
 describe('notes editor Milkdown canvas controls', () => {
 	// SPECSFY: US-001 FR-003 NFR-002 AC-013
 	it('removes the legacy insert-verse button from the canvas route', async () => {
 		render(NotesEditorPage, { props: { data: { noteId: 'test-note' } } });
-		await expect.element(page.getByRole('textbox')).toBeInTheDocument();
+		await getNoteEditor();
 		const button = page.getByRole('button', { name: /inserir versículo/i });
 		await expect.element(button).not.toBeInTheDocument();
 	});
@@ -24,7 +30,7 @@ describe('notes editor Milkdown canvas controls', () => {
 	it('reveals formatting actions only after the editor receives a cursor', async () => {
 		await page.viewport(390, 844);
 		render(NotesEditorPage, { props: { data: { noteId: 'test-note' } } });
-		const editor = page.getByRole('textbox');
+		const editor = await getNoteEditor();
 		await expect
 			.element(page.getByRole('button', { name: 'Abrir ferramentas de formatação' }))
 			.not.toBeInTheDocument();
@@ -52,7 +58,7 @@ describe('notes editor Milkdown canvas controls', () => {
 	it('turns the current mobile block into an unchecked task', async () => {
 		await page.viewport(390, 844);
 		render(NotesEditorPage, { props: { data: { noteId: 'mobile-task-note' } } });
-		const editor = page.getByRole('textbox');
+		const editor = await getNoteEditor();
 		await editor.click();
 		await userEvent.keyboard('{End}{Enter}Revisar nota');
 		await page.getByRole('button', { name: 'Abrir ferramentas de formatação' }).click();
@@ -69,7 +75,7 @@ describe('notes editor Milkdown canvas controls', () => {
 	it('applies the active slash command with Enter before the editor inserts a line', async () => {
 		await page.viewport(1440, 900);
 		render(NotesEditorPage, { props: { data: { noteId: 'slash-enter-note' } } });
-		const editor = page.getByRole('textbox');
+		const editor = await getNoteEditor();
 		await editor.click();
 		await userEvent.keyboard('{End}{Enter}/h2');
 		await expect
@@ -86,7 +92,7 @@ describe('notes editor Milkdown canvas controls', () => {
 	it('opens a searchable 90dvh command drawer on mobile', async () => {
 		await page.viewport(390, 844);
 		render(NotesEditorPage, { props: { data: { noteId: 'mobile-slash-note' } } });
-		const editor = page.getByRole('textbox');
+		const editor = await getNoteEditor();
 		await editor.click();
 		await userEvent.keyboard('{End}{Enter}/');
 		const drawer = page.getByRole('dialog', { name: 'Comandos' });
@@ -99,7 +105,7 @@ describe('notes editor Milkdown canvas controls', () => {
 	it('blurs the editor before opening the mobile slash drawer', async () => {
 		await page.viewport(390, 844);
 		render(NotesEditorPage, { props: { data: { noteId: 'mobile-slash-keyboard-note' } } });
-		const editor = page.getByRole('textbox');
+		const editor = await getNoteEditor();
 		let drawerWasVisibleWhenEditorBlurred = false;
 		editor.element().addEventListener('blur', () => {
 			drawerWasVisibleWhenEditorBlurred = document.querySelector('[role="dialog"]') !== null;
@@ -117,7 +123,7 @@ describe('notes editor Milkdown canvas controls', () => {
 	it('keeps the measured formatting toolbar inside the viewport', async () => {
 		await page.viewport(390, 844);
 		render(NotesEditorPage, { props: { data: { noteId: 'toolbar-position-note' } } });
-		const editor = page.getByRole('textbox');
+		const editor = await getNoteEditor();
 		const toolbar = page.getByRole('toolbar', { name: 'Formatação da nota' });
 		await editor.click();
 		await page.getByRole('button', { name: 'Abrir ferramentas de formatação' }).click();
@@ -131,7 +137,7 @@ describe('notes editor Milkdown canvas controls', () => {
 	it('toggles task item to complete (checked: true) when task marker is clicked', async () => {
 		await page.viewport(390, 844);
 		render(NotesEditorPage, { props: { data: { noteId: 'task-toggle-note' } } });
-		const editor = page.getByRole('textbox');
+		const editor = await getNoteEditor();
 		await editor.click();
 		await userEvent.keyboard('{End}{Enter}Tarefa teste');
 		await page.getByRole('button', { name: 'Abrir ferramentas de formatação' }).click();
@@ -164,7 +170,7 @@ describe('notes editor Milkdown canvas controls', () => {
 	it('automatically decorates bible references without modifying markdown text', async () => {
 		await page.viewport(1440, 900);
 		render(NotesEditorPage, { props: { data: { noteId: 'bible-ref-note' } } });
-		const editor = page.getByRole('textbox');
+		const editor = await getNoteEditor();
 		await editor.click();
 		await userEvent.keyboard('{End}{Enter}Estudando Gn 3.1 (ARA) e Jo 3.16.');
 

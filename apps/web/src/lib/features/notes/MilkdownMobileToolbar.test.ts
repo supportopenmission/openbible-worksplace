@@ -30,15 +30,26 @@ describe('milkdown mobile toolbar', () => {
 
 	it('renders a compact toggle when the formatting tray is collapsed', () => {
 		const { body } = render(MilkdownMobileToolbar, { props: { visible: false } });
-		expect(body).toContain('milkdown-toolbar-fab');
+		expect(body).toContain('milkdown-toolbar-toggle');
 		expect(body).toContain('Abrir ferramentas de formatação');
 		expect(body).not.toContain('role="toolbar"');
+	});
+
+	// SPECSFY: US-003 FR-004 NFR-002 AC-003 AC-016
+	it('uses a labeled toggle and grouped icon actions for the compact mobile surface', () => {
+		const collapsed = render(MilkdownMobileToolbar, { props: { visible: false } });
+		expect(collapsed.body).toContain('milkdown-toolbar-toggle');
+		expect(collapsed.body).toContain('Formatar');
+
+		const expanded = render(MilkdownMobileToolbar);
+		expect(expanded.body).toContain('toolbar-group');
+		expect(expanded.body).toContain('toolbar-action');
 	});
 
 	it('can be disabled for direct Markdown editing', () => {
 		const { body } = render(MilkdownMobileToolbar, { props: { enabled: false } });
 		expect(body).not.toContain('milkdown-toolbar');
-		expect(body).not.toContain('milkdown-toolbar-fab');
+		expect(body).not.toContain('milkdown-toolbar-toggle');
 	});
 
 	it('declares a sticky top position for the formatting tray', async () => {

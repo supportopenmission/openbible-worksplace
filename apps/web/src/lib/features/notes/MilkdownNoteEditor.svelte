@@ -184,6 +184,14 @@
 		slashPosition = null;
 	}
 
+	function blurEditorBeforeMobileSlash() {
+		if (!mobile || !editor || !coreModule) return;
+		const { editorViewCtx } = coreModule;
+		editor.action((ctx) => {
+			ctx.get(editorViewCtx).dom.blur();
+		});
+	}
+
 	function positionSlashMenu(position: number) {
 		if (!editor || !coreModule || typeof window === 'undefined') return;
 		const { editorViewCtx } = coreModule;
@@ -407,7 +415,7 @@
 		const next = event.relatedTarget;
 		if (
 			next instanceof HTMLElement &&
-			next.closest('.ProseMirror, .milkdown-toolbar, .milkdown-toolbar-fab')
+			next.closest('.ProseMirror, .milkdown-toolbar, .milkdown-toolbar-toggle')
 		) {
 			return;
 		}
@@ -551,6 +559,7 @@
 						const textBefore = view.state.doc.textBetween(Math.max(0, from - 80), from, ' ', ' ');
 						const token = textBefore.match(/\/[^\s]*$/)?.[0];
 						if (token) {
+							blurEditorBeforeMobileSlash();
 							slashQuery = token.slice(1);
 							slashOpen = true;
 							slashIndex = 0;

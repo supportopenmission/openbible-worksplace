@@ -14,6 +14,7 @@
 	onMount(() => {
 		const handleOpen = () => (open = true);
 		window.addEventListener('openbible:update-open', handleOpen);
+		if (update.status === 'available' && !update.version) open = true;
 		return () => window.removeEventListener('openbible:update-open', handleOpen);
 	});
 
@@ -31,7 +32,11 @@
 		<Dialog.Title>Atualização do OpenBible</Dialog.Title>
 		<Dialog.Description>
 			{#if update.status === 'available'}
-				A versão v{update.version} está pronta para ser baixada.
+				{#if update.version}
+					A versão v{update.version} está pronta para ser baixada.
+				{:else}
+					Uma nova versão do app está disponível.
+				{/if}
 			{:else if update.status === 'downloading'}
 				Baixando e instalando a nova versão…
 			{:else if update.status === 'restarting'}
@@ -46,7 +51,9 @@
 		{#if update.status === 'available'}
 			<p class="update-notes">{update.notes}</p>
 			<div class="update-dialog-actions">
-				<Button type="button" onclick={install}>Baixar e instalar</Button>
+				<Button type="button" onclick={install}
+					>{update.version ? 'Baixar e instalar' : 'Atualizar agora'}</Button
+				>
 				<Button type="button" variant="outline" onclick={() => (open = false)}>Agora não</Button>
 			</div>
 		{:else if update.status === 'downloading'}

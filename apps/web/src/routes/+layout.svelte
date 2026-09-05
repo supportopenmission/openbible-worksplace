@@ -3,7 +3,11 @@
 	import WorkspaceProvider from '$lib/features/workspace/WorkspaceProvider.svelte';
 	import AppFrame from '$lib/features/workspace/AppFrame.svelte';
 	import { getReminderConfig, scheduleDailyReminder } from '$lib/pwa/daily-reminder';
-	import { configureOpenBibleServiceWorker } from '$lib/pwa/service-worker-registration';
+	import {
+		configureOpenBibleServiceWorker,
+		SERVICE_WORKER_UPDATE_EVENT
+	} from '$lib/pwa/service-worker-registration';
+	import { markPwaUpdateAvailable, openAppUpdateDialog } from '$lib/updates/app-updates.svelte';
 	import { dev } from '$app/environment';
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
@@ -34,8 +38,19 @@
 	onMount(() => {
 		startDailyReminder();
 		window.addEventListener('openbible:reminder-changed', startDailyReminder);
+		const handlePwaUpdate = () => {
+			markPwaUpdateAvailable();
+			openAppUpdateDialog();
+		};
+		window.addEventListener(SERVICE_WORKER_UPDATE_EVENT, handlePwaUpdate);
 
-		if (!('serviceWorker' in navigator)) return;
+		if (!('serviceWorker' in navigator)) {
+			return () => {
+				window.removeEventListener('openbible:reminder-changed', startDailyReminder);
+				window.removeEventListener(SERVICE_WORKER_UPDATE_EVENT, handlePwaUpdate);
+				cancelReminder?.();
+			};
+		}
 
 		void configureOpenBibleServiceWorker({
 			development: dev,
@@ -47,6 +62,7 @@
 
 		return () => {
 			window.removeEventListener('openbible:reminder-changed', startDailyReminder);
+			window.removeEventListener(SERVICE_WORKER_UPDATE_EVENT, handlePwaUpdate);
 			cancelReminder?.();
 		};
 	});
