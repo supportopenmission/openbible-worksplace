@@ -10,11 +10,13 @@ describe('macOS universal build configuration', () => {
 		const packageJson = JSON.parse(readFileSync('apps/desktop/package.json', 'utf8'));
 
 		expect(packageJson.scripts.build).toContain('--target universal-apple-darwin');
-		expect(packageJson.scripts.build).toContain('--no-sign');
+		expect(packageJson.scripts.build).not.toContain('--no-sign');
 		expect(packageJson.scripts['build:debug']).toContain('--target universal-apple-darwin');
+		expect(packageJson.scripts['build:debug']).not.toContain('--no-sign');
 		expect(packageJson.scripts['build:linux']).toContain('--bundles deb,appimage');
-		expect(packageJson.scripts['build:linux']).toContain('--no-sign');
+		expect(packageJson.scripts['build:linux']).not.toContain('--no-sign');
 		expect(config.bundle.targets).toContain('app');
+		expect(config.bundle.targets).toContain('dmg');
 		expect(config.bundle.macOS?.signingIdentity ?? null).toBeNull();
 		expect(config.bundle.macOS?.minimumSystemVersion).toBe('13.0');
 	});

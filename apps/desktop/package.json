@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "tauri dev",
-    "build": "tauri build --target universal-apple-darwin --no-sign",
-    "build:debug": "tauri build --debug --target universal-apple-darwin --no-sign",
-    "build:linux": "tauri build --bundles deb,appimage --no-sign"
+    "build": "tauri build --target universal-apple-darwin",
+    "build:debug": "tauri build --debug --target universal-apple-darwin",
+    "build:linux": "tauri build --bundles deb,appimage"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4"

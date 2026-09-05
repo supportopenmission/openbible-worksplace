@@ -99,5 +99,5 @@
   (`scripts/sync_app_version.mjs` espelha em `src/lib/app-version.ts`).
 - Nenhuma dependência foi adicionada, removida ou teve versão alterada
   nesta fatia; o inventário acima permanece válido.
-- Os scripts de build do Tauri foram alinhados para gerar artefatos sem
-  assinatura (`--no-sign`); isso não altera o inventário de dependências.
+- Os scripts de build do Tauri mantêm a assinatura condicional do workflow;
+  `--no-sign` só é aplicado quando o secret de assinatura não está disponível.
