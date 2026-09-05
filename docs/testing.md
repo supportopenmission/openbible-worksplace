@@ -3,7 +3,7 @@
 <!-- specsfy:documentator:start -->
 ## Resumo
 
-- Arquivos de teste: 65.
+- Arquivos de teste: 72.
 - Runner: não identificado.
 - Scripts: build: turbo run build; check-types: turbo run check-types; dev: turbo run dev; lint: turbo run lint; format: prettier --write .; format:check: prettier --check ..
 
@@ -42,6 +42,7 @@
 | apps/web/src/lib/features/navigation/sidebar.test.ts |
 | apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts |
 | apps/web/src/lib/features/notes/MilkdownNoteEditor.test.ts |
+| apps/web/src/lib/features/notes/milkdown-mark-node.test.ts |
 | apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts |
 | apps/web/src/lib/features/notes/milkdown-placeholder-plugin.test.ts |
 | apps/web/src/lib/features/notes/milkdown-slash-drawer.test.ts |
@@ -50,14 +51,20 @@
 | apps/web/src/lib/features/notes/note-block-interactions.test.ts |
 | apps/web/src/lib/features/notes/note-editor-service.test.ts |
 | apps/web/src/lib/features/notes/note-editor-viewport.test.ts |
+| apps/web/src/lib/features/notes/note-export.test.ts |
+| apps/web/src/lib/features/notes/note-index.test.ts |
 | apps/web/src/lib/features/notes/note-markdown.test.ts |
+| apps/web/src/lib/features/notes/note-toolbar.test.ts |
 | apps/web/src/lib/features/notes/note-verse-index.test.ts |
 | apps/web/src/lib/features/notes/notes-delete-refresh.test.ts |
 | apps/web/src/lib/features/notes/notes-repository.test.ts |
 | apps/web/src/lib/features/notes/notes-state.test.ts |
+| apps/web/src/lib/features/notes/reference-hover.test.ts |
+| apps/web/src/lib/features/notes/selection-popover.test.ts |
 | apps/web/src/lib/features/notes/slash-verse-command.test.ts |
 | apps/web/src/lib/features/notes/verse-block-extension.test.ts |
 | apps/web/src/lib/features/notes/verse-selector.test.ts |
+| apps/web/src/lib/features/notes/youtube-embed.test.ts |
 | apps/web/src/lib/features/onboarding/onboarding-errors.test.ts |
 | apps/web/src/lib/features/onboarding/storage-choice.svelte.spec.ts |
 | apps/web/src/lib/features/workspace/native-workspace-states.test.ts |

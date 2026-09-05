@@ -8,9 +8,11 @@
 		BookOpen,
 		Check,
 		ChevronLeft,
+		FileDown,
 		Loader2,
 		MoreHorizontal,
 		Pencil,
+		Printer,
 		Trash2
 	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -18,13 +20,24 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import MilkdownNoteEditor from '$lib/features/notes/MilkdownNoteEditor.svelte';
 	import type { SaveStatus } from '$lib/features/notes/note-editor-service';
+	import NoteIndexMenu from '$lib/features/notes/NoteIndexMenu.svelte';
+	import { scrollToHeadingAnchor, type NoteHeading } from '$lib/features/notes/note-index';
+	import {
+		buildExportMarkdownAsync,
+		buildPrintDocument,
+		expandVideoFences,
+		resolveFenceVerses
+	} from '$lib/features/notes/note-export';
+	import { markdownBodyToHtml } from '$lib/features/notes/verse-block-extension';
 	import { notePageChrome } from '$lib/features/notes/note-page-chrome.svelte';
 	import { createNote, readNote } from '$lib/features/notes/notes-repository';
 	import { serializeNoteFile } from '$lib/features/notes/note-markdown';
 	import {
 		NOTE_EDITOR_WIDTHS,
 		readNoteToolbarEnabled,
+		readNoteToolbarPinned,
 		saveNoteToolbarEnabled,
+		saveNoteToolbarPinned,
 		type NoteEditorWidth
 	} from '$lib/features/notes/note-editor-layout';
 	import { notesState } from '$lib/features/notes/notes-state.svelte';
@@ -54,6 +67,11 @@
 	let lastSavedAt = $state<Date | null>(null);
 	let readOnly = $state(false);
 	let toolbarEnabled = $state(readNoteToolbarEnabled());
+	let toolbarPinned = $state(readNoteToolbarPinned());
+	let indexHeadings = $state<NoteHeading[]>([]);
+	let exportError = $state('');
+	let exportWarning = $state('');
+	let exporting = $state(false);
 
 	async function seedFallbackNote(id: string): Promise<WorkspaceStorage> {
 		const files = new Map<string, Uint8Array>();
@@ -177,6 +195,65 @@
 		saveNoteToolbarEnabled(enabled);
 	}
 
+	function setToolbarPinned(pinned: boolean) {
+		toolbarPinned = pinned;
+		saveNoteToolbarPinned(pinned);
+	}
+
+	function safeExportFileName(title: string, extension: string): string {
+		const base = (title || 'nota').replace(/[\\/:*?"<>|]/g, '').trim() || 'nota';
+		return `${base}.${extension}`;
+	}
+
+	async function expandNoteForExport(): Promise<string> {
+		if (!note || !activeStorage) throw new Error('no-note');
+		const storage = activeStorage;
+		exportWarning = expandVideoFences(note.body).warnings.join(' ');
+		return buildExportMarkdownAsync(note.body, (fence) => resolveFenceVerses(storage, fence));
+	}
+
+	async function exportMarkdownFile() {
+		if (!note || exporting) return;
+		exporting = true;
+		exportError = '';
+		try {
+			const markdown = await expandNoteForExport();
+			const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+			const url = URL.createObjectURL(blob);
+			const anchor = document.createElement('a');
+			anchor.href = url;
+			anchor.download = safeExportFileName(note.title, 'md');
+			document.body.appendChild(anchor);
+			anchor.click();
+			anchor.remove();
+			URL.revokeObjectURL(url);
+		} catch {
+			exportError = 'Não foi possível exportar: um versículo não tem texto disponível.';
+		} finally {
+			exporting = false;
+		}
+	}
+
+	async function exportPdfFile() {
+		if (!note || exporting) return;
+		exporting = true;
+		exportError = '';
+		try {
+			const markdown = await expandNoteForExport();
+			const html = markdownBodyToHtml(markdown);
+			const printWindow = window.open('', '_blank');
+			if (!printWindow) throw new Error('popup-blocked');
+			printWindow.document.write(buildPrintDocument(note.title, html));
+			printWindow.document.close();
+			printWindow.focus();
+			printWindow.print();
+		} catch {
+			exportError = 'Não foi possível exportar: um versículo não tem texto disponível.';
+		} finally {
+			exporting = false;
+		}
+	}
+
 	function formatSavedTime(date: Date | null): string {
 		if (!date || isNaN(date.getTime())) return '';
 		return new Intl.DateTimeFormat('pt-BR', {
@@ -258,6 +335,35 @@
 					{/if}
 				</Button>
 
+				<NoteIndexMenu headings={indexHeadings} onNavigate={(anchor) => scrollToHeadingAnchor(document, anchor)} />
+				<Button
+					type="button"
+					variant="ghost"
+					size="icon-sm"
+					aria-label="Exportar Markdown"
+					title="Exportar Markdown"
+					disabled={exporting}
+					onclick={exportMarkdownFile}
+				>
+					<FileDown size={16} strokeWidth={1.8} aria-hidden="true" />
+				</Button>
+				<Button
+					type="button"
+					variant="ghost"
+					size="icon-sm"
+					aria-label="Exportar PDF"
+					title="Exportar PDF"
+					disabled={exporting}
+					onclick={exportPdfFile}
+				>
+					<Printer size={16} strokeWidth={1.8} aria-hidden="true" />
+				</Button>
+				{#if exportError}
+					<span class="export-error" role="alert">{exportError}</span>
+				{:else if exportWarning}
+					<span class="export-warning" role="status">{exportWarning}</span>
+				{/if}
+
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}
@@ -295,6 +401,12 @@
 						>
 							<span>Barra de formatação</span>
 						</DropdownMenu.CheckboxItem>
+						<DropdownMenu.CheckboxItem
+							checked={toolbarPinned}
+							onCheckedChange={(checked) => setToolbarPinned(checked === true)}
+						>
+							<span>Manter barra sempre visível</span>
+						</DropdownMenu.CheckboxItem>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Item
 							class="text-destructive focus:text-destructive"
@@ -319,9 +431,11 @@
 				{note}
 				{readOnly}
 				{toolbarEnabled}
+				{toolbarPinned}
 				storage={activeStorage}
 				onSaved={handleSaved}
 				onStatusChange={handleStatusChange}
+				onHeadings={(headings) => (indexHeadings = headings)}
 			/>
 		{/if}
 	</div>
@@ -403,6 +517,20 @@
 
 	.status-text.error {
 		color: var(--destructive);
+	}
+
+	.export-error {
+		color: var(--destructive);
+		font-size: 0.75rem;
+		line-height: 1.4;
+		max-width: 220px;
+	}
+
+	.export-warning {
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+		line-height: 1.4;
+		max-width: 220px;
 	}
 
 	.mobile-back-link {

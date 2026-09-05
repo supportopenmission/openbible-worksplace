@@ -49,3 +49,23 @@ export function saveNoteToolbarEnabled(enabled: boolean): void {
 		// Private browsing may deny localStorage.
 	}
 }
+
+const NOTE_TOOLBAR_PINNED_KEY = 'openbible:note-toolbar-pinned';
+
+export function readNoteToolbarPinned(): boolean {
+	if (typeof window === 'undefined') return false;
+	try {
+		return window.localStorage.getItem(NOTE_TOOLBAR_PINNED_KEY) === 'true';
+	} catch {
+		return false;
+	}
+}
+
+export function saveNoteToolbarPinned(pinned: boolean): void {
+	if (typeof window === 'undefined') return;
+	try {
+		window.localStorage.setItem(NOTE_TOOLBAR_PINNED_KEY, String(pinned));
+	} catch {
+		// Private browsing may deny localStorage.
+	}
+}

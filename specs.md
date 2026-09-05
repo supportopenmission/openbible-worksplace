@@ -15,10 +15,11 @@
 | 08 | 0009-importacao-com-abas-empty-da-biblia-gestao-e-stats | Complete | — |
 | 09 | 0010-melhorar-experiencia-do-pwa | Complete | — |
 | 10 | 0011-desativar-zoom-no-pwa-e-drawer-90 | Complete | — |
-| 11 | 0001-onboarding-configuracao-armazenamento | Implementing | — |
-| 12 | 0012-pagina-inicial-operacional-do-openbible | Implementing | — |
-| 13 | 0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile | Implementing | — |
-| 14 | 0014-versao-nativa-macos-tauri | Complete | — |
+| 11 | 0015-editor-de-notas-popover-hover-biblico-indice-embed-e-export | Complete | — |
+| 12 | 0001-onboarding-configuracao-armazenamento | Implementing | — |
+| 13 | 0012-pagina-inicial-operacional-do-openbible | Implementing | — |
+| 14 | 0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile | Implementing | — |
+| 15 | 0014-versao-nativa-macos-tauri | Complete | — |
 
 ## Marcos
 

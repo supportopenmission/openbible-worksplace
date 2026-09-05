@@ -2,6 +2,7 @@ import { slashFactory } from '@milkdown/kit/plugin/slash';
 
 export type MilkdownSlashId =
 	| 'verse'
+	| 'video'
 	| 'heading'
 	| 'bullet'
 	| 'ordered'
@@ -19,6 +20,7 @@ export interface MilkdownSlashItem {
 
 const ITEMS: MilkdownSlashItem[] = [
 	{ id: 'verse', label: 'Versículo', description: 'Texto bíblico', aliases: ['versiculo', 'verse', 'biblia'] },
+	{ id: 'video', label: 'Vídeo', description: 'YouTube', aliases: ['video', 'youtube'] },
 	{ id: 'heading', label: 'Título', description: 'Título ou seção', aliases: ['h1', 'h2', 'h3', 'titulo'] },
 	{ id: 'bullet', label: 'Lista', description: 'Lista com marcadores', aliases: ['lista', 'bullet', 'ul'] },
 	{ id: 'ordered', label: 'Lista numerada', description: 'Itens numerados', aliases: ['numerada', 'ordered', 'ol'] },

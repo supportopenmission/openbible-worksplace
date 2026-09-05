@@ -127,6 +127,10 @@ function inlineMarkdownToHtml(text: string): string {
 		.replace(/`([^`]+)`/g, '<code>$1</code>')
 		.replace(/==\{(yellow|green|blue|pink)\}([^=]+)==/g, '<mark data-color="$1">$2</mark>')
 		.replace(/==([^=]+)==/g, '<mark>$1</mark>')
+		.replace(
+			/(^|[\s([>"'“‘])\+\+([^+]+)\+\+(?=$|[\s)\].,"'?!;:“”‘’])/g,
+			'$1<u>$2</u>'
+		)
 		.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
 		.replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, '$1<em>$2</em>');
 }

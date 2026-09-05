@@ -79,7 +79,7 @@ export function sanitizeUnsupportedDirectives(tree: unknown, source = ''): void 
 				continue;
 			}
 
-			if (child.type === 'containerDirective' && child.name === 'verse') {
+			if (child.type === 'containerDirective' && (child.name === 'verse' || child.name === 'video')) {
 				visit(child);
 				nextChildren.push(child);
 				continue;

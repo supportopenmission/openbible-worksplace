@@ -18,6 +18,32 @@
 	} from './milkdown-verse-node';
 	import VerseSelector, { type VerseSelectionResult } from './VerseSelector.svelte';
 	import MilkdownMobileToolbar from './MilkdownMobileToolbar.svelte';
+	import SelectionFormatPopover from './SelectionFormatPopover.svelte';
+	import ReferenceHoverCard from './ReferenceHoverCard.svelte';
+	import {
+		shouldShowFormatPopover,
+		type FormatPopoverAction
+	} from './selection-popover';
+	import {
+		loadHoverPassage,
+		type LoadedHoverCard
+	} from './reference-hover';
+import { collectEditorHeadings, type NoteHeading } from './note-index';
+import { toggleMark } from '@milkdown/prose/commands';
+import {
+	formatActionMarkName,
+	highlightInputRule,
+	highlightMarkSchema,
+	markRemarkPlugin,
+	underlineInputRule,
+	underlineMarkSchema
+} from './milkdown-mark-node';
+import { resolveToolbarVisibility } from './note-toolbar';
+	import { videoNodeSchema, buildVideoInsertTransaction } from './milkdown-video-node';
+	import YouTubeBlockView from './YouTubeBlockView.svelte';
+	import { parseYouTubeUrl } from './youtube-embed';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
 	import { buildVerseInsertTransaction } from './milkdown-verse-insert';
 	import {
 		applyIosEditorInputAttributes,
@@ -25,6 +51,7 @@
 		setNoteKeyboardInset
 	} from './note-editor-viewport';
 	import { bibleReferencePlugin, BibleReferenceViewer, openBibleReference } from '$lib/bible';
+	import { getWorkspaceState } from '$lib/features/workspace/workspace-state.svelte';
 	import { extractContentFromNoteBody, extractTitleFromMarkdown } from './note-markdown';
 	import { milkdownPlaceholderPlugin } from './milkdown-placeholder-plugin';
 
@@ -34,16 +61,20 @@
 		storage,
 		readOnly = false,
 		toolbarEnabled = true,
+		toolbarPinned = false,
 		onSaved,
-		onStatusChange
+		onStatusChange,
+		onHeadings
 	}: {
 		markdown?: string;
 		note?: Note;
 		storage?: WorkspaceStorage;
 		readOnly?: boolean;
 		toolbarEnabled?: boolean;
+		toolbarPinned?: boolean;
 		onSaved?: (note: Note) => void;
 		onStatusChange?: (status: SaveStatus) => void;
+		onHeadings?: (headings: NoteHeading[]) => void;
 	} = $props();
 
 	let host: HTMLDivElement;
@@ -76,6 +107,27 @@
 		maxHeight: number;
 	} | null>(null);
 	let toolbarActive = $state<Record<string, boolean>>({});
+let toolbarResolved = $derived(
+	resolveToolbarVisibility({
+		mode: readOnly ? 'view' : 'edit',
+		alwaysVisible: toolbarPinned,
+		viewport: mobile ? 'mobile' : 'desktop'
+	})
+);
+	let formatPopover = $state<{ top: number; left: number } | null>(null);
+	let formatPressed = $state<Partial<Record<FormatPopoverAction, boolean>>>({});
+	let hoverCard = $state<{
+		top: number;
+		left: number;
+		reference: string;
+		loading: boolean;
+		data: LoadedHoverCard | null;
+	} | null>(null);
+	let hoverAnchor = $state<HTMLElement | null>(null);
+	let hoverRequest = 0;
+	let videoDialogOpen = $state(false);
+	let videoUrl = $state('');
+	let videoUrlError = $state('');
 	let filteredItems = $derived(filterSlashItems(getSlashItems(), slashQuery));
 
 	$effect(() => {
@@ -229,6 +281,7 @@
 	}
 
 	function repositionOverlays() {
+		hideHoverCard();
 		if (slashOpen && editor && coreModule && !mobile) {
 			const { editorViewCtx } = coreModule;
 			editor.action((ctx) => {
@@ -274,6 +327,272 @@
 		editor.action((ctx) => ctx.get(editorViewCtx).focus());
 	}
 
+	function updateFormatPopover() {
+		if (readOnly || !editor || !coreModule || typeof window === 'undefined' || !host) {
+			formatPopover = null;
+			return;
+		}
+		const domSelection = document.getSelection();
+		if (
+			!domSelection ||
+			domSelection.isCollapsed ||
+			!domSelection.anchorNode ||
+			!host.contains(domSelection.anchorNode)
+		) {
+			formatPopover = null;
+			return;
+		}
+		const { editorViewCtx } = coreModule;
+		editor.action((ctx) => {
+			const view = ctx.get(editorViewCtx);
+			const { selection } = view.state;
+			if (selection.empty) {
+				formatPopover = null;
+				return;
+			}
+			const stored = view.state.storedMarks ?? selection.$from.marks();
+			const present: FormatPopoverAction[] = [];
+			if (view.state.schema.marks.strong?.isInSet(stored)) present.push('bold');
+			if (view.state.schema.marks.emphasis?.isInSet(stored)) present.push('italic');
+			if (view.state.schema.marks.highlight?.isInSet(stored)) present.push('highlight');
+			if (view.state.schema.marks.underline?.isInSet(stored)) present.push('underline');
+			const decision = shouldShowFormatPopover(
+				{ from: selection.from, to: selection.to, collapsed: selection.empty },
+				{ mode: 'edit', marks: present }
+			);
+			if (!decision.visible) {
+				formatPopover = null;
+				return;
+			}
+			formatPressed = decision.pressed ?? {};
+			const rect = view.coordsAtPos(selection.from);
+			const padding = 100;
+			const left = Math.min(
+				Math.max((rect.left + rect.right) / 2, padding),
+				window.innerWidth - padding
+			);
+			formatPopover = { top: Math.max(rect.top, 64), left };
+		});
+	}
+
+	function handleSelectionChange() {
+		if (readOnly) {
+			formatPopover = null;
+			return;
+		}
+		updateFormatPopover();
+	}
+
+	function handleEditorContextMenu(event: MouseEvent) {
+		if (readOnly || !host) return;
+		const target = event.target;
+		if (!(target instanceof HTMLElement) || !host.contains(target)) return;
+		const domSelection = document.getSelection();
+		if (
+			domSelection &&
+			!domSelection.isCollapsed &&
+			domSelection.anchorNode &&
+			host.contains(domSelection.anchorNode)
+		) {
+			event.preventDefault();
+			updateFormatPopover();
+		}
+	}
+
+	function runFormatPopoverAction(action: FormatPopoverAction) {
+		if (action === 'bold' || action === 'italic') {
+			runToolbar(action);
+			updateFormatPopover();
+			return;
+		}
+		if (!editor || !coreModule) return;
+		const { editorViewCtx } = coreModule;
+		editor.action((ctx) => {
+			const view = ctx.get(editorViewCtx);
+			const markType = view.state.schema.marks[formatActionMarkName(action)];
+			if (!markType) return;
+			toggleMark(markType)(view.state, view.dispatch);
+		});
+		focusEditor();
+		updateToolbarState();
+		updateFormatPopover();
+	}
+
+	function readHoverTarget(element: HTMLElement) {
+		const osis = element.getAttribute('data-osis');
+		const raw = element.getAttribute('data-raw') || element.textContent || '';
+		const chapter = Number(element.getAttribute('data-chapter'));
+		const verseStart = Number(element.getAttribute('data-verse-start'));
+		const verseEnd = Number(element.getAttribute('data-verse-end'));
+		if (!osis || !raw || !Number.isFinite(chapter)) return null;
+		const start = Number.isFinite(verseStart) && verseStart > 0 ? verseStart : 1;
+		return {
+			osis,
+			raw,
+			version: element.getAttribute('data-version') || '',
+			book: element.getAttribute('data-book') || '',
+			chapter,
+			verseStart: start,
+			verseEnd: Number.isFinite(verseEnd) && verseEnd >= start ? verseEnd : start
+		};
+	}
+
+	function hideHoverCard() {
+		hoverRequest += 1;
+		hoverAnchor = null;
+		hoverCard = null;
+	}
+
+	async function showHoverCard(anchor: HTMLElement) {
+		if (readOnly) return;
+		const attrs = readHoverTarget(anchor);
+		if (!attrs) return;
+		const rect = anchor.getBoundingClientRect();
+		const padding = 170;
+		const left = Math.min(
+			Math.max((rect.left + rect.right) / 2, padding),
+			Math.max(window.innerWidth - padding, padding)
+		);
+		const request = ++hoverRequest;
+		hoverAnchor = anchor;
+		hoverCard = { top: rect.bottom, left, reference: attrs.raw, loading: true, data: null };
+		const workspacePreferences = getWorkspaceState()?.preferences ?? null;
+		const data = await loadHoverPassage(
+			storage,
+			attrs,
+			workspacePreferences
+				? {
+						defaultVersionId: workspacePreferences.defaultBibleVersionId ?? null,
+						readerVersionId: workspacePreferences.readerSelection?.versionId ?? null
+					}
+				: null
+		);
+		if (request !== hoverRequest) return;
+		hoverCard = { top: rect.bottom, left, reference: attrs.raw, loading: false, data };
+	}
+
+	function handleReferenceMouseOver(event: MouseEvent) {
+		const target = event.target;
+		if (!(target instanceof HTMLElement)) return;
+		const reference = target.closest<HTMLElement>('.bible-reference');
+		if (!reference || reference === hoverAnchor) return;
+		void showHoverCard(reference);
+	}
+
+	function handleReferenceMouseOut(event: MouseEvent) {
+		const target = event.target;
+		if (!(target instanceof HTMLElement)) return;
+		if (target.closest('.bible-reference') !== hoverAnchor) return;
+		const next = event.relatedTarget;
+		if (next instanceof HTMLElement && next.closest('.reference-hover-card')) return;
+		hideHoverCard();
+	}
+
+	function handleReferenceFocusIn(event: FocusEvent) {
+		const target = event.target;
+		if (!(target instanceof HTMLElement)) return;
+		const reference = target.closest<HTMLElement>('.bible-reference');
+		if (!reference || reference === hoverAnchor) return;
+		void showHoverCard(reference);
+	}
+
+	function handleReferenceFocusOut(event: FocusEvent) {
+		const next = event.relatedTarget;
+		if (next instanceof HTMLElement && next.closest('.reference-hover-card')) return;
+		hideHoverCard();
+	}
+
+	function openHoverReference() {
+		const reference = hoverCard?.data?.bibleReference;
+		hideHoverCard();
+		if (reference) void openBibleReference(reference);
+	}
+
+	function insertVideoBlock(url: string, videoId: string) {
+		if (!editor || !coreModule) return;
+		const { editorViewCtx } = coreModule;
+		editor.action((ctx) => {
+			const view = ctx.get(editorViewCtx);
+			const tr = buildVideoInsertTransaction(view.state, { videoId, url });
+			if (tr) view.dispatch(tr);
+		});
+		focusEditor();
+		updateToolbarState();
+		refreshHeadings();
+	}
+
+	function confirmVideoInsert() {
+		const parsed = parseYouTubeUrl(videoUrl);
+		if (!parsed.ok) {
+			videoUrlError =
+				parsed.reason === 'unsupported-provider'
+					? 'Só vídeos do YouTube são aceitos.'
+					: 'Cole uma URL válida do YouTube.';
+			return;
+		}
+		insertVideoBlock(videoUrl.trim(), parsed.videoId);
+		videoDialogOpen = false;
+		videoUrl = '';
+		videoUrlError = '';
+	}
+
+	function activateVideoFacade(target: HTMLElement) {
+		if (!editor || !coreModule || !host) return;
+		const figure = target.closest('figure[data-type="video"]');
+		if (!figure || !host.contains(figure)) return;
+		const { editorViewCtx } = coreModule;
+		editor.action((ctx) => {
+			const view = ctx.get(editorViewCtx);
+			let pos: number | null = null;
+			try {
+				pos = view.posAtDOM(figure, 0);
+			} catch {
+				pos = null;
+			}
+			let node = pos != null ? view.state.doc.nodeAt(pos) : null;
+			if ((!node || node.type.name !== 'video') && pos != null) {
+				node = null;
+				pos = null;
+			}
+			if (!node) {
+				view.state.doc.descendants((child, childPos) => {
+					if (child.type.name === 'video' && !child.attrs.loaded) {
+						node = child;
+						pos = childPos;
+						return false;
+					}
+				});
+			}
+			if (!node || pos == null) return;
+			view.dispatch(
+				view.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, loaded: true })
+			);
+		});
+	}
+
+	function handleVideoClick(event: MouseEvent) {
+		if (readOnly) return;
+		const target = event.target;
+		if (target instanceof HTMLElement && target.closest('.video-facade')) {
+			activateVideoFacade(target);
+		}
+	}
+
+	function handleVideoKeydown(event: KeyboardEvent) {
+		if (readOnly) return;
+		if (event.key !== 'Enter' && event.key !== ' ') return;
+		const target = event.target;
+		if (target instanceof HTMLElement && target.closest('.video-facade')) {
+			event.preventDefault();
+			activateVideoFacade(target);
+		}
+	}
+
+	function refreshHeadings() {
+		if (!host || !onHeadings) return;
+		onHeadings(collectEditorHeadings(host));
+	}
+
 	function runSlash(item: MilkdownSlashItem) {
 		if (!editor || !coreModule || !commonmarkModule) return;
 		if (item.id === 'verse') {
@@ -290,6 +609,14 @@
 			});
 			closeSlash();
 			verseSelectorOpen = true;
+			return;
+		}
+		if (item.id === 'video') {
+			closeSlash();
+			videoUrl = '';
+			videoUrlError = '';
+			videoDialogOpen = true;
+			focusEditor();
 			return;
 		}
 		const { commandsCtx, editorViewCtx } = coreModule;
@@ -421,7 +748,7 @@
 			return;
 		}
 		const target = event.target;
-		if (target instanceof HTMLElement && target.closest('.ProseMirror, .milkdown-toolbar')) {
+		if (target instanceof HTMLElement && target.closest('.ProseMirror, .milkdown-toolbar, .format-popover, .reference-hover-card')) {
 			editingActive = true;
 			if (!mobile) toolbarOpen = true;
 		} else {
@@ -433,7 +760,7 @@
 		const next = event.relatedTarget;
 		if (
 			next instanceof HTMLElement &&
-			next.closest('.ProseMirror, .milkdown-toolbar, .milkdown-toolbar-toggle')
+			next.closest('.ProseMirror, .milkdown-toolbar, .milkdown-toolbar-toggle, .format-popover, .reference-hover-card')
 		) {
 			return;
 		}
@@ -523,6 +850,13 @@
 		updateMobile();
 		query.addEventListener('change', updateMobile);
 		host.addEventListener('keydown', handleKeydown, true);
+		document.addEventListener('selectionchange', handleSelectionChange);
+		editorRoot.addEventListener('mouseover', handleReferenceMouseOver);
+		editorRoot.addEventListener('mouseout', handleReferenceMouseOut);
+		editorRoot.addEventListener('focusin', handleReferenceFocusIn);
+		editorRoot.addEventListener('focusout', handleReferenceFocusOut);
+		editorRoot.addEventListener('click', handleVideoClick);
+		editorRoot.addEventListener('keydown', handleVideoKeydown);
 
 		try {
 			const [core, commonmarkPreset, { gfm }, { listener, listenerCtx }] = await Promise.all([
@@ -567,11 +901,29 @@
 							spellcheck: 'true',
 							'data-1p-ignore': 'true',
 							'data-lpignore': 'true'
+						},
+						handlePaste: (view, event) => {
+							if (readOnly) return false;
+							const data = event.clipboardData?.getData('text/plain') ?? '';
+							const candidate = data.trim();
+							if (!candidate || /\s/.test(candidate)) return false;
+							const parsed = parseYouTubeUrl(candidate);
+							if (!parsed.ok) return false;
+							const tr = buildVideoInsertTransaction(view.state, {
+								videoId: parsed.videoId,
+								url: candidate
+							});
+							if (!tr) return false;
+							view.dispatch(tr);
+							updateToolbarState();
+							refreshHeadings();
+							return true;
 						}
 					});
 					ctx.get(listenerCtx).markdownUpdated((_ctx, next, previous) => {
 						if (next === previous) return;
 						saveService?.scheduleSave(next);
+						refreshHeadings();
 						const view = _ctx.get(editorViewCtx);
 						const { from } = view.state.selection;
 						const textBefore = view.state.doc.textBetween(Math.max(0, from - 80), from, ' ', ' ');
@@ -590,6 +942,12 @@
 				.use(verseDirective)
 				.use(unsupportedDirectiveFallback)
 				.use(verseNodeSchema)
+				.use(videoNodeSchema)
+				.use(markRemarkPlugin)
+				.use(highlightMarkSchema)
+				.use(underlineMarkSchema)
+				.use(highlightInputRule)
+				.use(underlineInputRule)
 				.use(bibleReferencePlugin)
 				.use(milkdownPlaceholderPlugin())
 				.use(listener);
@@ -597,6 +955,7 @@
 			editor.action((ctx) => {
 				applyIosEditorInputAttributes(ctx.get(editorViewCtx).dom);
 			});
+			refreshHeadings();
 			updateToolbarState();
 		} catch (error) {
 			initError = error instanceof Error ? error.message : 'Não foi possível abrir o editor.';
@@ -613,12 +972,21 @@
 	});
 
 	onDestroy(() => {
+		if (typeof document !== 'undefined') {
+			document.removeEventListener('selectionchange', handleSelectionChange);
+		}
 		host?.removeEventListener('keydown', handleKeydown, true);
 		host?.removeEventListener('keydown', handleEditorKeydown, true);
 		editorRoot?.removeEventListener('focusin', handleEditorFocusIn);
 		editorRoot?.removeEventListener('focusout', handleEditorFocusOut);
 		editorRoot?.removeEventListener('click', handleTaskMarkerClick);
 		editorRoot?.removeEventListener('click', handleReferenceClick);
+		editorRoot?.removeEventListener('mouseover', handleReferenceMouseOver);
+		editorRoot?.removeEventListener('mouseout', handleReferenceMouseOut);
+		editorRoot?.removeEventListener('focusin', handleReferenceFocusIn);
+		editorRoot?.removeEventListener('focusout', handleReferenceFocusOut);
+		editorRoot?.removeEventListener('click', handleVideoClick);
+		editorRoot?.removeEventListener('keydown', handleVideoKeydown);
 		saveService?.dispose();
 		void editor?.destroy();
 	});
@@ -626,16 +994,36 @@
 
 <svelte:window onresize={repositionOverlays} onscroll={repositionOverlays} />
 
-<div class="note-editor-viewport" bind:this={editorRoot}>
+<div class="note-editor-viewport" bind:this={editorRoot} oncontextmenu={handleEditorContextMenu}>
 	<div class="milkdown-editor" data-testid="note-canvas" data-viewport-fill="true">
 		<MilkdownMobileToolbar
 			active={!readOnly && editingActive}
 			enabled={toolbarEnabled}
-			visible={toolbarOpen}
+			visible={toolbarOpen || (toolbarPinned && toolbarResolved.visible)}
 			disabled={!editingActive}
 			activeActions={toolbarActive}
 			onAction={runToolbar}
 			onToggle={() => (toolbarOpen = !toolbarOpen)}
+		/>
+		<SelectionFormatPopover
+			visible={formatPopover !== null}
+			top={formatPopover?.top ?? 0}
+			left={formatPopover?.left ?? 0}
+			pressed={formatPressed}
+			onAction={runFormatPopoverAction}
+			onClose={() => (formatPopover = null)}
+		/>
+		<ReferenceHoverCard
+			visible={hoverCard !== null}
+			top={hoverCard?.top ?? 0}
+			left={hoverCard?.left ?? 0}
+			status={hoverCard?.data?.status ?? 'loading'}
+			reference={hoverCard?.reference ?? ''}
+			text={hoverCard?.data?.text}
+			versionLabel={hoverCard?.data?.versionLabel}
+			loading={hoverCard?.loading ?? false}
+			onOpen={openHoverReference}
+			onClose={hideHoverCard}
 		/>
 
 		{#if initError}
@@ -733,6 +1121,44 @@
 			onCancel={() => (verseSelectorOpen = false)}
 		/>
 	{/if}
+
+	<Dialog.Root bind:open={videoDialogOpen}>
+		<Dialog.Content class="video-url-dialog" aria-labelledby="video-url-title">
+			<Dialog.Title id="video-url-title">Inserir vídeo do YouTube</Dialog.Title>
+			<Dialog.Description>Cole a URL do vídeo. Só YouTube é aceito.</Dialog.Description>
+			<label class="video-url-field" for="video-url-input">URL do vídeo</label>
+			<Input
+				id="video-url-input"
+				type="url"
+				inputmode="url"
+				placeholder="https://www.youtube.com/watch?v=…"
+				bind:value={videoUrl}
+				aria-invalid={videoUrlError ? 'true' : undefined}
+				aria-describedby={videoUrlError ? 'video-url-error' : undefined}
+				onkeydown={(event) => {
+					if (event.key === 'Enter') {
+						event.preventDefault();
+						confirmVideoInsert();
+					}
+				}}
+			/>
+			{#if videoUrlError}
+				<p id="video-url-error" class="video-url-error" role="alert">{videoUrlError}</p>
+			{/if}
+			{#if parseYouTubeUrl(videoUrl).ok}
+				<YouTubeBlockView
+					videoId={(parseYouTubeUrl(videoUrl) as { ok: true; videoId: string }).videoId}
+					onPlay={confirmVideoInsert}
+				/>
+			{/if}
+			<div class="video-url-actions">
+				<Button type="button" variant="ghost" onclick={() => (videoDialogOpen = false)}>
+					Cancelar
+				</Button>
+				<Button type="button" onclick={confirmVideoInsert}>Inserir vídeo</Button>
+			</div>
+		</Dialog.Content>
+	</Dialog.Root>
 
 	<BibleReferenceViewer {storage} />
 </div>
@@ -1094,8 +1520,88 @@
 	:global(.milkdown-host .ProseMirror strong) {
 		font-weight: 700;
 	}
+	/* SPEC-0015: normal selection is replaced by the format popover. */
+	:global(.milkdown-host .ProseMirror) {
+		-webkit-touch-callout: none;
+	}
 	:global(.milkdown-host .ProseMirror em) {
 		font-style: italic;
+	}
+	:global(.milkdown-host .ProseMirror mark) {
+		background-color: color-mix(in srgb, var(--primary) 22%, transparent);
+		border-radius: 2px;
+		padding: 0 1px;
+	}
+	:global(.milkdown-host .ProseMirror mark[data-color='yellow']) {
+		background-color: color-mix(in srgb, #eab308 35%, transparent);
+	}
+	:global(.milkdown-host .ProseMirror mark[data-color='green']) {
+		background-color: color-mix(in srgb, #22c55e 30%, transparent);
+	}
+	:global(.milkdown-host .ProseMirror mark[data-color='blue']) {
+		background-color: color-mix(in srgb, #3b82f6 30%, transparent);
+	}
+	:global(.milkdown-host .ProseMirror mark[data-color='pink']) {
+		background-color: color-mix(in srgb, #ec4899 30%, transparent);
+	}
+	:global(.milkdown-host .ProseMirror u) {
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+	:global(.milkdown-host .ProseMirror figure.video-embed) {
+		margin: 16px 0;
+	}
+	:global(.milkdown-host .ProseMirror .video-facade) {
+		display: flex;
+		width: 100%;
+		box-sizing: border-box;
+		align-items: center;
+		justify-content: center;
+		gap: 10px;
+		padding: 28px 16px;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-lg);
+		background-color: var(--background);
+		cursor: pointer;
+		font-size: 0.875rem;
+	}
+	:global(.milkdown-host .ProseMirror .video-facade:focus-visible) {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+	:global(.milkdown-host .ProseMirror .video-facade .video-play) {
+		font-size: 1.25rem;
+		line-height: 1;
+	}
+	:global(.milkdown-host .ProseMirror .video-facade .video-domain) {
+		font-family: var(--font-mono);
+		font-size: 0.75rem;
+		color: var(--muted-foreground);
+	}
+	:global(.milkdown-host .ProseMirror iframe.video-player) {
+		width: 100%;
+		aspect-ratio: 16 / 9;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-lg);
+	}
+	.video-url-dialog {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+	.video-url-field {
+		font-size: 0.8125rem;
+		font-weight: 600;
+	}
+	.video-url-error {
+		margin: 0;
+		font-size: 0.8125rem;
+		color: var(--destructive);
+	}
+	.video-url-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 8px;
 	}
 	:global(.milkdown-host .verse-block-callout) {
 		margin: 24px 0;

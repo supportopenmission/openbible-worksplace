@@ -68,4 +68,10 @@ describe('markdown block conversion', () => {
 		const html = markdownBodyToHtml('=={yellow}texto marcado==');
 		expect(html).toContain('<mark data-color="yellow">texto marcado</mark>');
 	});
+
+	// SPECSFY: US-001 FR-001 NFR-002 AC-002
+	it('renders underline markers without touching C++ text', () => {
+		expect(markdownBodyToHtml('Isto ++mesmo++ aqui.')).toContain('<u>mesmo</u>');
+		expect(markdownBodyToHtml('C++ e C++')).not.toContain('<u>');
+	});
 });

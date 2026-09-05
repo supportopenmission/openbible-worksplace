@@ -63,7 +63,7 @@ manifests.
   `apps/web/static/logo-minimal.png` (marca branca em fundo preto com área de
   segurança para maskable); o manifesto segue `standalone` com `purpose any
   maskable`.
-- Versão visível do app em `0.5.5`: canônico em `apps/web/package.json`
+- Versão visível do app em `0.6.0`: canônico em `apps/web/package.json`
   (`version`), espelhado em `apps/web/src/lib/app-version.ts` (`APP_VERSION`)
   via `bun run version:sync [X.Y.Z]` (`apps/web/scripts/sync_app_version.mjs`).
   Exibida no rodapé da sidebar e em `/config`.
