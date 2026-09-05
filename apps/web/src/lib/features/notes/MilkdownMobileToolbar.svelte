@@ -48,6 +48,9 @@
 		<div class="milkdown-toolbar" role="toolbar" aria-label="Formatação da nota">
 			<div class="toolbar-scroll">
 				{#each actions as action (action.id)}
+					{#if action.id === 'heading' || action.id === 'verse'}
+						<div class="toolbar-separator" role="separator" aria-orientation="vertical"></div>
+					{/if}
 					<Button
 						type="button"
 						variant="ghost"
@@ -60,10 +63,11 @@
 						onmousedown={(e) => e.preventDefault()}
 						onclick={() => onAction(action.id)}
 					>
-						<action.icon aria-hidden="true" />
+						<action.icon size={16} strokeWidth={1.8} aria-hidden="true" />
 						<span>{action.label}</span>
 					</Button>
 				{/each}
+				<div class="toolbar-separator" role="separator" aria-orientation="vertical"></div>
 				<Button
 					type="button"
 					variant="ghost"
@@ -74,7 +78,7 @@
 					onmousedown={(e) => e.preventDefault()}
 					onclick={onClose}
 				>
-					<X aria-hidden="true" />
+					<X size={15} strokeWidth={1.8} aria-hidden="true" />
 				</Button>
 			</div>
 		</div>
@@ -90,7 +94,7 @@
 			onmousedown={(e) => e.preventDefault()}
 			onclick={onToggle}
 		>
-			<List aria-hidden="true" />
+			<List size={18} strokeWidth={1.8} aria-hidden="true" />
 		</Button>
 	{/if}
 {/if}
@@ -100,37 +104,47 @@
 		position: fixed;
 		right: 0;
 		left: 0;
-		z-index: 50;
-		bottom: max(calc(64px + env(safe-area-inset-bottom, 0px)), var(--note-keyboard-inset, 0px));
+		z-index: 45;
+		bottom: max(calc(58px + env(safe-area-inset-bottom, 0px)), var(--note-keyboard-inset, 0px));
 		display: none;
 		border-top: 1px solid var(--border);
-		background: color-mix(in srgb, var(--background) 96%, transparent);
-		backdrop-filter: blur(10px);
+		background: color-mix(in oklch, var(--background) 95%, transparent);
+		backdrop-filter: blur(16px);
+		-webkit-backdrop-filter: blur(16px);
+		box-shadow: 0 -1px 4px color-mix(in oklch, var(--foreground) 4%, transparent);
 		transition: bottom 180ms ease;
 	}
 
 	:global(.milkdown-toolbar-fab) {
 		position: fixed;
-		right: max(12px, env(safe-area-inset-right, 0px));
-		bottom: max(calc(64px + env(safe-area-inset-bottom, 0px)), var(--note-keyboard-inset, 0px));
-		z-index: 50;
-		width: 44px;
-		height: 44px;
+		right: max(16px, env(safe-area-inset-right, 0px));
+		bottom: max(calc(68px + env(safe-area-inset-bottom, 0px)), var(--note-keyboard-inset, 0px));
+		z-index: 45;
+		width: 40px;
+		height: 40px;
+		border-radius: 999px;
 		border-color: var(--border);
-		background: color-mix(in srgb, var(--background) 96%, transparent);
-		backdrop-filter: blur(10px);
-		-webkit-backdrop-filter: blur(10px);
-		box-shadow: 0 2px 12px color-mix(in srgb, var(--foreground) 12%, transparent);
+		background: color-mix(in oklch, var(--background) 92%, transparent);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		box-shadow: 0 2px 8px color-mix(in oklch, var(--foreground) 10%, transparent);
 		transition:
 			bottom 180ms ease,
-			background-color 120ms ease;
+			background-color 120ms ease,
+			transform 120ms ease;
+	}
+
+	:global(.milkdown-toolbar-fab:hover) {
+		background: color-mix(in oklch, var(--foreground) 8%, transparent);
+		transform: scale(1.04);
 	}
 
 	.toolbar-scroll {
 		display: flex;
+		align-items: center;
 		gap: 2px;
 		overflow-x: auto;
-		padding: 6px max(10px, env(safe-area-inset-left, 0px));
+		padding: 4px max(8px, env(safe-area-inset-left, 0px));
 		scrollbar-width: none;
 	}
 
@@ -138,15 +152,35 @@
 		display: none;
 	}
 
+	.toolbar-separator {
+		width: 1px;
+		height: 20px;
+		background: var(--border);
+		margin: 0 3px;
+		flex-shrink: 0;
+	}
+
 	:global(.milkdown-toolbar button) {
 		flex: 0 0 auto;
+		display: inline-flex;
 		flex-direction: column;
-		gap: 1px;
-		height: 44px;
-		min-width: 48px;
-		padding: 4px 8px;
-		font-size: 0.6875rem;
+		align-items: center;
+		justify-content: center;
+		gap: 2px;
+		height: 40px;
+		min-width: 44px;
+		padding: 4px 6px;
+		border-radius: 6px;
+		font-size: 0.65rem;
+		font-weight: 500;
 		line-height: 1;
+		color: var(--muted-foreground);
+		transition: background-color 120ms ease, color 120ms ease;
+	}
+
+	:global(.milkdown-toolbar button:hover) {
+		background: color-mix(in oklch, var(--foreground) 6%, transparent);
+		color: var(--foreground);
 	}
 
 	:global(.milkdown-toolbar button:focus-visible) {
@@ -157,12 +191,18 @@
 	:global(.milkdown-toolbar .toolbar-close) {
 		align-self: center;
 		flex: 0 0 auto;
-		margin-inline: 4px;
+		margin-inline-start: 2px;
+		height: 32px;
+		width: 32px;
+		min-width: 32px;
+		border-radius: 6px;
+		padding: 0;
 	}
 
 	:global(.milkdown-toolbar button.active) {
-		background: var(--accent);
-		color: var(--accent-foreground);
+		background: color-mix(in oklch, var(--foreground) 10%, transparent);
+		color: var(--foreground);
+		font-weight: 600;
 	}
 
 	@media (max-width: 767px) {

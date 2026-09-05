@@ -1771,10 +1771,12 @@
 	}
 
 	.reader-page.with-note {
+		box-sizing: border-box;
 		min-height: 0;
 		height: 100%;
 		flex: 1;
-		padding-bottom: 16px;
+		padding-bottom: 0;
+		overflow: hidden;
 	}
 
 	@media (min-width: 768px) {

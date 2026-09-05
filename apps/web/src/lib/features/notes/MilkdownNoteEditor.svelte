@@ -753,12 +753,15 @@
 	}
 
 	.note-container {
+		display: flex;
+		flex-direction: column;
 		width: 100%;
+		min-height: 100%;
+		flex: 1;
 		max-width: 800px;
 		margin: 0 auto;
 		box-sizing: border-box;
 		padding: 20px clamp(16px, 5vw, 48px) 140px;
-		min-height: 60dvh;
 		cursor: text;
 	}
 
@@ -858,12 +861,29 @@
 	}
 
 	.milkdown-host {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
 		width: 100%;
+		min-height: 0;
 		font-family: var(--font-sans);
 	}
 
-	:global(.milkdown-host .milkdown),
+	:global(.milkdown-host .milkdown) {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+		width: 100%;
+		border: 0;
+		outline: 0;
+		background: transparent;
+	}
+
 	:global(.milkdown-host .ProseMirror) {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
 		width: 100%;
 		border: 0;
 		outline: 0;

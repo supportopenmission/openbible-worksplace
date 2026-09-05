@@ -108,7 +108,8 @@
 		overscroll-behavior: contain;
 	}
 
-	.shell-main.note-editor-shell {
+	.shell-main.note-editor-shell,
+	.shell-main:has(:global(.with-note)) {
 		overflow: hidden;
 		height: 100%;
 	}
@@ -221,7 +222,8 @@
 			padding-bottom: calc(84px + env(safe-area-inset-bottom));
 		}
 
-		.shell-main.note-editor-shell {
+		.shell-main.note-editor-shell,
+		.shell-main:has(:global(.with-note)) {
 			overflow: hidden;
 			padding-bottom: 0;
 		}

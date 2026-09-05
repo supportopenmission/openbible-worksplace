@@ -223,24 +223,29 @@
 	.note-split-shell {
 		display: flex;
 		min-height: 0;
+		height: 100%;
 		flex: 1;
 		flex-direction: column;
+		overflow: hidden;
 	}
 
 	.note-split {
 		display: grid;
 		width: 100%;
-		min-height: 100%;
+		min-height: 0;
+		height: 100%;
 		flex: 1;
 		align-items: stretch;
 		grid-template-columns:
 			minmax(240px, calc(var(--reader-split-ratio, 0.52) * 100%)) 10px
 			minmax(280px, 1fr);
+		overflow: hidden;
 	}
 
 	.reader-pane {
 		min-width: 0;
 		min-height: 0;
+		height: 100%;
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		padding-right: 16px;
@@ -291,29 +296,64 @@
 		display: flex;
 		min-width: 0;
 		min-height: 0;
+		height: 100%;
+		flex: 1;
 		flex-direction: column;
 		gap: 0;
 		padding-left: 16px;
+		overflow: hidden;
 	}
 
 	.note-pane-editor {
 		overflow: hidden;
+		height: 100%;
 	}
 
 	.note-pane-editor :global(.note-editor-viewport) {
 		display: flex;
 		min-height: 0;
+		height: 100%;
 		flex: 1;
 		flex-direction: column;
 		overflow: hidden;
 	}
 
 	.note-pane-editor :global(.milkdown-editor) {
+		display: flex;
 		min-height: 0;
+		height: 100%;
 		flex: 1;
+		flex-direction: column;
 		overflow-y: auto;
 		overflow-x: hidden;
 		overscroll-behavior: contain;
+	}
+
+	.note-pane-editor :global(.note-container) {
+		display: flex;
+		flex-direction: column;
+		min-height: 100%;
+		flex: 1;
+		box-sizing: border-box;
+	}
+
+	.note-pane-editor :global(.milkdown-host) {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+	}
+
+	.note-pane-editor :global(.milkdown-host .milkdown) {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+	}
+
+	.note-pane-editor :global(.milkdown-host .ProseMirror) {
+		flex: 1;
+		min-height: 280px;
 	}
 
 	.note-pane-list {
