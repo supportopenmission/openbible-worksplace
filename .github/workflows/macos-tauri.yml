@@ -91,6 +91,20 @@ jobs:
           else
             bun run --cwd apps/desktop build:linux -- --no-sign
           fi
+      - name: Remove incompatible libraries from Linux AppImage
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          appimagetool="$RUNNER_TEMP/appimagetool-x86_64.AppImage"
+          wget --quiet --show-progress \
+            --output-document="$appimagetool" \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x "$appimagetool"
+          APPIMAGETOOL="$appimagetool" node apps/desktop/scripts/patch-linux-appimage.mjs
+          if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            appimage="$(find apps/desktop/src-tauri/target/release/bundle/appimage -maxdepth 1 -name '*.AppImage' -type f -print -quit)"
+            bunx tauri signer sign "$appimage"
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: openbible-linux-packages
