@@ -41,7 +41,7 @@ jobs:
           name: openbible-macos-universal
           path: |
             OpenBible_*_universal.app.zip
-            apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/*.dmg
+            apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
       - uses: actions/upload-artifact@v4
         if: github.event_name != 'pull_request'
         with:
