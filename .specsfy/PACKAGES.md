@@ -94,7 +94,7 @@
 
 ## Versão do app web (nota humana)
 
-- Workspace `web`: versão `0.5.4` (canônico em `apps/web/package.json`).
+- Workspace `web`: versão `0.5.5` (canônico em `apps/web/package.json`).
 - Troca em um comando: `bun run version:sync <X.Y.Z>` em `apps/web`
   (`scripts/sync_app_version.mjs` espelha em `src/lib/app-version.ts`).
 - Nenhuma dependência foi adicionada, removida ou teve versão alterada
