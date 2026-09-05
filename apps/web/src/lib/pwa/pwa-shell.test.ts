@@ -47,14 +47,14 @@ describe('pwa shell', () => {
 	});
 
 	// SPECSFY: US-002 FR-002 FR-004 NFR-003 AC-004
-	it('deixa o provider adaptar a altura no mobile', async () => {
+	it('não fixa o provider em uma altura dinâmica no mobile', async () => {
 		const frame = await readFile(APP_FRAME, 'utf8');
 		const providerStyles = frame.match(
 			/:global\(\.app-sidebar-provider\)\s*\{([\s\S]*?)\n\s*\}/
 		)?.[1];
 
 		expect(providerStyles).toBeDefined();
-		expect(providerStyles).not.toMatch(/(^|\n)\s*height\s*:/);
+		expect(providerStyles).not.toContain('100dvh');
 	});
 
 	// SPECSFY: US-001 US-002 FR-002 FR-004 NFR-001 NFR-003 AC-004
@@ -91,6 +91,8 @@ describe('pwa shell', () => {
 		const sidebar = await readFile(APP_SIDEBAR, 'utf8');
 		expect(sidebar).toContain('mobile-bottom-nav');
 		expect(sidebar).toContain('safe-area-inset-bottom');
+		expect(sidebar).toContain('height: calc(56px + env(safe-area-inset-bottom, 0px));');
+		expect(sidebar).toContain('padding: 4px 8px env(safe-area-inset-bottom, 0px);');
 		expect(sidebar).toContain('aria-current');
 	});
 

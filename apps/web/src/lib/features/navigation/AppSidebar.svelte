@@ -387,8 +387,9 @@
 			transform: translate3d(0, 0, 0);
 			-webkit-backface-visibility: hidden;
 			backface-visibility: hidden;
-			min-height: calc(56px + env(safe-area-inset-bottom, 0px));
-			padding: 4px 8px max(10px, env(safe-area-inset-bottom, 0px));
+			height: calc(56px + env(safe-area-inset-bottom, 0px));
+			min-height: 56px;
+			padding: 4px 8px env(safe-area-inset-bottom, 0px);
 		}
 
 		.mobile-bottom-nav.viewport-repaint {
