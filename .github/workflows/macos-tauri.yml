@@ -28,6 +28,7 @@ jobs:
       - name: Build signed macOS updater artifacts
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
         run: |
           if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
             bun run --cwd apps/desktop build
@@ -85,6 +86,7 @@ jobs:
       - name: Build signed Linux updater artifacts
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
         run: |
           if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
             bun run --cwd apps/desktop build:linux
@@ -94,6 +96,7 @@ jobs:
       - name: Remove incompatible libraries from Linux AppImage
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
         run: |
           appimagetool="$RUNNER_TEMP/appimagetool-x86_64.AppImage"
           wget --quiet --show-progress \
