@@ -1,15 +1,21 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import {
-	filterSlashItems,
-	getSlashItems,
-	moveSlashSelection
-} from './milkdown-slash';
+import { filterSlashItems, getSlashItems, moveSlashSelection } from './milkdown-slash';
 
 // SPECSFY: US-001 US-002 FR-001 FR-003 NFR-002 AC-001
 describe('milkdown slash menu (desktop)', () => {
 	it('offers verse, headings, lists, task, quote, code and divider', () => {
 		const ids = getSlashItems().map((item) => item.id);
-		for (const id of ['verse', 'heading', 'bullet', 'ordered', 'task', 'quote', 'code', 'divider']) {
+		for (const id of [
+			'verse',
+			'heading',
+			'bullet',
+			'ordered',
+			'task',
+			'quote',
+			'code',
+			'divider'
+		]) {
 			expect(ids).toContain(id);
 		}
 	});
@@ -25,5 +31,11 @@ describe('milkdown slash keyboard navigation', () => {
 		expect(moveSlashSelection(7, 6, 'next')).toBe(0);
 		expect(moveSlashSelection(7, 0, 'prev')).toBe(6);
 		expect(moveSlashSelection(7, 2, 'next')).toBe(3);
+	});
+
+	it('keeps the active desktop command visible while moving with arrows', () => {
+		const source = readFileSync(new URL('./MilkdownNoteEditor.svelte', import.meta.url), 'utf8');
+		expect(source).toContain('keepActiveSlashItemVisible');
+		expect(source).toContain("scrollIntoView({ block: 'nearest' })");
 	});
 });

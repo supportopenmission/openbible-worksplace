@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { remark } from 'remark';
+import remarkDirective from 'remark-directive';
 import {
 	isValidVerseInterval,
+	sanitizeUnsupportedDirectives,
 	verseAttrsToFence,
 	verseFenceToAttrs
 } from './milkdown-verse-node';
@@ -54,5 +57,19 @@ describe('milkdown verse interval validation', () => {
 
 	it('rejects malformed fences instead of inserting partial blocks', () => {
 		expect(() => verseFenceToAttrs(':::verse\nsem atributos\n:::')).toThrow();
+	});
+});
+
+// SPECSFY: US-001 FR-001 NFR-001 NFR-003 AC-005 AC-012 AC-015
+describe('milkdown unsupported directive fallback', () => {
+	it('keeps bible references with colon ranges as editable literal text', () => {
+		const markdown = 'Estudo em João 4:4-7 e Lucas 3:16.';
+		const tree = remark().use(remarkDirective).parse(markdown);
+
+		sanitizeUnsupportedDirectives(tree, markdown);
+
+		const paragraph = tree.children[0] as { children: Array<{ type: string; value?: string }> };
+		expect(paragraph.children.some((node) => node.type === 'textDirective')).toBe(false);
+		expect(paragraph.children.map((node) => node.value ?? '').join('')).toBe(markdown);
 	});
 });

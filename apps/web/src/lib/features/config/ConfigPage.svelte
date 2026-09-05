@@ -10,10 +10,10 @@
 		ChevronRight,
 		Database,
 		Download,
+		ExternalLink,
 		Info,
 		SunMoon
 	} from '@lucide/svelte';
-	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import AppearanceSettings from './AppearanceSettings.svelte';
 	import UpdateSettings from './UpdateSettings.svelte';
@@ -28,14 +28,11 @@
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 
 	const isMobile = new IsMobile();
-	let activeTab = $state<'storage' | 'bibles' | 'stats' | 'reminder' | 'appearance' | 'updates'>(
-		'storage'
-	);
-
-	type MobileSectionId =
+	type ConfigSectionId =
 		'storage' | 'bibles' | 'stats' | 'reminder' | 'about' | 'appearance' | 'updates';
+	let activeSection = $state<ConfigSectionId>('storage');
 
-	const mobileSections: Array<{ id: MobileSectionId; label: string; icon: Component }> = [
+	const configSections: Array<{ id: ConfigSectionId; label: string; icon: Component }> = [
 		{ id: 'storage', label: 'Armazenamento', icon: Database },
 		{ id: 'bibles', label: 'Bíblias', icon: BookOpen },
 		{ id: 'stats', label: 'Estatísticas', icon: ChartColumn },
@@ -45,13 +42,13 @@
 		{ id: 'about', label: 'Sobre', icon: Info }
 	];
 
-	let mobileSection = $state<MobileSectionId | null>(null);
+	let mobileSection = $state<ConfigSectionId | null>(null);
 	let mobileSubheading = $state<HTMLElement | null>(null);
 	const mobileSectionLabel = $derived(
-		mobileSections.find((section) => section.id === mobileSection)?.label ?? ''
+		configSections.find((section) => section.id === mobileSection)?.label ?? ''
 	);
 
-	function openMobileSection(id: MobileSectionId) {
+	function openMobileSection(id: ConfigSectionId) {
 		mobileSection = id;
 		document.querySelector('.shell-main')?.scrollTo({ top: 0 });
 	}
@@ -59,6 +56,21 @@
 	function closeMobileSection() {
 		mobileSection = null;
 		document.querySelector('.shell-main')?.scrollTo({ top: 0 });
+	}
+
+	function handleSectionKeydown(event: KeyboardEvent) {
+		if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+		const ids = configSections.map((section) => section.id);
+		const currentIndex = ids.indexOf(activeSection);
+		const nextIndex =
+			event.key === 'Home'
+				? 0
+				: event.key === 'End'
+					? ids.length - 1
+					: (currentIndex + (event.key === 'ArrowDown' ? 1 : -1) + ids.length) % ids.length;
+		event.preventDefault();
+		activeSection = ids[nextIndex];
+		void tick().then(() => document.getElementById(`config-tab-${activeSection}`)?.focus());
 	}
 
 	$effect(() => {
@@ -118,7 +130,7 @@
 			<div class="config-index">
 				<h2 class="config-index-title">Configurações</h2>
 				<nav class="config-index-list" aria-label="Seções de configuração">
-					{#each mobileSections as section (section.id)}
+					{#each configSections as section (section.id)}
 						{@const Icon = section.icon}
 						<button
 							type="button"
@@ -151,6 +163,7 @@
 						<ChevronLeft size={18} strokeWidth={2} aria-hidden="true" class="config-back-chevron" />
 						<span>Configurações</span>
 					</button>
+					<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 					<h2 class="config-subpage-title" bind:this={mobileSubheading} tabindex={-1}>
 						{mobileSectionLabel}
 					</h2>
@@ -168,54 +181,110 @@
 						{:else if mobileSection === 'updates'}
 							<UpdateSettings />
 						{:else if mobileSection === 'about'}
-							<div class="about-settings">
-								<p class="about-version">OpenBible v{APP_VERSION}</p>
-								<p class="about-description">
-									Seu espaço local para ler a Bíblia, estudar e preparar o que você vai
-									compartilhar.
-								</p>
-								<p class="about-hint">
-									Seus dados ficam guardados neste dispositivo, no workspace que você configurou.
-									Sem conta e sem servidor.
-								</p>
-							</div>
+							{@render aboutSettings()}
 						{/if}
 					</div>
 				</div>
 			{/key}
 		{/if}
 	{:else}
-		<Tabs.Root bind:value={activeTab} class="config-tabs">
-			<Tabs.List variant="line" aria-label="Seções de configuração">
-				<Tabs.Trigger value="storage">Armazenamento</Tabs.Trigger>
-				<Tabs.Trigger value="bibles">Bíblias</Tabs.Trigger>
-				<Tabs.Trigger value="stats">Estatísticas</Tabs.Trigger>
-				<Tabs.Trigger value="reminder">Lembrete</Tabs.Trigger>
-				<Tabs.Trigger value="appearance">Aparência</Tabs.Trigger>
-				<Tabs.Trigger value="updates">Atualizações</Tabs.Trigger>
-			</Tabs.List>
-			<Tabs.Content value="storage" class="config-tab-panel">
-				<WorkspaceSettings embedded />
-			</Tabs.Content>
-			<Tabs.Content value="bibles" class="config-tab-panel">
-				<BibleLibraryManager />
-			</Tabs.Content>
-			<Tabs.Content value="stats" class="config-tab-panel">
-				<WorkspaceStats />
-			</Tabs.Content>
-			<Tabs.Content value="reminder" class="config-tab-panel">
-				{@render reminderSettings()}
-			</Tabs.Content>
-			<Tabs.Content value="appearance" class="config-tab-panel">
-				<AppearanceSettings />
-			</Tabs.Content>
-			<Tabs.Content value="updates" class="config-tab-panel">
-				<UpdateSettings />
-			</Tabs.Content>
-		</Tabs.Root>
-		<footer class="config-footer">
-			<p>OpenBible v{APP_VERSION}</p>
-		</footer>
+		<div class="config-layout">
+			<nav class="config-sidebar" aria-label="Seções de configuração">
+				<h2 class="config-sidebar-title">Configurações</h2>
+				<div
+					class="config-sidebar-list"
+					role="tablist"
+					aria-orientation="vertical"
+					aria-label="Seções de configuração"
+				>
+					{#each configSections as section (section.id)}
+						{@const Icon = section.icon}
+						<button
+							id={`config-tab-${section.id}`}
+							type="button"
+							class="config-sidebar-item"
+							class:active={activeSection === section.id}
+							role="tab"
+							aria-selected={activeSection === section.id}
+							aria-controls={`config-panel-${section.id}`}
+							tabindex={activeSection === section.id ? 0 : -1}
+							onclick={() => (activeSection = section.id)}
+							onkeydown={handleSectionKeydown}
+						>
+							<Icon size={16} strokeWidth={1.8} aria-hidden="true" />
+							<span>{section.label}</span>
+						</button>
+					{/each}
+				</div>
+			</nav>
+
+			<div class="config-content">
+				{#if activeSection === 'storage'}
+					<div
+						id="config-panel-storage"
+						class="config-panel"
+						role="region"
+						aria-labelledby="config-tab-storage"
+					>
+						<WorkspaceSettings embedded />
+					</div>
+				{:else if activeSection === 'bibles'}
+					<div
+						id="config-panel-bibles"
+						class="config-panel"
+						role="region"
+						aria-labelledby="config-tab-bibles"
+					>
+						<BibleLibraryManager />
+					</div>
+				{:else if activeSection === 'stats'}
+					<div
+						id="config-panel-stats"
+						class="config-panel"
+						role="region"
+						aria-labelledby="config-tab-stats"
+					>
+						<WorkspaceStats />
+					</div>
+				{:else if activeSection === 'reminder'}
+					<div
+						id="config-panel-reminder"
+						class="config-panel"
+						role="region"
+						aria-labelledby="config-tab-reminder"
+					>
+						{@render reminderSettings()}
+					</div>
+				{:else if activeSection === 'appearance'}
+					<div
+						id="config-panel-appearance"
+						class="config-panel"
+						role="region"
+						aria-labelledby="config-tab-appearance"
+					>
+						<AppearanceSettings />
+					</div>
+				{:else if activeSection === 'updates'}
+					<div
+						id="config-panel-updates"
+						class="config-panel"
+						role="region"
+						aria-labelledby="config-tab-updates"
+					>
+						<UpdateSettings />
+					</div>
+				{:else}
+					<div
+						id="config-panel-about"
+						class="config-panel"
+						role="region"
+						aria-labelledby="config-tab-about"
+					>
+						{@render aboutSettings()}
+					</div>
+				{/if}
+			</div>
+		</div>
 	{/if}
 </div>
 
@@ -255,12 +324,46 @@
 	</div>
 {/snippet}
 
+{#snippet aboutSettings()}
+	<div class="about-settings">
+		<div class="about-brand">
+			<div class="about-brand-line">
+				<img class="about-logo" src="/logo.png" alt="OpenBible" />
+				<span class="about-version-badge">v{APP_VERSION}</span>
+			</div>
+			<p class="about-description">
+				Seu espaço local para ler a Bíblia, estudar e preparar o que você vai compartilhar.
+			</p>
+		</div>
+		<div class="about-project">
+			<h3 class="about-project-title">Informações do projeto</h3>
+			<p class="about-project-description">
+				OpenBible é um aplicativo local e de código aberto para leitura, estudo e preparação de
+				conteúdo bíblico.
+			</p>
+			<a
+				class="about-repository-link"
+				href="https://github.com/supportopenmission/openbible-worksplace"
+				target="_blank"
+				rel="noreferrer"
+			>
+				<span>Repositório no GitHub</span>
+				<ExternalLink size={14} strokeWidth={1.8} aria-hidden="true" />
+			</a>
+		</div>
+		<p class="about-hint">
+			Seus dados ficam guardados neste dispositivo, no workspace que você configurou. Sem conta e
+			sem servidor.
+		</p>
+	</div>
+{/snippet}
+
 <style>
 	.config-page {
-		max-width: 720px;
+		max-width: 1120px;
 		width: 100%;
 		margin: 0 auto;
-		padding: 8px clamp(20px, 5vw, 64px) 80px;
+		padding: 8px clamp(20px, 4vw, 48px) 80px;
 	}
 
 	.sr-only {
@@ -275,52 +378,81 @@
 		white-space: nowrap;
 	}
 
-	:global(.config-tabs) {
+	.config-layout {
+		display: grid;
+		grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
+		align-items: start;
+		gap: clamp(32px, 5vw, 64px);
+	}
+
+	.config-sidebar {
+		position: sticky;
+		top: 16px;
+		min-width: 0;
+	}
+
+	.config-sidebar-title {
+		margin: 12px 0 16px;
+		font-size: 1.1rem;
+		font-weight: 600;
+		letter-spacing: -0.025em;
+	}
+
+	.config-sidebar-list {
 		display: flex;
 		flex-direction: column;
-		gap: 0;
-		width: 100%;
+		gap: 2px;
 	}
 
-	:global(.config-tabs [data-slot='tabs-list']) {
+	.config-sidebar-item {
+		display: flex;
 		width: 100%;
-		justify-content: flex-start;
-		gap: 0;
-		border-bottom: 1px solid var(--border);
-		border-radius: 0;
+		min-height: 40px;
+		align-items: center;
+		gap: 10px;
+		border: 0;
+		border-inline-start: 2px solid transparent;
+		border-radius: 0 6px 6px 0;
 		background: transparent;
-		padding: 0;
-	}
-
-	:global(.config-tabs [data-slot='tabs-trigger']) {
-		position: relative;
-		flex: 0 0 auto;
-		min-height: 38px;
-		padding-inline: 2px;
-		margin-right: 24px;
+		padding: 8px 12px;
 		color: var(--muted-foreground);
-		font-size: 0.82rem;
+		font: inherit;
+		font-size: 0.84rem;
 		font-weight: 500;
+		text-align: left;
+		cursor: pointer;
+		transition:
+			background-color 120ms ease,
+			color 120ms ease,
+			border-color 120ms ease;
 	}
 
-	:global(.config-tabs [data-slot='tabs-trigger']:hover) {
+	.config-sidebar-item:hover {
+		background: color-mix(in oklch, var(--foreground) 5%, transparent);
 		color: var(--foreground);
 	}
 
-	:global(.config-tabs [data-slot='tabs-trigger'][data-state='active']) {
+	.config-sidebar-item.active {
+		border-inline-start-color: var(--foreground);
+		background: color-mix(in oklch, var(--foreground) 7%, transparent);
 		color: var(--foreground);
-		font-weight: 550;
 	}
 
-	:global(.config-tabs [data-slot='tabs-trigger'][data-state='active']::after) {
-		opacity: 1;
-		bottom: -1px;
-		height: 2px;
-		background: var(--foreground);
+	.config-sidebar-item:focus-visible,
+	.config-panel:focus-visible,
+	.config-index-row:focus-visible,
+	.config-back:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
 	}
 
-	:global(.config-tab-panel) {
-		margin-top: 28px;
+	.config-content {
+		min-width: 0;
+		padding-top: 12px;
+	}
+
+	.config-panel {
+		min-width: 0;
 		outline: none;
 	}
 
@@ -426,20 +558,90 @@
 	.about-settings {
 		display: flex;
 		flex-direction: column;
+		gap: 20px;
+	}
+
+	.about-brand {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 12px;
+		border-bottom: 1px solid var(--border);
+		padding-bottom: 20px;
+	}
+
+	.about-brand-line {
+		display: flex;
+		width: 100%;
+		align-items: center;
+		flex-wrap: wrap;
 		gap: 12px;
 	}
 
-	.about-version {
-		margin: 0;
-		font-family: var(--font-mono);
-		font-size: 0.8rem;
-		font-weight: 600;
+	.about-logo {
+		display: block;
+		width: min(220px, 100%);
+		height: auto;
+		filter: invert(1);
 	}
 
-	.about-description {
+	:global(.dark) .about-logo {
+		filter: none;
+	}
+
+	.about-version-badge {
+		display: inline-flex;
+		align-items: center;
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		background: var(--muted);
+		padding: 3px 7px;
+		color: var(--muted-foreground);
+		font-family: var(--font-mono);
+		font-size: 0.72rem;
+		font-weight: 600;
+		line-height: 1.2;
+	}
+
+	.about-description,
+	.about-project-description {
 		margin: 0;
 		font-size: 0.9rem;
 		line-height: 1.6;
+	}
+
+	.about-project {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 8px;
+	}
+
+	.about-project-title {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 600;
+		letter-spacing: -0.02em;
+	}
+
+	.about-project-description {
+		max-width: 58ch;
+	}
+
+	.about-repository-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		margin-top: 2px;
+		color: var(--foreground);
+		font-size: 0.84rem;
+		font-weight: 500;
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+
+	.about-repository-link:hover {
+		color: var(--muted-foreground);
 	}
 
 	.about-hint {
@@ -448,19 +650,6 @@
 		color: var(--muted-foreground);
 		font-size: 0.78rem;
 		line-height: 1.55;
-	}
-
-	.config-footer {
-		margin-top: 32px;
-		border-top: 1px solid var(--border);
-		padding-top: 16px;
-	}
-
-	.config-footer p {
-		margin: 0;
-		color: var(--muted-foreground);
-		font-family: var(--font-mono);
-		font-size: 0.72rem;
 	}
 
 	.reminder-settings {
@@ -510,7 +699,7 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		:global(.config-tabs [data-slot='tabs-trigger']) {
+		.config-sidebar-item {
 			transition: none;
 		}
 

@@ -13,6 +13,8 @@ describe('BibleNoteSplit', () => {
 		expect(source).toContain('toolbar?.()');
 		expect(source).toContain('note-split-tab-list');
 		expect(source).toContain('onTabChange');
+		expect(source).toContain('<X');
+		expect(source).toContain('aria-label="Fechar nota"');
 	});
 
 	it('keeps the reader FAB out of the note tab', async () => {

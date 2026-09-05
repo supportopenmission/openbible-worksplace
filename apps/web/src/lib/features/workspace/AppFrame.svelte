@@ -83,6 +83,13 @@
 		background: var(--background);
 	}
 
+	@media (min-width: 768px) {
+		:global(.app-sidebar-provider) {
+			height: 100svh;
+			min-height: 100svh;
+		}
+	}
+
 	:global(.shell-content) {
 		--shell-header-height: 48px;
 		min-width: 0;

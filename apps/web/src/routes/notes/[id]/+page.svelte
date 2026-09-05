@@ -197,7 +197,9 @@
 		if (!activeStorage || !note || deleting) return;
 		deleting = true;
 		try {
-			await notesState.deleteNote(activeStorage, note.id);
+			const deleted = await notesState.deleteNote(activeStorage, note.id);
+			if (!deleted) return;
+			await notesState.loadNotes(activeStorage, true);
 			deleteDialogOpen = false;
 			await goto(resolve('/notes'));
 		} finally {

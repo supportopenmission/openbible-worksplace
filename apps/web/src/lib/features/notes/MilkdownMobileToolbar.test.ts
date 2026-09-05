@@ -32,6 +32,7 @@ describe('milkdown mobile toolbar', () => {
 		const { body } = render(MilkdownMobileToolbar, { props: { visible: false } });
 		expect(body).toContain('milkdown-toolbar-toggle');
 		expect(body).toContain('Abrir ferramentas de formatação');
+		expect(body).toContain('aria-expanded="false"');
 		expect(body).not.toContain('role="toolbar"');
 	});
 
@@ -44,6 +45,8 @@ describe('milkdown mobile toolbar', () => {
 		const expanded = render(MilkdownMobileToolbar);
 		expect(expanded.body).toContain('toolbar-group');
 		expect(expanded.body).toContain('toolbar-action');
+		expect(expanded.body).toContain('Recolher barra de ferramentas');
+		expect(expanded.body).toContain('aria-expanded="true"');
 	});
 
 	it('can be disabled for direct Markdown editing', () => {
@@ -60,6 +63,29 @@ describe('milkdown mobile toolbar', () => {
 		);
 		expect(source).toContain('position: sticky');
 		expect(source).toContain('top: 0');
+	});
+
+	it('keeps the collapsed toggle aligned right with a formatting icon and lower chamfer', async () => {
+		const { readFile } = await import('node:fs/promises');
+		const source = await readFile(
+			new URL('./MilkdownMobileToolbar.svelte', import.meta.url),
+			'utf8'
+		);
+		expect(source).toContain('PanelTop');
+		expect(source).toContain('width: fit-content');
+		expect(source).toContain('margin-inline-start: auto');
+		expect(source).toContain('border-radius: 0 0 8px 8px');
+	});
+
+	it('keeps the mobile collapsed toggle at the top instead of floating like a FAB', async () => {
+		const { readFile } = await import('node:fs/promises');
+		const source = await readFile(
+			new URL('./MilkdownMobileToolbar.svelte', import.meta.url),
+			'utf8'
+		);
+		expect(source).toContain('top: env(safe-area-inset-top, 0px)');
+		expect(source).not.toContain('position: fixed');
+		expect(source).not.toContain('bottom: max(calc(68px');
 	});
 });
 

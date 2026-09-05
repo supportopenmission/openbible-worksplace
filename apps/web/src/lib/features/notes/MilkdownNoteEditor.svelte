@@ -11,7 +11,11 @@
 		moveSlashSelection,
 		type MilkdownSlashItem
 	} from './milkdown-slash';
-	import { verseNodeSchema, verseDirective } from './milkdown-verse-node';
+	import {
+		unsupportedDirectiveFallback,
+		verseNodeSchema,
+		verseDirective
+	} from './milkdown-verse-node';
 	import VerseSelector, { type VerseSelectionResult } from './VerseSelector.svelte';
 	import MilkdownMobileToolbar from './MilkdownMobileToolbar.svelte';
 	import { buildVerseInsertTransaction } from './milkdown-verse-insert';
@@ -73,6 +77,10 @@
 	} | null>(null);
 	let toolbarActive = $state<Record<string, boolean>>({});
 	let filteredItems = $derived(filterSlashItems(getSlashItems(), slashQuery));
+
+	$effect(() => {
+		if (slashIndex >= filteredItems.length) slashIndex = Math.max(filteredItems.length - 1, 0);
+	});
 
 	$effect(() => {
 		if (!toolbarEnabled) toolbarOpen = false;
@@ -209,6 +217,14 @@
 				? Math.max(padding, coords.top - gap - maxHeight)
 				: Math.min(coords.bottom + gap, window.innerHeight - padding - maxHeight);
 			slashPosition = { top, left, width, maxHeight };
+		});
+	}
+
+	function keepActiveSlashItemVisible() {
+		void tick().then(() => {
+			document
+				.querySelector<HTMLElement>('.slash-menu [role="option"][aria-selected="true"]')
+				?.scrollIntoView({ block: 'nearest' });
 		});
 	}
 
@@ -391,6 +407,7 @@
 				slashIndex,
 				event.key === 'ArrowDown' ? 'next' : 'prev'
 			);
+			keepActiveSlashItemVisible();
 		}
 		if (event.key === 'Enter' && filteredItems[slashIndex]) {
 			event.preventDefault();
@@ -406,6 +423,7 @@
 		const target = event.target;
 		if (target instanceof HTMLElement && target.closest('.ProseMirror, .milkdown-toolbar')) {
 			editingActive = true;
+			if (!mobile) toolbarOpen = true;
 		} else {
 			editingActive = false;
 		}
@@ -570,6 +588,7 @@
 				.use(commonmark)
 				.use(gfm)
 				.use(verseDirective)
+				.use(unsupportedDirectiveFallback)
 				.use(verseNodeSchema)
 				.use(bibleReferencePlugin)
 				.use(milkdownPlaceholderPlugin())
@@ -610,14 +629,13 @@
 <div class="note-editor-viewport" bind:this={editorRoot}>
 	<div class="milkdown-editor" data-testid="note-canvas" data-viewport-fill="true">
 		<MilkdownMobileToolbar
-			active={mobile && !readOnly && editingActive}
+			active={!readOnly && editingActive}
 			enabled={toolbarEnabled}
 			visible={toolbarOpen}
 			disabled={!editingActive}
 			activeActions={toolbarActive}
 			onAction={runToolbar}
 			onToggle={() => (toolbarOpen = !toolbarOpen)}
-			onClose={() => (toolbarOpen = false)}
 		/>
 
 		{#if initError}
@@ -1154,8 +1172,11 @@
 	.drawer-items {
 		display: flex;
 		flex-direction: column;
+		flex: 1;
+		min-height: 0;
 		gap: 2px;
 		overflow-y: auto;
+		overscroll-behavior: contain;
 		padding: 6px 12px max(16px, env(safe-area-inset-bottom));
 	}
 	:global(.drawer-items .drawer-command) {
@@ -1164,7 +1185,10 @@
 		min-height: 44px;
 	}
 	:global(.slash-drawer) {
+		display: flex;
+		min-height: 0;
 		height: 90dvh;
+		overflow: hidden;
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.slash-menu {

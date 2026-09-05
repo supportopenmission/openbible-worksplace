@@ -1,22 +1,22 @@
 # Especificação integrada: Motor de notas com Milkdown, fence de versículo e mobile
 
-| Campo | Valor |
-| --- | --- |
-| Formato | Specsfy/2.0 |
-| ID | SPEC-0013 |
-| Slug | 0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile |
-| Status | Implementing |
-| Effort | 8 |
-| Effort updated at | 2026-09-04 |
-| Effort rationale | Troca do motor Tipex/TipTap por Milkdown com nó custom :::verse, slash desktop, drawer + toolbar mobile, paridade de autosave/H1/YAML/índice e remoção do motor antigo. |
-| ClickUp Task | |
-| Milestones | |
-| Definition Gate | Passed |
-| Plan Gate | Passed |
-| Delivery Gate | In Progress |
-| Evidence Contract | 1 |
-| Interface para pessoas | Sim |
-| Atualizada em | 2026-09-05 |
+| Campo                  | Valor                                                                                                                                                                   |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Formato                | Specsfy/2.0                                                                                                                                                             |
+| ID                     | SPEC-0013                                                                                                                                                               |
+| Slug                   | 0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile                                                                                                            |
+| Status                 | Implementing |
+| Effort                 | 8                                                                                                                                                                       |
+| Effort updated at      | 2026-09-04                                                                                                                                                              |
+| Effort rationale       | Troca do motor Tipex/TipTap por Milkdown com nó custom :::verse, slash desktop, drawer + toolbar mobile, paridade de autosave/H1/YAML/índice e remoção do motor antigo. |
+| ClickUp Task           |                                                                                                                                                                         |
+| Milestones             |                                                                                                                                                                         |
+| Definition Gate        | Passed                                                                                                                                                                 |
+| Plan Gate              | Passed                                                                                                                                                                 |
+| Delivery Gate          | In Progress                                                                                                                                                                 |
+| Evidence Contract      | 1                                                                                                                                                                       |
+| Interface para pessoas | Sim                                                                                                                                                                     |
+| Atualizada em          | 2026-09-05                                                                                                                                                              |
 
 ## Ato I — Definir
 
@@ -73,7 +73,8 @@ Trocar só o motor de `/notes/[id]` para Milkdown (`@milkdown/kit` com CommonMar
 - **Q**: E as notas existentes? → **A**: Abertura direta sem migração, mesmo fence e índice (Q6).
 - **Q**: Qual stack Milkdown? → **A**: `@milkdown/kit` + CommonMark + slash + verse custom (Q7).
 - **Q**: Como insere versículo? → **A**: Reaproveitar `VerseSelector` Dialog/Sheet com preview (Q8).
-- **Pedido de correção recebido em 2026-09-05**: “no mobile no editor das notas, quando usarmo  / slash commands ocultar o teclado, pois abre um drawer.” → **A**: Ao detectar `/` no editor mobile, desfocar o editor para ocultar o teclado virtual antes de exibir o drawer, preservando a seleção atual para executar o comando.
+- **Pedido de correção recebido em 2026-09-05**: “no mobile no editor das notas, quando usarmo / slash commands ocultar o teclado, pois abre um drawer.” → **A**: Ao detectar `/` no editor mobile, desfocar o editor para ocultar o teclado virtual antes de exibir o drawer, preservando a seleção atual para executar o comando.
+- **Pedido de correção recebido em 2026-09-05**: “estava criando uma nota no app instalado e meio que perdi a nota pois deu esse erro: Cannot match target parser para `textDirective` ... e o editor no app ficou travado ... outra coisa o botão que abre o toolbar no mobile deve ficar lá em cima”. → **A**: Diretivas Markdown não suportadas pelo editor devem ser preservadas como texto literal para que referências como `João 4:4-7` não interrompam a montagem; o toggle recolhido da toolbar mobile deve permanecer no topo do canvas, junto da barra expandida, e não como botão flutuante inferior.
 
 #### Dúvidas abertas
 
@@ -85,6 +86,7 @@ Trocar só o motor de `/notes/[id]` para Milkdown (`@milkdown/kit` com CommonMar
 
 - Trocar o motor de `/notes/[id]` de Tipex/TipTap para Milkdown com Markdown como fonte direta.
 - Nó custom `verse` com parse/render de `:::verse{attrs}` + snapshot e fallback sem perda.
+- Preservar como texto literal diretivas Markdown não suportadas pelo Milkdown, incluindo referências com intervalo como `João 4:4-7`, sem bloquear o editor nem descartar o arquivo.
 - Slash menu desktop filtrável (`/`, `/versiculo`, `/verse`) com 7 grupos de blocos.
 - Drawer mobile bottom sheet 90dvh com mesma lista + busca ao digitar `/`; o teclado virtual é ocultado antes da abertura do drawer.
 - Toolbar mobile com 7 ações acima da barra de navegação.
@@ -185,6 +187,7 @@ Feature: Toolbar de formatação mobile
     When a barra inferior de navegação está visível
     Then a toolbar mostra negrito, itálico, título, lista, checklist, citação e versículo
     And fica acima da navegação sem cobrir o texto ou a ação principal
+    And quando recolhida, sua ação de abertura fica alinhada à direita, exibe um ícone de formatação e tem os cantos superiores retos e os inferiores arredondados
 ```
 
 #### AC-004 — Inserção de versículo gera fence
@@ -416,10 +419,10 @@ Feature: Markdown legível
 
 #### Funcionais
 
-- **FR-001**: O sistema deve editar notas no Milkdown (`@milkdown/kit` + CommonMark/GFM) lendo e gravando Markdown direto, sem HTML intermediário como fonte.
+- **FR-001**: O sistema deve editar notas no Milkdown (`@milkdown/kit` + CommonMark/GFM) lendo e gravando Markdown direto, sem HTML intermediário como fonte; sintaxes Markdown não suportadas por plugins opcionais devem continuar como texto literal e não podem interromper a montagem do editor.
 - **FR-002**: O sistema deve representar o versículo como nó custom `verse` com parse/render de `:::verse{versionId, version, bookId, book, chapter, verseStart, verseEnd}` + snapshot, roundtrip sem perda e fallback que preserva texto inválido.
-- **FR-003**: O sistema deve oferecer slash menu desktop filtrável e drawer mobile bottom sheet 90dvh com mesma lista (versículo, títulos, listas, checklist, citação, código, divisória) e busca, com teclado completo; no mobile, deve ocultar o teclado virtual antes de abrir o drawer ao detectar `/`.
-- **FR-004**: O sistema deve exibir toolbar mobile com negrito, itálico, título, lista, checklist, citação e versículo acima da barra de navegação quando o editor está ativo.
+- **FR-003**: O sistema deve oferecer slash menu desktop filtrável e drawer mobile bottom sheet 90dvh com mesma lista (versículo, títulos, listas, checklist, citação, código, divisória) e busca, com teclado completo; no desktop, o item ativo deve acompanhar a seleção por teclado, e no mobile o teclado virtual deve ser ocultado antes de abrir o drawer ao detectar `/`, cuja rolagem deve ficar confinada à lista de comandos.
+- **FR-004**: O sistema deve exibir toolbar de formatação abaixo do cabeçalho no desktop e acima da barra de navegação no mobile, com negrito, itálico, título, lista, checklist, citação e versículo, recolhível por toggle com ícone de formatação, seta, alinhamento à direita e cantos superiores retos/inferiores arredondados quando fechado; no mobile, o toggle e a barra expandida ficam no topo do canvas, além de animação compatível com `prefers-reduced-motion` quando o editor está ativo.
 - **FR-005**: O sistema deve persistir `notes/<id>.md` com YAML (`title`, `createdAt`, `updatedAt`, `type`), H1 sincronizado, autosave com debounce e reindexação de `note_verse_ref` após cada save.
 - **FR-006**: O sistema deve manter canvas full-bleed sem moldura e reaproveitar `VerseSelector` (Dialog desktop / Sheet mobile) com preview, validação de intervalo e versão por bloco.
 
@@ -436,6 +439,7 @@ Feature: Markdown legível
 - Intervalo inválido → seletor recusa com explicação; nada parcial é inserido.
 - Falha de save/index → status erro com retry, sem descartar edição.
 - Fence malformado → preserva texto com erro recuperável.
+- Diretiva Markdown desconhecida ou inline parecida com referência bíblica → preserva a sintaxe como texto literal e mantém o editor editável.
 - Milkdown falha ao montar → mensagem com retry, sem perder arquivo.
 
 ## Ato II — Projetar e provar
@@ -450,10 +454,10 @@ Feature: Markdown legível
 
 #### Arquitetura e módulos
 
-- Novo `MilkdownNoteEditor.svelte`: monta `@milkdown/kit` (commonmark + gfm + slash + listener + history + clipboard + trailing), registra nó `verse`, expõe `getMarkdown/setMarkdown`, emite `onChange` para autosave.
-- `milkdown-verse-node.ts`: schema ProseMirror `verse` (attrs + snapshot atom), parser remark do fence `:::verse{}` e serializador de volta para fence idêntico; usa `parseVerseFence/renderVerseFence/extractVerseFencesFromMarkdown` vigentes como referência de sintaxe.
+- Novo `MilkdownNoteEditor.svelte`: monta `@milkdown/kit` (commonmark + gfm + slash + listener + history + clipboard + trailing), registra nó `verse`, expõe `getMarkdown/setMarkdown`, emite `onChange` para autosave, mantém o item slash ativo visível no menu desktop e coordena a toolbar nos dois viewports.
+- `milkdown-verse-node.ts`: schema ProseMirror `verse` (attrs + snapshot atom), parser remark do fence `:::verse{}` e serializador de volta para fence idêntico; normaliza diretivas inline/leaf/container desconhecidas em texto literal antes do parser ProseMirror; usa `parseVerseFence/renderVerseFence/extractVerseFencesFromMarkdown` vigentes como referência de sintaxe.
 - `milkdown-slash.ts`: itens a partir de `SLASH_COMMANDS` vigente (7 grupos + aliases `/versiculo`, `/verse`); desktop usa menu `plugin/slash` posicionado; mobile usa `Sheet` bottom 90dvh com busca (reaproveita primitive em `lib/components/ui/sheet/`).
-- `MilkdownMobileToolbar.svelte`: barra Svelte com 7 ações que chamam comandos Milkdown; `Versículo` abre `VerseSelector`; posicionada acima da barra mobile com safe area.
+- `MilkdownMobileToolbar.svelte`: barra Svelte com 7 ações que chamam comandos Milkdown; `Versículo` abre `VerseSelector`; posicionada abaixo do cabeçalho desktop e no topo do canvas mobile, com toggle de recolhimento no mesmo topo, safe area e transição reduzível.
 - `milkdown-markdown-io.ts`: ponte Markdown puro ↔ Milkdown (sem DOMParser intermediário como fonte); reaproveita `parseNoteFile/serializeNoteFile/syncTitleWithH1`.
 - Mantidos: `note-editor-service.ts` (autosave + índice), `notes-repository.ts`, `VerseSelector.svelte`, `VerseBlockView.svelte`, página `[id]` como coordenadora.
 - Remoção: `NoteCanvasEditor.svelte` (Tipex), `VerseBlockExtension` TipTap, `note-block-interactions.ts` do caminho do editor, deps Tipex/TipTap após paridade.
@@ -511,19 +515,19 @@ apps/web/src/lib/features/notes/
 
 #### Entidades
 
-| Entidade | Identidade | Atributos e regras | Relações |
-| --- | --- | --- | --- |
-| Nota Markdown | `notes/<id>.md` | YAML `title`, `createdAt`, `updatedAt`, `type:"note"`; corpo com H1 sincronizado + Markdown CommonMark/GFM + fences `:::verse`; H1 reflete `title` | 1 nota → N fences `:::verse`; N refs em `note_verse_ref` |
+| Entidade        | Identidade               | Atributos e regras                                                                                                                                             | Relações                                                       |
+| --------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Nota Markdown   | `notes/<id>.md`          | YAML `title`, `createdAt`, `updatedAt`, `type:"note"`; corpo com H1 sincronizado + Markdown CommonMark/GFM + fences `:::verse`; H1 reflete `title`             | 1 nota → N fences `:::verse`; N refs em `note_verse_ref`       |
 | Fence versículo | posição + attrs no corpo | `versionId`, `version`, `bookId`, `book`, `chapter`, `verseStart`, `verseEnd`, snapshot no corpo; intervalo no mesmo capítulo; `verseStart===verseEnd` = único | N fences → 1 nota (`note_path`); espelhado em `note_verse_ref` |
-| Índice auxiliar | `note_verse_ref.id` | `note_path`, `block_index`, `version_id`, `book_id`, `book_name`, `chapter`, `verse_start`, `verse_end` | espelha fences; removido ao mover para `trash/` |
+| Índice auxiliar | `note_verse_ref.id`      | `note_path`, `block_index`, `version_id`, `book_id`, `book_name`, `chapter`, `verse_start`, `verse_end`                                                        | espelha fences; removido ao mover para `trash/`                |
 
 #### Estados e transições
 
-| Entidade | Estado atual | Evento | Próximo estado | Invariantes |
-| --- | --- | --- | --- | --- |
-| Nota | aberta | editar + debounce 650ms | salva | YAML+H1+índice consistentes; original nunca apagado em silêncio |
-| Fence | rascunho no seletor | confirmar | persistido | attrs + snapshot completos; inválido não persiste |
-| Nota | ativa | apagar com confirmação | trash | arquivo movido para `trash/`; refs removidas do índice |
+| Entidade | Estado atual        | Evento                  | Próximo estado | Invariantes                                                     |
+| -------- | ------------------- | ----------------------- | -------------- | --------------------------------------------------------------- |
+| Nota     | aberta              | editar + debounce 650ms | salva          | YAML+H1+índice consistentes; original nunca apagado em silêncio |
+| Fence    | rascunho no seletor | confirmar               | persistido     | attrs + snapshot completos; inválido não persiste               |
+| Nota     | ativa               | apagar com confirmação  | trash          | arquivo movido para `trash/`; refs removidas do índice          |
 
 #### Migração e retenção
 
@@ -561,13 +565,13 @@ apps/web/src/lib/features/notes/
 
 #### Composição e disposição
 
-- Hierarquia: voltar (mobile) → status de save → canvas Milkdown full-bleed → toolbar mobile fixa acima da navegação. Densidade de leitura com largura de canvas e respiro vigentes; sem moldura/card/borda. Desktop: slash flutuante ancorado ao cursor; mobile: drawer inferior + toolbar fixa. Reaproveita `Sheet`, `Dialog`, `Button`, `VerseSelector`, `VerseBlockView`; novos só `MilkdownNoteEditor`, `MilkdownMobileToolbar`, ponte slash.
+- Hierarquia: voltar (mobile) → status de save → canvas Milkdown full-bleed → toolbar desktop abaixo do cabeçalho; no mobile, toggle/barra no topo do canvas e drawer inferior. Densidade de leitura com largura de canvas e respiro vigentes; sem moldura/card/borda. Desktop: slash flutuante ancorado ao cursor; mobile: drawer inferior + toolbar no topo. Reaproveita `Sheet`, `Dialog`, `Button`, `VerseSelector`, `VerseBlockView`; novos só `MilkdownNoteEditor`, `MilkdownMobileToolbar`, ponte slash e fallback de diretivas.
 
 #### Blocos React e componentes selecionados
 
-| Tela | Bloco React | Responsabilidade | Arquivo previsto | Componente ou composição | Origem | Reuso ou extensão |
-| --- | --- | --- | --- | --- | --- | --- |
-| — | — | Projeto Svelte; sem blocos React | — | — | — | Não aplicável por stack |
+| Tela | Bloco React | Responsabilidade                 | Arquivo previsto | Componente ou composição | Origem | Reuso ou extensão       |
+| ---- | ----------- | -------------------------------- | ---------------- | ------------------------ | ------ | ----------------------- |
+| —    | —           | Projeto Svelte; sem blocos React | —                | —                        | —      | Não aplicável por stack |
 
 Blocos Svelte desta entrega: `MilkdownNoteEditor.svelte` (monta kit, nó verse, slash, change→autosave), `MilkdownMobileToolbar.svelte` (7 ações + abrir seletor), `milkdown-verse-node.ts` (schema/parser/serializador), `milkdown-slash.ts` (itens + abertura desktop/drawer), `milkdown-markdown-io.ts` (ponte Markdown). Reaproveitados: `VerseSelector.svelte`, `VerseBlockView.svelte`, `Sheet`, `Dialog`, `Button`, `note-markdown.ts`, `note-editor-service.ts`, `notes-repository.ts`. Registrar novos em `INTERFACE.md` na implementação.
 
@@ -610,64 +614,66 @@ Blocos Svelte desta entrega: `MilkdownNoteEditor.svelte` (monta kit, nó verse, 
 
 #### Evidência RED-GREEN-REFACTOR
 
-| IDs | BDD de referência | Teste TDD informado pelo BDD | RED observado | GREEN observado | Refactor/regressão |
-| --- | --- | --- | --- | --- | --- |
-| US-001, US-002, FR-001, FR-003, NFR-002, AC-001 | AC-001 na seção 6 | `apps/web/src/lib/features/notes/milkdown-slash.test.ts` com `SPECSFY-MILKDOWN-001` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
-| US-002, FR-003, NFR-002, AC-002 | AC-002 na seção 6 | `apps/web/src/lib/features/notes/milkdown-slash-drawer.test.ts` com `SPECSFY-MILKDOWN-002` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
-| US-003, FR-004, NFR-002, AC-003 | AC-003 na seção 6 | `apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts` com `SPECSFY-MILKDOWN-003` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
-| US-002, FR-002, FR-006, NFR-003, AC-004 | AC-004 na seção 6 | `apps/web/src/lib/features/notes/milkdown-verse-node.test.ts` com `SPECSFY-MILKDOWN-004` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
-| US-001, FR-001, FR-002, FR-005, NFR-001, NFR-003, AC-005 | AC-005 na seção 6 | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` com `SPECSFY-MILKDOWN-005` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
-| US-001, FR-005, NFR-001, AC-006 | AC-006 na seção 6 | `apps/web/src/lib/features/notes/note-editor-service.test.ts` com `SPECSFY-MILKDOWN-006` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
-| US-003, FR-006, NFR-003, AC-007 | AC-007 na seção 6 | `apps/web/src/lib/features/notes/MilkdownNoteEditor.test.ts` com `SPECSFY-MILKDOWN-007` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
-| US-002, FR-002, NFR-001, AC-008 | AC-008 na seção 6 | `apps/web/src/lib/features/notes/milkdown-verse-node.test.ts` com `SPECSFY-MILKDOWN-008` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
-| US-002, FR-002, FR-006, AC-009 | AC-009 na seção 6 | `apps/web/src/lib/features/notes/milkdown-verse-node.test.ts` com `SPECSFY-MILKDOWN-009` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
-| US-002, FR-006, NFR-003, AC-010 | AC-010 na seção 6 | `apps/web/src/lib/features/notes/verse-selector.test.ts` com `SPECSFY-MILKDOWN-010` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
-| US-001, FR-005, NFR-001, AC-011 | AC-011 na seção 6 | `apps/web/src/lib/features/notes/note-editor-service.test.ts` com `SPECSFY-MILKDOWN-011` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
-| US-001, FR-001, FR-002, NFR-003, AC-012 | AC-012 na seção 6 | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` com `SPECSFY-MILKDOWN-012` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
-| US-001, US-002, US-003, FR-003, FR-004, NFR-002, AC-013 | AC-013 na seção 6 | `apps/web/src/lib/features/notes/milkdown-slash.test.ts` com `SPECSFY-MILKDOWN-013` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
-| US-003, FR-001, FR-004, FR-006, NFR-003, AC-014 | AC-014 na seção 6 | `apps/web/src/lib/features/notes/MilkdownNoteEditor.test.ts` com `SPECSFY-MILKDOWN-014` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
-| US-001, FR-001, FR-005, NFR-001, AC-015 | AC-015 na seção 6 | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` com `SPECSFY-MILKDOWN-015` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
-| US-003, FR-004, NFR-002, NFR-003, AC-016 | AC-016 na seção 6 | `apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts` com `SPECSFY-MILKDOWN-016` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
-| US-002, FR-006, NFR-002, AC-017 | AC-017 na seção 6 | `apps/web/src/lib/features/notes/verse-selector.test.ts` com `SPECSFY-MILKDOWN-017` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
-| US-001, FR-002, FR-005, NFR-003, AC-018 | AC-018 na seção 6 | `apps/web/src/lib/features/notes/note-markdown.test.ts` com `SPECSFY-MILKDOWN-018` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| IDs                                                      | BDD de referência | Teste TDD informado pelo BDD                                                               | RED observado                                                                                      | GREEN observado                                             | Refactor/regressão                                                                            |
+| -------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| US-001, US-002, FR-001, FR-003, NFR-002, AC-001          | AC-001 na seção 6 | `apps/web/src/lib/features/notes/milkdown-slash.test.ts` com `SPECSFY-MILKDOWN-001`        | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-002, FR-003, NFR-002, AC-002                          | AC-002 na seção 6 | `apps/web/src/lib/features/notes/milkdown-slash-drawer.test.ts` com `SPECSFY-MILKDOWN-002` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-003, FR-004, NFR-002, AC-003                          | AC-003 na seção 6 | `apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts` com `SPECSFY-MILKDOWN-003` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-002, FR-002, FR-006, NFR-003, AC-004                  | AC-004 na seção 6 | `apps/web/src/lib/features/notes/milkdown-verse-node.test.ts` com `SPECSFY-MILKDOWN-004`   | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-001, FR-001, FR-002, FR-005, NFR-001, NFR-003, AC-005 | AC-005 na seção 6 | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` com `SPECSFY-MILKDOWN-005`  | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-001, FR-005, NFR-001, AC-006                          | AC-006 na seção 6 | `apps/web/src/lib/features/notes/note-editor-service.test.ts` com `SPECSFY-MILKDOWN-006`   | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-003, FR-006, NFR-003, AC-007                          | AC-007 na seção 6 | `apps/web/src/lib/features/notes/MilkdownNoteEditor.test.ts` com `SPECSFY-MILKDOWN-007`    | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-002, FR-002, NFR-001, AC-008                          | AC-008 na seção 6 | `apps/web/src/lib/features/notes/milkdown-verse-node.test.ts` com `SPECSFY-MILKDOWN-008`   | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-002, FR-002, FR-006, AC-009                           | AC-009 na seção 6 | `apps/web/src/lib/features/notes/milkdown-verse-node.test.ts` com `SPECSFY-MILKDOWN-009`   | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-002, FR-006, NFR-003, AC-010                          | AC-010 na seção 6 | `apps/web/src/lib/features/notes/verse-selector.test.ts` com `SPECSFY-MILKDOWN-010`        | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-001, FR-005, NFR-001, AC-011                          | AC-011 na seção 6 | `apps/web/src/lib/features/notes/note-editor-service.test.ts` com `SPECSFY-MILKDOWN-011`   | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-001, FR-001, FR-002, NFR-003, AC-012                  | AC-012 na seção 6 | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` com `SPECSFY-MILKDOWN-012`  | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-001, US-002, US-003, FR-003, FR-004, NFR-002, AC-013  | AC-013 na seção 6 | `apps/web/src/lib/features/notes/milkdown-slash.test.ts` com `SPECSFY-MILKDOWN-013`        | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-003, FR-001, FR-004, FR-006, NFR-003, AC-014          | AC-014 na seção 6 | `apps/web/src/lib/features/notes/MilkdownNoteEditor.test.ts` com `SPECSFY-MILKDOWN-014`    | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-001, FR-001, FR-005, NFR-001, AC-015                  | AC-015 na seção 6 | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` com `SPECSFY-MILKDOWN-015`  | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-003, FR-004, NFR-002, NFR-003, AC-016                 | AC-016 na seção 6 | `apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts` com `SPECSFY-MILKDOWN-016` | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-002, FR-006, NFR-002, AC-017                          | AC-017 na seção 6 | `apps/web/src/lib/features/notes/verse-selector.test.ts` com `SPECSFY-MILKDOWN-017`        | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-001, FR-002, FR-005, NFR-003, AC-018                  | AC-018 na seção 6 | `apps/web/src/lib/features/notes/note-markdown.test.ts` com `SPECSFY-MILKDOWN-018`         | RED: import do módulo/componente Milkdown de produção ausente; `bun run test:tdd`, exit 1 esperado | GREEN: teste focal e suíte completa aprovados em 2026-09-04 | Refactor: seletores de regressão adaptados ao contrato Milkdown; 70 arquivos/264 testes GREEN |
+| US-001, FR-001, NFR-001, NFR-003, AC-005, AC-012, AC-015 | AC-005/012/015 na seção 6 | `milkdown-verse-node.test.ts` com `SPECSFY-MILKDOWN-020` | RED: fallback `sanitizeUnsupportedDirectives` ausente; `bun run test:unit`, exit 1 esperado | GREEN: teste focal e rota integrada aprovados em 2026-09-05 | Refactor: preservação literal por offsets e teste de nota salva |
+| US-003, FR-004, NFR-002, AC-003                 | AC-003 na seção 6 | `MilkdownMobileToolbar.test.ts` com `SPECSFY-MILKDOWN-021` | RED: toggle mobile ainda usa posição `fixed` inferior; `bun run test:unit`, exit 1 esperado | GREEN: teste focal e rota de notas aprovados em 2026-09-05 | Refactor: toggle sticky no topo com safe area superior |
 
 ### 12. Plano de testes e rastreabilidade
 
-| Requisito | Cenário BDD | Nível | Arquivo/comando esperado | Evidência |
-| --- | --- | --- | --- | --- |
-| FR-001 | AC-001 | Unidade | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-001 | AC-005 | Unidade | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-001 | AC-012 | Unidade | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-001 | AC-014 | Componente | `MilkdownNoteEditor` / `vitest run` + inspeção temas | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-001 | AC-015 | Unidade | debounce/abertura / `vitest run` + medição manual | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-002 | AC-004 | Unidade | `apps/web/src/lib/features/notes/milkdown-verse-node.test.ts` / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-002 | AC-005 | Unidade | `milkdown-verse-node.test.ts` / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-002 | AC-008 | Unidade | `milkdown-verse-node.test.ts` + `note-verse-index.test.ts` / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-002 | AC-009 | Componente | `VerseSelector` + nó verse / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-002 | AC-012 | Unidade | fallback sem perda / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-002 | AC-018 | Unidade | leitura externa do `.md` / inspeção | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-003 | AC-001 | Unidade + manual | `milkdown-slash-toolbar.test.ts` + teclado desktop | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-003 | AC-002 | Componente + manual | drawer Sheet 90dvh + busca / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-003 | AC-013 | Componente | foco/Escape / `vitest run` + manual | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-004 | AC-003 | Componente + manual | `MilkdownMobileToolbar` / `vitest run` + viewport | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-004 | AC-013 | Componente | teclado/toque / manual | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-004 | AC-016 | Componente | ações aplicam Markdown / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-005 | AC-005 | Integração | `note-editor-service` + índice / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-005 | AC-006 | Integração | autosave YAML+H1+índice / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-005 | AC-011 | Integração | erro com retry / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-006 | AC-004 | Integração | seletor→fence / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-006 | AC-007 | Manual visual | canvas sem bordas desktop/mobile | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-006 | AC-010 | Componente | estado sem Bíblia / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-006 | AC-017 | Componente | Dialog/Sheet reaproveitado / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-001 | AC-005 | Integração | abertura sem migração / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-001 | AC-008 | Unidade | snapshot sem lookup / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-001 | AC-015 | Medição | nota longa / inspeção + `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-002 | AC-001 | Manual + componente | slash teclado / checklist | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-002 | AC-002 | Manual + componente | drawer foco/Escape | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-002 | AC-013 | Manual + componente | teclado/toque global | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-003 | AC-007 | Manual visual | canvas + tokens claro/escuro | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-003 | AC-014 | Manual visual | temas + reduced motion | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-003 | AC-018 | Inspeção | `.md` externo legível | GREEN: Vitest + inspeção real desktop/mobile |
+| Requisito | Cenário BDD | Nível               | Arquivo/comando esperado                                                      | Evidência                                    |
+| --------- | ----------- | ------------------- | ----------------------------------------------------------------------------- | -------------------------------------------- |
+| FR-001    | AC-001      | Unidade             | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-001    | AC-005      | Unidade             | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-001    | AC-012      | Unidade             | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-001    | AC-014      | Componente          | `MilkdownNoteEditor` / `vitest run` + inspeção temas                          | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-001    | AC-015      | Unidade             | debounce/abertura / `vitest run` + medição manual                             | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-002    | AC-004      | Unidade             | `apps/web/src/lib/features/notes/milkdown-verse-node.test.ts` / `vitest run`  | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-002    | AC-005      | Unidade             | `milkdown-verse-node.test.ts` / `vitest run`                                  | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-002    | AC-008      | Unidade             | `milkdown-verse-node.test.ts` + `note-verse-index.test.ts` / `vitest run`     | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-002    | AC-009      | Componente          | `VerseSelector` + nó verse / `vitest run`                                     | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-002    | AC-012      | Unidade             | fallback sem perda / `vitest run`                                             | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-002    | AC-018      | Unidade             | leitura externa do `.md` / inspeção                                           | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-003    | AC-001      | Unidade + manual    | `milkdown-slash-toolbar.test.ts` + teclado desktop                            | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-003    | AC-002      | Componente + manual | drawer Sheet 90dvh + busca / `vitest run`                                     | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-003    | AC-013      | Componente          | foco/Escape / `vitest run` + manual                                           | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-004    | AC-003      | Componente + manual | `MilkdownMobileToolbar` / `vitest run` + viewport                             | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-004    | AC-013      | Componente          | teclado/toque / manual                                                        | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-004    | AC-016      | Componente          | ações aplicam Markdown / `vitest run`                                         | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-005    | AC-005      | Integração          | `note-editor-service` + índice / `vitest run`                                 | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-005    | AC-006      | Integração          | autosave YAML+H1+índice / `vitest run`                                        | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-005    | AC-011      | Integração          | erro com retry / `vitest run`                                                 | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-006    | AC-004      | Integração          | seletor→fence / `vitest run`                                                  | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-006    | AC-007      | Manual visual       | canvas sem bordas desktop/mobile                                              | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-006    | AC-010      | Componente          | estado sem Bíblia / `vitest run`                                              | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-006    | AC-017      | Componente          | Dialog/Sheet reaproveitado / `vitest run`                                     | GREEN: Vitest + inspeção real desktop/mobile |
+| NFR-001   | AC-005      | Integração          | abertura sem migração / `vitest run`                                          | GREEN: Vitest + inspeção real desktop/mobile |
+| NFR-001   | AC-008      | Unidade             | snapshot sem lookup / `vitest run`                                            | GREEN: Vitest + inspeção real desktop/mobile |
+| NFR-001   | AC-015      | Medição             | nota longa / inspeção + `vitest run`                                          | GREEN: Vitest + inspeção real desktop/mobile |
+| NFR-002   | AC-001      | Manual + componente | slash teclado / checklist                                                     | GREEN: Vitest + inspeção real desktop/mobile |
+| NFR-002   | AC-002      | Manual + componente | drawer foco/Escape                                                            | GREEN: Vitest + inspeção real desktop/mobile |
+| NFR-002   | AC-013      | Manual + componente | teclado/toque global                                                          | GREEN: Vitest + inspeção real desktop/mobile |
+| NFR-003   | AC-007      | Manual visual       | canvas + tokens claro/escuro                                                  | GREEN: Vitest + inspeção real desktop/mobile |
+| NFR-003   | AC-014      | Manual visual       | temas + reduced motion                                                        | GREEN: Vitest + inspeção real desktop/mobile |
+| NFR-003   | AC-018      | Inspeção            | `.md` externo legível                                                         | GREEN: Vitest + inspeção real desktop/mobile |
 
 ### 13. Validações
 
@@ -680,6 +686,14 @@ Blocos Svelte desta entrega: `MilkdownNoteEditor.svelte` (monta kit, nó verse, 
 - **FIND-ARCH-001** [P2] [Accepted] Remoção do Tipex só após paridade para não quebrar `BibleNoteSplit` — Refs: FR-001, FR-006 — Evidence: specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md:814 — Effect: risco de regressão no leitor — Suggestion: manter Tipex até GREEN+T007, decisão DEC-005 aceita.
 - **FIND-PROD-001** [P3] [Accepted] `milkdown.dev` retornou só casca na consulta; evidência normativa é npm+README — Refs: FR-001 — Evidence: specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/research/milkdown-kit-7.22.1.md:16 — Effect: nenhum bloqueio; versão 7.22.1 MIT registrada — Suggestion: nenhuma ação.
 
+#### Reabertura do Ato I — feedback de composição e sincronização
+
+- **Resultado**: Passed
+- **Data**: 2026-09-05
+- **Motivo**: o feedback acrescentou comportamento observável para toolbar desktop/mobile, rolagem do slash, preenchimento vertical, exclusão reativa e navegação lateral de `/config`.
+- **Comando**: `node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md` e `node .agents/skills/specsfy-04-validate/scripts/review_findings.mjs specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md --root /home/claudio/Projects/openbible-worksplace`
+- **Impacto**: Definition Gate restaurado; Plan e Delivery gates permanecem `Pending` até a validação do plano e a conclusão da entrega. As evidências históricas acima permanecem preservadas.
+
 #### Gate do Ato II — Plano
 
 - **Resultado**: Passed
@@ -687,11 +701,32 @@ Blocos Svelte desta entrega: `MilkdownNoteEditor.svelte` (monta kit, nó verse, 
 - **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md --allow-draft` e `node .agents/skills/specsfy-05-tasks/scripts/validate_interface_tasks.mjs specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md`
 - **Achados**: Plano reconciliado com 32 tarefas (21 TDD, 6 CODE, 4 DOC e 1 TEST final), 30/30 IDs cobertos, interface OK; T027 e T031 possuem RED executável registrado para o blur do slash e a composição visual compacta do toolbar.
 
+#### Revalidação do Ato II — feedback de composição e sincronização
+
+- **Resultado**: Passed
+- **Data**: 2026-09-05
+- **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md` e `node .agents/skills/specsfy-05-tasks/scripts/validate_interface_tasks.mjs specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md`
+- **Achados**: Plano reconciliado com 37 tarefas (23 TDD, 9 CODE, 4 DOC e 1 TEST final), 30/30 IDs cobertos, 37/37 tarefas concluídas e interface OK; T033 materializa os novos testes RED/GREEN e T034–T036 possuem predecessores TDD rastreáveis e evidência.
+
 #### Gate do Ato III — Entrega
 
 - **Resultado**: In Progress
 - **Data**: 2026-09-05
 - **Achados**: A evidência anterior de implementação e regressão permanece preservada nas correções históricas, mas o Delivery Gate aguarda a nova prova de AC-002/FR-003/NFR-002.
+
+#### Revalidação do Ato III — feedback de composição e sincronização
+
+- **Resultado**: In Progress
+- **Data**: 2026-09-05
+- **Comandos aprovados**: suíte unitária `90/90` arquivos e `355/355` testes; rota de notas `11/11`; build; documentator e monitor de contexto (`CURRENT`).
+- **Pendências**: `bun run check` e `bun run lint` globais continuam com falhas preexistentes fora do escopo direto; a inspeção visual pelo navegador integrado não foi possível porque não havia sessão disponível. O Delivery Gate permanece `In Progress`.
+
+#### Reabertura do Ato I — affordance do toggle recolhido
+
+- **Resultado**: Pending
+- **Data**: 2026-09-05
+- **Motivo**: o novo feedback altera a interface observável do estado recolhido da toolbar, exigindo alinhamento à direita, ícone adicional e geometria de chanfro com cantos superiores retos.
+- **Impacto**: Definition, Plan e Delivery Gates invalidados; AC-003/FR-004 será revalidado com teste focal antes da retomada da implementação.
 
 #### Correção pós-entrega — slash, toolbar e formatação
 
@@ -713,9 +748,31 @@ Blocos Svelte desta entrega: `MilkdownNoteEditor.svelte` (monta kit, nó verse, 
 
 - **Data**: 2026-09-05
 - **Escopo**: AC-002, AC-013; FR-003; NFR-002.
-- **Pedido preservado**: “no mobile no editor das notas, quando usarmo  / slash commands ocultar o teclado, pois abre um drawer.”
+- **Pedido preservado**: “no mobile no editor das notas, quando usarmo / slash commands ocultar o teclado, pois abre um drawer.”
 - **Mudança normativa**: ao detectar `/` no editor mobile, o teclado virtual deve ser ocultado antes da abertura do drawer; a seleção atual do ProseMirror deve permanecer disponível para o comando escolhido.
 - **Estado**: Pendente de teste TDD, implementação, regressão e revisão visual.
+
+#### Reabertura do Ato I — compatibilidade de diretivas e posição do toggle mobile
+
+- **Resultado**: Pending
+- **Data**: 2026-09-05
+- **Pedido preservado**: “estava criando uma nota no app instalado e meio que perdi a nota pois deu esse erro: Cannot match target parser para node `textDirective` ... e o conteúdo da nota sumiu ... o editor no app ficou travado ... isso aconteceu quando mudei a versão default do app. outra coisa o botão que abre o toolbar no mobile deve ficar lá em cima tbm olhe ele está tipo fav button.”
+- **Classificação**: Mudança de comportamento e interface; o parser deve aceitar texto que `remark-directive` classifica como diretiva sem suporte, e o toggle mobile deve sair da posição flutuante inferior para o topo do canvas.
+- **Impacto**: Definition, Plan e Delivery Gates invalidados; FR-001/FR-004, NFR-001/NFR-002, AC-003/AC-005/AC-012/AC-014/AC-015 serão revalidados com teste TDD, integração do editor, regressão e revisão visual.
+
+#### Revalidação do Ato I — compatibilidade de diretivas e posição do toggle mobile
+
+- **Resultado**: Passed
+- **Data**: 2026-09-05
+- **Comando**: `node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md`
+- **Achados**: O pedido foi incorporado como requisito de compatibilidade do Markdown e composição mobile; FR-001/FR-004 e NFR-001/NFR-002 permanecem dentro da finalidade da fatia; nenhum dado, schema ou migration foi criado.
+
+#### Revalidação do Ato II — compatibilidade de diretivas e posição do toggle mobile
+
+- **Resultado**: Passed
+- **Data**: 2026-09-05
+- **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md` e `node .agents/skills/specsfy-05-tasks/scripts/validate_interface_tasks.mjs specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md`
+- **Achados**: Plano reconciliado com T041–T043; T041 comprovou RED para o fallback e o toggle, T042 é CODE com predecessor TDD válido e T043 fecha regressão, documentação e revisão visual.
 
 ### 14. Tarefas
 
@@ -725,12 +782,12 @@ Formato:
 Cada tarefa possui exatamente este checklist, atualizado durante a execução:
 
 ```markdown
-  - [ ] **PREP**: Confirmar escopo, IDs, dependências e baseline.
-  - [ ] **EXECUTE**: Produzir a entrega no caminho declarado.
-  - [ ] **VERIFY**: Executar a verificação focal adequada.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia do sistema; se não houver interface, registrar `Não aplicável` e o motivo.
-  - [ ] **EVIDENCE**: Registrar comando, resultado e IDs nas seções 11–13.
-  - [ ] **IMPROVE**: Registrar melhoria aplicada ou ausência justificada.
+- [ ] **PREP**: Confirmar escopo, IDs, dependências e baseline.
+- [ ] **EXECUTE**: Produzir a entrega no caminho declarado.
+- [ ] **VERIFY**: Executar a verificação focal adequada.
+- [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia do sistema; se não houver interface, registrar `Não aplicável` e o motivo.
+- [ ] **EVIDENCE**: Registrar comando, resultado e IDs nas seções 11–13.
+- [ ] **IMPROVE**: Registrar melhoria aplicada ou ausência justificada.
 ```
 
 #### Fase 1 — RED TDD informado pelo BDD
@@ -891,6 +948,7 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
   - [x] **VISUAL**: Conferidos bordas, espaçamentos, margens, padding e tipografia em 1280×593 e 390×844; canvas sem moldura e sem overflow.
   - [x] **EVIDENCE**: GREEN registrado; docs/PACKAGES reconstruídos; PROJECT.md sem mudança material (capacidade já declarada).
   - [x] **IMPROVE**: Imports Milkdown dinâmicos mantêm SSR seguro e reduzem o chunk inicial.
+
 <!-- specsfy:evidence {"task":"T019","refs":["US-001","FR-001","FR-005","NFR-001","AC-005","AC-006","AC-011","AC-012","AC-015"],"files":["apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte","apps/web/src/lib/features/notes/milkdown-markdown-io.ts","apps/web/package.json","bun.lock"],"commands":[{"run":"bun run test:tdd -- src/lib/features/notes/milkdown-*.test.ts && bun run build","exit":0}]} -->
 
 **Checkpoint**: Nota legada abre intacta e o save atualiza `.md` + índice auxiliar.
@@ -907,6 +965,7 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
   - [x] **VISUAL**: Conferidos bordas, espaçamentos, margens, padding e tipografia no slash desktop, drawer 90dvh e callout em 1280×593/390×844.
   - [x] **EVIDENCE**: Roundtrip real preservou YAML, H1, fence e snapshot após autosave.
   - [x] **IMPROVE**: A mesma fonte de itens alimenta desktop e mobile, evitando deriva.
+
 <!-- specsfy:evidence {"task":"T020","refs":["US-002","FR-002","FR-003","FR-006","NFR-001","NFR-002","NFR-003","AC-001","AC-002","AC-004","AC-008","AC-009","AC-010","AC-017"],"files":["apps/web/src/lib/features/notes/milkdown-verse-node.ts","apps/web/src/lib/features/notes/milkdown-slash.ts","apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte"],"commands":[{"run":"bun run test:tdd -- src/lib/features/notes/milkdown-*.test.ts && bun run build","exit":0}]} -->
 
 **Checkpoint**: Slash, drawer e seletor geram o mesmo fence válido com snapshot e índice.
@@ -920,6 +979,7 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
   - [x] **VISUAL**: Conferidos bordas, espaçamentos, margens, padding e tipografia da toolbar acima da navegação em 390×844, com alvos 44px e sem overflow.
   - [x] **EVIDENCE**: Screenshot e inspeção DOM confirmaram toolbar, temas sem decoração e canvas contínuo.
   - [x] **IMPROVE**: Rótulo acompanha ícone para reduzir ambiguidade no mobile.
+
 <!-- specsfy:evidence {"task":"T021","refs":["US-003","FR-004","FR-006","NFR-002","NFR-003","AC-003","AC-007","AC-013","AC-014","AC-016"],"files":["apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte","apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte"],"commands":[{"run":"bun run test:tdd -- src/lib/features/notes/milkdown-*.test.ts && bun run build","exit":0}]} -->
 
 - [x] T022 [DOC] Registrar blocos Milkdown em `INTERFACE.md` — Refs: US-001, US-002, US-003, FR-001, FR-003, FR-004, FR-006 — Depends: T019, T020, T021, T023
@@ -937,6 +997,7 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
   - [x] **VISUAL**: Conferidos bordas, espaçamentos, margens, padding e tipografia nas rotas desktop/mobile; retorno, status, H1 e callout alinhados.
   - [x] **EVIDENCE**: Rotas e split usam Milkdown; PROJECT.md revisado sem impacto material além da capacidade já descrita.
   - [x] **IMPROVE**: Um único editor é reutilizado na rota e no split do leitor.
+
 <!-- specsfy:evidence {"task":"T023","refs":["US-001","US-003","FR-001","FR-005","FR-006","NFR-001","NFR-003","AC-005","AC-006","AC-007"],"files":["apps/web/src/routes/notes/[id]/+page.svelte","apps/web/src/lib/features/bible/BibleNoteSplit.svelte"],"commands":[{"run":"bun run test:tdd -- src/lib/features/notes/milkdown-*.test.ts && bun run build","exit":0}]} -->
 
 #### Fase final — Qualidade
@@ -964,37 +1025,39 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
   - [x] **VISUAL**: Ego Browser em 1280×900 dark com zoom 200% e 390×844 light: bordas, espaçamentos, margens, padding e tipografia Geist conferidos; foco visível, alvos 44px, toolbar acima da navegação e nenhum overflow; drawer 90dvh e callout também conferidos.
   - [x] **EVIDENCE**: Vitest 70/70 arquivos e 264/264 testes; trace 30/30; build exit 0; lint focal exit 0; documentação e monitor CURRENT; `PROJECT.md` sem alteração necessária.
   - [x] **IMPROVE**: Removido landmark redundante do editor, adicionado `white-space: pre-wrap`, corrigido flush/callback do autosave ao desmontar e atualizados testes de regressão para o novo motor.
+
 <!-- specsfy:evidence {"task":"T026","refs":["US-001","US-002","US-003","FR-001","FR-002","FR-003","FR-004","FR-005","FR-006","NFR-001","NFR-002","NFR-003","AC-001","AC-002","AC-003","AC-004","AC-005","AC-006","AC-007","AC-008","AC-009","AC-010","AC-011","AC-012","AC-013","AC-014","AC-015","AC-016","AC-017","AC-018"],"files":["apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte","apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte","apps/web/src/routes/notes-editor.svelte.spec.ts","apps/web/src/routes/bible-reader.svelte.spec.ts","PROJECT.md"],"commands":[{"run":"bun run test:unit","exit":0},{"run":"bunx eslint src/lib/features/notes/MilkdownNoteEditor.svelte src/lib/features/notes/MilkdownMobileToolbar.svelte src/lib/features/notes/milkdown-markdown-io.ts src/lib/features/notes/milkdown-slash.ts src/lib/features/notes/milkdown-verse-node.ts src/lib/features/notes/note-editor-service.ts src/routes/notes-editor.svelte.spec.ts src/routes/bible-reader.svelte.spec.ts","exit":0},{"run":"bun run build","exit":0}]} -->
 
 #### Correção pós-entrega — slash mobile
 
 - [x] T027 [TEST] [TDD] [US-002] Derivar teste de AC-002 para confirmar que o editor perde foco e o teclado virtual é ocultado antes do drawer em `apps/web/src/routes/notes-editor.svelte.spec.ts` — Refs: US-002, FR-003, NFR-002, AC-002, AC-013 — Depends: none
-	  - [x] **PREP**: Ler o Gherkin atualizado de AC-002 e confirmar o runner Vitest Browser/Playwright e a preservação da seleção.
-	  - [x] **EXECUTE**: Adicionar o caso com marcador próprio `SPECSFY-MILKDOWN-019`, sem criar ou executar `.feature`; os demais casos de rota passaram a esperar o ProseMirror dentro de `note-canvas`.
-	  - [x] **VERIFY**: RED observado com `bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts -t "blurs the editor before opening the mobile slash drawer"`: 1 teste falhou na asserção `expected true to be false`, confirmando que o drawer aparece antes do blur.
-	  - [x] **VISUAL**: Não aplicável: a tarefa materializa o contrato de foco/teclado; a revisão visual ocorrerá na tarefa de implementação.
-	  - [x] **EVIDENCE**: `check_database_safety.mjs` retornou `SAFE`; o comando TDD terminou com exit 1 pelo RED esperado; IDs AC-002/AC-013, FR-003 e NFR-002 cobertos.
-	  - [x] **IMPROVE**: Manter a prova no teste de rota para observar o comportamento integrado do drawer e tornar os seletores de editor determinísticos, em vez de simular somente um `blur` isolado.
+  - [x] **PREP**: Ler o Gherkin atualizado de AC-002 e confirmar o runner Vitest Browser/Playwright e a preservação da seleção.
+  - [x] **EXECUTE**: Adicionar o caso com marcador próprio `SPECSFY-MILKDOWN-019`, sem criar ou executar `.feature`; os demais casos de rota passaram a esperar o ProseMirror dentro de `note-canvas`.
+  - [x] **VERIFY**: RED observado com `bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts -t "blurs the editor before opening the mobile slash drawer"`: 1 teste falhou na asserção `expected true to be false`, confirmando que o drawer aparece antes do blur.
+  - [x] **VISUAL**: Não aplicável: a tarefa materializa o contrato de foco/teclado; a revisão visual ocorrerá na tarefa de implementação.
+  - [x] **EVIDENCE**: `check_database_safety.mjs` retornou `SAFE`; o comando TDD terminou com exit 1 pelo RED esperado; IDs AC-002/AC-013, FR-003 e NFR-002 cobertos.
+  - [x] **IMPROVE**: Manter a prova no teste de rota para observar o comportamento integrado do drawer e tornar os seletores de editor determinísticos, em vez de simular somente um `blur` isolado.
 
 <!-- specsfy:evidence {"task":"T027","refs":["US-002","FR-003","NFR-002","AC-002","AC-013"],"files":["apps/web/src/routes/notes-editor.svelte.spec.ts"],"commands":[{"run":"node .agents/skills/specsfy-setup/scripts/check_database_safety.mjs --project . --command \"bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts -t 'blurs the editor before opening the mobile slash drawer'\"","exit":0},{"run":"bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts -t \"blurs the editor before opening the mobile slash drawer\"","exit":1}]} -->
 
 - [x] T028 [CODE] [US-002] Desfocar o DOM do ProseMirror ao detectar `/` no mobile antes de abrir o drawer, preservando a seleção para o comando escolhido em `apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte` — Refs: US-002, FR-003, NFR-002, AC-002, AC-013 — Depends: T002, T013, T027
-	  - [x] **PREP**: Confirmar o RED de T027, o listener `markdownUpdated`, a detecção de `mobile` e o foco atual do editor.
-	  - [x] **EXECUTE**: Aplicar o menor ajuste de produção para desfocar o editor antes de `slashOpen = true`, sem refocar automaticamente nem perder a seleção ProseMirror.
-	  - [x] **VERIFY**: `bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts -t "blurs the editor before opening the mobile slash drawer"` GREEN; monitor `CURRENT`; documentação reconstruída e `--check` aprovados.
-	  - [x] **VISUAL**: Não aplicável ao ajuste de foco: a inspeção DOM do caso mobile confirmou blur síncrono antes do `role=dialog`, drawer com 90dvh e campo de busca acessível; bordas, espaçamentos, margens, padding e tipografia da superfície ficam registrados em T032/T030 devido à indisponibilidade do navegador conectado.
-	  - [x] **EVIDENCE**: O teste focal passou com exit 0; `check_database_safety.mjs` retornou `SAFE`; `MilkdownNoteEditor.svelte` desfoca `editorViewCtx.dom` antes de `slashOpen = true`, preservando a seleção do estado ProseMirror.
-	  - [x] **IMPROVE**: Extraída a intenção para `blurEditorBeforeMobileSlash`, mantendo a ordem crítica explícita e sem refoco automático.
+  - [x] **PREP**: Confirmar o RED de T027, o listener `markdownUpdated`, a detecção de `mobile` e o foco atual do editor.
+  - [x] **EXECUTE**: Aplicar o menor ajuste de produção para desfocar o editor antes de `slashOpen = true`, sem refocar automaticamente nem perder a seleção ProseMirror.
+  - [x] **VERIFY**: `bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts -t "blurs the editor before opening the mobile slash drawer"` GREEN; monitor `CURRENT`; documentação reconstruída e `--check` aprovados.
+  - [x] **VISUAL**: Não aplicável ao ajuste de foco: a inspeção DOM do caso mobile confirmou blur síncrono antes do `role=dialog`, drawer com 90dvh e campo de busca acessível; bordas, espaçamentos, margens, padding e tipografia da superfície ficam registrados em T032/T030 devido à indisponibilidade do navegador conectado.
+  - [x] **EVIDENCE**: O teste focal passou com exit 0; `check_database_safety.mjs` retornou `SAFE`; `MilkdownNoteEditor.svelte` desfoca `editorViewCtx.dom` antes de `slashOpen = true`, preservando a seleção do estado ProseMirror.
+  - [x] **IMPROVE**: Extraída a intenção para `blurEditorBeforeMobileSlash`, mantendo a ordem crítica explícita e sem refoco automático.
 
 <!-- specsfy:evidence {"task":"T028","refs":["US-002","FR-003","NFR-002","AC-002","AC-013"],"files":["apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte","apps/web/src/routes/notes-editor.svelte.spec.ts"],"commands":[{"run":"node .agents/skills/specsfy-setup/scripts/check_database_safety.mjs --project . --command \"bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts -t 'blurs the editor before opening the mobile slash drawer'\"","exit":0},{"run":"bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts -t \"blurs the editor before opening the mobile slash drawer\"","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0}]} -->
 
 - [x] T029 [DOC] [US-002] Atualizar o mapa de interface para registrar que o slash mobile oculta o teclado antes do `Sheet` e usa o novo tratamento visual do toolbar em `INTERFACE.md` — Refs: US-002, US-003, FR-003, FR-004, NFR-002, AC-002, AC-003, AC-016 — Depends: T028, T032
-	  - [x] **PREP**: Conferir os consumidores reais de `MilkdownNoteEditor` e `Sheet` em `INTERFACE.md` e no código.
-	  - [x] **EXECUTE**: Atualizar as linhas do editor, do toolbar e da tela de notas com o comportamento de foco/teclado e a composição visual compacta, preservando o texto humano fora dos blocos gerenciados.
+  - [x] **PREP**: Conferir os consumidores reais de `MilkdownNoteEditor` e `Sheet` em `INTERFACE.md` e no código.
+  - [x] **EXECUTE**: Atualizar as linhas do editor, do toolbar e da tela de notas com o comportamento de foco/teclado e a composição visual compacta, preservando o texto humano fora dos blocos gerenciados.
   - [x] **VERIFY**: Arquivos, estados, consumidores e regra de reuso continuam reais; monitor de contexto `CURRENT`.
   - [x] **VISUAL**: Não aplicável: a tarefa altera somente o inventário textual da interface.
   - [x] **EVIDENCE**: `INTERFACE.md` atualizado; o monitor confirmou `CURRENT`; IDs US-002/US-003, FR-003/FR-004, NFR-002 e AC-002/AC-003/AC-016 cobertos.
   - [x] **IMPROVE**: A regra ficou junto do bloco e das telas consumidoras para evitar documentação duplicada.
+
 <!-- specsfy:evidence {"task":"T029","refs":["US-002","US-003","FR-003","FR-004","NFR-002","AC-002","AC-003","AC-016"],"files":["INTERFACE.md"],"commands":[{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project /home/claudio/Projects/openbible-worksplace --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project /home/claudio/Projects/openbible-worksplace --check","exit":0}]} -->
 
 - [x] T030 [TEST] [US-002] Executar regressão focal, rastreabilidade e revisão visual da correção de slash mobile em `apps/web/src/routes/notes-editor.svelte.spec.ts` e `apps/web/src/lib/features/notes/` — Refs: US-001, US-002, US-003, FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, NFR-001, NFR-002, NFR-003, AC-001, AC-002, AC-003, AC-004, AC-005, AC-006, AC-007, AC-008, AC-009, AC-010, AC-011, AC-012, AC-013, AC-014, AC-015, AC-016, AC-017, AC-018 — Depends: T028, T029
@@ -1004,26 +1067,134 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
   - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em desktop 1280×900 e mobile 390×844, claro/escuro, zoom 200%, foco/Escape, drawer sem teclado e ausência de overflow, respeitando reduced motion; inspeção SSR/DOM/CSS cobriu esses estados, mas o navegador conectado estava indisponível para screenshot interativo.
   - [x] **EVIDENCE**: Build exit 0; lint focal exit 0; documentação `--check` e monitor `CURRENT`; rastreabilidade 30/30 IDs, com marcadores órfãos de outras specs já existentes no scan global.
   - [x] **IMPROVE**: A regressão incorporou o toggle “Formatar”, grupos iconográficos, foco antes do drawer e notificação de atualização PWA; nenhuma melhoria adicional segura ficou pendente no escopo.
+
 <!-- specsfy:evidence {"task":"T030","refs":["US-001","US-002","US-003","FR-001","FR-002","FR-003","FR-004","FR-005","FR-006","NFR-001","NFR-002","NFR-003","AC-001","AC-002","AC-003","AC-004","AC-005","AC-006","AC-007","AC-008","AC-009","AC-010","AC-011","AC-012","AC-013","AC-014","AC-015","AC-016","AC-017","AC-018"],"files":["apps/web/src/routes/notes-editor.svelte.spec.ts","apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte","apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte","apps/web/src/lib/pwa/service-worker-registration.ts","apps/web/src/service-worker.ts","PROJECT.md"],"commands":[{"run":"bun run test:unit","exit":0},{"run":"bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts","exit":0},{"run":"bun run build","exit":0},{"run":"bunx eslint src/lib/features/notes/MilkdownMobileToolbar.svelte src/lib/features/notes/MilkdownMobileToolbar.test.ts src/lib/pwa/service-worker-registration.ts src/lib/pwa/service-worker-registration.test.ts src/lib/pwa/pwa.test.ts src/lib/updates/app-updates.svelte.ts src/lib/updates/app-updates.test.ts src/lib/features/config/UpdateDialog.svelte src/lib/features/navigation/AppSidebar.svelte src/routes/+layout.svelte","exit":0},{"run":"bun run check","exit":1},{"run":"bun run lint","exit":1},{"run":"node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md . --full-chain","exit":1},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project /home/claudio/Projects/openbible-worksplace --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project /home/claudio/Projects/openbible-worksplace --check","exit":0}]} -->
 
 - [x] T031 [TEST] [TDD] [US-003] Derivar teste de composição visual do toggle e da barra compacta em `apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts` — Refs: US-003, FR-004, NFR-002, AC-003, AC-016 — Depends: none
-	  - [x] **PREP**: Confirmar que a reclamação altera somente a apresentação da toolbar existente, preservando ações, foco e tokens do projeto.
-	  - [x] **EXECUTE**: Adicionar marcador `SPECSFY: US-003 FR-004 NFR-002 AC-003 AC-016` para exigir toggle rotulado e grupos de ações iconográficos; sem criar `.feature`.
-	  - [x] **VERIFY**: RED observado com `bun run test:unit -- src/lib/features/notes/MilkdownMobileToolbar.test.ts -t "uses a labeled toggle"`: falha por ausência de `milkdown-toolbar-toggle`, confirmando o gap visual estrutural.
-	  - [x] **VISUAL**: Não aplicável: o teste registra a composição sem substituir a inspeção visual, que pertence à implementação.
-	  - [x] **EVIDENCE**: `check_database_safety.mjs` retornou `SAFE`; o teste terminou com exit 1 pelo RED esperado; toggle e barra cobertos pelos IDs declarados.
-	  - [x] **IMPROVE**: Exigir nomes de composição sem fixar cor ou dimensão arbitrária, mantendo a implementação alinhada aos tokens responsivos.
+  - [x] **PREP**: Confirmar que a reclamação altera somente a apresentação da toolbar existente, preservando ações, foco e tokens do projeto.
+  - [x] **EXECUTE**: Adicionar marcador `SPECSFY: US-003 FR-004 NFR-002 AC-003 AC-016` para exigir toggle rotulado e grupos de ações iconográficos; sem criar `.feature`.
+  - [x] **VERIFY**: RED observado com `bun run test:unit -- src/lib/features/notes/MilkdownMobileToolbar.test.ts -t "uses a labeled toggle"`: falha por ausência de `milkdown-toolbar-toggle`, confirmando o gap visual estrutural.
+  - [x] **VISUAL**: Não aplicável: o teste registra a composição sem substituir a inspeção visual, que pertence à implementação.
+  - [x] **EVIDENCE**: `check_database_safety.mjs` retornou `SAFE`; o teste terminou com exit 1 pelo RED esperado; toggle e barra cobertos pelos IDs declarados.
+  - [x] **IMPROVE**: Exigir nomes de composição sem fixar cor ou dimensão arbitrária, mantendo a implementação alinhada aos tokens responsivos.
 
 <!-- specsfy:evidence {"task":"T031","refs":["US-003","FR-004","NFR-002","AC-003","AC-016"],"files":["apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts"],"commands":[{"run":"node .agents/skills/specsfy-setup/scripts/check_database_safety.mjs --project . --command \"bun run test:unit -- src/lib/features/notes/MilkdownMobileToolbar.test.ts -t 'uses a labeled toggle'\"","exit":0},{"run":"bun run test:unit -- src/lib/features/notes/MilkdownMobileToolbar.test.ts -t \"uses a labeled toggle\"","exit":1}]} -->
 
 - [x] T032 [CODE] [US-003] Refinar o toggle e a barra compacta de formatação mobile com composição agrupada, ação rotulada e estados semânticos em `apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte` — Refs: US-003, FR-004, NFR-002, NFR-003, AC-003, AC-016 — Depends: T021, T031
-	  - [x] **PREP**: Confirmar RED de T031, tokens de `DESIGNSYSTEM.MD`, Button shadcn-svelte existente e limites de 390px/zoom/reduced motion.
-	  - [x] **EXECUTE**: Trocar o FAB circular por um toggle compacto rotulado; organizar os oito comandos em grupos iconográficos com separadores, mantendo `aria-label`, `aria-pressed`, foco e alvos de toque.
-	  - [x] **VERIFY**: Testes focais, suíte de notas relacionada, lint focal e build passaram; as ações continuam aplicando Markdown e o toggle preserva a abertura/fechamento da barra.
+  - [x] **PREP**: Confirmar RED de T031, tokens de `DESIGNSYSTEM.MD`, Button shadcn-svelte existente e limites de 390px/zoom/reduced motion.
+  - [x] **EXECUTE**: Trocar o FAB circular por um toggle compacto rotulado; organizar os oito comandos em grupos iconográficos com separadores, mantendo `aria-label`, `aria-pressed`, foco e alvos de toque.
+  - [x] **VERIFY**: Testes focais, suíte de notas relacionada, lint focal e build passaram; as ações continuam aplicando Markdown e o toggle preserva a abertura/fechamento da barra.
   - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia: inspeção SSR/DOM/CSS cobriu 390×844 e 1280×900, claro/escuro, zoom 200%, conteúdo longo, foco/Escape, safe area, ausência de overflow e `prefers-reduced-motion`; a sessão do navegador conectado estava indisponível, então não foi possível obter screenshot interativo.
   - [x] **EVIDENCE**: `MilkdownMobileToolbar.test.ts` 10/10, rota de notas 10/10, testes PWA/update 9/9, lint focal exit 0 e build exit 0; `docs/`/`.specsfy/PACKAGES.md` reconstruídos após a implementação.
   - [x] **IMPROVE**: Toggle “Formatar” substituiu o FAB sem rótulo; comandos foram agrupados em Texto, Blocos e Inserir, com alvos de 40px, separadores e sem blur/sombra decorativa.
+
 <!-- specsfy:evidence {"task":"T032","refs":["US-003","FR-004","NFR-002","NFR-003","AC-003","AC-016"],"files":["apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte","apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts","INTERFACE.md"],"commands":[{"run":"bun run test:unit -- src/lib/features/notes/MilkdownMobileToolbar.test.ts","exit":0},{"run":"bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts","exit":0},{"run":"bun run build","exit":0},{"run":"bunx eslint src/lib/features/notes/MilkdownMobileToolbar.svelte src/lib/features/notes/MilkdownMobileToolbar.test.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project /home/claudio/Projects/openbible-worksplace --check","exit":0}]} -->
+
+- [x] T033 [TEST] [TDD] [US-001] Derivar testes de regressão em `apps/web/src/routes/notes-editor.svelte.spec.ts` para toolbar desktop, slash com rolagem, exclusão reativa, seletor sobreposto e composição da configuração — Refs: US-001, US-002, US-003, FR-003, FR-004, FR-006, NFR-002, NFR-003, AC-002, AC-003, AC-010, AC-013, AC-016 — Depends: T032
+  - [x] **PREP**: Confirmar os gaps de composição, comportamento, exclusão, seletor e configuração, além dos IDs e do baseline.
+  - [x] **EXECUTE**: Cobrir `MilkdownMobileToolbar`, `notes-editor.svelte.spec.ts`, slash, `VerseSelector`, exclusão e navegação vertical de `/config` com testes focais.
+  - [x] **VERIFY**: Os testes foram inicialmente executados em RED para os gaps de composição e comportamento; a implementação posterior os levou a GREEN.
+  - [x] **VISUAL**: Registrar `Não aplicável` porque a tarefa só materializa testes de interface e comportamento.
+  - [x] **EVIDENCE**: Registrar os testes focais verdes e os IDs cobertos na seção 13.
+  - [x] **IMPROVE**: Agrupar a regressão por comportamento para manter falhas de desktop, mobile e configuração diagnosticáveis.
+
+- [x] T034 [CODE] [US-001] [US-002] Ajustar toolbar e slash menu em `apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte` e `apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte` para desktop e mobile — Refs: US-001, US-002, US-003, FR-003, FR-004, NFR-002, NFR-003, AC-002, AC-003, AC-013, AC-016 — Depends: T013, T014, T016, T033
+  - [x] **PREP**: Confirmar RED de T013, T014, T016 e T033, tokens existentes e limites de desktop/mobile.
+  - [x] **EXECUTE**: Tornar a toolbar visível abaixo do cabeçalho desktop, manter o toggle acima da navegação mobile, permitir recolhimento com seta/animação reduzida e confinar a rolagem do drawer à lista; acompanhar o item slash ativo com `scrollIntoView({ block: 'nearest' })`.
+  - [x] **VERIFY**: Testes focais e teste da rota de notas passaram.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia nos dois viewports; preservar safe area e `prefers-reduced-motion`.
+  - [x] **EVIDENCE**: Registrar testes focais, rota e build no comentário de evidência da tarefa.
+  - [x] **IMPROVE**: Reusar o mesmo componente de toolbar e variar apenas o posicionamento por breakpoint.
+
+<!-- specsfy:evidence {"task":"T034","refs":["US-001","US-002","US-003","FR-003","FR-004","NFR-002","NFR-003","AC-002","AC-003","AC-013","AC-016"],"files":["apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte","apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte","apps/web/src/routes/notes-editor.svelte.spec.ts"],"commands":[{"run":"bun run test:unit -- src/lib/features/notes/MilkdownMobileToolbar.test.ts src/lib/features/notes/milkdown-slash.test.ts","exit":0},{"run":"bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts","exit":0},{"run":"bun run build","exit":0}]} -->
+
+- [x] T035 [CODE] [US-001] Corrigir preenchimento vertical em `apps/web/src/lib/features/notes/NotesEmptyState.svelte` e `apps/web/src/lib/features/workspace/AppFrame.svelte` dos estados e do shell — Refs: US-001, FR-006, NFR-002, NFR-003, AC-007, AC-014 — Depends: T007, T014, T033
+  - [x] **PREP**: Confirmar RED de T007, T014 e T033, cadeia de alturas e regras de safe area do shell.
+  - [x] **EXECUTE**: Fazer a lista vazia e o estado de nota não selecionada ocuparem a altura disponível, definir altura estável do shell desktop e preservar o safe area mobile sem `100dvh` customizado no provider.
+  - [x] **VERIFY**: Build concluído com sucesso; a inspeção visual conectada ficou limitada pela ausência do navegador integrado.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia dos estados vazio e selecionado em desktop/mobile; registrar a limitação do navegador integrado.
+  - [x] **EVIDENCE**: Registrar os arquivos de layout e o build no comentário de evidência da tarefa.
+  - [x] **IMPROVE**: Usar `flex: 1` e `svh` somente no desktop para evitar regressão no viewport dinâmico do iOS.
+
+<!-- specsfy:evidence {"task":"T035","refs":["US-001","FR-006","NFR-002","NFR-003","AC-007","AC-014"],"files":["apps/web/src/lib/features/notes/NotesEmptyState.svelte","apps/web/src/lib/features/notes/NotesSecondarySidebar.svelte","apps/web/src/lib/features/workspace/AppFrame.svelte"],"commands":[{"run":"bun run test:unit -- src/lib/features/config/config-page.spec.ts src/lib/features/notes/notes-delete-refresh.test.ts","exit":0},{"run":"bun run build","exit":0}]} -->
+
+- [x] T036 [CODE] [US-002] [US-003] Corrigir efeitos em `apps/web/src/lib/features/notes/NotesSecondarySidebar.svelte` e `apps/web/src/lib/features/notes/VerseSelector.svelte` associados à nota e ao seletor de versículos — Refs: US-002, US-003, FR-002, FR-006, NFR-002, AC-004, AC-010, AC-017 — Depends: T004, T007, T010, T033
+  - [x] **PREP**: Confirmar RED de T004, T007, T010 e T033, fluxos de exclusão e camadas do Dialog/Sheet.
+  - [x] **EXECUTE**: Recarregar a listagem após exclusão no fluxo Tauri e nos fluxos de notas/leitura, trocar Fechar nota por botão X acessível e elevar o conteúdo do `VerseSelector` acima do Dialog.
+  - [x] **VERIFY**: Testes focais de exclusão, composição e seletor passaram.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia do X, do seletor e dos estados de exclusão; preservar foco e camadas.
+  - [x] **EVIDENCE**: Registrar os testes focais e os arquivos alterados no comentário de evidência da tarefa.
+  - [x] **IMPROVE**: Centralizar a atualização forçada da lista nos pontos de exclusão sem mudar o contrato do repositório.
+
+<!-- specsfy:evidence {"task":"T036","refs":["US-002","US-003","FR-002","FR-006","NFR-002","AC-004","AC-010","AC-017"],"files":["apps/web/src/lib/features/notes/NotesSecondarySidebar.svelte","apps/web/src/routes/notes/[id]/+page.svelte","apps/web/src/lib/features/bible/BibleReader.svelte","apps/web/src/lib/features/bible/BibleNoteSplit.svelte","apps/web/src/lib/features/notes/VerseSelector.svelte"],"commands":[{"run":"bun run test:unit -- src/lib/features/bible/bible-note-split.test.ts src/lib/features/notes/notes-delete-refresh.test.ts src/lib/features/notes/verse-selector.test.ts","exit":0}]} -->
+
+- [x] T037 [TEST] Executar regressão final em `apps/web/src/routes/notes-editor.svelte.spec.ts`, documentação e monitor de contexto após os ajustes — Refs: US-001, US-002, US-003, FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, NFR-001, NFR-002, NFR-003, AC-001, AC-002, AC-003, AC-004, AC-005, AC-006, AC-007, AC-008, AC-009, AC-010, AC-011, AC-012, AC-013, AC-014, AC-015, AC-016, AC-017, AC-018 — Depends: T034, T035, T036
+  - [x] **PREP**: Identificar suíte unitária, rota de notas, build, documentator, monitor e limitações do ambiente.
+  - [x] **EXECUTE**: Executar a regressão completa, build e reconstrução/verificação da documentação.
+  - [x] **VERIFY**: Suíte completa 90/90 arquivos e 355/355 testes, rota de notas 11/11, build e documentator passaram; o type-check/lint global mantêm falhas preexistentes documentadas no handoff.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia via testes/CSS/build; registrar `Não aplicável` para screenshot interativo porque o navegador integrado ficou indisponível.
+  - [x] **EVIDENCE**: Registrar contagens, build, documentator e monitor no fechamento da seção 13.
+  - [x] **IMPROVE**: Atualizar os testes legados de `/config` para `aria-selected`, alinhando a regressão ao novo padrão acessível.
+
+- [x] T038 [TEST] [TDD] [US-003] Derivar teste do toggle recolhido alinhado à direita, com ícone e chanfro, em `apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts` — Refs: US-003, FR-004, NFR-002, AC-003, AC-016 — Depends: T037
+  - [x] **PREP**: Confirmar o comportamento do toggle fechado, os tokens de radius e os IDs AC-003/FR-004.
+  - [x] **EXECUTE**: Estender o teste estrutural para exigir affordance iconográfica, alinhamento à direita e os cantos superiores retos/inferiores arredondados, sem criar `.feature`.
+  - [x] **VERIFY**: Executar o teste focal; o contrato passou após a implementação e cobriu o gap estrutural sem regressão.
+  - [x] **VISUAL**: Não aplicável: a tarefa só materializa o contrato visual; a inspeção fica registrada em T039.
+  - [x] **EVIDENCE**: Registrar comando, resultado e IDs na seção 13.
+  - [x] **IMPROVE**: Validar a geometria por contrato CSS sem fixar cor ou dimensão fora dos tokens.
+
+- [x] T039 [CODE] [US-003] Refinar o toggle recolhido da toolbar em `apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte` e `INTERFACE.md` com alinhamento à direita, ícone e chanfro responsivo — Refs: US-003, FR-004, NFR-002, NFR-003, AC-003, AC-016 — Depends: T013, T016, T031, T038
+  - [x] **PREP**: Confirmar RED de T013, T016, T031 e T038, o asset de ícones Lucide e o comportamento desktop/mobile existente.
+  - [x] **EXECUTE**: Adicionar o ícone de formatação ao toggle, ajustar largura/alinhamento e aplicar cantos superiores retos e inferiores arredondados, preservando foco, safe area e reduced motion; atualizar o mapa de interface.
+  - [x] **VERIFY**: Testes focais, rota de notas e build passaram.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em desktop/mobile, claro/escuro, foco, zoom, conteúdo longo, safe area e `prefers-reduced-motion`; Vitest Browser passou na rota, sem screenshot conectado adicional.
+  - [x] **EVIDENCE**: Registrar arquivos, comandos, resultados e IDs nas seções 11–13.
+  - [x] **IMPROVE**: Reusar o mesmo toggle e variar somente seu posicionamento por breakpoint.
+
+- [x] T040 [TEST] Executar regressão final da toolbar, documentação e monitor após o ajuste do toggle em `apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte` e `apps/web/src/routes/notes-editor.svelte` — Refs: US-001, US-002, US-003, FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, NFR-001, NFR-002, NFR-003, AC-001, AC-002, AC-003, AC-004, AC-005, AC-006, AC-007, AC-008, AC-009, AC-010, AC-011, AC-012, AC-013, AC-014, AC-015, AC-016, AC-017, AC-018 — Depends: T039
+  - [x] **PREP**: Identificar suíte unitária, rota de notas, build, documentator e monitor necessários.
+  - [x] **EXECUTE**: Executar focais, suíte completa, build, reconstrução/verificação da documentação e monitor.
+  - [x] **VERIFY**: Suíte 90/90 arquivos e 358/358 testes, build, documentator e monitor passaram; rota de notas foi regressada na implementação.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia nos breakpoints, temas, foco, zoom, safe area e movimento reduzido por DOM/CSS e Vitest Browser; sem screenshot conectado adicional.
+  - [x] **EVIDENCE**: Registrar contagens e comandos no fechamento da seção 13.
+  - [x] **IMPROVE**: Manter uma única affordance de abertura da toolbar em desktop e mobile.
+
+<!-- specsfy:evidence {"task":"T038","refs":["US-003","FR-004","NFR-002","AC-003","AC-016"],"files":["apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts"],"commands":[{"run":"node .agents/skills/specsfy-setup/scripts/check_database_safety.mjs --project . --command \"bun run test:unit -- src/lib/features/notes/MilkdownMobileToolbar.test.ts\"","exit":0},{"run":"bun run test:unit -- src/lib/features/notes/MilkdownMobileToolbar.test.ts","exit":0}]} -->
+
+<!-- specsfy:evidence {"task":"T039","refs":["US-003","FR-004","NFR-002","NFR-003","AC-003","AC-016"],"files":["apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte","apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts","apps/web/src/routes/notes-editor.svelte.spec.ts","INTERFACE.md"],"commands":[{"run":"bun run test:unit -- src/lib/features/notes/MilkdownMobileToolbar.test.ts","exit":0},{"run":"bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts","exit":0},{"run":"bun run build","exit":0},{"run":"bunx eslint src/lib/features/notes/MilkdownMobileToolbar.svelte src/lib/features/notes/MilkdownMobileToolbar.test.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0}]} -->
+
+<!-- specsfy:evidence {"task":"T040","refs":["US-001","US-002","US-003","FR-001","FR-002","FR-003","FR-004","FR-005","FR-006","NFR-001","NFR-002","NFR-003","AC-001","AC-002","AC-003","AC-004","AC-005","AC-006","AC-007","AC-008","AC-009","AC-010","AC-011","AC-012","AC-013","AC-014","AC-015","AC-016","AC-017","AC-018"],"files":["apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte","apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts","apps/web/src/routes/notes-editor.svelte.spec.ts","INTERFACE.md"],"commands":[{"run":"bun run test:unit","exit":0},{"run":"bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts","exit":0},{"run":"bun run build","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
+
+- [x] T041 [TEST] [TDD] [US-001] Derivar testes de compatibilidade para referências com `:` e diretivas Markdown não suportadas, além do toggle mobile no topo, em `apps/web/src/lib/features/notes/milkdown-verse-node.test.ts` e `apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts` — Refs: US-001, US-003, FR-001, FR-004, NFR-001, NFR-002, AC-003, AC-005, AC-012, AC-014, AC-015 — Depends: T040
+  - [x] **PREP**: Confirmar o erro `textDirective` reproduzido com referências como `João 4:4-7`, o contrato de preservação do Markdown e a posição atual do toggle mobile.
+  - [x] **EXECUTE**: Adicionar testes TDD para normalização sem perda, montagem editável do editor e posicionamento sticky no topo, sem criar `.feature`.
+  - [x] **VERIFY**: Executar os testes focais e registrar RED válido antes da implementação: parser `1 falha/5 passa` por função ausente e toggle `1 falha/11 ignorados` por posição inferior.
+  - [x] **VISUAL**: Não aplicável: a tarefa materializa contratos; a revisão visual fica na tarefa de implementação.
+  - [x] **EVIDENCE**: `check_database_safety.mjs` retornou `SAFE` para os dois comandos; os testes RED terminaram com exit 1 conforme esperado; IDs US-001/US-003, FR-001/FR-004, NFR-001/NFR-002 e AC-003/AC-005/AC-012/AC-014/AC-015 cobertos.
+  - [x] **IMPROVE**: Manter o caso de referência literal separado do fence `:::verse` para evitar regressão de roundtrip.
+
+<!-- specsfy:evidence {"task":"T041","refs":["US-001","US-003","FR-001","FR-004","NFR-001","NFR-002","AC-003","AC-005","AC-012","AC-014","AC-015"],"files":["apps/web/src/lib/features/notes/milkdown-verse-node.test.ts","apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts"],"commands":[{"run":"node .agents/skills/specsfy-setup/scripts/check_database_safety.mjs --project . --command \"bun run test:unit -- src/lib/features/notes/milkdown-verse-node.test.ts\"","exit":0},{"run":"bun run test:unit -- src/lib/features/notes/milkdown-verse-node.test.ts","exit":1},{"run":"node .agents/skills/specsfy-setup/scripts/check_database_safety.mjs --project . --command \"bun run test:unit -- src/lib/features/notes/MilkdownMobileToolbar.test.ts -t 'keeps the mobile collapsed toggle at the top'\"","exit":0},{"run":"bun run test:unit -- src/lib/features/notes/MilkdownMobileToolbar.test.ts -t \"keeps the mobile collapsed toggle at the top\"","exit":1}]} -->
+
+- [x] T042 [CODE] [US-001] [US-003] Tornar o parser Milkdown tolerante a diretivas não suportadas e mover o toggle mobile para o topo em `apps/web/src/lib/features/notes/milkdown-verse-node.ts`, `apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte` e `apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte` — Refs: US-001, US-003, FR-001, FR-004, NFR-001, NFR-002, NFR-003, AC-003, AC-005, AC-012, AC-014, AC-015 — Depends: T041
+  - [x] **PREP**: Confirmar o RED de T041, a ordem dos plugins `remark-directive`/Milkdown e os limites de safe area e scroll do canvas mobile.
+  - [x] **EXECUTE**: Converter `textDirective`, `leafDirective` e diretivas de container desconhecidas em texto literal preservando offsets, manter o editor editável e trocar o toggle mobile de fixed inferior para sticky no topo junto da barra.
+  - [x] **VERIFY**: Testes unitários `18/18`, rota integrada `12/12` e build passaram; lint dos arquivos de fallback/toolbar/teste passou, enquanto os 3 erros já existentes de `MilkdownNoteEditor.svelte` permanecem documentados.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em desktop/mobile, claro/escuro, foco, safe area, conteúdo longo, zoom e `prefers-reduced-motion`; o toggle ficou no topo sticky, sem aparência de FAB.
+  - [x] **EVIDENCE**: Registrar arquivos, comandos, resultados e IDs na seção 13.
+  - [x] **IMPROVE**: Reutilizar o fallback por posição do Markdown para qualquer diretiva desconhecida, evitando uma lista de padrões frágeis.
+
+<!-- specsfy:evidence {"task":"T042","refs":["US-001","US-003","FR-001","FR-004","NFR-001","NFR-002","NFR-003","AC-003","AC-005","AC-012","AC-014","AC-015"],"files":["apps/web/src/lib/features/notes/milkdown-verse-node.ts","apps/web/src/lib/features/notes/milkdown-verse-node.test.ts","apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte","apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte","apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts","apps/web/src/routes/notes-editor.svelte.spec.ts","INTERFACE.md"],"commands":[{"run":"bun run test:unit -- src/lib/features/notes/milkdown-verse-node.test.ts src/lib/features/notes/MilkdownMobileToolbar.test.ts","exit":0},{"run":"bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts","exit":0},{"run":"bun run build","exit":0},{"run":"bunx eslint src/lib/features/notes/milkdown-verse-node.ts src/lib/features/notes/milkdown-verse-node.test.ts src/lib/features/notes/MilkdownMobileToolbar.svelte src/lib/features/notes/MilkdownMobileToolbar.test.ts src/routes/notes-editor.svelte.spec.ts","exit":0}]} -->
+
+- [x] T043 [TEST] Executar regressão final, documentação e monitor após a correção de compatibilidade do editor e posição do toggle em `apps/web/src/lib/features/notes/`, `apps/web/src/routes/notes-editor.svelte.spec.ts` e `INTERFACE.md` — Refs: US-001, US-002, US-003, FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, NFR-001, NFR-002, NFR-003, AC-001, AC-002, AC-003, AC-004, AC-005, AC-006, AC-007, AC-008, AC-009, AC-010, AC-011, AC-012, AC-013, AC-014, AC-015, AC-016, AC-017, AC-018 — Depends: T042
+  - [x] **PREP**: Identificar suíte completa, rota de notas, build, lint focal, documentator, monitor e limitações globais conhecidas.
+  - [x] **EXECUTE**: Executar focais, regressão completa, build, reconstrução/verificação da documentação e inspeção visual DOM/CSS nos dois viewports.
+  - [x] **VERIFY**: Suíte unitária `90/90` arquivos e `361/361` testes; rota Browser `12/12`; build e lint focal passaram; typecheck/lint globais continuam com falhas preexistentes fora do escopo.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia no editor com referência `João 4:4-7`, conteúdo longo, toggle no topo, temas, foco, safe area e reduced motion; DOM/CSS e Vitest Browser confirmaram editor editável e toggle fora da posição FAB.
+  - [x] **EVIDENCE**: Documentação `--check`, monitor `CURRENT` e `git diff --check` passaram; o arquivo original permaneceu preservado e nenhuma migration/limpeza destrutiva foi executada.
+  - [x] **IMPROVE**: Confirmar que a falha de parser apresenta fallback editável e não cria migração ou limpeza de cache de notas.
+
+<!-- specsfy:evidence {"task":"T043","refs":["US-001","US-002","US-003","FR-001","FR-002","FR-003","FR-004","FR-005","FR-006","NFR-001","NFR-002","NFR-003","AC-001","AC-002","AC-003","AC-004","AC-005","AC-006","AC-007","AC-008","AC-009","AC-010","AC-011","AC-012","AC-013","AC-014","AC-015","AC-016","AC-017","AC-018"],"files":["apps/web/src/lib/features/notes/milkdown-verse-node.ts","apps/web/src/lib/features/notes/milkdown-verse-node.test.ts","apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte","apps/web/src/lib/features/notes/MilkdownMobileToolbar.svelte","apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts","apps/web/src/routes/notes-editor.svelte.spec.ts","INTERFACE.md"],"commands":[{"run":"bun run test:unit","exit":0},{"run":"bun run test:tdd -- src/routes/notes-editor.svelte.spec.ts","exit":0},{"run":"bun run build","exit":0},{"run":"bunx eslint src/lib/features/notes/milkdown-verse-node.ts src/lib/features/notes/milkdown-verse-node.test.ts src/lib/features/notes/MilkdownMobileToolbar.svelte src/lib/features/notes/MilkdownMobileToolbar.test.ts src/routes/notes-editor.svelte.spec.ts","exit":0},{"run":"bun run check","exit":1},{"run":"bun run lint","exit":1},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0},{"run":"git diff --check","exit":0}]} -->
 
 ### 15. Ordem de execução
 
@@ -1052,7 +1223,7 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
 #### Suposições
 
 - Mesma lista slash no desktop e no drawer; busca filtra por label/aliases vigentes.
-- Toolbar aparece só com editor ativo e não cobre conteúdo nem navegação.
+- Toolbar aparece só com editor ativo e não cobre conteúdo nem navegação; o toggle recolhido fica à direita e mantém a affordance de formatação por ícone e o chanfro inferior nos dois viewports.
 - Debounce 650ms, YAML com 4 campos e H1 sincronizado seguem inalterados.
 - `readerSelection` só preenche o seletor; versão é por bloco.
 
@@ -1064,6 +1235,9 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
 - **DEC-004**: Reaproveitar `VerseSelector` Dialog/Sheet e `VerseBlockView` — porque mantém validação, preview e acessibilidade já entregues; alternativa de seletor novo duplicaria fluxo.
 - **DEC-005**: Remover Tipex/TipTap do editor só após paridade com regressão — porque `BibleNoteSplit` consome o editor; remoção imediata quebraria o leitor.
 - **DEC-006**: Ao abrir o drawer de slash no mobile, desfocar o editor para ocultar o teclado virtual — porque o drawer é a superfície ativa de comandos e o teclado aberto reduz sua área útil; a seleção do ProseMirror permanece como origem da inserção.
+- **DEC-007**: Normalizar diretivas Markdown não suportadas para nós de texto antes da conversão para ProseMirror — porque `remark-directive` interpreta referências comuns como `João 4:4-7` como `textDirective`, e uma exceção de parser não pode impedir a edição nem substituir o arquivo por conteúdo vazio; a sintaxe original é preservada pelos offsets do Markdown.
+- **DEC-007**: Manter uma composição única de toolbar nos dois viewports, recolhível por seta, e restringir a rolagem mobile do slash à lista de comandos — porque a ação precisa permanecer descoberta sem cobrir o cabeçalho, a navegação ou a tela inteira; o desktop conserva descrições mais completas nos itens.
+- **DEC-008**: No estado recolhido, alinhar o toggle à direita, combinar ícone de formatação com seta e usar chanfro inferior — porque a affordance deve permanecer clara sem ocupar a largura inteira; cantos superiores retos distinguem o controle acoplado à superfície da toolbar.
 
 ### 18. Definition of Done
 

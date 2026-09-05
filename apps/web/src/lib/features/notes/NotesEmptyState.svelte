@@ -18,7 +18,8 @@
 		</div>
 		<h3 class="empty-title">Nenhuma nota selecionada</h3>
 		<p class="empty-description">
-			Selecione uma nota na barra lateral para visualizar e editar, ou crie uma nova para começar a escrever.
+			Selecione uma nota na barra lateral para visualizar e editar, ou crie uma nova para começar a
+			escrever.
 		</p>
 		<Button type="button" onclick={onCreate} disabled={creating}>
 			<Plus size={15} strokeWidth={1.8} aria-hidden="true" />
@@ -30,11 +31,12 @@
 <style>
 	.empty-note-pane {
 		display: flex;
+		flex: 1;
 		align-items: center;
 		justify-content: center;
 		width: 100%;
 		height: 100%;
-		min-height: 400px;
+		min-height: 0;
 		padding: 32px 24px;
 		user-select: none;
 		font-family: var(--font-sans);

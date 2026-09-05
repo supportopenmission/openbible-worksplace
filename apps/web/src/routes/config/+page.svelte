@@ -6,7 +6,7 @@
 	<title>Configuração | OpenBible</title>
 	<meta
 		name="description"
-		content="Gerencie o armazenamento local e a tela inicial do OpenBible."
+		content="Gerencie o armazenamento, as Bíblias, a aparência, os lembretes e as atualizações do OpenBible."
 	/>
 </svelte:head>
 

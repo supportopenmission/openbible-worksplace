@@ -1,7 +1,48 @@
 import { describe, expect, it } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
+import { serializeNoteFile } from '$lib/features/notes/note-markdown';
+import type { WorkspaceStorage } from '$lib/storage/types';
 import NotesEditorPage from './notes/[id]/+page.svelte';
+
+function noteStorage(noteId: string, body: string): WorkspaceStorage {
+	const files = new Map<string, Uint8Array>();
+	const encoder = new TextEncoder();
+	const path = `notes/${noteId}.md`;
+	const source = serializeNoteFile({
+		meta: {
+			id: noteId,
+			title: 'Nota com referência',
+			createdAt: '2026-09-05T00:00:00.000Z',
+			updatedAt: '2026-09-05T00:00:00.000Z',
+			type: 'note',
+			path
+		},
+		body
+	});
+	files.set(path, encoder.encode(source));
+
+	return {
+		kind: 'opfs',
+		label: 'Memória de teste',
+		async ensureDirectory() {},
+		async writeFile(filePath, content) {
+			files.set(filePath, typeof content === 'string' ? encoder.encode(content) : content);
+		},
+		async readFile(filePath) {
+			return files.get(filePath) ?? null;
+		},
+		async fileExists(filePath) {
+			return files.has(filePath);
+		},
+		async listFiles(directory) {
+			const prefix = `${directory.replace(/\/$/, '')}/`;
+			return [...files.keys()]
+				.filter((file) => file.startsWith(prefix) && !file.slice(prefix.length).includes('/'))
+				.map((file) => file.slice(prefix.length));
+		}
+	};
+}
 
 async function getNoteEditor() {
 	const editor = page.getByTestId('note-canvas').getByRole('textbox');
@@ -10,6 +51,19 @@ async function getNoteEditor() {
 }
 
 describe('notes editor Milkdown canvas controls', () => {
+	// SPECSFY: US-001 FR-001 NFR-001 NFR-003 AC-005 AC-012 AC-015
+	it('opens a saved note with colon ranges and remains editable', async () => {
+		const noteId = 'parser-reference-note';
+		const storage = noteStorage(noteId, '# Nota com referência\n\nEstudo em João 4:4-7.');
+		render(NotesEditorPage, { props: { data: { noteId }, storageOverride: storage } });
+		const editor = await getNoteEditor();
+
+		await expect.element(editor).toHaveTextContent('Estudo em João 4:4-7.');
+		await editor.click();
+		await userEvent.keyboard('{End} Continuação editável');
+		await expect.element(editor).toHaveTextContent('Continuação editável');
+	});
+
 	// SPECSFY: US-001 FR-003 NFR-002 AC-013
 	it('removes the legacy insert-verse button from the canvas route', async () => {
 		render(NotesEditorPage, { props: { data: { noteId: 'test-note' } } });
@@ -52,6 +106,23 @@ describe('notes editor Milkdown canvas controls', () => {
 		]) {
 			await expect.element(toolbar.getByRole('button', { name, exact: true })).toBeInTheDocument();
 		}
+	});
+
+	// SPECSFY: US-003 FR-004 NFR-002 AC-003 AC-016
+	it('shows the formatting toolbar below the desktop note header and collapses it with an arrow', async () => {
+		await page.viewport(1440, 900);
+		render(NotesEditorPage, { props: { data: { noteId: 'desktop-toolbar-note' } } });
+		const editor = await getNoteEditor();
+		await editor.click();
+
+		const toolbar = page.getByRole('toolbar', { name: 'Formatação da nota' });
+		await expect.element(toolbar).toBeInTheDocument();
+		const collapse = page.getByRole('button', { name: 'Recolher barra de ferramentas' });
+		await expect.element(collapse).toHaveAttribute('aria-expanded', 'true');
+		await collapse.click();
+		await expect
+			.element(page.getByRole('button', { name: 'Abrir ferramentas de formatação' }))
+			.toBeInTheDocument();
 	});
 
 	// SPECSFY: US-003 FR-004 NFR-002 AC-016

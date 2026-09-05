@@ -21,10 +21,97 @@ export function isValidVerseInterval(start: number, end: number): boolean {
 	return Number.isInteger(start) && Number.isInteger(end) && start > 0 && end >= start;
 }
 
+type RemarkPosition = {
+	start?: { offset?: number };
+	end?: { offset?: number };
+};
+
+type RemarkNode = {
+	type: string;
+	name?: string;
+	label?: string;
+	attributes?: Record<string, string | null | undefined>;
+	value?: string;
+	children?: RemarkNode[];
+	position?: RemarkPosition;
+};
+
+function isRemarkNode(value: unknown): value is RemarkNode {
+	return Boolean(
+		value && typeof value === 'object' && typeof (value as RemarkNode).type === 'string'
+	);
+}
+
+function directiveSource(node: RemarkNode, source: string): string {
+	const start = node.position?.start?.offset;
+	const end = node.position?.end?.offset;
+	if (typeof start === 'number' && typeof end === 'number' && end >= start) {
+		return source.slice(start, end);
+	}
+
+	const marker = node.type === 'textDirective' ? ':' : node.type === 'leafDirective' ? '::' : ':::';
+	const label = node.label ? `[${node.label}]` : '';
+	const attributes = node.attributes
+		? `{${Object.entries(node.attributes)
+				.filter(([, value]) => value != null)
+				.map(([key, value]) => `${key}="${value}"`)
+				.join(' ')}}`
+		: '';
+	return `${marker}${node.name ?? ''}${label}${attributes}`;
+}
+
+/**
+ * remark-directive also parses ordinary references such as `João 4:4-7` as
+ * textDirective nodes. Milkdown only has a parser for the custom verse
+ * container, so keep every other directive literal instead of throwing and
+ * leaving the editor without an editable document.
+ */
+export function sanitizeUnsupportedDirectives(tree: unknown, source = ''): void {
+	if (!isRemarkNode(tree)) return;
+
+	const visit = (parent: RemarkNode) => {
+		if (!parent.children) return;
+		const nextChildren: RemarkNode[] = [];
+		for (const child of parent.children) {
+			if (!child.type.endsWith('Directive')) {
+				visit(child);
+				nextChildren.push(child);
+				continue;
+			}
+
+			if (child.type === 'containerDirective' && child.name === 'verse') {
+				visit(child);
+				nextChildren.push(child);
+				continue;
+			}
+
+			const textNode: RemarkNode = {
+				type: 'text',
+				value: directiveSource(child, source),
+				...(child.position ? { position: child.position } : {})
+			};
+			if (child.type === 'containerDirective') {
+				nextChildren.push({
+					type: 'paragraph',
+					children: [textNode],
+					...(child.position ? { position: child.position } : {})
+				});
+			} else {
+				nextChildren.push(textNode);
+			}
+		}
+		parent.children = nextChildren;
+	};
+
+	visit(tree);
+}
+
 export function selectionToVerseAttrs(
 	selection: VerseSelectionState,
 	versionIds: string[]
-): { ok: true; attrs: VerseFenceAttrs } | { ok: false; reason: 'missing-version' | 'invalid-range' } {
+):
+	| { ok: true; attrs: VerseFenceAttrs }
+	| { ok: false; reason: 'missing-version' | 'invalid-range' } {
 	if (!selection.versionId || !versionIds.includes(selection.versionId)) {
 		return { ok: false, reason: 'missing-version' };
 	}
@@ -55,6 +142,13 @@ function directiveText(node: unknown): string {
 
 export const verseDirective = $remark('openbibleVerseDirective', () => remarkDirective);
 
+export const unsupportedDirectiveFallback = $remark(
+	'openbibleUnsupportedDirectiveFallback',
+	() => () => (tree, file) => {
+		sanitizeUnsupportedDirectives(tree, typeof file.value === 'string' ? file.value : '');
+	}
+);
+
 export const verseNodeSchema = $nodeSchema('verse', () => ({
 	group: 'block',
 	atom: true,
@@ -69,10 +163,12 @@ export const verseNodeSchema = $nodeSchema('verse', () => ({
 		verseEnd: { default: '' },
 		snapshotBody: { default: '' }
 	},
-	parseDOM: [{
-		tag: 'blockquote[data-type="verse"]',
-		getAttrs: (dom: HTMLElement) => ({ ...dom.dataset })
-	}],
+	parseDOM: [
+		{
+			tag: 'blockquote[data-type="verse"]',
+			getAttrs: (dom: HTMLElement) => ({ ...dom.dataset })
+		}
+	],
 	toDOM: (node) => [
 		'blockquote',
 		{

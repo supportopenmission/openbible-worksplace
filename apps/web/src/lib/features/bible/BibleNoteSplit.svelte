@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { onMount } from 'svelte';
-	import { ArrowLeft, MoreHorizontal, Trash2 } from '@lucide/svelte';
+	import { ArrowLeft, MoreHorizontal, Trash2, X } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
@@ -197,9 +197,16 @@
 						</DropdownMenu.Item>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
-				<Button variant="ghost" size="sm" class="note-pane-close" onclick={onClose}
-					>Fechar nota</Button
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					class="note-pane-close"
+					aria-label="Fechar nota"
+					title="Fechar nota"
+					onclick={onClose}
 				>
+					<X size={16} strokeWidth={1.8} aria-hidden="true" />
+				</Button>
 			</div>
 		</div>
 		<MilkdownNoteEditor note={openNote} storage={openStorage} {onSaved} {toolbarEnabled} />
@@ -210,7 +217,16 @@
 	<section class="note-pane note-pane-list" aria-label="Notas do versículo">
 		<div class="note-pane-header">
 			<p class="note-pane-title">Notas do versículo</p>
-			<Button variant="ghost" size="sm" onclick={onClose}>Fechar nota</Button>
+			<Button
+				variant="ghost"
+				size="icon-sm"
+				class="note-pane-close"
+				aria-label="Fechar nota"
+				title="Fechar nota"
+				onclick={onClose}
+			>
+				<X size={16} strokeWidth={1.8} aria-hidden="true" />
+			</Button>
 		</div>
 		<NoteCardList
 			notes={openNotes}

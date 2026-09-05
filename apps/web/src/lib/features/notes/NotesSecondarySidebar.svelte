@@ -101,7 +101,9 @@
 		const id = noteToDelete.id;
 		deleting = true;
 		try {
-			await notesState.deleteNote(storage, id);
+			const deleted = await notesState.deleteNote(storage, id);
+			if (!deleted) return;
+			await notesState.loadNotes(storage, true);
 			deleteDialogOpen = false;
 			if (activeNoteId === id) {
 				await goto(resolve('/notes'));
@@ -119,7 +121,8 @@
 			activeNoteId && notesState.selectedNoteIds.includes(activeNoteId)
 		);
 		try {
-			await notesState.deleteSelectedNotes(storage);
+			const deletedCount = await notesState.deleteSelectedNotes(storage);
+			if (deletedCount > 0) await notesState.loadNotes(storage, true);
 			bulkDeleteDialogOpen = false;
 			if (hadActiveSelected) {
 				await goto(resolve('/notes'));
@@ -180,12 +183,8 @@
 							<DropdownMenu.RadioItem value="createdAt-asc">
 								Data de criação (antigas)
 							</DropdownMenu.RadioItem>
-							<DropdownMenu.RadioItem value="title-asc">
-								Título (A-Z)
-							</DropdownMenu.RadioItem>
-							<DropdownMenu.RadioItem value="title-desc">
-								Título (Z-A)
-							</DropdownMenu.RadioItem>
+							<DropdownMenu.RadioItem value="title-asc">Título (A-Z)</DropdownMenu.RadioItem>
+							<DropdownMenu.RadioItem value="title-desc">Título (Z-A)</DropdownMenu.RadioItem>
 						</DropdownMenu.RadioGroup>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
@@ -294,7 +293,12 @@
 		{:else if notesState.error && notesState.notes.length === 0}
 			<div class="sidebar-state error">
 				<p>{notesState.error}</p>
-				<Button type="button" variant="outline" size="sm" onclick={() => notesState.loadNotes(storage)}>
+				<Button
+					type="button"
+					variant="outline"
+					size="sm"
+					onclick={() => notesState.loadNotes(storage)}
+				>
 					Tentar novamente
 				</Button>
 			</div>
@@ -306,7 +310,13 @@
 				{:else}
 					<p class="empty-title">Nenhuma nota ainda</p>
 					<p class="empty-desc">Crie sua primeira nota para começar.</p>
-					<Button type="button" size="sm" variant="outline" onclick={handleCreate} disabled={creating}>
+					<Button
+						type="button"
+						size="sm"
+						variant="outline"
+						onclick={handleCreate}
+						disabled={creating}
+					>
 						<Plus size={14} strokeWidth={1.75} aria-hidden="true" />
 						Criar nota
 					</Button>
@@ -319,7 +329,6 @@
 				<ContextMenu.Root>
 					<ContextMenu.Trigger>
 						{#snippet child({ props })}
-							<!-- svelte-ignore a11y_interactive_supports_focus -->
 							<div
 								{...props}
 								class="note-item"
@@ -360,7 +369,12 @@
 									<div class="note-item-header">
 										<div class="note-item-title-wrap">
 											{#if note.pinned}
-												<Pin size={11} class="pin-icon" aria-label="Nota fixada" title="Nota fixada" />
+												<Pin
+													size={11}
+													class="pin-icon"
+													aria-label="Nota fixada"
+													title="Nota fixada"
+												/>
 											{/if}
 											<span class="note-item-title">{note.title || 'Sem título'}</span>
 										</div>
@@ -487,7 +501,8 @@
 	<Dialog.Content showCloseButton={true}>
 		<Dialog.Title>Apagar notas selecionadas</Dialog.Title>
 		<Dialog.Description>
-			Tem certeza que deseja apagar as {notesState.selectedNoteIds.length} notas selecionadas? Esta ação não pode ser desfeita.
+			Tem certeza que deseja apagar as {notesState.selectedNoteIds.length} notas selecionadas? Esta ação
+			não pode ser desfeita.
 		</Dialog.Description>
 		<div class="dialog-actions">
 			<Button type="button" variant="outline" onclick={() => (bulkDeleteDialogOpen = false)}>
@@ -611,7 +626,9 @@
 		border: 1px solid var(--border);
 		border-radius: 6px;
 		padding: 0 8px;
-		transition: border-color 0.15s ease, background 0.15s ease;
+		transition:
+			border-color 0.15s ease,
+			background 0.15s ease;
 	}
 
 	.search-box:focus-within {
@@ -679,7 +696,9 @@
 		padding: 8px 10px;
 		text-align: left;
 		cursor: pointer;
-		transition: background-color 0.12s ease, border-color 0.12s ease;
+		transition:
+			background-color 0.12s ease,
+			border-color 0.12s ease;
 		outline: none;
 		box-sizing: border-box;
 	}
@@ -776,7 +795,9 @@
 		color: var(--muted-foreground);
 		cursor: pointer;
 		opacity: 0.6;
-		transition: opacity 0.15s ease, background-color 0.15s ease;
+		transition:
+			opacity 0.15s ease,
+			background-color 0.15s ease;
 	}
 
 	.note-item-menu-btn:hover {
@@ -850,6 +871,14 @@
 		text-align: center;
 		color: var(--muted-foreground);
 		font-size: 0.8125rem;
+	}
+
+	.sidebar-state.empty {
+		align-items: flex-start;
+		justify-content: flex-start;
+		flex: 1;
+		padding: 24px 16px 32px;
+		text-align: left;
 	}
 
 	.sidebar-state.empty .empty-title {

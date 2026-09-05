@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { confirmVerseSelection, prefillFromReaderSelection, validateVerseRange } from './verse-selector';
+import { readFileSync } from 'node:fs';
+import {
+	confirmVerseSelection,
+	prefillFromReaderSelection,
+	validateVerseRange
+} from './verse-selector';
 import { selectionToVerseAttrs } from './milkdown-verse-node';
 
 // SPECSFY: US-003 FR-004 FR-005 NFR-001 AC-006 AC-009
@@ -93,5 +98,10 @@ describe('milkdown selector reuse', () => {
 				verseEnd: '2'
 			}
 		});
+	});
+
+	it('keeps desktop select content above the verse dialog surface', () => {
+		const source = readFileSync(new URL('./VerseSelector.svelte', import.meta.url), 'utf8');
+		expect(source.match(/<Select\.Content class="z-\[80\]">/g)).toHaveLength(3);
 	});
 });

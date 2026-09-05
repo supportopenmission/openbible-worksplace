@@ -818,6 +818,7 @@
 		try {
 			const deleted = await notesState.deleteNote(currentStorage, target.id);
 			if (!deleted) return;
+			await notesState.loadNotes(currentStorage, true);
 			await deleteNoteVerseRefs(target.path);
 			splitDeleteTarget = null;
 			splitNote = null;

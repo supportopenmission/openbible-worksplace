@@ -341,7 +341,7 @@
 							<Select.Trigger id="verse-book" class="selector-trigger">
 								{selectedBook?.name ?? 'Selecione um livro'}
 							</Select.Trigger>
-							<Select.Content>
+							<Select.Content class="z-[80]">
 								<Select.Group>
 									{#each selectedVersion?.books ?? [] as book (book.id)}
 										<Select.Item value={String(book.id)} label={book.name}>{book.name}</Select.Item>
@@ -418,7 +418,7 @@
 									? displayVersionAbbreviation(selectedVersion)
 									: 'Selecione uma versão'}
 							</Select.Trigger>
-							<Select.Content>
+							<Select.Content class="z-[80]">
 								<Select.Group>
 									{#each versions as version (version.id)}
 										<Select.Item value={version.id} label={version.name}>{version.name}</Select.Item
@@ -478,7 +478,7 @@
 						<Select.Trigger id="verse-chapter" class="selector-trigger">
 							{selection.chapter}
 						</Select.Trigger>
-						<Select.Content>
+						<Select.Content class="z-[80]">
 							<Select.Group>
 								{#each chapterOptions as chapter (chapter)}
 									<Select.Item value={String(chapter)} label={String(chapter)}

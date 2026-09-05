@@ -5,8 +5,8 @@
 
 | Tipo | Quantidade |
 | --- | --- |
-| Código | 571 |
-| Testes | 64 |
+| Código | 572 |
+| Testes | 65 |
 
 ## Diagramas
 

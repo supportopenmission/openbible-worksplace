@@ -1,15 +1,18 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { slide } from 'svelte/transition';
 	import {
 		Bold,
 		CheckSquare,
+		ChevronDown,
+		ChevronUp,
 		Heading1,
 		Italic,
 		List,
 		ListOrdered,
-		Quote,
-		BookOpen,
 		PanelTop,
-		X
+		Quote,
+		BookOpen
 	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import type { ToolbarAction } from './milkdown-markdown-io';
@@ -21,8 +24,7 @@
 		disabled = false,
 		activeActions = {},
 		onAction = () => {},
-		onToggle = () => {},
-		onClose = () => {}
+		onToggle = () => {}
 	}: {
 		active?: boolean;
 		enabled?: boolean;
@@ -31,8 +33,17 @@
 		activeActions?: Partial<Record<ToolbarAction, boolean>>;
 		onAction?: (action: ToolbarAction) => void;
 		onToggle?: () => void;
-		onClose?: () => void;
 	} = $props();
+
+	let reducedMotion = $state(false);
+
+	onMount(() => {
+		const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+		const update = () => (reducedMotion = media.matches);
+		update();
+		media.addEventListener('change', update);
+		return () => media.removeEventListener('change', update);
+	});
 
 	const actions = [
 		{ id: 'bold', label: 'Negrito', icon: Bold },
@@ -55,6 +66,7 @@
 {#if active && enabled}
 	{#if visible}
 		<div
+			transition:slide={{ duration: reducedMotion ? 0 : 180 }}
 			id="note-formatting-toolbar"
 			class="milkdown-toolbar"
 			role="toolbar"
@@ -89,13 +101,14 @@
 					type="button"
 					variant="ghost"
 					size="icon-sm"
-					class="toolbar-close"
-					aria-label="Fechar barra de ferramentas"
-					title="Fechar barra de ferramentas"
+					class="toolbar-collapse"
+					aria-label="Recolher barra de ferramentas"
+					aria-expanded="true"
+					title="Recolher barra de ferramentas"
 					onmousedown={(e) => e.preventDefault()}
-					onclick={onClose}
+					onclick={onToggle}
 				>
-					<X size={15} strokeWidth={1.8} aria-hidden="true" />
+					<ChevronUp size={16} strokeWidth={1.8} aria-hidden="true" />
 				</Button>
 			</div>
 		</div>
@@ -114,6 +127,7 @@
 		>
 			<PanelTop size={16} strokeWidth={1.8} aria-hidden="true" />
 			<span>Formatar</span>
+			<ChevronDown size={16} strokeWidth={1.8} aria-hidden="true" />
 		</Button>
 	{/if}
 {/if}
@@ -126,28 +140,31 @@
 		left: 0;
 		z-index: 45;
 		width: 100%;
-		display: none;
+		display: block;
+		overflow: hidden;
 		border-bottom: 1px solid var(--border);
 		background: var(--background);
 	}
 
 	:global(.milkdown-toolbar-toggle) {
-		position: fixed;
-		right: max(16px, env(safe-area-inset-right, 0px));
-		bottom: max(calc(68px + env(safe-area-inset-bottom, 0px)), var(--note-keyboard-inset, 0px));
+		display: flex;
+		position: sticky;
+		width: fit-content;
+		max-width: 100%;
+		margin-inline-start: auto;
+		margin-inline-end: 0;
+		inset: auto;
 		z-index: 45;
 		height: 36px;
 		min-width: 92px;
-		border-radius: var(--radius);
+		border-radius: 0 0 8px 8px;
 		border-color: var(--border);
 		background: var(--background);
 		color: var(--foreground);
 		font-size: 0.8125rem;
 		font-weight: 500;
 		letter-spacing: -0.01em;
-		transition:
-			bottom 180ms ease,
-			background-color 120ms ease;
+		transition: background-color 120ms ease;
 	}
 
 	:global(.milkdown-toolbar-toggle:hover) {
@@ -157,7 +174,7 @@
 	.toolbar-scroll {
 		display: flex;
 		align-items: center;
-		justify-content: center;
+		justify-content: flex-start;
 		overflow-x: auto;
 		min-height: 52px;
 		padding: 6px max(12px, env(safe-area-inset-left, 0px)) 6px
@@ -206,10 +223,10 @@
 		box-shadow: inset 0 0 0 1px var(--border);
 	}
 
-	:global(.milkdown-toolbar .toolbar-close) {
+	:global(.milkdown-toolbar .toolbar-collapse) {
 		align-self: center;
 		flex: 0 0 auto;
-		margin-inline-start: 2px;
+		margin-inline-start: auto;
 		height: 32px;
 		width: 36px;
 		min-width: 32px;
@@ -218,9 +235,18 @@
 	}
 
 	@media (max-width: 767px) {
-		.milkdown-toolbar,
-		:global(.milkdown-toolbar-toggle) {
+		.milkdown-toolbar {
 			display: block;
+		}
+
+		:global(.milkdown-toolbar-toggle) {
+			display: flex;
+			position: sticky;
+			top: env(safe-area-inset-top, 0px);
+			right: auto;
+			bottom: auto;
+			margin-inline-start: auto;
+			margin-inline-end: 0;
 		}
 
 		.toolbar-scroll {
@@ -229,7 +255,6 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.milkdown-toolbar,
 		:global(.milkdown-toolbar-toggle) {
 			transition: none;
 		}

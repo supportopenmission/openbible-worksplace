@@ -24,9 +24,7 @@ describe('/config', () => {
 		await render(ConfigPage);
 
 		expect(page.getByRole('button', { name: 'Tela inicial' })).not.toBeInTheDocument();
-		await expect
-			.element(page.getByRole('button', { name: 'Armazenamento' }))
-			.toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: 'Armazenamento' })).toBeInTheDocument();
 	});
 
 	it('shows a section index on mobile with drill-down subpages and back', async () => {
@@ -54,7 +52,7 @@ describe('/config', () => {
 		await expect.element(page.getByRole('button', { name: 'Armazenamento' })).toBeInTheDocument();
 	});
 
-	it('uses tabs on desktop without an initial screen panel', async () => {
+	it('uses vertical section navigation on desktop without an initial screen panel', async () => {
 		await page.viewport(1440, 900);
 		await render(ConfigPage);
 
@@ -63,14 +61,17 @@ describe('/config', () => {
 			.toBeInTheDocument();
 		const storageTab = page.getByRole('tab', { name: 'Armazenamento' });
 		await expect.element(storageTab).toBeInTheDocument();
+		await expect
+			.element(page.getByRole('tablist', { name: 'Seções de configuração' }))
+			.toHaveAttribute('aria-orientation', 'vertical');
 		expect(page.getByRole('tab', { name: 'Tela inicial' })).not.toBeInTheDocument();
-		await expect.element(storageTab).toHaveAttribute('data-state', 'active');
+		await expect.element(storageTab).toHaveAttribute('aria-selected', 'true');
 
 		await storageTab.click();
-		await expect.element(storageTab).toHaveAttribute('data-state', 'active');
+		await expect.element(storageTab).toHaveAttribute('aria-selected', 'true');
 	});
 
-	it('exposes bibles and stats tabs on desktop and sections on mobile', async () => {
+	it('exposes bibles and stats sections on desktop and mobile', async () => {
 		// SPECSFY: US-001 US-002 US-004 FR-001 FR-002 FR-004 NFR-001 AC-010
 		await page.viewport(1440, 900);
 		await render(ConfigPage);
@@ -81,8 +82,24 @@ describe('/config', () => {
 		await expect.element(statsTab).toBeInTheDocument();
 
 		await biblesTab.click();
-		await expect.element(biblesTab).toHaveAttribute('data-state', 'active');
+		await expect.element(biblesTab).toHaveAttribute('aria-selected', 'true');
 		await statsTab.click();
-		await expect.element(statsTab).toHaveAttribute('data-state', 'active');
+		await expect.element(statsTab).toHaveAttribute('aria-selected', 'true');
+	});
+
+	it('shows branded project information in Sobre', async () => {
+		await page.viewport(1440, 900);
+		await render(ConfigPage);
+
+		await page.getByRole('tab', { name: 'Sobre' }).click();
+		await expect
+			.element(page.getByRole('heading', { name: 'Informações do projeto', level: 3 }))
+			.toBeInTheDocument();
+		await expect.element(page.getByRole('img', { name: 'OpenBible' })).toBeInTheDocument();
+		await expect
+			.element(page.getByRole('link', { name: /repositório no github/i }))
+			.toHaveAttribute('href', 'https://github.com/supportopenmission/openbible-worksplace');
+		expect(page.getByText(/v\d/)).toBeInTheDocument();
+		expect(page.getByText('OpenBible v0.5.5')).not.toBeInTheDocument();
 	});
 });

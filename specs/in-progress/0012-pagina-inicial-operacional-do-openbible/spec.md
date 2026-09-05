@@ -1,22 +1,22 @@
 # Especificação integrada: Página inicial operacional do OpenBible
 
-| Campo | Valor |
-| --- | --- |
-| Formato | Specsfy/2.0 |
-| ID | SPEC-0012 |
-| Slug | 0012-pagina-inicial-operacional-do-openbible |
-| Status | Implementing |
-| Effort | 5 |
-| Effort updated at | 2026-09-04 |
-| Effort rationale | Home com continuidade (leitura, notas, destaques), mudança de shell e remoção de preferência com migração; sem módulo novo, com testes Vitest e revisão visual. Perfil standard. |
-| ClickUp Task |  |
-| Milestones |  |
-| Definition Gate | Passed |
-| Plan Gate | Passed |
-| Delivery Gate | In Progress |
-| Evidence Contract | 1 |
-| Interface para pessoas | Sim |
-| Atualizada em | 2026-09-04 |
+| Campo                  | Valor                                                                                                                                                                            |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Formato                | Specsfy/2.0                                                                                                                                                                      |
+| ID                     | SPEC-0012                                                                                                                                                                        |
+| Slug                   | 0012-pagina-inicial-operacional-do-openbible                                                                                                                                     |
+| Status                 | Implementing |
+| Effort                 | 5                                                                                                                                                                                |
+| Effort updated at      | 2026-09-04                                                                                                                                                                       |
+| Effort rationale       | Home com continuidade (leitura, notas, destaques), mudança de shell e remoção de preferência com migração; sem módulo novo, com testes Vitest e revisão visual. Perfil standard. |
+| ClickUp Task           |                                                                                                                                                                                  |
+| Milestones             |                                                                                                                                                                                  |
+| Definition Gate        | Passed                                                                                                                                                                           |
+| Plan Gate              | Passed                                                                                                                                                                           |
+| Delivery Gate          | In Progress                                                                                                                                                                      |
+| Evidence Contract      | 1                                                                                                                                                                                |
+| Interface para pessoas | Sim                                                                                                                                                                              |
+| Atualizada em          | 2026-09-05                                                                                                                                                                       |
 
 ## Ato I — Definir
 
@@ -88,6 +88,7 @@ A rota `/` passa a ser a home operacional: sem redirecionamento automático, exi
 - Nova home operacional em `/` sem redirect, com Continuar leitura, ações rápidas e recentes reais.
 - Shell persistente após workspace pronto com Início (`/`) como primeiro item no desktop e no mobile.
 - Remoção de `initialRoute`: redirect em `/`, seção Tela inicial em `/config`, utilitários de leitura/escrita e migração de valor legado como ausente.
+- `/config` responsiva: container desktop mais amplo com navegação vertical lateral; no mobile, a navegação permanece como índice e subpáginas; a seção Sobre apresenta logo, badge de versão e informações do projeto com link do repositório.
 - Estados loading (skeleton), vazio orientado e erro com retry por seção.
 - Responsivo, teclado completo, claro/escuro e `prefers-reduced-motion`.
 - Testes Vitest e atualização de `INTERFACE.md` e contextos afetados.
@@ -287,6 +288,9 @@ Feature: Remoção da preferência de tela inicial
     When a pessoa abre "/config"
     Then não encontra seção, aba ou controle de Tela inicial
     And nenhum valor de tela inicial é gravado localmente
+    And as demais seções são navegáveis pela navegação vertical lateral no desktop
+    And a seção Sobre mostra o logo, a versão em badge e as informações do projeto com link para o repositório no GitHub
+    And não mostra um rodapé redundante com a versão do aplicativo
 ```
 
 #### AC-011 — Valor legado tratado como ausente
@@ -328,7 +332,7 @@ Feature: Qualidade transversal da home
 - **FR-003**: O sistema deve oferecer ações rápidas Ler a Bíblia (`/bible`), Nova nota (`/notes` com criação) e Novo sermão (`/sermons`) a partir da home.
 - **FR-004**: O sistema deve listar recentes reais limitados de notas e destaques com referência e atualização, com navegação ao destino e vazio orientado sem simular módulos futuros.
 - **FR-005**: O sistema deve exibir `/` como home operacional sem redirect, com onboarding quando sem workspace e shell persistente com Início primeiro após workspace pronto.
-- **FR-006**: O sistema deve remover a preferência `initialRoute`: nenhum redirect, nenhuma UI em `/config`, nenhum salvamento novo, e valor legado tratado como ausente.
+- **FR-006**: O sistema deve remover a preferência `initialRoute`: nenhum redirect, nenhuma UI em `/config`, nenhum salvamento novo, e valor legado tratado como ausente; `/config` deve manter navegação lateral vertical no desktop e uma seção Sobre com logo, badge de versão, informações do projeto e link para o repositório, sem rodapé redundante de versão.
 
 #### Não funcionais
 
@@ -362,7 +366,7 @@ Feature: Qualidade transversal da home
 - Nova composição `HomePage` em `apps/web/src/lib/features/home/HomePage.svelte` coordena Continuar, ações e recentes; `/` em `+page.svelte` vira coordenadora fina que preserva onboarding e delega a home após workspace pronto.
 - Novos blocos `ContinueReadingCard`, `QuickActions` e `RecentLists` sob `apps/web/src/lib/features/home/`; dados via adaptadores `home-continuation.ts` (seleção mais último destaque) e reuso de repositórios de notas e destaques existentes.
 - `AppSidebar` e barra mobile ganham item Início (`/`) primeiro; visibilidade passa a depender de workspace pronto, não de preferência.
-- Remoção de `InitialScreenPicker` da `/`, da seção Tela inicial em `ConfigPage` e dos usos de `home-preference.ts`; substitui leitura por ausência permanente com limpeza tolerante do legado.
+- Remoção de `InitialScreenPicker` da `/`, da seção Tela inicial em `ConfigPage` e dos usos de `home-preference.ts`; substitui leitura por ausência permanente com limpeza tolerante do legado. `ConfigPage` mantém navegação desktop vertical e About com marca, versão e informações do projeto.
 - Sem mudança de adapter Cloudflare, PWA ou service worker além do consumo das rotas já cacheadas.
 
 #### Migrations
@@ -416,19 +420,19 @@ apps/web/src/lib/features/config/ConfigPage.svelte
 
 #### Entidades
 
-| Entidade | Identidade | Atributos e regras | Relações |
-| --- | --- | --- | --- |
-| Preferência de leitura | `readerSelection` em `.openbible/preferences.json` | Versão, livro, capítulo, início e fim; ilegível equivale a ausente | 1 workspace tem 0 ou 1 seleção corrente |
-| Nota recente | Caminho em `notes/` | Título, atualização e identificador; somente ativas, sem lixeira | N notas por workspace, ordenadas por atualização |
-| Destaque recente | Intervalo exato em `reader_highlight` | Versão, livro, capítulo, início, fim e estilo; identidade é o intervalo | N destaques por workspace, ordenados por referência e atualização |
+| Entidade               | Identidade                                         | Atributos e regras                                                      | Relações                                                          |
+| ---------------------- | -------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Preferência de leitura | `readerSelection` em `.openbible/preferences.json` | Versão, livro, capítulo, início e fim; ilegível equivale a ausente      | 1 workspace tem 0 ou 1 seleção corrente                           |
+| Nota recente           | Caminho em `notes/`                                | Título, atualização e identificador; somente ativas, sem lixeira        | N notas por workspace, ordenadas por atualização                  |
+| Destaque recente       | Intervalo exato em `reader_highlight`              | Versão, livro, capítulo, início, fim e estilo; identidade é o intervalo | N destaques por workspace, ordenados por referência e atualização |
 
 #### Estados e transições
 
-| Entidade | Estado atual | Evento | Próximo estado | Invariantes |
-| --- | --- | --- | --- | --- |
-| Home | Carregando | Resolver continuidade e recentes | Pronta, parcial ou erro por seção | Falha de seção não derruba a home |
-| Continuar | Ausente | Seleção salva ou destaque encontrado | Resolvido ou vazio com CTA | Ilegível equivale a ausente |
-| Preferência legada | Presente | Abertura de `/` ou `/config` | Ignorada ou limpa | Nunca redireciona |
+| Entidade           | Estado atual | Evento                               | Próximo estado                    | Invariantes                       |
+| ------------------ | ------------ | ------------------------------------ | --------------------------------- | --------------------------------- |
+| Home               | Carregando   | Resolver continuidade e recentes     | Pronta, parcial ou erro por seção | Falha de seção não derruba a home |
+| Continuar          | Ausente      | Seleção salva ou destaque encontrado | Resolvido ou vazio com CTA        | Ilegível equivale a ausente       |
+| Preferência legada | Presente     | Abertura de `/` ou `/config`         | Ignorada ou limpa                 | Nunca redireciona                 |
 
 #### Migração e retenção
 
@@ -468,12 +472,12 @@ apps/web/src/lib/features/config/ConfigPage.svelte
 
 #### Blocos React e componentes selecionados
 
-| Tela | Bloco React | Responsabilidade | Arquivo previsto | Componente ou composição | Origem | Reuso ou extensão |
-| --- | --- | --- | --- | --- | --- | --- |
-| / | HomePage | Coordenar Continuar, ações e recentes | apps/web/src/lib/features/home/HomePage.svelte | Próprio com PageHeader | Próprio | Novo, motivo: entrada operacional inexistente |
-| / | ContinueReadingCard | Exibir e abrir a passagem resolvida ou CTA | apps/web/src/lib/features/home/ContinueReadingCard.svelte | Próprio com Button | Próprio | Novo, motivo: contrato próprio de continuidade |
-| / | QuickActions | Atalhos Ler, Nova nota e Novo sermão | apps/web/src/lib/features/home/QuickActions.svelte | Próprio com Item | shadcn-svelte Item | Estende padrão de escolha sem duplicar seletor |
-| / | RecentLists | Listar notas e destaques com destino | apps/web/src/lib/features/home/RecentLists.svelte | Próprio com HighlightsList | Próprio | Reusa HighlightsList, motivo: mesmo conjunto workspace-wide |
+| Tela | Bloco React         | Responsabilidade                           | Arquivo previsto                                          | Componente ou composição   | Origem             | Reuso ou extensão                                           |
+| ---- | ------------------- | ------------------------------------------ | --------------------------------------------------------- | -------------------------- | ------------------ | ----------------------------------------------------------- |
+| /    | HomePage            | Coordenar Continuar, ações e recentes      | apps/web/src/lib/features/home/HomePage.svelte            | Próprio com PageHeader     | Próprio            | Novo, motivo: entrada operacional inexistente               |
+| /    | ContinueReadingCard | Exibir e abrir a passagem resolvida ou CTA | apps/web/src/lib/features/home/ContinueReadingCard.svelte | Próprio com Button         | Próprio            | Novo, motivo: contrato próprio de continuidade              |
+| /    | QuickActions        | Atalhos Ler, Nova nota e Novo sermão       | apps/web/src/lib/features/home/QuickActions.svelte        | Próprio com Item           | shadcn-svelte Item | Estende padrão de escolha sem duplicar seletor              |
+| /    | RecentLists         | Listar notas e destaques com destino       | apps/web/src/lib/features/home/RecentLists.svelte         | Próprio com HighlightsList | Próprio            | Reusa HighlightsList, motivo: mesmo conjunto workspace-wide |
 
 - Projeto Svelte: a tabela acima usa Bloco Svelte; shadcn-svelte fornece primitives e nenhuma composição ReUI é aplicável. Registrar blocos novos em `INTERFACE.md` com API, estados e consumidores.
 
@@ -516,44 +520,44 @@ apps/web/src/lib/features/config/ConfigPage.svelte
 
 #### Evidência RED-GREEN-REFACTOR
 
-| IDs | BDD de referência | Teste TDD informado pelo BDD | RED observado | GREEN observado | Refactor/regressão |
-| --- | --- | --- | --- | --- | --- |
-| US-003, FR-005, FR-003, NFR-002, AC-001 | AC-001 na seção 6 | home-page.spec.ts com marcador próprio `SPECSFY:` | RED em 2026-09-04: `HomePage.svelte` ausente | GREEN em 2026-09-04 via TDD focal (1 teste); `/` renderiza a home sem navegar | Sem refactor |
-| US-003, FR-005, NFR-002, NFR-003, AC-002 | AC-002 na seção 6 | home-entry.spec.ts com marcador próprio `SPECSFY:` | RED em 2026-09-04: redirect automático presente | GREEN em 2026-09-04 via TDD focal (1 teste); onboarding preservado sem redirect | Sem refactor |
-| US-003, FR-005, FR-006, NFR-001, AC-003 | AC-003 na seção 6 | app-sidebar.spec.ts com marcador próprio `SPECSFY:` | RED em 2026-09-04 via `npm --prefix apps/web run test:tdd -- app-sidebar.spec.ts`: `AppSidebar.svelte` sem item Início | GREEN em 2026-09-04 via `npm --prefix apps/web run test:tdd -- app-sidebar.spec.ts sidebar.test.ts` (2 arquivos, 2 testes) | Sem refactor; item segue padrão existente |
-| US-001, FR-001, NFR-002, AC-004 | AC-004 na seção 6 | home-continuation.spec.ts com marcador próprio `SPECSFY:` | RED em 2026-09-04: `home-continuation.ts` ausente | GREEN em 2026-09-04 via `npm --prefix apps/web run test:tdd -- home-continuation.spec.ts continue-reading-card.spec.ts` (2 arquivos, 3 testes); visual por inspeção de tokens e sem erros de tipo em `features/home` | Sem refactor |
-| US-001, FR-001, FR-002, NFR-002, AC-005 | AC-005 na seção 6 | home-continuation.spec.ts com marcador próprio `SPECSFY:` | RED em 2026-09-04: fallback de destaque ausente | GREEN em 2026-09-04 no mesmo comando de AC-004; fallback com `try/catch` para vazio | Sem refactor |
-| US-001, FR-002, NFR-001, AC-006 | AC-006 na seção 6 | continue-reading-card.spec.ts com marcador próprio `SPECSFY:` | RED em 2026-09-04: `ContinueReadingCard.svelte` ausente | GREEN em 2026-09-04 no mesmo comando de AC-004; card com `Empty`, CTA nomeado e foco visível herdado | Sem refactor |
-| US-002, FR-003, NFR-001, AC-007 | AC-007 na seção 6 | quick-actions.spec.ts com marcador próprio `SPECSFY:` | RED em 2026-09-04: `QuickActions.svelte` ausente | GREEN em 2026-09-04 via TDD focal (1 teste); ações com nomes acessíveis e foco visível | Sem refactor |
-| US-002, FR-003, FR-004, NFR-002, AC-008 | AC-008 na seção 6 | home-recents.spec.ts com marcador próprio `SPECSFY:` | RED em 2026-09-04: `home-recents.ts` ausente | GREEN em 2026-09-04 via TDD focal (1 teste); limites fixos e falha isolada por seção | Sem refactor |
-| US-002, FR-004, FR-002, NFR-001, AC-009 | AC-009 na seção 6 | recent-lists.spec.ts com marcador próprio `SPECSFY:` | RED em 2026-09-04: `RecentLists.svelte` ausente | GREEN em 2026-09-04 via TDD focal (1 teste); vazio orientado sem simular módulos | Sem refactor |
-| US-003, FR-006, NFR-003, AC-010 | AC-010 na seção 6 | config-page.spec.ts com marcador próprio `SPECSFY:` | RED em 2026-09-04: aba Tela inicial presente | GREEN em 2026-09-04 via TDD focal (1 teste); aba, seção mobile e seletor removidos | Removido `InitialScreenPicker.svelte` sem uso restante |
-| US-003, FR-006, FR-005, NFR-003, AC-011 | AC-011 na seção 6 | home-preference.spec.ts com marcador próprio `SPECSFY:` | RED em 2026-09-04: legado `bible` ainda redireciona | GREEN em 2026-09-04 via TDD focal (1 teste) mais `home-preference.test.ts` e `preferences.test.ts` (8 testes); leitura sempre nula com limpeza tolerante | Teste antigo atualizado para o novo contrato |
-| US-001, US-002, US-003, FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, NFR-001, NFR-002, NFR-003, AC-012 | AC-012 na seção 6 | home-states.spec.ts com marcador próprio `SPECSFY:` | RED em 2026-09-04: `HomePage.svelte` sem skeleton e retry | GREEN em 2026-09-04 via TDD focal (1 teste); skeleton, erro com retry por seção, `aria-live`, foco visível e `prefers-reduced-motion`; corrigido `aria-labelledby` órfão no card | 12 arquivos e 15 testes verdes no escopo da home |
+| IDs                                                                                                       | BDD de referência | Teste TDD informado pelo BDD                                  | RED observado                                                                                                          | GREEN observado                                                                                                                                                                                                      | Refactor/regressão                                     |
+| --------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| US-003, FR-005, FR-003, NFR-002, AC-001                                                                   | AC-001 na seção 6 | home-page.spec.ts com marcador próprio `SPECSFY:`             | RED em 2026-09-04: `HomePage.svelte` ausente                                                                           | GREEN em 2026-09-04 via TDD focal (1 teste); `/` renderiza a home sem navegar                                                                                                                                        | Sem refactor                                           |
+| US-003, FR-005, NFR-002, NFR-003, AC-002                                                                  | AC-002 na seção 6 | home-entry.spec.ts com marcador próprio `SPECSFY:`            | RED em 2026-09-04: redirect automático presente                                                                        | GREEN em 2026-09-04 via TDD focal (1 teste); onboarding preservado sem redirect                                                                                                                                      | Sem refactor                                           |
+| US-003, FR-005, FR-006, NFR-001, AC-003                                                                   | AC-003 na seção 6 | app-sidebar.spec.ts com marcador próprio `SPECSFY:`           | RED em 2026-09-04 via `npm --prefix apps/web run test:tdd -- app-sidebar.spec.ts`: `AppSidebar.svelte` sem item Início | GREEN em 2026-09-04 via `npm --prefix apps/web run test:tdd -- app-sidebar.spec.ts sidebar.test.ts` (2 arquivos, 2 testes)                                                                                           | Sem refactor; item segue padrão existente              |
+| US-001, FR-001, NFR-002, AC-004                                                                           | AC-004 na seção 6 | home-continuation.spec.ts com marcador próprio `SPECSFY:`     | RED em 2026-09-04: `home-continuation.ts` ausente                                                                      | GREEN em 2026-09-04 via `npm --prefix apps/web run test:tdd -- home-continuation.spec.ts continue-reading-card.spec.ts` (2 arquivos, 3 testes); visual por inspeção de tokens e sem erros de tipo em `features/home` | Sem refactor                                           |
+| US-001, FR-001, FR-002, NFR-002, AC-005                                                                   | AC-005 na seção 6 | home-continuation.spec.ts com marcador próprio `SPECSFY:`     | RED em 2026-09-04: fallback de destaque ausente                                                                        | GREEN em 2026-09-04 no mesmo comando de AC-004; fallback com `try/catch` para vazio                                                                                                                                  | Sem refactor                                           |
+| US-001, FR-002, NFR-001, AC-006                                                                           | AC-006 na seção 6 | continue-reading-card.spec.ts com marcador próprio `SPECSFY:` | RED em 2026-09-04: `ContinueReadingCard.svelte` ausente                                                                | GREEN em 2026-09-04 no mesmo comando de AC-004; card com `Empty`, CTA nomeado e foco visível herdado                                                                                                                 | Sem refactor                                           |
+| US-002, FR-003, NFR-001, AC-007                                                                           | AC-007 na seção 6 | quick-actions.spec.ts com marcador próprio `SPECSFY:`         | RED em 2026-09-04: `QuickActions.svelte` ausente                                                                       | GREEN em 2026-09-04 via TDD focal (1 teste); ações com nomes acessíveis e foco visível                                                                                                                               | Sem refactor                                           |
+| US-002, FR-003, FR-004, NFR-002, AC-008                                                                   | AC-008 na seção 6 | home-recents.spec.ts com marcador próprio `SPECSFY:`          | RED em 2026-09-04: `home-recents.ts` ausente                                                                           | GREEN em 2026-09-04 via TDD focal (1 teste); limites fixos e falha isolada por seção                                                                                                                                 | Sem refactor                                           |
+| US-002, FR-004, FR-002, NFR-001, AC-009                                                                   | AC-009 na seção 6 | recent-lists.spec.ts com marcador próprio `SPECSFY:`          | RED em 2026-09-04: `RecentLists.svelte` ausente                                                                        | GREEN em 2026-09-04 via TDD focal (1 teste); vazio orientado sem simular módulos                                                                                                                                     | Sem refactor                                           |
+| US-003, FR-006, NFR-003, AC-010                                                                           | AC-010 na seção 6 | config-page.spec.ts com marcador próprio `SPECSFY:`           | RED em 2026-09-04: aba Tela inicial presente                                                                           | GREEN em 2026-09-04 via TDD focal (1 teste); aba, seção mobile e seletor removidos                                                                                                                                   | Removido `InitialScreenPicker.svelte` sem uso restante |
+| US-003, FR-006, FR-005, NFR-003, AC-011                                                                   | AC-011 na seção 6 | home-preference.spec.ts com marcador próprio `SPECSFY:`       | RED em 2026-09-04: legado `bible` ainda redireciona                                                                    | GREEN em 2026-09-04 via TDD focal (1 teste) mais `home-preference.test.ts` e `preferences.test.ts` (8 testes); leitura sempre nula com limpeza tolerante                                                             | Teste antigo atualizado para o novo contrato           |
+| US-001, US-002, US-003, FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, NFR-001, NFR-002, NFR-003, AC-012 | AC-012 na seção 6 | home-states.spec.ts com marcador próprio `SPECSFY:`           | RED em 2026-09-04: `HomePage.svelte` sem skeleton e retry                                                              | GREEN em 2026-09-04 via TDD focal (1 teste); skeleton, erro com retry por seção, `aria-live`, foco visível e `prefers-reduced-motion`; corrigido `aria-labelledby` órfão no card                                     | 12 arquivos e 15 testes verdes no escopo da home       |
 
 ### 12. Plano de testes e rastreabilidade
 
-| Requisito | Cenário BDD | Nível | Arquivo/comando esperado | Evidência |
-| --- | --- | --- | --- | --- |
-| FR-005 | AC-001 | Componente | apps/web/src/lib/features/home/home-page.spec.ts / `npm --prefix apps/web run test:tdd -- home-page.spec.ts` | Pending |
-| FR-005 | AC-002 | Componente | apps/web/src/lib/features/home/home-entry.spec.ts / `npm --prefix apps/web run test:tdd -- home-entry.spec.ts` | Pending |
-| FR-005 | AC-003 | Componente | apps/web/src/lib/features/navigation/app-sidebar.spec.ts / `npm --prefix apps/web run test:tdd -- app-sidebar.spec.ts` | Pending |
-| FR-001 | AC-004 | Unidade | apps/web/src/lib/features/home/home-continuation.spec.ts / `npm --prefix apps/web run test:tdd -- home-continuation.spec.ts` | Pending |
-| FR-001 | AC-005 | Unidade | apps/web/src/lib/features/home/home-continuation.spec.ts / `npm --prefix apps/web run test:tdd -- home-continuation.spec.ts` | Pending |
-| FR-002 | AC-006 | Componente | apps/web/src/lib/features/home/continue-reading-card.spec.ts / `npm --prefix apps/web run test:tdd -- continue-reading-card.spec.ts` | Pending |
-| FR-003 | AC-007 | Componente | apps/web/src/lib/features/home/quick-actions.spec.ts / `npm --prefix apps/web run test:tdd -- quick-actions.spec.ts` | Pending |
-| FR-004 | AC-008 | Unidade | apps/web/src/lib/features/home/home-recents.spec.ts / `npm --prefix apps/web run test:tdd -- home-recents.spec.ts` | Pending |
-| FR-004 | AC-009 | Componente | apps/web/src/lib/features/home/recent-lists.spec.ts / `npm --prefix apps/web run test:tdd -- recent-lists.spec.ts` | Pending |
-| FR-006 | AC-010 | Componente | apps/web/src/lib/features/config/config-page.spec.ts / `npm --prefix apps/web run test:tdd -- config-page.spec.ts` | Pending |
-| FR-006 | AC-011 | Unidade | apps/web/src/lib/navigation/home-preference.spec.ts / `npm --prefix apps/web run test:tdd -- home-preference.spec.ts` | Pending |
-| FR-001 | AC-012 | Componente | apps/web/src/lib/features/home/home-states.spec.ts / `npm --prefix apps/web run test:tdd -- home-states.spec.ts` | Pending |
-| NFR-001 | AC-003 | Componente | apps/web/src/lib/features/navigation/app-sidebar.spec.ts / `npm --prefix apps/web run test:tdd -- app-sidebar.spec.ts` | Pending |
-| NFR-001 | AC-006 | Componente | apps/web/src/lib/features/home/continue-reading-card.spec.ts / `npm --prefix apps/web run test:tdd -- continue-reading-card.spec.ts` | Pending |
-| NFR-001 | AC-007 | Componente | apps/web/src/lib/features/home/quick-actions.spec.ts / `npm --prefix apps/web run test:tdd -- quick-actions.spec.ts` | Pending |
-| NFR-002 | AC-001 | Componente | apps/web/src/lib/features/home/home-page.spec.ts / `npm --prefix apps/web run test:tdd -- home-page.spec.ts` | Pending |
-| NFR-002 | AC-004 | Unidade | apps/web/src/lib/features/home/home-continuation.spec.ts / `npm --prefix apps/web run test:tdd -- home-continuation.spec.ts` | Pending |
-| NFR-003 | AC-002 | Componente | apps/web/src/lib/features/home/home-entry.spec.ts / `npm --prefix apps/web run test:tdd -- home-entry.spec.ts` | Pending |
-| NFR-003 | AC-010 | Componente | apps/web/src/lib/features/config/config-page.spec.ts / `npm --prefix apps/web run test:tdd -- config-page.spec.ts` | Pending |
+| Requisito | Cenário BDD | Nível      | Arquivo/comando esperado                                                                                                             | Evidência |
+| --------- | ----------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| FR-005    | AC-001      | Componente | apps/web/src/lib/features/home/home-page.spec.ts / `npm --prefix apps/web run test:tdd -- home-page.spec.ts`                         | Pending   |
+| FR-005    | AC-002      | Componente | apps/web/src/lib/features/home/home-entry.spec.ts / `npm --prefix apps/web run test:tdd -- home-entry.spec.ts`                       | Pending   |
+| FR-005    | AC-003      | Componente | apps/web/src/lib/features/navigation/app-sidebar.spec.ts / `npm --prefix apps/web run test:tdd -- app-sidebar.spec.ts`               | Pending   |
+| FR-001    | AC-004      | Unidade    | apps/web/src/lib/features/home/home-continuation.spec.ts / `npm --prefix apps/web run test:tdd -- home-continuation.spec.ts`         | Pending   |
+| FR-001    | AC-005      | Unidade    | apps/web/src/lib/features/home/home-continuation.spec.ts / `npm --prefix apps/web run test:tdd -- home-continuation.spec.ts`         | Pending   |
+| FR-002    | AC-006      | Componente | apps/web/src/lib/features/home/continue-reading-card.spec.ts / `npm --prefix apps/web run test:tdd -- continue-reading-card.spec.ts` | Pending   |
+| FR-003    | AC-007      | Componente | apps/web/src/lib/features/home/quick-actions.spec.ts / `npm --prefix apps/web run test:tdd -- quick-actions.spec.ts`                 | Pending   |
+| FR-004    | AC-008      | Unidade    | apps/web/src/lib/features/home/home-recents.spec.ts / `npm --prefix apps/web run test:tdd -- home-recents.spec.ts`                   | Pending   |
+| FR-004    | AC-009      | Componente | apps/web/src/lib/features/home/recent-lists.spec.ts / `npm --prefix apps/web run test:tdd -- recent-lists.spec.ts`                   | Pending   |
+| FR-006    | AC-010      | Componente | apps/web/src/lib/features/config/config-page.spec.ts / `npm --prefix apps/web run test:tdd -- config-page.spec.ts`                   | Pending   |
+| FR-006    | AC-011      | Unidade    | apps/web/src/lib/navigation/home-preference.spec.ts / `npm --prefix apps/web run test:tdd -- home-preference.spec.ts`                | Pending   |
+| FR-001    | AC-012      | Componente | apps/web/src/lib/features/home/home-states.spec.ts / `npm --prefix apps/web run test:tdd -- home-states.spec.ts`                     | Pending   |
+| NFR-001   | AC-003      | Componente | apps/web/src/lib/features/navigation/app-sidebar.spec.ts / `npm --prefix apps/web run test:tdd -- app-sidebar.spec.ts`               | Pending   |
+| NFR-001   | AC-006      | Componente | apps/web/src/lib/features/home/continue-reading-card.spec.ts / `npm --prefix apps/web run test:tdd -- continue-reading-card.spec.ts` | Pending   |
+| NFR-001   | AC-007      | Componente | apps/web/src/lib/features/home/quick-actions.spec.ts / `npm --prefix apps/web run test:tdd -- quick-actions.spec.ts`                 | Pending   |
+| NFR-002   | AC-001      | Componente | apps/web/src/lib/features/home/home-page.spec.ts / `npm --prefix apps/web run test:tdd -- home-page.spec.ts`                         | Pending   |
+| NFR-002   | AC-004      | Unidade    | apps/web/src/lib/features/home/home-continuation.spec.ts / `npm --prefix apps/web run test:tdd -- home-continuation.spec.ts`         | Pending   |
+| NFR-003   | AC-002      | Componente | apps/web/src/lib/features/home/home-entry.spec.ts / `npm --prefix apps/web run test:tdd -- home-entry.spec.ts`                       | Pending   |
+| NFR-003   | AC-010      | Componente | apps/web/src/lib/features/config/config-page.spec.ts / `npm --prefix apps/web run test:tdd -- config-page.spec.ts`                   | Pending   |
 
 ### 13. Validações
 
@@ -563,17 +567,60 @@ apps/web/src/lib/features/config/ConfigPage.svelte
 - **Comando**: `node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/in-progress/0012-pagina-inicial-operacional-do-openbible/spec.md`
 - **Achados**: READY. Formato Specsfy/2.0 válido; 3 US, 6 FR, 3 NFR, 12 AC com cobertura mínima atendida para cada ID; interface Sim com stack Svelte observada, menus mapeados e contrato CRUD declarado como não aplicável; sem research externo; sem BLOCKER. WARNING: matriz TDD da seção 11 com 3 casos iniciais; cobertura total por entidade será expandida em `$specsfy-06-tdd-bdd` antes do Plan Gate.
 
+#### Reabertura do Ato I — navegação desktop de configuração
+
+- **Resultado**: Passed
+- **Data**: 2026-09-05
+- **Motivo**: o feedback acrescentou comportamento observável para container desktop mais amplo, sidebar vertical de `/config` e preservação do índice mobile.
+- **Comando**: `node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/in-progress/0012-pagina-inicial-operacional-do-openbible/spec.md` e `node .agents/skills/specsfy-04-validate/scripts/review_findings.mjs specs/in-progress/0012-pagina-inicial-operacional-do-openbible/spec.md --root /home/claudio/Projects/openbible-worksplace`
+- **Impacto**: Definition Gate restaurado; Plan e Delivery gates permanecem `Pending` até a validação do plano e a conclusão da entrega. As evidências históricas acima permanecem preservadas.
+
 #### Gate do Ato II — Plano
 
 - **Resultado**: Passed
 - **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/defined/0012-pagina-inicial-operacional-do-openbible/spec.md`
 - **Achados**: 21 tarefas (13 TDD, 6 CODE, 2 DOC); 12 predecessores TDD concluídos com RED em 2026-09-04; rastreabilidade 24/24 IDs; interface com 3 tarefas para 3 telas; runner Vitest via `test:tdd`; sem BLOCKER.
 
+#### Revalidação do Ato II — navegação desktop de configuração
+
+- **Resultado**: Passed
+- **Data**: 2026-09-05
+- **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/in-progress/0012-pagina-inicial-operacional-do-openbible/spec.md` e `node .agents/skills/specsfy-05-tasks/scripts/validate_interface_tasks.mjs specs/in-progress/0012-pagina-inicial-operacional-do-openbible/spec.md`
+- **Achados**: Plano reconciliado com 24 tarefas (15 TDD, 7 CODE e 2 DOC/TEST), 24/24 IDs cobertos, 24/24 tarefas concluídas e interface OK; T022 materializa o teste da nova composição e T023 possui três predecessores TDD rastreáveis.
+
 #### Gate do Ato III — Entrega
 
 - **Resultado**: In Progress
 - **Comando**: `node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/in-progress/0012-pagina-inicial-operacional-do-openbible/spec.md .`
 - **Achados**: 21/21 tarefas concluídas; rastreabilidade 24/24 IDs da spec; suite 227/229 (2 falhas pré-existentes em `notes-editor.svelte.spec.ts`, idênticas no baseline sem esta mudança); `check` e `lint` limpos no escopo da fatia (`features/home`, `navigation`, `ConfigPage`, `AppSidebar`, `+page`), com erros pré-existentes fora do escopo (`bible-selector`, props de rotas, `notes-editor`); `build` passa; documentator `--check` passa. Delivery permanece `In Progress` pelas falhas pré-existentes fora do escopo.
+
+#### Revalidação do Ato III — navegação desktop de configuração
+
+- **Resultado**: In Progress
+- **Data**: 2026-09-05
+- **Comandos aprovados**: teste focal de `/config` `5/5`; suíte unitária `90/90` arquivos e `355/355` testes; build; documentator e monitor de contexto (`CURRENT`).
+- **Pendências**: `bun run check` e `bun run lint` globais continuam com falhas preexistentes fora do escopo direto; a inspeção visual pelo navegador integrado não foi possível porque não havia sessão disponível. O Delivery Gate permanece `In Progress`.
+
+#### Reabertura do Ato I — identidade da seção Sobre
+
+- **Resultado**: Passed
+- **Data**: 2026-09-05
+- **Motivo**: o novo feedback altera a interface observável da configuração: remove o rodapé redundante de versão e pede logo, badge de versão e informações do projeto com link do repositório no GitHub.
+- **Impacto**: Definition Gate restaurado após a atualização do AC-010/FR-006; Plan e Delivery foram revalidados pela implementação e permanecem em acompanhamento até a regressão final.
+
+#### Revalidação do Ato I — identidade da seção Sobre
+
+- **Resultado**: Passed
+- **Data**: 2026-09-05
+- **Comando**: `node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/in-progress/0012-pagina-inicial-operacional-do-openbible/spec.md`
+- **Achados**: Specsfy/2.0 válido; AC-010 e FR-006 cobrem ausência do footer, logo, badge e informações/link do projeto; sem blocker.
+
+#### Revalidação do Ato II — identidade da seção Sobre
+
+- **Resultado**: Passed
+- **Data**: 2026-09-05
+- **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/in-progress/0012-pagina-inicial-operacional-do-openbible/spec.md` e `node .agents/skills/specsfy-05-tasks/scripts/validate_interface_tasks.mjs specs/in-progress/0012-pagina-inicial-operacional-do-openbible/spec.md`
+- **Achados**: Plano reconciliado com 27 tarefas, incluindo T025/T026/T027; predecessores TDD e cobertura da interface confirmados.
 
 ### 14. Tarefas
 
@@ -583,12 +630,12 @@ Formato:
 Cada tarefa possui exatamente este checklist, atualizado durante a execução:
 
 ```markdown
-  - [ ] **PREP**: Confirmar escopo, IDs, dependências e baseline.
-  - [ ] **EXECUTE**: Produzir a entrega no caminho declarado.
-  - [ ] **VERIFY**: Executar a verificação focal adequada.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia do sistema; se não houver interface, registrar `Não aplicável` e o motivo.
-  - [ ] **EVIDENCE**: Registrar comando, resultado e IDs nas seções 11–13.
-  - [ ] **IMPROVE**: Registrar melhoria aplicada ou ausência justificada.
+- [ ] **PREP**: Confirmar escopo, IDs, dependências e baseline.
+- [ ] **EXECUTE**: Produzir a entrega no caminho declarado.
+- [ ] **VERIFY**: Executar a verificação focal adequada.
+- [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia do sistema; se não houver interface, registrar `Não aplicável` e o motivo.
+- [ ] **EVIDENCE**: Registrar comando, resultado e IDs nas seções 11–13.
+- [ ] **IMPROVE**: Registrar melhoria aplicada ou ausência justificada.
 ```
 
 #### Fase 1 — RED TDD informado pelo BDD
@@ -733,6 +780,7 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
   - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia do shell, do `PageHeader` e do `aria-current` em 360px e 1280px nos dois temas.
   - [x] **EVIDENCE**: Registrar GREEN, arquivos e IDs nas seções 11–13.
   - [x] **IMPROVE**: Remover ramos mortos do seletor antigo ou justificar nenhuma.
+
   <!-- specsfy:evidence {"task":"T015","refs":["US-003","FR-005","NFR-001","NFR-002","AC-001","AC-002","AC-003"],"files":["apps/web/src/routes/+page.svelte","apps/web/src/lib/features/home/HomePage.svelte","apps/web/src/lib/features/navigation/AppSidebar.svelte"],"commands":[{"run":"npm --prefix apps/web run test:tdd -- home-page.spec.ts","exit":0}]} -->
 
 - [x] T016 [CODE] [US-003] Remover preferência em apps/web/src/lib/navigation/home-preference.ts e na ConfigPage.svelte — Refs: US-003, FR-006, NFR-003, AC-010, AC-011 — Depends: T015, T010, T011
@@ -755,6 +803,7 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
   - [x] **VISUAL**: Conferir PageHeader reutilizado, composição sem DataGrid, bordas, espaçamentos, margens, padding e tipografia nos estados skeleton, vazio, erro e sucesso.
   - [x] **EVIDENCE**: Registrar arquivos, comando e resultado da interação nas seções 11–13.
   - [x] **IMPROVE**: Ajustar densidade entre breakpoints ou justificar nenhuma.
+
   <!-- specsfy:evidence {"task":"T017","refs":["US-001","US-002","US-003","FR-001","FR-002","FR-003","FR-004","FR-005","FR-006","NFR-001","NFR-002","AC-012"],"files":["apps/web/src/lib/features/home/HomePage.svelte"],"commands":[{"run":"npm --prefix apps/web run test:tdd -- home-states.spec.ts","exit":0}]} -->
 
 - [x] T018 [DOC] Registrar blocos da home em INTERFACE.md — Refs: US-001, US-002, US-003, FR-001, FR-003, FR-004, FR-005, NFR-001, AC-001, AC-003, AC-007, AC-008, AC-012 — Depends: T017
@@ -772,7 +821,64 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
   - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia dos itens de menu em 360px e 1280px nos dois temas.
   - [x] **EVIDENCE**: Registrar GREEN, arquivos e IDs nas seções 11–13.
   - [x] **IMPROVE**: Ajustar rótulos ou ordem de foco ou justificar nenhuma.
+
   <!-- specsfy:evidence {"task":"T021","refs":["US-003","FR-005","NFR-001","AC-003"],"files":["apps/web/src/lib/features/navigation/AppSidebar.svelte"],"commands":[{"run":"npm --prefix apps/web run test:tdd -- app-sidebar.spec.ts","exit":0}]} -->
+
+- [x] T022 [TEST] [TDD] [US-003] Derivar teste em `apps/web/src/lib/features/config/config-page.spec.ts` da composição desktop da configuração com container amplo, navegação lateral vertical e regiões acessíveis — Refs: US-003, FR-006, NFR-003, AC-010 — Depends: T021
+  - [x] **PREP**: Confirmar o feedback de composição desktop, o índice mobile e os IDs AC-010/FR-006.
+  - [x] **EXECUTE**: Registrar marcadores estruturais em `apps/web/src/lib/features/config/config-page.spec.ts` para a navegação lateral e o limite de largura desktop.
+  - [x] **VERIFY**: O teste focal foi executado inicialmente em RED e passou após a implementação.
+  - [x] **VISUAL**: Registrar `Não aplicável` porque a tarefa só materializa teste estrutural de interface.
+  - [x] **EVIDENCE**: Registrar o teste focal e os IDs cobertos na seção 13.
+  - [x] **IMPROVE**: Validar o contrato sem acoplar o teste ao markup interno das tabs antigas.
+
+- [x] T023 [CODE] [US-003] Reorganizar a configuração desktop em `apps/web/src/lib/features/config/ConfigPage.svelte` com sidebar vertical e container amplo sem alterar o índice mobile — Refs: US-003, FR-006, NFR-002, NFR-003, AC-010 — Depends: T003, T010, T022
+  - [x] **PREP**: Confirmar RED de T003, T010 e T022, componentes de configuração e comportamento mobile existente.
+  - [x] **EXECUTE**: Substituir as tabs horizontais por tablist vertical com roving tabindex, painel associado e estilos responsivos.
+  - [x] **VERIFY**: Build e teste focal de configuração passaram; o mobile preserva índice, retorno e foco na subpágina.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia do sidebar e do conteúdo em desktop/mobile.
+  - [x] **EVIDENCE**: Registrar o teste focal e o build no comentário de evidência da tarefa.
+  - [x] **IMPROVE**: Reaproveitar a mesma lista de seções para desktop e mobile, evitando divergência de navegação.
+
+<!-- specsfy:evidence {"task":"T023","refs":["US-003","FR-006","NFR-002","NFR-003","AC-010"],"files":["apps/web/src/lib/features/config/ConfigPage.svelte","apps/web/src/lib/features/config/config-page.spec.ts","apps/web/src/routes/config.svelte.spec.ts"],"commands":[{"run":"bun run test:unit -- src/lib/features/config/config-page.spec.ts","exit":0},{"run":"bun run test:tdd -- src/routes/config.svelte.spec.ts","exit":0},{"run":"bun run build","exit":0}]} -->
+
+- [x] T024 [TEST] Executar regressão final em `apps/web/src/routes/config.svelte.spec.ts` da configuração e atualizar documentação/contexto — Refs: US-003, FR-006, NFR-003, AC-010 — Depends: T023
+  - [x] **PREP**: Identificar testes de configuração, suíte completa, build, documentator e monitor.
+  - [x] **EXECUTE**: Executar os testes focais e a regressão completa, reconstruir a documentação e verificar o contexto.
+  - [x] **VERIFY**: Configuração 5/5, suíte completa 90/90 arquivos e 355/355 testes, build, documentator e monitor passaram.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia; registrar `Não aplicável` para screenshot interativo porque o navegador integrado ficou indisponível.
+  - [x] **EVIDENCE**: Registrar contagens e comandos finais na seção 13.
+  - [x] **IMPROVE**: Atualizar a regressão desktop para o contrato semântico `aria-selected` da navegação vertical.
+
+- [x] T025 [TEST] [TDD] [US-003] Derivar teste da seção Sobre com logo, badge de versão, informações do projeto e ausência do rodapé redundante em `apps/web/src/lib/features/config/config-page.spec.ts` e `apps/web/src/routes/config.svelte.spec.ts` — Refs: US-003, FR-006, NFR-003, AC-010 — Depends: T024
+  - [x] **PREP**: Confirmar o novo comportamento de About, o repositório GitHub oficial e os IDs AC-010/FR-006.
+  - [x] **EXECUTE**: Escrever testes estruturais para logo, badge, informações/link do projeto e remoção do `config-footer`, sem criar `.feature`.
+  - [x] **VERIFY**: Executar os focais; os contratos passaram após a implementação e o gap estrutural ficou coberto sem regressão.
+  - [x] **VISUAL**: Não aplicável: a tarefa só materializa o contrato de interface; a inspeção visual fica registrada em T026.
+  - [x] **EVIDENCE**: Registrar comandos, resultado e IDs na seção 13.
+  - [x] **IMPROVE**: Preferir nomes acessíveis e seletores sem acoplamento a classes geradas pelo Svelte.
+
+<!-- specsfy:evidence {"task":"T025","refs":["US-003","FR-006","NFR-003","AC-010"],"files":["apps/web/src/lib/features/config/config-page.spec.ts","apps/web/src/routes/config.svelte.spec.ts"],"commands":[{"run":"node .agents/skills/specsfy-setup/scripts/check_database_safety.mjs --project . --command \"bun run test:unit -- src/lib/features/config/config-page.spec.ts src/routes/config.svelte.spec.ts\"","exit":0},{"run":"bun run test:unit -- src/lib/features/config/config-page.spec.ts","exit":0},{"run":"bun run test:tdd -- src/routes/config.svelte.spec.ts","exit":0}]} -->
+
+- [x] T026 [CODE] [US-003] Atualizar About e a rota `/config` com marca, badge de versão, informações do projeto, link do GitHub e sem rodapé redundante em `apps/web/src/lib/features/config/ConfigPage.svelte`, `apps/web/src/routes/config/+page.svelte` e `INTERFACE.md` — Refs: US-003, FR-006, NFR-001, NFR-003, AC-010 — Depends: T010, T022, T025
+  - [x] **PREP**: Confirmar RED de T010, T022 e T025, tokens de tema, assets de logo e URL oficial do repositório.
+  - [x] **EXECUTE**: Renderizar logo acessível, badge `APP_VERSION`, bloco de informações do projeto com link externo, remover o footer e atualizar a descrição da rota e o mapa de interface.
+  - [x] **VERIFY**: Testes focais, regressão de rota e build passaram; o link, a ausência do footer e a navegação vertical foram conferidos por DOM/CSS.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, conteúdo longo e zoom, sem overflow; navegador Vitest Browser disponível para a rota, sem screenshot externo.
+  - [x] **EVIDENCE**: Registrar arquivos, comandos, resultados e IDs nas seções 11–13.
+  - [x] **IMPROVE**: Reusar tokens existentes e o asset oficial de logo sem introduzir uma superfície decorativa adicional.
+
+<!-- specsfy:evidence {"task":"T026","refs":["US-003","FR-006","NFR-001","NFR-003","AC-010"],"files":["apps/web/src/lib/features/config/ConfigPage.svelte","apps/web/src/routes/config/+page.svelte","apps/web/src/lib/features/config/config-page.spec.ts","apps/web/src/routes/config.svelte.spec.ts","INTERFACE.md"],"commands":[{"run":"bun run test:unit -- src/lib/features/config/config-page.spec.ts","exit":0},{"run":"bun run test:tdd -- src/routes/config.svelte.spec.ts","exit":0},{"run":"bun run build","exit":0},{"run":"bunx eslint src/lib/features/config/ConfigPage.svelte src/lib/features/config/config-page.spec.ts src/routes/config/+page.svelte src/routes/config.svelte.spec.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0}]} -->
+
+- [x] T027 [TEST] Executar a regressão final de `/config`, documentação e monitor após o ajuste de About em `apps/web/src/routes/config.svelte.spec.ts` e `apps/web/src/lib/features/config/` — Refs: US-003, FR-006, NFR-001, NFR-003, AC-010, AC-012 — Depends: T026
+  - [x] **PREP**: Identificar testes de configuração, build, documentator e monitor necessários.
+  - [x] **EXECUTE**: Executar focais, suíte unitária relacionada, build, reconstrução/verificação da documentação e monitor.
+  - [x] **VERIFY**: Suíte 90/90 arquivos e 358/358 testes, rota `/config` 6/6, build, documentator e monitor passaram.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, desktop/mobile, foco, zoom, conteúdo longo e reduced motion por DOM/CSS e Vitest Browser; sem screenshot conectado adicional.
+  - [x] **EVIDENCE**: Registrar contagens e comandos no fechamento da seção 13.
+  - [x] **IMPROVE**: Manter o About como fonte única da identidade e versão do app.
+
+<!-- specsfy:evidence {"task":"T027","refs":["US-003","FR-006","NFR-001","NFR-003","AC-010","AC-012"],"files":["apps/web/src/lib/features/config/ConfigPage.svelte","apps/web/src/routes/config/+page.svelte","apps/web/src/lib/features/config/config-page.spec.ts","apps/web/src/routes/config.svelte.spec.ts","INTERFACE.md"],"commands":[{"run":"bun run test:unit","exit":0},{"run":"bun run test:tdd -- src/routes/config.svelte.spec.ts","exit":0},{"run":"bun run build","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
 #### Fase final — Qualidade
 
@@ -834,6 +940,8 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
 - **DEC-010**: Vazios minimalistas em linha nos recentes — feedback direto da pessoa; painel `Empty` trocado por frase curta com ação (`Crie a primeira nota`, `Ler a Bíblia`); `HighlightsList` ganha `emptyVariant="inline"` sem alterar o painel da página `/highlights`. Alternativa ocultar as seções esconderia os atalhos `Ver todas`.
 - **DEC-011**: Guarda contra boot duplicado, splash de loading e carga única na home — feedback direto da pessoa (`workspace` recarregava várias vezes); `WorkspaceState.boot` deduplica chamadas concorrentes e ignora reboot com status `ready`; `AppFrame` exibe `WorkspaceBootSplash` (logo, barras em pulso, `aria-busy`, `prefers-reduced-motion`); `HomePage` carrega uma vez por storage e aguarda o storage em vez de dupla passagem. Alternativa manter o texto estático de boot preservaria o flash de recarregamento.
 - **DEC-012**: Escolha OPFS vs pasta no PWA desktop — pedido direto da pessoa; `resolveStorageKind` (preferência salva vence o padrão por hostname), `shouldOfferStorageChoice` (PWA standalone + File System Access + sem escolha), onboarding com as duas opções na etapa de armazenamento e troca com confirmação em `/config`; storages não migram entre si. Alternativa manter OPFS forçado no PWA limitaria quem quer pasta local.
+- **DEC-013**: Usar container desktop amplo com sidebar vertical e manter índice/subpágina no mobile — porque seis ou mais seções de configuração ficam mais escaneáveis e não comprimem o conteúdo; alternativa tabs horizontais mantinha navegação extensa e pouco espaço útil.
+- **DEC-014**: Concentrar identidade, versão e informações do projeto na seção Sobre e remover o footer global redundante — porque a versão precisa ter contexto e um único ponto de manutenção; alternativa repetir `OpenBible v{APP_VERSION}` no rodapé duplicaria informação e ocuparia espaço útil.
 
 ### 18. Definition of Done
 

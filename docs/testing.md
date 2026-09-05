@@ -3,7 +3,7 @@
 <!-- specsfy:documentator:start -->
 ## Resumo
 
-- Arquivos de teste: 64.
+- Arquivos de teste: 65.
 - Runner: não identificado.
 - Scripts: build: turbo run build; check-types: turbo run check-types; dev: turbo run dev; lint: turbo run lint; format: prettier --write .; format:check: prettier --check ..
 
@@ -52,6 +52,7 @@
 | apps/web/src/lib/features/notes/note-editor-viewport.test.ts |
 | apps/web/src/lib/features/notes/note-markdown.test.ts |
 | apps/web/src/lib/features/notes/note-verse-index.test.ts |
+| apps/web/src/lib/features/notes/notes-delete-refresh.test.ts |
 | apps/web/src/lib/features/notes/notes-repository.test.ts |
 | apps/web/src/lib/features/notes/notes-state.test.ts |
 | apps/web/src/lib/features/notes/slash-verse-command.test.ts |
