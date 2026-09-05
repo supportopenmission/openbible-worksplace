@@ -17,7 +17,7 @@ Relação: relaciona cada arquivo observado à sua superfície.
 | Outras fontes | apps/desktop/src-tauri/src/commands/workspace.rs | FORMAT_VERSION, MigrationState |
 | Outras fontes | apps/desktop/src-tauri/src/lib.rs | — |
 | Outras fontes | apps/desktop/src-tauri/src/main.rs | — |
-| Outras fontes | apps/web/.svelte-kit/ambient.d.ts | NODE_ENV, COLORTERM, SVELTEKIT_FORK, HISTFILE, OSLogRateLimit, GIT_ASKPASS, BUN_INSTALL, CODEX_SESSION_ID |
+| Outras fontes | apps/web/.svelte-kit/ambient.d.ts | NVM_INC, TERM_PROGRAM, ORCA_WORKTREE_ID, ORCA_CODEX_LAUNCH_PREFLIGHT, NODE, ORCA_USER_DATA_PATH, OPENCODE_CONFIG_DIR, DIRECTUS_MCP_TOKEN |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/0.DaToGNeW.css | — |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/2.DMkUyxGK.css | — |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/3.Btp-QOwP.css | — |
