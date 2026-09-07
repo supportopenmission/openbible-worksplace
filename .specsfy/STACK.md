@@ -26,6 +26,7 @@ uma. Preserve decisões humanas nas seções livres deste arquivo.
 | Desktop | Tauri 2.11.5 | `apps/desktop/src-tauri/Cargo.toml` e `apps/desktop/package.json` |
 | Diálogo nativo | tauri-plugin-dialog 2.7.3 | `apps/desktop/src-tauri/Cargo.toml`, `src-tauri/src/lib.rs` e `capabilities/default.json` |
 | Backend desktop | Rust 2021 + rusqlite 0.40.2 | `apps/desktop/src-tauri/Cargo.toml` |
+| Cofre de credenciais | keyring 4.2.0 com armazenamento nativo do SO | `apps/desktop/src-tauri/Cargo.toml`, `Cargo.lock` e `src/commands/ai.rs` |
 | Build macOS | Tauri universal-apple-darwin com app e DMG | `apps/desktop/package.json`, `apps/desktop/src-tauri/tauri.conf.json` (`targets`: `app`, `dmg`) |
 | Adapter desktop | @sveltejs/adapter-static 3.0.8 | `apps/web/package.json` e `apps/web/svelte.config.js` |
 | Ponte web→desktop | @tauri-apps/api 2.11.1 | `apps/web/package.json` |

@@ -10,24 +10,25 @@ export default defineConfig({
 		projects: [
 			{
 				extends: './vite.config.js',
-				test: {
-					name: 'client',
-					browser: {
+					test: {
+						name: 'client',
+						maxWorkers: 1,
+						browser: {
 						enabled: true,
 						provider: playwright(),
 						instances: [{ browser: 'chromium', headless: true }]
 					},
-					include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
-					exclude: ['src/lib/**/*.test.{js,ts}']
+					include: ['src/**/*.svelte.{test,spec}.{js,ts}', 'src/lib/features/ai/ai-interface.test.ts']
 				}
 			},
 			{
 				extends: './vite.config.js',
-				test: {
-					name: 'server',
-					environment: 'node',
+					test: {
+						name: 'server',
+						maxWorkers: 2,
+						environment: 'node',
 					include: ['src/lib/**/*.{test,spec}.{js,ts}'],
-					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
+					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}', 'src/lib/features/ai/ai-interface.test.ts']
 				}
 			}
 		]

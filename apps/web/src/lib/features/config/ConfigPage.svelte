@@ -14,6 +14,7 @@
 		FolderOpen,
 		Archive,
 		Info,
+		Sparkles,
 		SunMoon
 	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -29,11 +30,13 @@
 	import WorkspaceSettings from '$lib/features/workspace/WorkspaceSettings.svelte';
 	import WorkspaceBackups from '$lib/features/workspace/WorkspaceBackups.svelte';
 	import SyncSettings from '$lib/features/sync/SyncSettings.svelte';
+	import AgentCapabilityPanel from '$lib/features/ai/AgentCapabilityPanel.svelte';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 
 	const isMobile = new IsMobile();
 	type ConfigSectionId =
 		| 'storage'
+		| 'assistance'
 		| 'workspaces'
 		| 'backups'
 		| 'bibles'
@@ -47,6 +50,7 @@
 	const configSections: Array<{ id: ConfigSectionId; label: string; icon: Component }> = [
 		{ id: 'appearance', label: 'Aparência', icon: SunMoon },
 		{ id: 'storage', label: 'Armazenamento', icon: Database },
+		{ id: 'assistance', label: 'Assistência', icon: Sparkles },
 		{ id: 'workspaces', label: 'Workspaces', icon: FolderOpen },
 		{ id: 'bibles', label: 'Bíblias', icon: BookOpen },
 		{ id: 'stats', label: 'Estatísticas', icon: ChartColumn },
@@ -196,6 +200,8 @@
 						{#if mobileSection === 'storage'}
 							<WorkspaceSettings embedded view="storage" />
 							<SyncSettings />
+						{:else if mobileSection === 'assistance'}
+							<AgentCapabilityPanel />
 						{:else if mobileSection === 'workspaces'}
 							<WorkspaceSettings embedded view="workspaces" />
 						{:else if mobileSection === 'backups'}
@@ -258,6 +264,15 @@
 					>
 						<WorkspaceSettings embedded view="storage" />
 						<SyncSettings />
+					</div>
+				{:else if activeSection === 'assistance'}
+					<div
+						id="config-panel-assistance"
+						class="config-panel"
+						role="region"
+						aria-labelledby="config-tab-assistance"
+					>
+						<AgentCapabilityPanel />
 					</div>
 				{:else if activeSection === 'workspaces'}
 					<div

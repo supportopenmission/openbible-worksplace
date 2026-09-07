@@ -8,6 +8,16 @@ export type WorkspaceCommand =
 	| { name: 'database.writeContent'; record: WorkspaceContentRecord }
 	| { name: 'database.deleteContent'; workspaceId: string; kind: 'note' | 'highlight'; id: string }
 	| {
+			name: 'agent.profile.save';
+			profileId: string;
+			provider: string;
+			model: string;
+			endpoint?: string;
+			secret: string;
+	  }
+	| { name: 'agent.profile.revoke'; profileId: string; secretRef: string }
+	| { name: 'agent.profile.capability' }
+	| {
 			name: 'sync.writeNote';
 			workspaceId: string;
 			noteId: string;
@@ -127,6 +137,23 @@ function payload(command: WorkspaceCommand | UnknownWorkspaceCommand): Record<st
 				kind: command.kind,
 				id: validateSyncKey(String(command.id ?? ''), 'content_id_required')
 			};
+		case 'agent.profile.save': {
+			const profileId = validateSyncKey(String(command.profileId ?? ''), 'agent_profile_id_required');
+			const provider = validateSyncKey(String(command.provider ?? ''), 'agent_provider_required');
+			const model = validateSyncKey(String(command.model ?? ''), 'agent_model_required');
+			const secret = String(command.secret ?? '');
+			if (!secret.trim()) {
+				throw new TauriCommandError({ code: 'agent_secret_required', recoverable: false });
+			}
+			return { profileId, provider, model, endpoint: command.endpoint, secret };
+		}
+		case 'agent.profile.revoke':
+			return {
+				profileId: validateSyncKey(String(command.profileId ?? ''), 'agent_profile_id_required'),
+				secretRef: String(command.secretRef ?? '')
+			};
+		case 'agent.profile.capability':
+			return {};
 		case 'sync.writeNote':
 			return {
 				workspaceId: validateSyncKey(String(command.workspaceId ?? ''), 'workspace_id_required'),
@@ -232,6 +259,9 @@ function tauriCommandName(command: WorkspaceCommand): string {
 		'database.listContent': 'list_workspace_content',
 		'database.writeContent': 'write_workspace_content',
 		'database.deleteContent': 'delete_workspace_content',
+		'agent.profile.save': 'agent_profile_save',
+		'agent.profile.revoke': 'agent_profile_revoke',
+		'agent.profile.capability': 'agent_profile_capability',
 		'sync.writeNote': 'sync_write_note',
 		'sync.writeSnapshot': 'sync_write_snapshot',
 		'sync.appendChange': 'sync_append_change',

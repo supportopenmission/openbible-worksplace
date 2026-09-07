@@ -50,6 +50,11 @@ não o banco de origem. A sincronização
 entre dispositivos é opt-in, mantém notas e estado operacional nos backends
 locais e pode usar um endpoint WebSocket seguro configurado pela pessoa, sem
 exigir relay obrigatório.
+Assistência de IA é opcional e controlada: no desktop, o perfil usa o cofre
+seguro do sistema via Tauri; no PWA, a fronteira depende de gateway confiável e
+token de sessão em memória. O agente lê somente o contexto selecionado do
+workspace ativo e devolve proposta revisável, sem ferramentas autônomas ou
+escrita autoral automática.
 
 ## Contexto técnico
 

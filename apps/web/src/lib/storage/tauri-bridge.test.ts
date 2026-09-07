@@ -79,4 +79,27 @@ describe('typed Tauri bridge', () => {
 			invokeWorkspaceCommand({ name: 'sync.readState', workspaceId: 'workspace-native-001', noteId: 'note-001' })
 		).resolves.toMatchObject({ ok: true });
 	});
+
+	// SPECSFY: US-001 FR-001 FR-002 FR-003 NFR-001 AC-001 AC-002 AC-003 AC-015
+	it('expõe comandos de credencial sem devolver o segredo no resultado', async () => {
+		const result = await invokeWorkspaceCommand({
+			name: 'agent.profile.save',
+			profileId: 'profile-study',
+			provider: 'openai',
+			model: 'gpt-5',
+			secret: 'sk-test-secret'
+		});
+
+		expect(result.ok).toBe(true);
+		expect(JSON.stringify(result)).not.toContain('sk-test-secret');
+		await expect(
+			invokeWorkspaceCommand({
+				name: 'agent.profile.save',
+				profileId: 'profile-study',
+				provider: 'openai',
+				model: 'gpt-5',
+				secret: ' '
+			})
+		).rejects.toMatchObject({ code: 'agent_secret_required' });
+	});
 });
