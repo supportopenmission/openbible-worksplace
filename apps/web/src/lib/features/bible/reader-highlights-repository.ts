@@ -1,6 +1,12 @@
 import { isSQLite } from '$lib/storage/empty-sqlite';
 import type { WorkspaceStorage } from '$lib/storage/types';
 import { getSql } from './bible-reader';
+import {
+	getWorkspaceIndexProjection,
+	rebuildWorkspaceIndex
+} from '$lib/features/notes/index-rebuilder';
+import { getActiveWorkspace, readManifest } from '$lib/storage/workspace-catalog';
+import { createWorkspaceContentRepository } from '$lib/storage/workspace-content-repository';
 
 export type ReaderHighlightRecord = {
 	versionId: string;
@@ -43,7 +49,9 @@ function ensureSchema(database: SqlDatabase): void {
 	database.run(readerHighlightSchema());
 }
 
-export async function listAllReaderHighlights(database: SqlDatabase): Promise<ReaderHighlightRecord[]> {
+export async function listAllReaderHighlights(
+	database: SqlDatabase
+): Promise<ReaderHighlightRecord[]> {
 	ensureSchema(database);
 	const rows =
 		database.exec(
@@ -124,6 +132,27 @@ export const READER_HIGHLIGHT_INDEX_PATH = '.openbible/index.sqlite';
 
 type OpenIndex = { database: SqlDatabase; export(): Uint8Array; close(): void };
 
+/**
+ * O catálogo local pode ainda não ter o ponteiro ativo durante a migração de
+ * uma raiz nativa v1. Mantemos a compatibilidade calculando o mesmo ID legado
+ * determinístico usado pela migração, sem transformar o path em identidade
+ * portátil.
+ */
+async function nativeWorkspaceId(storage: WorkspaceStorage): Promise<string | undefined> {
+	const activeId = getActiveWorkspace().workspaceId;
+	if (activeId) return activeId;
+	const manifest = await readManifest(storage);
+	if (manifest) return manifest.workspaceId;
+	const bytes = await storage.readFile('.openbible/config.json');
+	if (!bytes) return undefined;
+	let hash = 2166136261;
+	for (const byte of bytes) {
+		hash ^= byte;
+		hash = Math.imul(hash, 16777619);
+	}
+	return `legacy-${storage.kind}-${(hash >>> 0).toString(16).padStart(8, '0')}`;
+}
+
 async function openWorkspaceIndex(storage: WorkspaceStorage): Promise<OpenIndex> {
 	const sql = await getSql();
 	const bytes = await storage.readFile(READER_HIGHLIGHT_INDEX_PATH);
@@ -158,16 +187,86 @@ export async function readChapterHighlights(
 	query: { versionId: string; bookId: number; chapter: number }
 ): Promise<ReaderHighlightRecord[]> {
 	if (storage.kind === 'native' && storage.queryIndex) {
-		const value = await storage.queryIndex('list_highlights', query);
+		const workspaceId = await nativeWorkspaceId(storage);
+		const value = await storage.queryIndex('list_highlights', {
+			...query,
+			workspaceId
+		});
 		return Array.isArray(value) ? (value as ReaderHighlightRecord[]) : [];
+	}
+	const manifest = await readManifest(storage);
+	const projection = manifest
+		? getWorkspaceIndexProjection({
+				backend: storage.kind === 'native' ? 'sqlite' : 'indexeddb',
+				workspaceId: manifest.workspaceId
+			})
+		: null;
+	if (projection) {
+		return projection.records
+			.filter((record) => record.kind === 'highlight')
+			.map((record) => record.payload as ReaderHighlightRecord)
+			.filter(
+				(record) =>
+					record.versionId === query.versionId &&
+					record.bookId === query.bookId &&
+					record.chapter === query.chapter
+			);
+	}
+	if (manifest) {
+		await rebuildWorkspaceIndex(storage);
+		const rebuilt = getWorkspaceIndexProjection({
+			backend: storage.kind === 'native' ? 'sqlite' : 'indexeddb',
+			workspaceId: manifest.workspaceId
+		});
+		if (rebuilt) {
+			return rebuilt.records
+				.filter((record) => record.kind === 'highlight')
+				.map((record) => record.payload as ReaderHighlightRecord)
+				.filter(
+					(record) =>
+						record.versionId === query.versionId &&
+						record.bookId === query.bookId &&
+						record.chapter === query.chapter
+				);
+		}
 	}
 	return withWorkspaceIndex(storage, (database) => listChapterHighlights(database, query), false);
 }
 
-export async function readAllReaderHighlights(storage: WorkspaceStorage): Promise<ReaderHighlightRecord[]> {
+export async function readAllReaderHighlights(
+	storage: WorkspaceStorage
+): Promise<ReaderHighlightRecord[]> {
 	if (storage.kind === 'native' && storage.queryIndex) {
-		const value = await storage.queryIndex('list_highlights', { versionId: '', bookId: 0, chapter: 0 });
+		const workspaceId = await nativeWorkspaceId(storage);
+		const value = await storage.queryIndex('list_highlights', {
+			workspaceId,
+			versionId: '',
+			bookId: 0,
+			chapter: 0
+		});
 		return Array.isArray(value) ? (value as ReaderHighlightRecord[]) : [];
+	}
+	const manifest = await readManifest(storage);
+	const projection = manifest
+		? getWorkspaceIndexProjection({
+				backend: storage.kind === 'native' ? 'sqlite' : 'indexeddb',
+				workspaceId: manifest.workspaceId
+			})
+		: null;
+	if (projection) {
+		return projection.records
+			.filter((record) => record.kind === 'highlight')
+			.map((record) => record.payload as ReaderHighlightRecord);
+	}
+	await rebuildWorkspaceIndex(storage);
+	const rebuiltProjection = getWorkspaceIndexProjection({
+		backend: storage.kind === 'native' ? 'sqlite' : 'indexeddb',
+		workspaceId: manifest?.workspaceId ?? 'legacy-indexeddb'
+	});
+	if (rebuiltProjection) {
+		return rebuiltProjection.records
+			.filter((record) => record.kind === 'highlight')
+			.map((record) => record.payload as ReaderHighlightRecord);
 	}
 	return withWorkspaceIndex(storage, (database) => listAllReaderHighlights(database), false);
 }
@@ -177,10 +276,46 @@ export async function persistHighlight(
 	record: ReaderHighlightRecord
 ): Promise<void> {
 	if (storage.kind === 'native' && storage.queryIndex) {
-		await storage.queryIndex('upsert_highlight', record);
+		const workspaceId = await nativeWorkspaceId(storage);
+		await storage.queryIndex('upsert_highlight', {
+			...record,
+			workspaceId
+		});
 		return;
 	}
-	await withWorkspaceIndex(storage, (database) => upsertHighlight(database, record), true);
+	const manifest = await readManifest(storage);
+	const identity = record as ReaderHighlightRecord & { highlightId?: string; recordId?: string };
+	const highlightId =
+		typeof identity.highlightId === 'string'
+			? identity.highlightId
+			: typeof identity.recordId === 'string'
+				? identity.recordId
+				: `highlight-${record.versionId}-${record.bookId}-${record.chapter}-${record.verseStart}-${record.verseEnd}`;
+	if (manifest) {
+		const context = {
+			workspaceId: manifest.workspaceId,
+			generation: 0,
+			backend: storage.kind === 'native' ? ('sqlite' as const) : ('indexeddb' as const)
+		};
+		const repository = createWorkspaceContentRepository(context);
+		await repository.write({
+			kind: 'highlight',
+			id: highlightId,
+			workspaceId: manifest.workspaceId,
+			schemaVersion: 1,
+			payload: { ...record, highlightId }
+		});
+		await rebuildWorkspaceIndex(storage, { context });
+		return;
+	}
+	// Compatibilidade explícita para uma raiz ainda sem manifesto: o sidecar é
+	// legado/migração e deixa de ser consultado quando há contexto canônico.
+	await storage.ensureDirectory('highlights');
+	await storage.writeFile(
+		`highlights/${highlightId}.json`,
+		JSON.stringify({ ...record, highlightId, schemaVersion: 1 })
+	);
+	await rebuildWorkspaceIndex(storage);
 }
 
 export async function removeHighlight(
@@ -188,7 +323,11 @@ export async function removeHighlight(
 	record: Omit<ReaderHighlightRecord, 'styleId'>
 ): Promise<void> {
 	if (storage.kind === 'native' && storage.queryIndex) {
-		await storage.queryIndex('delete_highlight', record);
+		const workspaceId = await nativeWorkspaceId(storage);
+		await storage.queryIndex('delete_highlight', {
+			...record,
+			workspaceId
+		});
 		return;
 	}
 	await withWorkspaceIndex(storage, (database) => deleteHighlightByRange(database, record), true);

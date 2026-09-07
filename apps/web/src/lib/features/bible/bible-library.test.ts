@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import initSqlJs from 'sql.js';
 import { resolve } from 'node:path';
-import type { StorageKind, WorkspaceStorage } from '$lib/storage/types';
+import type { StorageKind, WorkspaceStorage, WorkspaceStorageScope } from '$lib/storage/types';
 import { deleteBibleVersion, listLibraryEntries } from './bible-library';
 
 type SqlJs = Awaited<ReturnType<typeof initSqlJs>>;
@@ -59,6 +59,10 @@ function configJson(status = 'complete') {
 	return JSON.stringify({ version: 1, storage: 'opfs', configuredAt: new Date().toISOString(), bibleImportStatus: status });
 }
 
+function scope(workspaceId: string, storage: WorkspaceStorage): WorkspaceStorageScope {
+	return { workspaceId, storage };
+}
+
 describe('bible library', () => {
 	it('lists installed versions with books, size and diagnostics', async () => {
 		// SPECSFY: US-003 FR-003 NFR-002 AC-005
@@ -66,9 +70,10 @@ describe('bible library', () => {
 		await storage.writeFile('bibles/nvi.sqlite', openLpBytes('Nova Versão Internacional'));
 		await storage.writeFile('bibles/quebrada.sqlite', new TextEncoder().encode('SQLite format 3\0lixo'));
 
-		const entries = await listLibraryEntries(storage);
+		const entries = await listLibraryEntries(scope('workspace-a', storage));
 
 		expect(entries.map((entry) => entry.fileName).sort()).toEqual(['nvi.sqlite', 'quebrada.sqlite']);
+		expect(entries.every((entry) => entry.workspaceId === 'workspace-a')).toBe(true);
 		const valid = entries.find((entry) => entry.fileName === 'nvi.sqlite');
 		expect(valid).toMatchObject({ name: 'Nova Versão Internacional', status: 'installed' });
 		expect(valid!.books).toBe(2);
@@ -85,7 +90,7 @@ describe('bible library', () => {
 		await storage.writeFile('bibles/nvi.sqlite', openLpBytes('Nova Versão Internacional'));
 		await storage.writeFile('bibles/acf.sqlite', openLpBytes('Almeida Corrigida e Fiel'));
 
-		const result = await deleteBibleVersion(storage, 'nvi.sqlite');
+		const result = await deleteBibleVersion(scope('workspace-a', storage), 'nvi.sqlite');
 
 		expect(result).toMatchObject({ name: 'nvi.sqlite', status: 'deleted' });
 		expect(await storage.fileExists('bibles/nvi.sqlite')).toBe(false);
@@ -98,11 +103,11 @@ describe('bible library', () => {
 		await storage.writeFile('.openbible/config.json', configJson('complete'));
 		await storage.writeFile('bibles/nvi.sqlite', openLpBytes('Nova Versão Internacional'));
 
-		await deleteBibleVersion(storage, 'nvi.sqlite');
+		await deleteBibleVersion(scope('workspace-a', storage), 'nvi.sqlite');
 
 		const config = JSON.parse(new TextDecoder().decode((await storage.readFile('.openbible/config.json'))!));
 		expect(config.bibleImportStatus).toBe('pending');
-		expect(await listLibraryEntries(storage)).toEqual([]);
+		expect(await listLibraryEntries(scope('workspace-a', storage))).toEqual([]);
 	});
 
 	it('keeps the file when deletion is unsupported or fails', async () => {
@@ -123,13 +128,35 @@ describe('bible library', () => {
 			}
 		} as unknown as WorkspaceStorage;
 
-		await expect(deleteBibleVersion(readOnly, 'nvi.sqlite')).rejects.toMatchObject({
+		await expect(deleteBibleVersion(scope('workspace-read-only', readOnly), 'nvi.sqlite')).rejects.toMatchObject({
 			code: 'delete-unsupported'
 		});
 
 		const storage = new MemoryStorage();
-		await expect(deleteBibleVersion(storage, 'ausente.sqlite')).rejects.toMatchObject({
+		await expect(deleteBibleVersion(scope('workspace-a', storage), 'ausente.sqlite')).rejects.toMatchObject({
 			code: 'not-found'
 		});
+	});
+
+	it('keeps identical file names isolated between workspaces', async () => {
+		// SPECSFY: US-003 FR-003 NFR-002 AC-005 AC-006
+		const first = new MemoryStorage();
+		const second = new MemoryStorage();
+		await first.writeFile('bibles/shared.sqlite', openLpBytes('Workspace A'));
+		await second.writeFile('bibles/shared.sqlite', openLpBytes('Workspace B'));
+
+		const firstScope = scope('workspace-a', first);
+		const secondScope = scope('workspace-b', second);
+		const firstEntries = await listLibraryEntries(firstScope);
+		const secondEntries = await listLibraryEntries(secondScope);
+
+		expect(firstEntries[0]).toMatchObject({ workspaceId: 'workspace-a', name: 'Workspace A' });
+		expect(secondEntries[0]).toMatchObject({ workspaceId: 'workspace-b', name: 'Workspace B' });
+
+		await deleteBibleVersion(firstScope, 'shared.sqlite');
+
+		expect(await listLibraryEntries(firstScope)).toEqual([]);
+		expect(await listLibraryEntries(secondScope)).toHaveLength(1);
+		expect(await second.fileExists('bibles/shared.sqlite')).toBe(true);
 	});
 });

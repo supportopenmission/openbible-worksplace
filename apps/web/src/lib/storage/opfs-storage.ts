@@ -1,4 +1,7 @@
-import type { FileContent, WorkspaceStorage } from './types';
+import type { FileContent, WorkspaceStorage, WorkspaceStorageEntry } from './types';
+import { capabilitiesForKind, type StorageCapabilities } from './workspace-catalog';
+
+export const opfsCapabilities: StorageCapabilities = capabilitiesForKind('opfs');
 
 type OpfsStorageManager = StorageManager & {
 	getDirectory(): Promise<FileSystemDirectoryHandle>;
@@ -74,6 +77,14 @@ function directoryStorage(kind: 'opfs', root: FileSystemDirectoryHandle): Worksp
 				if (handle.kind === 'file') files.push(name);
 			}
 			return files.sort();
+		},
+		listEntries: async (path): Promise<WorkspaceStorageEntry[]> => {
+			const directory = await getDirectory(path);
+			const entries: WorkspaceStorageEntry[] = [];
+			for await (const [name, handle] of directory.entries()) {
+				entries.push({ name, kind: handle.kind });
+			}
+			return entries.sort((left, right) => left.name.localeCompare(right.name));
 		}
 	};
 }
@@ -92,4 +103,69 @@ export async function createOpfsStorage(): Promise<WorkspaceStorage> {
 
 export function createOpfsStorageFromRoot(root: FileSystemDirectoryHandle): WorkspaceStorage {
 	return directoryStorage('opfs', root);
+}
+
+const LOGICAL_VAULTS_DIR = 'vaults';
+
+/**
+ * Cria uma raiz lógica isolada (`vaults/<workspaceId>`) no OPFS para um novo
+ * workspace. Raízes lógicas nunca são apresentadas como pasta do sistema.
+ */
+export async function createOpfsLogicalRoot(
+	workspaceId: string
+): Promise<{ storage: WorkspaceStorage; ref: string }> {
+	if (
+		!('storage' in navigator) ||
+		typeof (navigator.storage as OpfsStorageManager).getDirectory !== 'function'
+	) {
+		throw new Error('OPFS is not available in this browser');
+	}
+
+	const origin = await (navigator.storage as OpfsStorageManager).getDirectory();
+	const vaults = await origin.getDirectoryHandle(LOGICAL_VAULTS_DIR, { create: true });
+	const root = await vaults.getDirectoryHandle(workspaceId, { create: true });
+	return { storage: directoryStorage('opfs', root), ref: `${LOGICAL_VAULTS_DIR}/${workspaceId}` };
+}
+
+/** Reabre uma raiz lógica existente sem criá-la. Falha se ela não existir. */
+export async function openOpfsLogicalRoot(ref: string): Promise<WorkspaceStorage> {
+	if (
+		!('storage' in navigator) ||
+		typeof (navigator.storage as OpfsStorageManager).getDirectory !== 'function'
+	) {
+		throw new Error('OPFS is not available in this browser');
+	}
+
+	const parts = ref.split('/').filter(Boolean);
+	const origin = await (navigator.storage as OpfsStorageManager).getDirectory();
+	let directory = origin;
+	for (const part of parts) {
+		directory = await directory.getDirectoryHandle(part, { create: false });
+	}
+	return directoryStorage('opfs', directory);
+}
+
+/**
+ * Apaga uma raiz lógica inteira (`vaults/<id>`) de forma recursiva pelo
+ * diretório pai. Usado só após todos os guardas fail-closed da exclusão.
+ */
+export async function deleteOpfsLogicalRoot(ref: string): Promise<void> {
+	const parts = ref.split('/').filter(Boolean);
+	const leaf = parts.pop();
+	if (!leaf || parts.some((part) => part === '.' || part === '..')) {
+		throw new Error(`Invalid workspace ref: ${ref}`);
+	}
+	if (
+		!('storage' in navigator) ||
+		typeof (navigator.storage as OpfsStorageManager).getDirectory !== 'function'
+	) {
+		throw new Error('OPFS is not available in this browser');
+	}
+
+	const origin = await (navigator.storage as OpfsStorageManager).getDirectory();
+	let directory = origin;
+	for (const part of parts) {
+		directory = await directory.getDirectoryHandle(part, { create: false });
+	}
+	await directory.removeEntry(leaf, { recursive: true });
 }

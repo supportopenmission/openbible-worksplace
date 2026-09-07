@@ -15,7 +15,10 @@ export function getNoteSnippet(content?: string, title?: string, description?: s
 	if (frontmatterMatch) {
 		const descMatch = frontmatterMatch[1].match(/^\s*description\s*:\s*(.*?)\s*$/m);
 		if (descMatch) {
-			const parsedDesc = descMatch[1].trim().replace(/^["']|["']$/g, '').trim();
+			const parsedDesc = descMatch[1]
+				.trim()
+				.replace(/^["']|["']$/g, '')
+				.trim();
 			if (parsedDesc) return parsedDesc;
 		}
 	}
@@ -36,9 +39,7 @@ export function getNoteSnippet(content?: string, title?: string, description?: s
 	cleaned = cleaned.replace(/:::/g, ' ');
 
 	// 4. Strip HTML comments and HTML tags (<br />, <br>, <p>, <div>, etc.)
-	cleaned = cleaned
-		.replace(/<!--[\s\S]*?-->/g, ' ')
-		.replace(/<\/?[a-zA-Z][^>]*>/g, ' ');
+	cleaned = cleaned.replace(/<!--[\s\S]*?-->/g, ' ').replace(/<\/?[a-zA-Z][^>]*>/g, ' ');
 
 	// 5. Decode common HTML entities
 	cleaned = cleaned
@@ -55,9 +56,7 @@ export function getNoteSnippet(content?: string, title?: string, description?: s
 	cleaned = cleaned.replace(/\[[ xX]\]\s*/g, '');
 
 	// 7. Strip markdown code fences (```ts ... ```) keeping content, or inline backticks
-	cleaned = cleaned
-		.replace(/```[\w-]*\s*([\s\S]*?)```/g, '$1')
-		.replace(/`([^`]+)`/g, '$1');
+	cleaned = cleaned.replace(/```[\w-]*\s*([\s\S]*?)```/g, '$1').replace(/`([^`]+)`/g, '$1');
 
 	// 8. Strip markdown images and convert links to link text only
 	cleaned = cleaned
@@ -122,6 +121,7 @@ class NotesState {
 
 	selectionMode = $state(false);
 	selectedNoteIds = $state<string[]>([]);
+	private loadSequence = 0;
 
 	filteredNotes = $derived.by(() => {
 		const q = this.searchQuery.trim().toLowerCase();
@@ -132,7 +132,7 @@ class NotesState {
 					const descMatch = (note.description || '').toLowerCase().includes(q);
 					const contentMatch = (note.content || note.body || '').toLowerCase().includes(q);
 					return titleMatch || descMatch || contentMatch;
-			  });
+				});
 
 		return [...list].sort((a, b) => {
 			const pinA = a.pinned ? 1 : 0;
@@ -190,6 +190,18 @@ class NotesState {
 		this.selectedNoteIds = [];
 	}
 
+	/** Limpa a projeção em memória antes de começar a ler outra raiz. */
+	resetForWorkspace() {
+		this.loadSequence += 1;
+		this.notes = [];
+		this.loading = false;
+		this.initialized = false;
+		this.error = '';
+		this.activeNoteId = null;
+		this.selectedNoteIds = [];
+		this.selectionMode = false;
+	}
+
 	async deleteSelectedNotes(storage: WorkspaceStorage): Promise<number> {
 		const ids = [...this.selectedNoteIds];
 		if (ids.length === 0) return 0;
@@ -205,13 +217,18 @@ class NotesState {
 
 	async loadNotes(storage: WorkspaceStorage, force = false) {
 		if (this.initialized && !force && !this.error) return;
+		const request = ++this.loadSequence;
 		this.loading = true;
 		this.error = '';
 		try {
-			this.notes = await listNotes(storage);
+			const nextNotes = await listNotes(storage);
+			if (request !== this.loadSequence) return;
+			this.notes = nextNotes;
 		} catch (err) {
+			if (request !== this.loadSequence) return;
 			this.error = err instanceof Error ? err.message : 'Não foi possível carregar as notas.';
 		} finally {
+			if (request !== this.loadSequence) return;
 			this.loading = false;
 			this.initialized = true;
 		}
@@ -252,7 +269,8 @@ class NotesState {
 			this.updateNote(saved);
 			return true;
 		} catch (err) {
-			this.error = err instanceof Error ? err.message : 'Não foi possível alterar a fixação da nota.';
+			this.error =
+				err instanceof Error ? err.message : 'Não foi possível alterar a fixação da nota.';
 			return false;
 		}
 	}

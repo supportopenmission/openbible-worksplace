@@ -4,7 +4,7 @@ import {
 	readBibleChapter,
 	type BibleVersion
 } from '$lib/features/bible/bible-reader';
-import { verseReferenceLabel } from './verse-block-extension';
+import { markdownBodyToHtml, verseReferenceLabel } from './verse-block-extension';
 import { matchCatalogBook } from '$lib/bible/reference-parser';
 import { youtubeEmbedUrl } from './youtube-embed';
 
@@ -19,8 +19,30 @@ export type VerseTextResolver = (fence: {
 }) => ExportVerse[];
 
 export type ExpandResult =
-	| { ok: true; markdown: string }
-	| { ok: false; reason: 'missing-verse-text' };
+	{ ok: true; markdown: string } | { ok: false; reason: 'missing-verse-text' };
+
+export interface PortableExportSnapshot {
+	title: string;
+	markdown: string;
+	resolveVerse?: VerseTextResolver;
+}
+
+export interface PortableMarkdownExport {
+	format: 'markdown';
+	derived: true;
+	source: 'workspace-snapshot';
+	markdown: string;
+	warnings: string[];
+}
+
+export interface PortablePdfFallbackExport {
+	format: 'pdf-fallback';
+	derived: true;
+	source: 'workspace-snapshot';
+	title: string;
+	markdown: string;
+	document: string;
+}
 
 const VERSE_FENCE_PATTERN = /:::verse\s*\{([^}]*)\}\s*\n([\s\S]*?)\n:::/g;
 const FENCE_ATTR_PATTERN = /(\w+)="([^"]*)"/g;
@@ -67,11 +89,13 @@ export function expandVideoFences(markdown: string): { markdown: string; warning
 		let end = index + 1;
 		while (end < lines.length && lines[end].trim() !== ':::') end += 1;
 		const videoId = (attrs.videoId ?? '').trim();
-		if (videoId) {
-			out.push(renderVideoIframe(videoId));
-		} else {
-			warnings.push(`Bloco de vídeo sem videoId omitido (linha ${index + 1}).`);
-		}
+		const url =
+			(attrs.url ?? '').trim() ||
+			(videoId ? `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}` : '');
+		const title = (attrs.title ?? '').trim() || 'Vídeo do YouTube';
+		if (videoId === '')
+			warnings.push(`Bloco de vídeo sem videoId convertido para fallback (linha ${index + 1}).`);
+		out.push(url ? `[${title}](${url})` : title);
 		index = end < lines.length ? end + 1 : lines.length;
 	}
 	return { markdown: out.join('\n'), warnings };
@@ -106,6 +130,31 @@ export function buildExportMarkdown(markdown: string, resolve: VerseTextResolver
 	const expanded = expandVerseFences(markdown, resolve);
 	if (!expanded.ok) throw new Error('missing-verse-text');
 	return sanitizeBreakTags(expandVideoFences(expanded.markdown).markdown);
+}
+
+/** Exporta um snapshot do backend sem escrever Markdown de volta na fonte. */
+export function exportPortableMarkdown(snapshot: PortableExportSnapshot): PortableMarkdownExport {
+	const markdown = buildExportMarkdown(snapshot.markdown, snapshot.resolveVerse ?? (() => []));
+	return {
+		format: 'markdown',
+		derived: true,
+		source: 'workspace-snapshot',
+		markdown,
+		warnings: []
+	};
+}
+
+/** Gera o documento de impressão offline; o navegador decide a gravação em PDF. */
+export function exportPdfFallback(snapshot: PortableExportSnapshot): PortablePdfFallbackExport {
+	const markdown = buildExportMarkdown(snapshot.markdown, snapshot.resolveVerse ?? (() => []));
+	return {
+		format: 'pdf-fallback',
+		derived: true,
+		source: 'workspace-snapshot',
+		title: snapshot.title,
+		markdown,
+		document: buildPrintDocument(snapshot.title, markdownBodyToHtml(markdown))
+	};
 }
 
 /**

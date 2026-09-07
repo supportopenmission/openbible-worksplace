@@ -1,7 +1,8 @@
 import { getSql } from '$lib/features/bible/bible-reader';
-import type { WorkspaceStorage } from '$lib/storage/types';
+import type { WorkspaceStorageScope } from '$lib/storage/types';
 
 export interface LibraryEntry {
+	workspaceId: string;
 	fileName: string;
 	name: string;
 	books: number;
@@ -26,8 +27,17 @@ export class LibraryError extends Error {
 	}
 }
 
-async function describeFile(fileName: string, bytes: Uint8Array): Promise<LibraryEntry> {
+function requireWorkspaceId(workspaceId: string): void {
+	if (!workspaceId.trim()) throw new Error('workspace_id_required');
+}
+
+async function describeFile(
+	workspaceId: string,
+	fileName: string,
+	bytes: Uint8Array
+): Promise<LibraryEntry> {
 	const fallback: LibraryEntry = {
+		workspaceId,
 		fileName,
 		name: fileName,
 		books: 0,
@@ -55,7 +65,7 @@ async function describeFile(fileName: string, bytes: Uint8Array): Promise<Librar
 		} catch {
 			// metadata é opcional; mantém o nome do arquivo.
 		}
-		return { fileName, name, books: bookCount, size: bytes.length, status: 'installed' };
+		return { workspaceId, fileName, name, books: bookCount, size: bytes.length, status: 'installed' };
 	} catch {
 		return fallback;
 	} finally {
@@ -63,7 +73,9 @@ async function describeFile(fileName: string, bytes: Uint8Array): Promise<Librar
 	}
 }
 
-export async function listLibraryEntries(storage: WorkspaceStorage): Promise<LibraryEntry[]> {
+export async function listLibraryEntries(scope: WorkspaceStorageScope): Promise<LibraryEntry[]> {
+	requireWorkspaceId(scope.workspaceId);
+	const { workspaceId, storage } = scope;
 	const files = (await storage.listFiles('bibles'))
 		.filter((fileName) => fileName.toLowerCase().endsWith('.sqlite'))
 		.sort();
@@ -72,6 +84,7 @@ export async function listLibraryEntries(storage: WorkspaceStorage): Promise<Lib
 		const bytes = await storage.readFile(`bibles/${fileName}`);
 		if (!bytes) {
 			entries.push({
+				workspaceId,
 				fileName,
 				name: fileName,
 				books: 0,
@@ -81,7 +94,7 @@ export async function listLibraryEntries(storage: WorkspaceStorage): Promise<Lib
 			});
 			continue;
 		}
-		entries.push(await describeFile(fileName, bytes));
+		entries.push(await describeFile(workspaceId, fileName, bytes));
 	}
 	return entries;
 }
@@ -96,9 +109,11 @@ function decodeConfig(bytes: Uint8Array | null): (Record<string, unknown> & { bi
 }
 
 export async function deleteBibleVersion(
-	storage: WorkspaceStorage,
+	scope: WorkspaceStorageScope,
 	fileName: string
 ): Promise<DeleteBibleResult> {
+	requireWorkspaceId(scope.workspaceId);
+	const { storage } = scope;
 	const destination = `bibles/${fileName}`;
 	if (!(await storage.fileExists(destination))) {
 		throw new LibraryError('not-found', `Versão ${fileName} não encontrada.`);

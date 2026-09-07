@@ -17,6 +17,19 @@ describe('config sem tela inicial', () => {
 		expect(source).toContain('max-width: 1120px');
 	});
 
+	it('ordena aparência primeiro e backup imediatamente antes de sobre', () => {
+		const source = readFileSync(new URL('./ConfigPage.svelte', import.meta.url), 'utf8');
+		const appearance = source.indexOf("id: 'appearance'");
+		const storage = source.indexOf("id: 'storage'");
+		const backups = source.indexOf("id: 'backups'");
+		const about = source.indexOf("id: 'about'");
+
+		expect(appearance).toBeGreaterThan(-1);
+		expect(appearance).toBeLessThan(storage);
+		expect(storage).toBeLessThan(backups);
+		expect(backups).toBeLessThan(about);
+	});
+
 	it('concentra marca, versão e informações do projeto na seção Sobre', () => {
 		const source = readFileSync(new URL('./ConfigPage.svelte', import.meta.url), 'utf8');
 		expect(source).toContain('src="/logo.png"');

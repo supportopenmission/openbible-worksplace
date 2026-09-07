@@ -1,6 +1,53 @@
 import { emptyIndexSqlite, isSQLite } from './empty-sqlite';
+import { saveLocalWorkspaceHandle } from './local-storage';
 import { loadWorkspacePreferences, PREFERENCES_PATH } from './preferences';
 import type { ImportResult, ProgressCallback, WorkspaceConfig, WorkspaceStorage } from './types';
+import {
+	attachCatalogMethods,
+	ensureManifest,
+	getCatalogEntry,
+	upsertCatalogEntry
+} from './workspace-catalog';
+export { validateBackupManifest, validateRestoreEntry } from './backup/backup-contract';
+export {
+	enumerateBackupEntries,
+	enumerateWorkspaceContent,
+	readBackupExclusions,
+	readWorkspaceContentExclusions,
+	resolveBibleBackupPolicy
+} from './backup/backup-enumerator';
+export {
+	readBackupArchive,
+	readBackupManifest,
+	writeBackupArchive
+} from './backup/backup-archive';
+export {
+	createRestoredWorkspace,
+	findRestoreConflicts,
+	validateRestoreArchive
+} from './backup/backup-restore';
+export {
+	commitRestoreStaging,
+	discardStaging,
+	getRestoreStaging,
+	recoverStaging,
+	restoreIntoStaging,
+	rollbackRestoreStaging
+} from './backup/backup-staging';
+export {
+	createIndexedDbContentDriver,
+	createIndexedDbContentRepository,
+	createNativeSqliteContentDriver,
+	createNativeSqliteContentPort,
+	createNativeSqliteContentRepository,
+	createWorkspaceStorageBackupSink
+} from './backup/backup-adapters';
+export {
+	buildOperationReport,
+	buildOperationReportAsync,
+	openAfterIndexFailure,
+	rebuildDerivedIndex
+} from './backup/backup-report';
 
 export const WORKSPACE_DIRECTORIES = [
 	'.openbible',
@@ -34,16 +81,6 @@ export const WORKSPACE_FILES = [
 	{ path: 'templates/note.md', content: template('note', 'Nova nota') }
 ] as const;
 
-function workspaceConfig(storage: WorkspaceStorage): WorkspaceConfig {
-	return {
-		version: 1,
-		storage: storage.kind,
-		configuredAt: new Date().toISOString(),
-		bibleImportStatus: 'pending',
-		label: storage.label
-	};
-}
-
 function decodeJson<T>(bytes: Uint8Array | null): T | null {
 	if (!bytes) return null;
 	try {
@@ -57,7 +94,7 @@ export async function prepareWorkspace(
 	storage: WorkspaceStorage,
 	onProgress: ProgressCallback = () => undefined
 ): Promise<void> {
-	const steps = WORKSPACE_DIRECTORIES.length + WORKSPACE_FILES.length + 3;
+	const steps = WORKSPACE_DIRECTORIES.length + WORKSPACE_FILES.length + 4;
 	let completed = 0;
 	const advance = () => {
 		completed += 1;
@@ -69,16 +106,35 @@ export async function prepareWorkspace(
 		advance();
 	}
 
-	const configPath = '.openbible/config.json';
-	if (!(await storage.fileExists(configPath))) {
-		await storage.writeFile(configPath, `${JSON.stringify(workspaceConfig(storage), null, 2)}\n`);
+	// Manifesto v2 idempotente: cria ou migra sem mover conteúdo autoral.
+	const manifest = await ensureManifest(storage);
+	if (manifest) {
+		if (storage.kind === 'local' && storage.localHandle) {
+			// Um handle por workspace evita que a última pasta escolhida substitua
+			// as demais após um reload. O bootstrap sem ID continua usando a chave
+			// legada `default` até ler o manifesto.
+			await saveLocalWorkspaceHandle(storage.localHandle, manifest.workspaceId);
+		}
+		if (!getCatalogEntry(manifest.workspaceId)) {
+			upsertCatalogEntry({
+				workspaceId: manifest.workspaceId,
+				nameCache: manifest.name,
+				storageKind: storage.kind,
+				localRef: storage.kind === 'local' ? storage.localHandle : undefined,
+				lastOpenedAt: new Date().toISOString(),
+				status: 'ready'
+			});
+		}
 	}
+	attachCatalogMethods(storage);
 	advance();
 
-	const indexPath = '.openbible/index.sqlite';
-	const indexBytes = await storage.readFile(indexPath);
-	if (!indexBytes || !isSQLite(indexBytes)) {
-		await storage.writeFile(indexPath, emptyIndexSqlite());
+	if (storage.kind !== 'native') {
+		const indexPath = '.openbible/index.sqlite';
+		const indexBytes = await storage.readFile(indexPath);
+		if (!indexBytes || !isSQLite(indexBytes)) {
+			await storage.writeFile(indexPath, emptyIndexSqlite());
+		}
 	}
 	advance();
 
@@ -91,14 +147,56 @@ export async function prepareWorkspace(
 		if (!(await storage.fileExists(file.path))) await storage.writeFile(file.path, file.content);
 		advance();
 	}
+
+	try {
+		const { rebuildWorkspaceIndex } = await import('$lib/features/notes/index-rebuilder');
+		await rebuildWorkspaceIndex(storage);
+	} catch {
+		// A rebuild failure leaves primary records and the legacy source untouched.
+	}
+	advance();
 }
 
 export async function loadWorkspaceConfig(
 	storage: WorkspaceStorage
 ): Promise<WorkspaceConfig | null> {
-	const raw = decodeJson<WorkspaceConfig & { path?: string; storageKind?: string; formatVersion?: number; migrationState?: string }>(
-		await storage.readFile('.openbible/config.json')
-	);
+	const bytes = await storage.readFile('.openbible/config.json');
+	const raw = decodeJson<
+		WorkspaceConfig & {
+			path?: string;
+			storageKind?: string;
+			formatVersion?: number;
+			workspaceId?: string;
+			name?: string;
+			managedRoot?: boolean;
+			migrationState?: string;
+		}
+	>(bytes);
+	// Manifesto v2: identidade portátil + compatibilidade legada.
+	if (raw && raw.formatVersion === 2 && typeof raw.workspaceId === 'string') {
+		if (!raw.workspaceId || !raw.name || typeof raw.managedRoot !== 'boolean') return null;
+		const storageKind =
+			raw.storage === 'local' || raw.storage === 'opfs' || raw.storage === 'native'
+				? raw.storage
+				: storage.kind;
+		if (storageKind !== storage.kind) return null;
+		const bibleImportStatus =
+			raw.bibleImportStatus === 'pending' ||
+			raw.bibleImportStatus === 'complete' ||
+			raw.bibleImportStatus === 'partial'
+				? raw.bibleImportStatus
+				: 'pending';
+		return {
+			version: 1,
+			storage: storageKind,
+			configuredAt:
+				typeof raw.configuredAt === 'string' && raw.configuredAt.length > 0
+					? raw.configuredAt
+					: new Date().toISOString(),
+			bibleImportStatus,
+			label: typeof raw.label === 'string' && raw.label ? raw.label : (raw.name as string)
+		};
+	}
 	const config = raw?.version
 		? raw
 		: raw?.formatVersion === 1 && raw.storageKind === 'native'
@@ -108,7 +206,9 @@ export async function loadWorkspaceConfig(
 					configuredAt: new Date().toISOString(),
 					bibleImportStatus: 'pending' as const,
 					label: raw.path,
-					migrationState: raw.migrationState === 'completed' || raw.migrationState === 'error' ? raw.migrationState : 'not_started'
+					migrationState: (raw.migrationState === 'completed' || raw.migrationState === 'error'
+						? raw.migrationState
+						: 'not_started') as 'not_started' | 'completed' | 'error'
 				}
 			: null;
 	if (!config || config.version !== 1 || config.storage !== storage.kind) return null;

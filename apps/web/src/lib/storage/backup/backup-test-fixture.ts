@@ -1,5 +1,5 @@
 import { prepareWorkspace } from '../workspace';
-import type { FileContent, StorageKind, WorkspaceStorage } from '../types';
+import type { FileContent, StorageKind, WorkspaceStorage, WorkspaceStorageEntry } from '../types';
 
 export class BackupMemoryStorage implements WorkspaceStorage {
 	readonly files = new Map<string, Uint8Array>();
@@ -30,6 +30,22 @@ export class BackupMemoryStorage implements WorkspaceStorage {
 			.filter((file) => file.startsWith(prefix) && !file.slice(prefix.length).includes('/'))
 			.map((file) => file.slice(prefix.length))
 			.sort();
+	}
+
+	async listEntries(path: string): Promise<WorkspaceStorageEntry[]> {
+		const prefix = path ? `${path.replace(/\/$/, '')}/` : '';
+		const entries = new Map<string, WorkspaceStorageEntry>();
+		for (const directory of this.directories) {
+			if (!directory.startsWith(prefix)) continue;
+			const name = directory.slice(prefix.length).split('/')[0];
+			if (name) entries.set(name, { name, kind: 'directory' });
+		}
+		for (const file of this.files.keys()) {
+			if (!file.startsWith(prefix)) continue;
+			const name = file.slice(prefix.length).split('/')[0];
+			if (name && !entries.has(name)) entries.set(name, { name, kind: 'file' });
+		}
+		return [...entries.values()].sort((left, right) => left.name.localeCompare(right.name));
 	}
 }
 

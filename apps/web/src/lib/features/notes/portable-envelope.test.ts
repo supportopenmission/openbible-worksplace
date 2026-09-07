@@ -55,7 +55,7 @@ describe('canonical video link', () => {
 		const source = ':::video{videoId="dQw4w9WgXcQ"}\n:::';
 		const exported = buildExportMarkdown(source, () => []);
 
-		expect(exported).toContain('[Vídeo]');
+		expect(exported).toContain('[Vídeo do YouTube]');
 		expect(exported).toContain('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
 		expect(exported).not.toContain('<iframe');
 	});

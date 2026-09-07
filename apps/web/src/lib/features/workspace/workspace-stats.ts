@@ -1,6 +1,7 @@
-import type { WorkspaceStorage } from '$lib/storage/types';
+import type { WorkspaceStorage, WorkspaceStorageScope } from '$lib/storage/types';
 
 export interface WorkspaceStats {
+	workspaceId: string;
 	bibles: { count: number; bytes: number };
 	notes: { active: number; trash: number };
 	sermons: { count: number };
@@ -17,7 +18,9 @@ async function safeListFiles(storage: WorkspaceStorage, path: string): Promise<s
 	}
 }
 
-export async function collectWorkspaceStats(storage: WorkspaceStorage): Promise<WorkspaceStats> {
+export async function collectWorkspaceStats(scope: WorkspaceStorageScope): Promise<WorkspaceStats> {
+	if (!scope.workspaceId.trim()) throw new Error('workspace_id_required');
+	const { workspaceId, storage } = scope;
 	const bibleFiles = (await safeListFiles(storage, 'bibles')).filter((fileName) =>
 		fileName.toLowerCase().endsWith('.sqlite')
 	);
@@ -47,6 +50,7 @@ export async function collectWorkspaceStats(storage: WorkspaceStorage): Promise<
 	}
 
 	return {
+		workspaceId,
 		bibles: { count: bibleFiles.length, bytes: bibleBytes },
 		notes: { active: noteFiles.length, trash: trashFiles.length },
 		sermons: { count: sermons },

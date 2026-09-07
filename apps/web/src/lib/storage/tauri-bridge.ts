@@ -1,14 +1,22 @@
 import { invoke } from '@tauri-apps/api/core';
+import type { WorkspaceContentRecord } from './workspace-content-repository';
 
 export type WorkspaceCommand =
+	| { name: 'database.initialize' }
+	| { name: 'database.deleteWorkspace'; workspaceId: string }
+	| { name: 'database.listContent'; workspaceId: string }
+	| { name: 'database.writeContent'; record: WorkspaceContentRecord }
 	| { name: 'workspace.initialize'; preferredPath?: string }
 	| { name: 'workspace.readFile'; relativePath: string }
 	| { name: 'workspace.listFiles'; relativePath: string }
+	| { name: 'workspace.listEntries'; relativePath: string }
 	| { name: 'workspace.deleteFile'; relativePath: string }
+	| { name: 'workspace.deleteManagedRoot'; workspaceId: string }
 	| { name: 'workspace.writeFile'; relativePath: string; bytes: Uint8Array }
 	| {
 			name: 'index.query';
 			operation: 'list_highlights' | 'upsert_highlight' | 'delete_highlight';
+			workspaceId?: string;
 			versionId?: string;
 			bookId?: number;
 			chapter?: number;
@@ -29,6 +37,12 @@ export interface NativeCommandError {
 export interface NativeCommandResult<T = unknown> {
 	ok: true;
 	value: T;
+}
+
+export interface NativeDatabaseStatus {
+	backend: 'sqlite';
+	databaseName: 'app.sqlite';
+	schemaVersion: number;
 }
 
 export class TauriCommandError extends Error implements NativeCommandError {
@@ -52,6 +66,24 @@ function validatePath(path: string): void {
 
 function payload(command: WorkspaceCommand | UnknownWorkspaceCommand): Record<string, unknown> {
 	switch (command.name) {
+		case 'database.initialize':
+			return {};
+		case 'database.deleteWorkspace': {
+			const workspaceId = String(command.workspaceId ?? '').trim();
+			if (!workspaceId) {
+				throw new TauriCommandError({ code: 'workspace_id_required', recoverable: false });
+			}
+			return { workspaceId };
+		}
+		case 'database.listContent': {
+			const workspaceId = String(command.workspaceId ?? '').trim();
+			if (!workspaceId) {
+				throw new TauriCommandError({ code: 'workspace_id_required', recoverable: false });
+			}
+			return { workspaceId };
+		}
+		case 'database.writeContent':
+			return { record: command.record };
 		case 'workspace.initialize':
 			return { preferredPath: command.preferredPath };
 		case 'workspace.readFile':
@@ -60,9 +92,14 @@ function payload(command: WorkspaceCommand | UnknownWorkspaceCommand): Record<st
 		case 'workspace.listFiles':
 			validatePath(String(command.relativePath));
 			return { relativePath: String(command.relativePath) };
+		case 'workspace.listEntries':
+			validatePath(String(command.relativePath));
+			return { relativePath: String(command.relativePath) };
 		case 'workspace.deleteFile':
 			validatePath(String(command.relativePath));
 			return { relativePath: String(command.relativePath) };
+		case 'workspace.deleteManagedRoot':
+			return { workspaceId: String((command as { workspaceId?: unknown }).workspaceId ?? '') };
 		case 'workspace.writeFile':
 			validatePath(String(command.relativePath));
 			return {
@@ -70,11 +107,16 @@ function payload(command: WorkspaceCommand | UnknownWorkspaceCommand): Record<st
 				bytes: Array.from(command.bytes as ArrayLike<number>)
 			};
 		case 'index.query':
-			if (command.operation !== 'list_highlights') {
+			if (
+				command.operation !== 'list_highlights' &&
+				command.operation !== 'upsert_highlight' &&
+				command.operation !== 'delete_highlight'
+			) {
 				throw new TauriCommandError({ code: 'command_not_allowed', recoverable: false });
 			}
 			return {
 				operation: command.operation,
+				workspaceId: command.workspaceId,
 				versionId: command.versionId,
 				bookId: command.bookId,
 				chapter: command.chapter,
@@ -96,6 +138,11 @@ export function toUserFacingStorageError(error: Partial<NativeCommandError>): Ta
 		permission_denied: 'Não foi possível acessar a pasta do workspace.',
 		workspace_path_required: 'Escolha uma pasta para abrir o workspace.',
 		workspace_locked: 'Este workspace já está aberto em outra janela.',
+		not_managed: 'Raiz sem marcador gerenciado: exclusão bloqueada sem opção de forçar.',
+		unknown_files: 'A raiz contém arquivos desconhecidos: exclusão bloqueada sem opção de forçar.',
+		scan_error: 'A varredura da raiz falhou: exclusão bloqueada sem opção de forçar.',
+		persistence_conflict: 'A transação do workspace entrou em conflito; nada foi apagado.',
+		workspace_id_required: 'A operação exige um workspace identificado.',
 		sqlite_invalid: 'O banco SQLite não pôde ser lido.',
 		command_not_allowed: 'Operação não permitida.'
 	};
@@ -108,10 +155,16 @@ export function toUserFacingStorageError(error: Partial<NativeCommandError>): Ta
 
 function tauriCommandName(command: WorkspaceCommand): string {
 	return {
+		'database.initialize': 'initialize_workspace_database',
+		'database.deleteWorkspace': 'delete_workspace_record',
+		'database.listContent': 'list_workspace_content',
+		'database.writeContent': 'write_workspace_content',
 		'workspace.initialize': 'initialize_workspace',
 		'workspace.readFile': 'read_workspace_file',
 		'workspace.listFiles': 'list_workspace_files',
+		'workspace.listEntries': 'list_workspace_entries',
 		'workspace.deleteFile': 'delete_workspace_file',
+		'workspace.deleteManagedRoot': 'delete_managed_workspace',
 		'workspace.writeFile': 'write_workspace_file',
 		'index.query': 'query_workspace_index',
 		'bible.readVerses': 'read_bible_verses',

@@ -1,4 +1,6 @@
 import { extractVerseFencesFromMarkdown } from './verse-block-extension';
+import { roundtripPortableMarkdown } from './portable-envelope';
+export { readPortableMarkdown, saveCanonicalMarkdown } from './legacy-migration';
 
 export type ToolbarAction =
 	'bold' | 'italic' | 'heading' | 'bullet' | 'ordered' | 'task' | 'quote' | 'verse';
@@ -14,7 +16,7 @@ export type MarkdownPart =
 const VERSE_FENCE = /:::verse\{[^}]*\}\s*\n[\s\S]*?\n:::/g;
 
 export function roundtripMarkdown(markdown: string): string {
-	return markdown;
+	return roundtripPortableMarkdown(markdown);
 }
 
 export function extractFirstH1(markdown: string): string | null {

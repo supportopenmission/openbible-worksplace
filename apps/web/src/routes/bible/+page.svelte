@@ -14,16 +14,14 @@
 	const workspace = getWorkspaceState();
 	let loadedStorage = $state<WorkspaceStorage | null>(null);
 	let loadedError = $state('');
-	let storage = $derived(storageOverride ?? loadedStorage);
-	let initialError = $derived(storageOverride ? '' : loadedError);
+	// Quando há provider, o storage precisa acompanhar cada ativação. O valor
+	// carregado uma vez no onMount deixava o leitor preso à raiz anterior.
+	let storage = $derived(storageOverride ?? (workspace ? workspace.storage : loadedStorage));
+	let initialError = $derived(storageOverride ? '' : (workspace?.error ?? loadedError));
 
 	onMount(async () => {
 		if (storageOverride) return;
-		if (workspace) {
-			loadedStorage = workspace.storage;
-			loadedError = workspace.error;
-			return;
-		}
+		if (workspace) return;
 		await retryStorage();
 	});
 
@@ -31,8 +29,6 @@
 		loadedError = '';
 		if (workspace) {
 			await workspace.boot({ requestPersist: true });
-			loadedStorage = workspace.storage;
-			loadedError = workspace.error;
 			return;
 		}
 		try {

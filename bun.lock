@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "with-svelte",
@@ -11,14 +12,14 @@
     },
     "apps/desktop": {
       "name": "desktop",
-      "version": "0.5.2",
+      "version": "0.6.0",
       "devDependencies": {
         "@tauri-apps/cli": "^2.11.4",
       },
     },
     "apps/web": {
       "name": "web",
-      "version": "0.5.2",
+      "version": "0.6.0",
       "dependencies": {
         "@friendofsvelte/tipex": "0.2.0",
         "@milkdown/kit": "7.22.1",

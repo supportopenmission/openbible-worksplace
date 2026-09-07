@@ -72,6 +72,20 @@ describe('notes editor Milkdown canvas controls', () => {
 		await expect.element(button).not.toBeInTheDocument();
 	});
 
+	// SPECSFY: US-004 FR-005 NFR-002 NFR-004 AC-012 AC-013 AC-014
+	it('groups derived Markdown and offline PDF exports in an accessible menu', async () => {
+		render(NotesEditorPage, { props: { data: { noteId: 'export-menu-note' } } });
+		await getNoteEditor();
+
+		await page.getByRole('button', { name: 'Exportar nota' }).click();
+		const menu = page.getByRole('menu');
+		await expect.element(menu).toBeInTheDocument();
+		await expect.element(menu.getByText('Markdown', { exact: true })).toBeInTheDocument();
+		await expect.element(menu.getByText(/arquivo derivado/i)).toBeInTheDocument();
+		await expect.element(menu.getByText('PDF', { exact: true })).toBeInTheDocument();
+		await expect.element(menu.getByText(/salvar em pdf/i)).toBeInTheDocument();
+	});
+
 	// SPECSFY: US-003 FR-006 NFR-003 AC-007 AC-014
 	it('marks the canvas as viewport-filling and exposes an adaptive slash surface', async () => {
 		render(NotesEditorPage, { props: { data: { noteId: 'test-note' } } });

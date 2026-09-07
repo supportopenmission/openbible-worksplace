@@ -3,16 +3,21 @@ import {
 	buildExportMarkdown,
 	buildPrintDocument,
 	expandVerseFences,
-	expandVideoFences
+	expandVideoFences,
+	exportPdfFallback,
+	exportPortableMarkdown
 } from './note-export';
 import { markdownBodyToHtml } from './verse-block-extension';
 
-const NOTE = '# Estudo\n\n:::verse {version="nvi.sqlite" book="Gn" chapter="3" verseStart="1" verseEnd="1"}\nSnapshot antigo\n:::\n';
+const NOTE =
+	'# Estudo\n\n:::verse {version="nvi.sqlite" book="Gn" chapter="3" verseStart="1" verseEnd="1"}\nSnapshot antigo\n:::\n';
 
 // SPECSFY: US-005 FR-005 NFR-001 AC-013
 describe('markdown export with expanded verses', () => {
 	it('replaces each fence with reference plus full text', () => {
-		const expanded = expandVerseFences(NOTE, () => [{ reference: 'Gn 3.1', text: 'No princípio...' }]);
+		const expanded = expandVerseFences(NOTE, () => [
+			{ reference: 'Gn 3.1', text: 'No princípio...' }
+		]);
 		expect(expanded.ok).toBe(true);
 		if (expanded.ok) {
 			expect(expanded.markdown).toContain('> Gn 3.1');
@@ -52,13 +57,13 @@ const VIDEO_NOTE =
 const BR_NOTE = '# Estudo\n\nPrimeira linha.<br />Segunda linha.<br/>Terceira.<br>Quarta.\n';
 
 // SPECSFY: US-004 FR-008 NFR-001 AC-022
-describe('video iframe export', () => {
-	it('replaces each video fence with an accessible nocookie iframe', () => {
+describe('video Markdown fallback export', () => {
+	it('replaces each video fence with an accessible visible link', () => {
 		const markdown = buildExportMarkdown(VIDEO_NOTE, () => []);
-		expect(markdown).toContain('<iframe');
-		expect(markdown).toContain('youtube-nocookie.com/embed/dQw4w9WgXcQ');
-		expect(markdown).toContain('title="Vídeo do YouTube"');
+		expect(markdown).toContain('[Vídeo do YouTube]');
+		expect(markdown).toContain('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
 		expect(markdown).not.toContain(':::video');
+		expect(markdown).not.toContain('<iframe');
 	});
 });
 
@@ -102,7 +107,10 @@ describe('print without literal tags', () => {
 // SPECSFY: US-005 FR-009 NFR-002 AC-026
 describe('editorial print stylesheet', () => {
 	it('wraps the document with title, verse and margin rules', () => {
-		const doc = buildPrintDocument('Estudo', '<h1>Estudo</h1><blockquote><p>Gn 3.1</p></blockquote>');
+		const doc = buildPrintDocument(
+			'Estudo',
+			'<h1>Estudo</h1><blockquote><p>Gn 3.1</p></blockquote>'
+		);
 		expect(doc).toContain('<h1 class="doc-title">Estudo</h1>');
 		expect(doc).not.toContain('<h1>Estudo</h1>');
 		expect(doc).toContain('max-width');
@@ -143,5 +151,29 @@ describe('derived external export', () => {
 		expect(exported).toContain('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
 		expect(exported).not.toContain('<iframe');
 		expect(source).toBe(VIDEO_NOTE);
+	});
+});
+
+// SPECSFY: US-004 FR-005 NFR-002 NFR-004 AC-012 AC-013 AC-014
+describe('backend snapshot export contract', () => {
+	it('returns a derived Markdown artifact without mutating the snapshot', () => {
+		const snapshot = { title: 'Estudo', markdown: VIDEO_NOTE };
+		const exported = exportPortableMarkdown(snapshot);
+
+		expect(exported).toMatchObject({
+			format: 'markdown',
+			derived: true,
+			source: 'workspace-snapshot'
+		});
+		expect(exported.markdown).toContain('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+		expect(snapshot.markdown).toBe(VIDEO_NOTE);
+	});
+
+	it('returns an offline print/PDF fallback derived from the same snapshot', () => {
+		const exported = exportPdfFallback({ title: 'Estudo', markdown: BR_NOTE });
+
+		expect(exported).toMatchObject({ format: 'pdf-fallback', derived: true });
+		expect(exported.document).toContain('<title>Estudo</title>');
+		expect(exported.document).not.toContain('<br');
 	});
 });

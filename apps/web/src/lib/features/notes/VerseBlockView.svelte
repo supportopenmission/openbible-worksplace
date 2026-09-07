@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { verseReferenceLabel } from './verse-block-extension';
+	import PortableBlockStatus from './PortableBlockStatus.svelte';
 
 	let {
 		versionId,
@@ -9,7 +10,10 @@
 		chapter,
 		verseStart,
 		verseEnd,
-		snapshotBody
+		snapshotBody,
+		state = 'canonical',
+		diagnostic = '',
+		onStatusAction = () => {}
 	}: {
 		versionId: string;
 		version?: string;
@@ -19,6 +23,9 @@
 		verseStart: number;
 		verseEnd: number;
 		snapshotBody: string;
+		state?: 'canonical' | 'degraded' | 'conflict';
+		diagnostic?: string;
+		onStatusAction?: () => void;
 	} = $props();
 
 	const reference = $derived(
@@ -37,6 +44,7 @@
 <blockquote class="verse-callout" aria-label={`Versículo: ${reference}`}>
 	<p class="verse-ref">{reference}</p>
 	<pre class="verse-snapshot">{snapshotBody}</pre>
+	<PortableBlockStatus {state} message={diagnostic} onAction={onStatusAction} />
 </blockquote>
 
 <style>

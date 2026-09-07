@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, type Snippet } from 'svelte';
+	import { type Snippet } from 'svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -7,23 +7,20 @@
 	import { notesState } from '$lib/features/notes/notes-state.svelte';
 	import { createNote } from '$lib/features/notes/notes-repository';
 	import { getWorkspaceState } from '$lib/features/workspace/workspace-state.svelte';
+	import type { WorkspaceStorage } from '$lib/storage/types';
 
 	let { children }: { children: Snippet } = $props();
 
 	const workspace = getWorkspaceState();
 	const activeNoteId = $derived(page.params.id || null);
-
-	onMount(() => {
-		if (workspace?.storage) {
-			void notesState.loadNotes(workspace.storage);
-		}
-	});
+	let lastStorage: WorkspaceStorage | null = null;
 
 	$effect(() => {
-		const storage = workspace?.storage;
-		if (storage && !notesState.initialized && !notesState.loading) {
-			void notesState.loadNotes(storage);
-		}
+		const storage = workspace?.storage ?? null;
+		if (storage === lastStorage) return;
+		lastStorage = storage;
+		notesState.resetForWorkspace();
+		if (storage) void notesState.loadNotes(storage, true);
 	});
 
 	function handleSelectNote(id: string) {

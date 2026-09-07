@@ -11,6 +11,7 @@
 		Settings
 	} from '@lucide/svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { APP_VERSION } from '$lib/app-version';
 	import { detectStorageKind } from '$lib/storage/environment';
@@ -20,6 +21,7 @@
 		openAppUpdateDialog
 	} from '$lib/updates/app-updates.svelte';
 	import ThemeToggle from './ThemeToggle.svelte';
+	import WorkspaceSelector from '$lib/features/workspace/WorkspaceSelector.svelte';
 
 	let { currentPath = '/' }: { currentPath?: string } = $props();
 
@@ -152,8 +154,12 @@
 		</Sidebar.Group>
 	</Sidebar.Content>
 
-	<Sidebar.Footer class="sidebar-footer">
+	<Sidebar.Footer class="sidebar-footer" aria-label="Workspace ativo e ações locais">
 		<ThemeToggle />
+		<WorkspaceSelector
+			manageLabel="Gerenciar workspaces"
+			onManage={() => goto(resolve('/config'))}
+		/>
 		<p class="sidebar-version">OpenBible v{APP_VERSION}</p>
 	</Sidebar.Footer>
 	<Sidebar.Rail />
@@ -302,6 +308,9 @@
 	}
 
 	:global(.sidebar-footer) {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
 		margin-top: auto;
 		border-top: 1px solid color-mix(in oklch, var(--sidebar-foreground) 8%, transparent);
 		padding: 10px 8px 14px;
@@ -356,6 +365,17 @@
 
 	:global([data-collapsible='icon'] .sidebar-footer .theme-toggle span) {
 		display: none;
+	}
+
+	:global([data-collapsible='icon'] .sidebar-footer .workspace-selector .selector-name),
+	:global([data-collapsible='icon'] .sidebar-footer .workspace-selector .selector-error),
+	:global([data-collapsible='icon'] .sidebar-footer .workspace-selector .selector-copy) {
+		display: none;
+	}
+
+	:global([data-collapsible='icon'] .sidebar-footer .workspace-selector .selector-trigger) {
+		justify-content: center;
+		padding-inline: 7px;
 	}
 
 	:global([data-collapsible='icon'] .sidebar-version) {

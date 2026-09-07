@@ -11,13 +11,15 @@
 		Database,
 		Download,
 		ExternalLink,
+		FolderOpen,
+		Archive,
 		Info,
 		SunMoon
 	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import AppearanceSettings from './AppearanceSettings.svelte';
 	import UpdateSettings from './UpdateSettings.svelte';
-	import BibleLibraryManager from '$lib/features/bible/BibleLibraryManager.svelte';
+	import BibleSettings from '$lib/features/bible/BibleSettings.svelte';
 	import {
 		getReminderConfig,
 		requestReminderPermission,
@@ -25,20 +27,31 @@
 	} from '$lib/pwa/daily-reminder';
 	import WorkspaceStats from '$lib/features/workspace/WorkspaceStats.svelte';
 	import WorkspaceSettings from '$lib/features/workspace/WorkspaceSettings.svelte';
+	import WorkspaceBackups from '$lib/features/workspace/WorkspaceBackups.svelte';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 
 	const isMobile = new IsMobile();
 	type ConfigSectionId =
-		'storage' | 'bibles' | 'stats' | 'reminder' | 'about' | 'appearance' | 'updates';
+		| 'storage'
+		| 'workspaces'
+		| 'backups'
+		| 'bibles'
+		| 'stats'
+		| 'reminder'
+		| 'about'
+		| 'appearance'
+		| 'updates';
 	let activeSection = $state<ConfigSectionId>('storage');
 
 	const configSections: Array<{ id: ConfigSectionId; label: string; icon: Component }> = [
+		{ id: 'appearance', label: 'Aparência', icon: SunMoon },
 		{ id: 'storage', label: 'Armazenamento', icon: Database },
+		{ id: 'workspaces', label: 'Workspaces', icon: FolderOpen },
 		{ id: 'bibles', label: 'Bíblias', icon: BookOpen },
 		{ id: 'stats', label: 'Estatísticas', icon: ChartColumn },
 		{ id: 'reminder', label: 'Lembrete diário', icon: Bell },
-		{ id: 'appearance', label: 'Aparência', icon: SunMoon },
 		{ id: 'updates', label: 'Atualizações', icon: Download },
+		{ id: 'backups', label: 'Backup e restauração', icon: Archive },
 		{ id: 'about', label: 'Sobre', icon: Info }
 	];
 
@@ -135,6 +148,7 @@
 						<button
 							type="button"
 							class="config-index-row"
+							aria-controls={`config-mobile-panel-${section.id}`}
 							onclick={() => openMobileSection(section.id)}
 						>
 							<span class="config-index-icon" aria-hidden="true">
@@ -164,14 +178,28 @@
 						<span>Configurações</span>
 					</button>
 					<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-					<h2 class="config-subpage-title" bind:this={mobileSubheading} tabindex={-1}>
+					<h2
+						id={`config-mobile-heading-${mobileSection}`}
+						class="config-subpage-title"
+						bind:this={mobileSubheading}
+						tabindex={-1}
+					>
 						{mobileSectionLabel}
 					</h2>
-					<div class="config-subpage-body">
+					<div
+						id={`config-mobile-panel-${mobileSection}`}
+						class="config-subpage-body"
+						role="region"
+						aria-labelledby={`config-mobile-heading-${mobileSection}`}
+					>
 						{#if mobileSection === 'storage'}
-							<WorkspaceSettings embedded />
+							<WorkspaceSettings embedded view="storage" />
+						{:else if mobileSection === 'workspaces'}
+							<WorkspaceSettings embedded view="workspaces" />
+						{:else if mobileSection === 'backups'}
+							<WorkspaceBackups embedded />
 						{:else if mobileSection === 'bibles'}
-							<BibleLibraryManager />
+							<BibleSettings />
 						{:else if mobileSection === 'stats'}
 							<WorkspaceStats />
 						{:else if mobileSection === 'reminder'}
@@ -226,7 +254,25 @@
 						role="region"
 						aria-labelledby="config-tab-storage"
 					>
-						<WorkspaceSettings embedded />
+						<WorkspaceSettings embedded view="storage" />
+					</div>
+				{:else if activeSection === 'workspaces'}
+					<div
+						id="config-panel-workspaces"
+						class="config-panel"
+						role="region"
+						aria-labelledby="config-tab-workspaces"
+					>
+						<WorkspaceSettings embedded view="workspaces" />
+					</div>
+				{:else if activeSection === 'backups'}
+					<div
+						id="config-panel-backups"
+						class="config-panel"
+						role="region"
+						aria-labelledby="config-tab-backups"
+					>
+						<WorkspaceBackups embedded />
 					</div>
 				{:else if activeSection === 'bibles'}
 					<div
@@ -235,7 +281,7 @@
 						role="region"
 						aria-labelledby="config-tab-bibles"
 					>
-						<BibleLibraryManager />
+						<BibleSettings />
 					</div>
 				{:else if activeSection === 'stats'}
 					<div

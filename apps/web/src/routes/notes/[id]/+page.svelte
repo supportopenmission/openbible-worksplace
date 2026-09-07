@@ -24,11 +24,12 @@
 	import { scrollToHeadingAnchor, type NoteHeading } from '$lib/features/notes/note-index';
 	import {
 		buildExportMarkdownAsync,
-		buildPrintDocument,
 		expandVideoFences,
-		resolveFenceVerses
+		exportPdfFallback,
+		exportPortableMarkdown,
+		resolveFenceVerses,
+		type PortableExportSnapshot
 	} from '$lib/features/notes/note-export';
-	import { markdownBodyToHtml } from '$lib/features/notes/verse-block-extension';
 	import { notePageChrome } from '$lib/features/notes/note-page-chrome.svelte';
 	import { createNote, readNote } from '$lib/features/notes/notes-repository';
 	import { serializeNoteFile } from '$lib/features/notes/note-markdown';
@@ -72,6 +73,9 @@
 	let exportError = $state('');
 	let exportWarning = $state('');
 	let exporting = $state(false);
+	let loadRequest = 0;
+	let requestedNoteId: string | null = null;
+	let requestedStorage: WorkspaceStorage | null | undefined;
 
 	async function seedFallbackNote(id: string): Promise<WorkspaceStorage> {
 		const files = new Map<string, Uint8Array>();
@@ -118,26 +122,35 @@
 		return fallback;
 	}
 
-	async function loadNoteData(id: string) {
+	async function loadNoteData(id: string, resolvedStorage: WorkspaceStorage | null) {
+		const request = ++loadRequest;
 		loading = true;
 		error = '';
+		note = null;
+		activeStorage = null;
+		currentLoadedId = null;
 		try {
-			const resolvedStorage = storageOverride ?? workspace?.storage ?? null;
-
 			if (resolvedStorage) {
+				const nextNote = await readNote(resolvedStorage, id);
+				if (request !== loadRequest) return;
 				activeStorage = resolvedStorage;
-				note = await readNote(resolvedStorage, id);
+				note = nextNote;
 			} else if (data?.noteId) {
-				activeStorage = await seedFallbackNote(id);
-				note = await readNote(activeStorage, id);
+				const fallbackStorage = await seedFallbackNote(id);
+				const nextNote = await readNote(fallbackStorage, id);
+				if (request !== loadRequest) return;
+				activeStorage = fallbackStorage;
+				note = nextNote;
 			} else {
 				let loaded = await readNote(id);
 				if (!loaded) {
 					loaded = await createNote();
 				}
+				if (request !== loadRequest) return;
 				note = loaded;
-				activeStorage = storageOverride ?? workspace?.storage ?? null;
+				activeStorage = resolvedStorage;
 			}
+			if (request !== loadRequest) return;
 
 			if (!note) {
 				error = 'Nota não encontrada';
@@ -148,24 +161,26 @@
 				}
 			}
 		} catch (err) {
+			if (request !== loadRequest) return;
 			error = err instanceof Error ? err.message : 'Não foi possível carregar a nota.';
 		} finally {
+			if (request !== loadRequest) return;
 			loading = false;
 		}
 	}
 
 	onMount(() => {
 		notePageChrome.activate();
-		if (noteId) {
-			void loadNoteData(noteId);
-		}
 	});
 
 	$effect(() => {
 		const targetId = noteId;
-		if (targetId && targetId !== currentLoadedId) {
-			void loadNoteData(targetId);
-		}
+		const currentStorage = storageOverride ?? workspace?.storage ?? null;
+		if (!targetId) return;
+		if (targetId === requestedNoteId && currentStorage === requestedStorage) return;
+		requestedNoteId = targetId;
+		requestedStorage = currentStorage;
+		void loadNoteData(targetId, currentStorage);
 	});
 
 	$effect(() => {
@@ -208,8 +223,29 @@
 	async function expandNoteForExport(): Promise<string> {
 		if (!note || !activeStorage) throw new Error('no-note');
 		const storage = activeStorage;
-		exportWarning = expandVideoFences(note.body).warnings.join(' ');
+		const videoWarnings = expandVideoFences(note.body).warnings;
+		exportWarning = [
+			'A saída é derivada do snapshot da nota; a fonte não será alterada.',
+			...videoWarnings
+		].join(' ');
 		return buildExportMarkdownAsync(note.body, (fence) => resolveFenceVerses(storage, fence));
+	}
+
+	async function createExportSnapshot(): Promise<PortableExportSnapshot> {
+		if (!note) throw new Error('no-note');
+		return { title: note.title, markdown: await expandNoteForExport() };
+	}
+
+	function downloadText(content: string, mime: string, extension: string, title: string) {
+		const blob = new Blob([content], { type: mime });
+		const url = URL.createObjectURL(blob);
+		const anchor = document.createElement('a');
+		anchor.href = url;
+		anchor.download = safeExportFileName(title, extension);
+		document.body.appendChild(anchor);
+		anchor.click();
+		anchor.remove();
+		URL.revokeObjectURL(url);
 	}
 
 	async function exportMarkdownFile() {
@@ -217,17 +253,9 @@
 		exporting = true;
 		exportError = '';
 		try {
-			const markdown = await expandNoteForExport();
-			const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
-			const url = URL.createObjectURL(blob);
-			const anchor = document.createElement('a');
-			anchor.href = url;
-			anchor.download = safeExportFileName(note.title, 'md');
-			document.body.appendChild(anchor);
-			anchor.click();
-			anchor.remove();
-			URL.revokeObjectURL(url);
-		} catch {
+			const artifact = exportPortableMarkdown(await createExportSnapshot());
+			downloadText(artifact.markdown, 'text/markdown;charset=utf-8', 'md', note.title);
+		} catch (error) {
 			exportError = 'Não foi possível exportar: um versículo não tem texto disponível.';
 		} finally {
 			exporting = false;
@@ -239,16 +267,18 @@
 		exporting = true;
 		exportError = '';
 		try {
-			const markdown = await expandNoteForExport();
-			const html = markdownBodyToHtml(markdown);
+			const artifact = exportPdfFallback(await createExportSnapshot());
 			const printWindow = window.open('', '_blank');
 			if (!printWindow) throw new Error('popup-blocked');
-			printWindow.document.write(buildPrintDocument(note.title, html));
+			printWindow.document.write(artifact.document);
 			printWindow.document.close();
 			printWindow.focus();
 			printWindow.print();
-		} catch {
-			exportError = 'Não foi possível exportar: um versículo não tem texto disponível.';
+		} catch (error) {
+			exportError =
+				error instanceof Error && error.message === 'popup-blocked'
+					? 'A janela de impressão foi bloqueada. Permita pop-ups para salvar o PDF.'
+					: 'Não foi possível exportar: um versículo não tem texto disponível.';
 		} finally {
 			exporting = false;
 		}
@@ -335,29 +365,45 @@
 					{/if}
 				</Button>
 
-				<NoteIndexMenu headings={indexHeadings} onNavigate={(anchor) => scrollToHeadingAnchor(document, anchor)} />
-				<Button
-					type="button"
-					variant="ghost"
-					size="icon-sm"
-					aria-label="Exportar Markdown"
-					title="Exportar Markdown"
-					disabled={exporting}
-					onclick={exportMarkdownFile}
-				>
-					<FileDown size={16} strokeWidth={1.8} aria-hidden="true" />
-				</Button>
-				<Button
-					type="button"
-					variant="ghost"
-					size="icon-sm"
-					aria-label="Exportar PDF"
-					title="Exportar PDF"
-					disabled={exporting}
-					onclick={exportPdfFile}
-				>
-					<Printer size={16} strokeWidth={1.8} aria-hidden="true" />
-				</Button>
+				<NoteIndexMenu
+					headings={indexHeadings}
+					onNavigate={(anchor) => scrollToHeadingAnchor(document, anchor)}
+				/>
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger disabled={exporting}>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								type="button"
+								variant="ghost"
+								size="icon-sm"
+								aria-label="Exportar nota"
+								title="Exportar nota"
+							>
+								<FileDown size={16} strokeWidth={1.8} aria-hidden="true" />
+							</Button>
+						{/snippet}
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end" class="note-export-menu">
+						<DropdownMenu.Label>Exportar nota</DropdownMenu.Label>
+						<DropdownMenu.Item disabled={exporting} onclick={() => void exportMarkdownFile()}>
+							<FileDown size={14} strokeWidth={1.8} aria-hidden="true" />
+							<span class="export-menu-copy">
+								<span>Markdown</span>
+								<span class="export-menu-desc"
+									>Arquivo derivado para leitura e compartilhamento</span
+								>
+							</span>
+						</DropdownMenu.Item>
+						<DropdownMenu.Item disabled={exporting} onclick={() => void exportPdfFile()}>
+							<Printer size={14} strokeWidth={1.8} aria-hidden="true" />
+							<span class="export-menu-copy">
+								<span>PDF</span>
+								<span class="export-menu-desc">Abrir impressão offline para salvar em PDF</span>
+							</span>
+						</DropdownMenu.Item>
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
 				{#if exportError}
 					<span class="export-error" role="alert">{exportError}</span>
 				{:else if exportWarning}
@@ -427,16 +473,18 @@
 		{:else if error || !note || !activeStorage}
 			<p class="state-message error" role="alert">{error || 'Nota não encontrada'}</p>
 		{:else}
-			<MilkdownNoteEditor
-				{note}
-				{readOnly}
-				{toolbarEnabled}
-				{toolbarPinned}
-				storage={activeStorage}
-				onSaved={handleSaved}
-				onStatusChange={handleStatusChange}
-				onHeadings={(headings) => (indexHeadings = headings)}
-			/>
+			{#key activeStorage}
+				<MilkdownNoteEditor
+					{note}
+					{readOnly}
+					{toolbarEnabled}
+					{toolbarPinned}
+					storage={activeStorage}
+					onSaved={handleSaved}
+					onStatusChange={handleStatusChange}
+					onHeadings={(headings) => (indexHeadings = headings)}
+				/>
+			{/key}
 		{/if}
 	</div>
 
@@ -531,6 +579,19 @@
 		font-size: 0.75rem;
 		line-height: 1.4;
 		max-width: 220px;
+	}
+
+	.export-menu-copy {
+		display: flex;
+		min-width: 0;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.export-menu-desc {
+		color: var(--muted-foreground);
+		font-size: 0.7rem;
+		line-height: 1.35;
 	}
 
 	.mobile-back-link {

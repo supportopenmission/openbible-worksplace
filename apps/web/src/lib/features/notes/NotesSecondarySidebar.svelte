@@ -528,8 +528,10 @@
 
 	.sidebar-header {
 		display: flex;
+		flex-direction: row;
 		align-items: center;
 		justify-content: space-between;
+		gap: 8px;
 		height: 48px;
 		min-height: 48px;
 		max-height: 48px;
@@ -551,7 +553,13 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
+		flex: 1 1 auto;
 		min-width: 0;
+	}
+
+	.desktop-trigger-wrap {
+		display: inline-flex;
+		flex-shrink: 0;
 	}
 
 	.sidebar-title {
@@ -563,6 +571,8 @@
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		flex: 1 1 auto;
+		min-width: 0;
 	}
 
 	.note-count {
@@ -572,6 +582,7 @@
 		color: var(--muted-foreground);
 		background: var(--muted);
 		border-radius: 9999px;
+		flex-shrink: 0;
 	}
 
 	.header-right {
@@ -579,6 +590,7 @@
 		align-items: center;
 		gap: 2px;
 		flex-shrink: 0;
+		margin-left: auto;
 	}
 
 	.selection-subbar {
@@ -908,14 +920,16 @@
 			height: auto;
 			min-height: 0;
 			max-height: none;
-			padding: 20px 16px 12px;
+			padding: 12px 16px;
 			align-items: center;
+			flex-wrap: nowrap;
+			gap: 8px;
 		}
 
 		.sidebar-title {
-			font-size: clamp(1.75rem, 4vw, 2.25rem);
-			letter-spacing: -0.04em;
-			line-height: 1.1;
+			font-size: clamp(1.25rem, 5vw, 1.5rem);
+			letter-spacing: -0.02em;
+			line-height: 1.15;
 		}
 
 		.header-left {

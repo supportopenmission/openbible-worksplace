@@ -4,10 +4,12 @@ import { resolve } from 'node:path';
 import {
 	deleteHighlightByRange,
 	listChapterHighlights,
+	readChapterHighlights,
 	readerHighlightSchema,
 	upsertHighlight
 } from './reader-highlights-repository';
 import * as highlightRepo from './reader-highlights-repository';
+import type { WorkspaceStorage } from '$lib/storage/types';
 
 type SqlJs = Awaited<ReturnType<typeof initSqlJs>>;
 
@@ -35,6 +37,94 @@ const record = {
 };
 
 describe('reader-highlights-repository', () => {
+	it('sends a deterministic legacy workspace scope to the native SQLite driver', async () => {
+		const calls: unknown[] = [];
+		const storage: WorkspaceStorage = {
+			kind: 'native',
+			label: 'Workspace nativo legado',
+			async ensureDirectory() {},
+			async writeFile() {},
+			async readFile(path) {
+				if (path === '.openbible/config.json') {
+					return new TextEncoder().encode(
+						JSON.stringify({
+							path: '/tmp/openbible-legacy',
+							storageKind: 'native',
+							formatVersion: 1,
+							migrationState: 'not_started'
+						})
+					);
+				}
+				return null;
+			},
+			async fileExists() {
+				return false;
+			},
+			async listFiles() {
+				return [];
+			},
+			async queryIndex(_operation, record) {
+				calls.push(record);
+				return [];
+			}
+		};
+
+		await expect(
+			readChapterHighlights(storage, { versionId: 'nvi.sqlite', bookId: 43, chapter: 3 })
+		).resolves.toEqual([]);
+		expect(calls[0]).toMatchObject({
+			versionId: 'nvi.sqlite',
+			workspaceId: expect.stringMatching(/^legacy-native-[0-9a-f]{8}$/)
+		});
+	});
+
+	it('treats a missing highlights directory as an empty chapter on first load', async () => {
+		// SPECSFY: US-003 FR-004 NFR-001 AC-009 AC-010
+		const storage: WorkspaceStorage = {
+			kind: 'opfs',
+			label: 'Workspace sem destaques',
+			async ensureDirectory() {},
+			async writeFile() {},
+			async readFile(path) {
+				if (path === '.openbible/config.json') {
+					return new TextEncoder().encode(
+						JSON.stringify({
+							workspaceId: 'workspace-empty-highlights',
+							formatVersion: 2,
+							name: 'Workspace sem destaques',
+							managedRoot: true,
+							storage: 'opfs',
+							configuredAt: '2026-09-06T00:00:00.000Z',
+							bibleImportStatus: 'complete',
+							label: 'Workspace sem destaques',
+							version: 1
+						})
+					);
+				}
+				return null;
+			},
+			async fileExists() {
+				return false;
+			},
+			async listFiles(path) {
+				if (path === 'highlights') {
+					const error = new Error('directory does not exist');
+					error.name = 'NotFoundError';
+					throw error;
+				}
+				return [];
+			}
+		};
+
+		await expect(
+			readChapterHighlights(storage, {
+				versionId: 'nvi.sqlite',
+				bookId: 43,
+				chapter: 3
+			})
+		).resolves.toEqual([]);
+	});
+
 	it('restores saved ranges after a new connection to the auxiliary index', async () => {
 		// SPECSFY: US-002 FR-008 NFR-002 AC-012
 		expect(readerHighlightSchema()).toMatch(/CREATE TABLE IF NOT EXISTS\s+reader_highlight/i);

@@ -26,4 +26,17 @@ describe('native workspace interaction states', () => {
 			actions: expect.arrayContaining(['reconnect', 'choose-other'])
 		});
 	});
+
+	it('nomeia recovery de schema e migração sem fallback silencioso', () => {
+		const states = nativeWorkspaceStates({ reducedMotion: true });
+
+		expect(states.schema).toMatchObject({
+			ariaLive: 'assertive',
+			actions: expect.arrayContaining(['retry', 'choose-other'])
+		});
+		expect(states.migration).toMatchObject({
+			ariaLive: 'assertive',
+			actions: expect.arrayContaining(['retry', 'resume-migration', 'restore-legacy', 'choose-other'])
+		});
+	});
 });

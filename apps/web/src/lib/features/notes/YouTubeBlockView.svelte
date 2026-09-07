@@ -2,15 +2,26 @@
 	import { Play } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { youtubeFacadeState } from './youtube-embed';
+	import PortableBlockStatus from './PortableBlockStatus.svelte';
 
 	let {
 		videoId = '',
+		url = '',
+		title = 'Vídeo do YouTube',
+		state = 'canonical',
+		diagnostic = '',
 		loaded = false,
-		onPlay = () => {}
+		onPlay = () => {},
+		onStatusAction = () => {}
 	}: {
 		videoId?: string;
+		url?: string;
+		title?: string;
+		state?: 'canonical' | 'degraded' | 'conflict';
+		diagnostic?: string;
 		loaded?: boolean;
 		onPlay?: () => void;
+		onStatusAction?: () => void;
 	} = $props();
 
 	const facade = $derived(youtubeFacadeState(videoId, { play: loaded }));
@@ -27,19 +38,31 @@
 			class="youtube-player"
 		></iframe>
 	{:else}
-		<Button
-			type="button"
-			variant="outline"
-			class="youtube-facade"
-			aria-label={facade.label}
-			onmousedown={(e) => e.preventDefault()}
-			onclick={onPlay}
-		>
-			<Play size={20} strokeWidth={1.8} aria-hidden="true" />
-			<span>{facade.label}</span>
-			<span class="youtube-domain">YouTube</span>
-		</Button>
+		<div class="youtube-fallback">
+			<a
+				href={url || `https://www.youtube.com/watch?v=${videoId}`}
+				target="_blank"
+				rel="noreferrer"
+			>
+				{title}
+			</a>
+			{#if videoId}
+				<Button
+					type="button"
+					variant="outline"
+					class="youtube-facade"
+					aria-label={facade.label}
+					onmousedown={(e) => e.preventDefault()}
+					onclick={onPlay}
+				>
+					<Play size={20} strokeWidth={1.8} aria-hidden="true" />
+					<span>{facade.label}</span>
+					<span class="youtube-domain">YouTube</span>
+				</Button>
+			{/if}
+		</div>
 	{/if}
+	<PortableBlockStatus {state} message={diagnostic} onAction={onStatusAction} />
 </div>
 
 <style>
@@ -55,6 +78,16 @@
 		gap: 10px;
 		padding: 28px 16px;
 		border-radius: var(--radius-lg);
+	}
+
+	.youtube-fallback {
+		display: grid;
+		gap: 10px;
+	}
+
+	.youtube-fallback > a {
+		color: var(--foreground);
+		text-underline-offset: 3px;
 	}
 
 	.youtube-block-view :global(.youtube-domain) {

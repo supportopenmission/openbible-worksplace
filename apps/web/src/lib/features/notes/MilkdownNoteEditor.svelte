@@ -79,6 +79,8 @@ import { resolveToolbarVisibility } from './note-toolbar';
 
 	let host: HTMLDivElement;
 	let editorRoot: HTMLDivElement;
+	// Capturado na init: getContext fora da inicialização é inseguro.
+	const workspaceState = getWorkspaceState();
 	let titleEl = $state<HTMLHeadingElement | null>(null);
 	let descriptionEl = $state<HTMLParagraphElement | null>(null);
 
@@ -456,7 +458,7 @@ let toolbarResolved = $derived(
 		const request = ++hoverRequest;
 		hoverAnchor = anchor;
 		hoverCard = { top: rect.bottom, left, reference: attrs.raw, loading: true, data: null };
-		const workspacePreferences = getWorkspaceState()?.preferences ?? null;
+		const workspacePreferences = workspaceState?.preferences ?? null;
 		const data = await loadHoverPassage(
 			storage,
 			attrs,
@@ -994,7 +996,12 @@ let toolbarResolved = $derived(
 
 <svelte:window onresize={repositionOverlays} onscroll={repositionOverlays} />
 
-<div class="note-editor-viewport" bind:this={editorRoot} oncontextmenu={handleEditorContextMenu}>
+<div
+	class="note-editor-viewport"
+	bind:this={editorRoot}
+	role="presentation"
+	oncontextmenu={handleEditorContextMenu}
+>
 	<div class="milkdown-editor" data-testid="note-canvas" data-viewport-fill="true">
 		<MilkdownMobileToolbar
 			active={!readOnly && editingActive}
@@ -1584,7 +1591,7 @@ let toolbarResolved = $derived(
 		border: 1px solid var(--border);
 		border-radius: var(--radius-lg);
 	}
-	.video-url-dialog {
+	:global(.video-url-dialog) {
 		display: flex;
 		flex-direction: column;
 		gap: 12px;

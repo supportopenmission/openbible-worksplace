@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseNoteFile, serializeNoteFile } from './note-markdown';
+import { parseNoteFile, serializeNoteFile } from './portable-markdown';
 
 const SOURCE = `---
 id: "note-1"
@@ -30,7 +30,10 @@ describe('portable frontmatter contract', () => {
 // SPECSFY: US-001 FR-001 NFR-002 NFR-004 AC-002
 describe('portable Markdown profile', () => {
 	it('keeps a readable GFM body while emitting the canonical scalar header', () => {
-		const source = SOURCE.replace('Texto autoral.', '[referência](https://example.test)\n\n> citação comum');
+		const source = SOURCE.replace(
+			'Texto autoral.',
+			'[referência](https://example.test)\n\n> citação comum'
+		);
 		const serialized = serializeNoteFile(parseNoteFile(source, 'notes/note-1.md'));
 
 		expect(serialized).toContain('[referência](https://example.test)');

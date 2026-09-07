@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { prepareWorkspace } from '$lib/storage/workspace';
 import type { StorageKind, WorkspaceStorage } from '$lib/storage/types';
 import { readAllReaderHighlights } from '$lib/features/bible/reader-highlights-repository';
+import {
+	getWorkspaceIndexProjection,
+	rebuildWorkspaceIndex,
+	WorkspaceIndexRebuildCancelledError
+} from './index-rebuilder';
 
 class MemoryStorage implements WorkspaceStorage {
 	readonly files = new Map<string, Uint8Array>();
@@ -9,25 +14,43 @@ class MemoryStorage implements WorkspaceStorage {
 	readonly kind: StorageKind = 'opfs';
 	readonly label = 'Memória de teste';
 
-	async ensureDirectory(path: string) { this.directories.add(path); }
+	async ensureDirectory(path: string) {
+		this.directories.add(path);
+	}
 	async writeFile(path: string, content: string | Uint8Array) {
 		this.files.set(path, typeof content === 'string' ? new TextEncoder().encode(content) : content);
 	}
-	async readFile(path: string) { return this.files.get(path) ?? null; }
-	async fileExists(path: string) { return this.files.has(path); }
+	async readFile(path: string) {
+		return this.files.get(path) ?? null;
+	}
+	async fileExists(path: string) {
+		return this.files.has(path);
+	}
 	async listFiles(path: string) {
 		const prefix = `${path.replace(/\/$/, '')}/`;
-		return [...this.files.keys()].filter((file) => file.startsWith(prefix) && !file.slice(prefix.length).includes('/')).map((file) => file.slice(prefix.length)).sort();
+		return [...this.files.keys()]
+			.filter((file) => file.startsWith(prefix) && !file.slice(prefix.length).includes('/'))
+			.map((file) => file.slice(prefix.length))
+			.sort();
 	}
 }
 
 const HIGHLIGHT = {
-	highlightId: 'highlight-nvi-3-16', schemaVersion: 1, versionId: 'nvi.sqlite',
-	bookId: 43, chapter: 3, verseStart: 16, verseEnd: 16, styleId: 'pen-gold'
+	highlightId: 'highlight-nvi-3-16',
+	schemaVersion: 1,
+	versionId: 'nvi.sqlite',
+	bookId: 43,
+	chapter: 3,
+	verseStart: 16,
+	verseEnd: 16,
+	styleId: 'pen-gold'
 };
 
 async function seedCanonicalFiles(storage: MemoryStorage) {
-	await storage.writeFile('notes/portable.md', '---\nid: note-1\ntype: note\nschemaVersion: 1\n---\n\n# Estudo\n');
+	await storage.writeFile(
+		'notes/portable.md',
+		'---\nid: note-1\ntype: note\nschemaVersion: 1\n---\n\n# Estudo\n'
+	);
 	await storage.writeFile('highlights/highlight-nvi-3-16.json', JSON.stringify(HIGHLIGHT));
 	await storage.writeFile('.openbible/index.sqlite', new TextEncoder().encode('corrupt-index'));
 }
@@ -62,5 +85,36 @@ describe('Bible source isolation during rebuild', () => {
 
 		expect(rows.length).toBeGreaterThan(0);
 		expect(after).toEqual(before);
+	});
+});
+
+// SPECSFY: US-003 FR-004 NFR-001 NFR-003 AC-010 AC-011
+describe('index rebuild cancellation', () => {
+	it('cancels before committing a partial projection', async () => {
+		const storage = new MemoryStorage();
+		await storage.writeFile(
+			'highlights/cancelled.json',
+			JSON.stringify({
+				highlightId: 'cancelled',
+				versionId: 'nvi.sqlite',
+				bookId: 43,
+				chapter: 3,
+				verseStart: 16,
+				verseEnd: 16,
+				styleId: 'pen-gold'
+			})
+		);
+		const controller = new AbortController();
+		controller.abort();
+
+		await expect(
+			rebuildWorkspaceIndex(storage, {
+				context: { workspaceId: 'cancel-test', generation: 0, backend: 'indexeddb' },
+				signal: controller.signal
+			})
+		).rejects.toBeInstanceOf(WorkspaceIndexRebuildCancelledError);
+		expect(
+			getWorkspaceIndexProjection({ backend: 'indexeddb', workspaceId: 'cancel-test' })
+		).toBeNull();
 	});
 });

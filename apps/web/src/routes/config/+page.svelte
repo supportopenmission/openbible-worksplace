@@ -6,7 +6,7 @@
 	<title>Configuração | OpenBible</title>
 	<meta
 		name="description"
-		content="Gerencie o armazenamento, as Bíblias, a aparência, os lembretes e as atualizações do OpenBible."
+		content="Gerencie armazenamento, workspaces, backups, Bíblias, aparência, lembretes e atualizações do OpenBible."
 	/>
 </svelte:head>
 

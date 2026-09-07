@@ -3,6 +3,8 @@ export interface NoteMeta {
 	title: string;
 	description?: string;
 	pinned?: boolean;
+	schemaVersion?: number;
+	unknownFields?: Record<string, string | number | boolean | null>;
 	createdAt: string;
 	updatedAt: string;
 	type: 'note';

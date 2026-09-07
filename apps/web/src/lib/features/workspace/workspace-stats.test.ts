@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { WorkspaceStorage } from '$lib/storage/types';
+import type { WorkspaceStorage, WorkspaceStorageScope } from '$lib/storage/types';
 import { collectWorkspaceStats } from './workspace-stats';
 
 class MemoryStorage implements WorkspaceStorage {
@@ -28,6 +28,10 @@ class MemoryStorage implements WorkspaceStorage {
 const note = (title: string) =>
 	`---\ntitle: "${title}"\ncreatedAt: ""\nupdatedAt: ""\ntype: "note"\n---\n\n# ${title}\n`;
 
+function scope(workspaceId: string, storage: WorkspaceStorage): WorkspaceStorageScope {
+	return { workspaceId, storage };
+}
+
 describe('workspace stats', () => {
 	it('counts bibles, notes, trash, sermons and bytes', async () => {
 		// SPECSFY: US-004 FR-004 NFR-002 AC-008
@@ -40,8 +44,9 @@ describe('workspace stats', () => {
 		await storage.writeFile('sermons/drafts/sermao.md', note('Sermão'));
 		await storage.writeFile('sermons/preached/pregado.md', note('Pregado'));
 
-		const stats = await collectWorkspaceStats(storage);
+		const stats = await collectWorkspaceStats(scope('workspace-a', storage));
 
+		expect(stats.workspaceId).toBe('workspace-a');
 		expect(stats.bibles).toMatchObject({ count: 2, bytes: 150 });
 		expect(stats.notes).toMatchObject({ active: 2, trash: 1 });
 		expect(stats.sermons).toMatchObject({ count: 2 });
@@ -52,13 +57,39 @@ describe('workspace stats', () => {
 		// SPECSFY: US-004 FR-004 NFR-001 AC-009
 		const storage = new MemoryStorage();
 
-		const stats = await collectWorkspaceStats(storage);
+		const stats = await collectWorkspaceStats(scope('workspace-empty', storage));
 
 		expect(stats).toEqual({
+			workspaceId: 'workspace-empty',
 			bibles: { count: 0, bytes: 0 },
 			notes: { active: 0, trash: 0 },
 			sermons: { count: 0 },
 			bytesTotal: 0
+		});
+	});
+
+	it('keeps counts isolated when workspaces contain different files', async () => {
+		// SPECSFY: US-004 FR-004 NFR-002 AC-008 AC-009
+		const first = new MemoryStorage();
+		const second = new MemoryStorage();
+		await first.writeFile('bibles/shared.sqlite', new Uint8Array(10));
+		await first.writeFile('notes/a.md', note('A'));
+		await second.writeFile('bibles/shared.sqlite', new Uint8Array(20));
+		await second.writeFile('notes/b.md', note('B'));
+		await second.writeFile('notes/c.md', note('C'));
+
+		const firstStats = await collectWorkspaceStats(scope('workspace-a', first));
+		const secondStats = await collectWorkspaceStats(scope('workspace-b', second));
+
+		expect(firstStats).toMatchObject({
+			workspaceId: 'workspace-a',
+			bibles: { count: 1, bytes: 10 },
+			notes: { active: 1 }
+		});
+		expect(secondStats).toMatchObject({
+			workspaceId: 'workspace-b',
+			bibles: { count: 1, bytes: 20 },
+			notes: { active: 2 }
 		});
 	});
 });

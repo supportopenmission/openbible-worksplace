@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import type { WorkspaceStorage } from '$lib/storage/types';
+	import type { WorkspaceStorage, WorkspaceStorageScope } from '$lib/storage/types';
 	import { getWorkspaceState } from '$lib/features/workspace/workspace-state.svelte';
 	import { collectWorkspaceStats, type WorkspaceStats } from './workspace-stats';
 
@@ -9,30 +8,47 @@
 
 	const workspace = getWorkspaceState();
 	const effectiveStorage = $derived(storage ?? workspace?.storage ?? null);
+	const effectiveScope = $derived<WorkspaceStorageScope | null>(
+		effectiveStorage && workspace?.workspaceId
+			? { workspaceId: workspace.workspaceId, storage: effectiveStorage }
+			: null
+	);
 
 	let stats = $state<WorkspaceStats | null>(null);
 	let loading = $state(true);
 	let error = $state('');
+	let loadRequest = 0;
+	let lastStorage: WorkspaceStorage | null = null;
+	let lastWorkspaceId: string | null = null;
 
-	async function loadStats() {
-		const current = effectiveStorage;
+	async function loadStats(current = effectiveScope) {
+		const request = ++loadRequest;
 		if (!current) {
+			stats = null;
 			loading = false;
 			return;
 		}
 		loading = true;
 		error = '';
 		try {
-			stats = await collectWorkspaceStats(current);
+			const nextStats = await collectWorkspaceStats(current);
+			if (request !== loadRequest) return;
+			stats = nextStats;
 		} catch (err) {
+			if (request !== loadRequest) return;
 			error = err instanceof Error ? err.message : 'Não foi possível calcular as estatísticas.';
 		} finally {
-			loading = false;
+			if (request === loadRequest) loading = false;
 		}
 	}
 
-	onMount(() => {
-		void loadStats();
+	$effect(() => {
+		const current = effectiveScope;
+		if (current?.storage === lastStorage && current?.workspaceId === lastWorkspaceId) return;
+		lastStorage = current?.storage ?? null;
+		lastWorkspaceId = current?.workspaceId ?? null;
+		stats = null;
+		void loadStats(current);
 	});
 
 	function formatBytes(bytes: number): string {
@@ -54,11 +70,15 @@
 	<div class="stats-head">
 		<p class="eyebrow">Uso</p>
 		<h2 id="workspace-stats-heading">Estatísticas do workspace</h2>
-		<p class="intro">Contagens calculadas neste dispositivo, sem rede. Valores de tamanho são estimativas.</p>
+		<p class="intro">
+			Contagens calculadas neste dispositivo, sem rede. Valores de tamanho são estimativas.
+		</p>
 	</div>
 
-	{#if !effectiveStorage}
-		<p class="state-message" role="status">Workspace indisponível. Configure o armazenamento para ver estatísticas.</p>
+	{#if !effectiveScope}
+		<p class="state-message" role="status">
+			Workspace indisponível. Configure o armazenamento para ver estatísticas.
+		</p>
 	{:else if loading}
 		<p class="state-message" role="status" aria-live="polite">Calculando estatísticas…</p>
 	{:else if error && !stats}

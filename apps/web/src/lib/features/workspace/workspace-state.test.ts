@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { bootstrapWorkspace } from '$lib/storage/session';
+import { setActiveWorkspace } from '$lib/storage/workspace-catalog';
 import { DEFAULT_PREFERENCES } from '$lib/storage/preferences';
 import { WorkspaceState } from './workspace-state.svelte';
 
@@ -63,6 +64,7 @@ describe('workspace boot', () => {
 
 	// SPECSFY: US-001 US-002 FR-002 NFR-001 NFR-002 AC-004
 	it('mantém o contexto de conteúdo explicitamente vinculado ao workspace ativo', () => {
+		setActiveWorkspace('workspace-b');
 		const workspace = new WorkspaceState() as unknown as WorkspaceState & {
 			workspaceId?: string;
 			generation?: number;

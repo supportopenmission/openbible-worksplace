@@ -3,6 +3,7 @@ import { WorkspaceState } from '$lib/features/workspace/workspace-state.svelte';
 
 type WorkspaceLifecycleContract = {
 	flushAndSwitch: (workspaceId: string, options?: { discard?: boolean }) => Promise<unknown>;
+	registerFlushHandler?: (handler: () => Promise<void>) => () => void;
 };
 
 describe('workspace lifecycle contract', () => {
@@ -19,10 +20,18 @@ describe('workspace lifecycle contract', () => {
 		const state = new WorkspaceState() as unknown as WorkspaceState & WorkspaceLifecycleContract;
 
 		expect(typeof state.flushAndSwitch).toBe('function');
-		await expect(state.flushAndSwitch('workspace-b')).rejects.toMatchObject({
-			code: 'AUTOSAVE_FAILED',
-			activeWorkspaceId: expect.any(String),
-			actions: expect.arrayContaining(['retry', 'discard-and-switch'])
+		// Caminho de falha determinístico: flush registrado rejeita (AC-006).
+		const unregister = state.registerFlushHandler?.(async () => {
+			throw new Error('autosave boom');
 		});
+		try {
+			await expect(state.flushAndSwitch('workspace-b')).rejects.toMatchObject({
+				code: 'AUTOSAVE_FAILED',
+				activeWorkspaceId: expect.any(String),
+				actions: expect.arrayContaining(['retry', 'discard-and-switch'])
+			});
+		} finally {
+			unregister?.();
+		}
 	});
 });

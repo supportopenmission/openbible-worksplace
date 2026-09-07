@@ -32,6 +32,7 @@
 	let notesError = $state('');
 	let highlightsError = $state('');
 	let lastLoadedStorage = $state<WorkspaceStorage | null>(null);
+	let loadRequest = 0;
 
 	$effect(() => {
 		const current = effectiveStorage;
@@ -48,6 +49,7 @@
 	});
 
 	async function loadHome(current: WorkspaceStorage) {
+		const request = ++loadRequest;
 		continuationLoading = true;
 		recentsLoading = true;
 		continuationError = '';
@@ -59,6 +61,7 @@
 			loadHomeRecents(current),
 			loadBibleCatalog(current)
 		]);
+		if (request !== loadRequest) return;
 		if (continuationResult.status === 'fulfilled') {
 			continuation = continuationResult.value;
 		} else {

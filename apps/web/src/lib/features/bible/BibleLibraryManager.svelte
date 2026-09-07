@@ -1,17 +1,21 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { Trash2 } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { loadWorkspaceConfig } from '$lib/storage/workspace';
-	import type { WorkspaceStorage } from '$lib/storage/types';
+	import type { WorkspaceStorage, WorkspaceStorageScope } from '$lib/storage/types';
 	import { getWorkspaceState } from '$lib/features/workspace/workspace-state.svelte';
 	import { deleteBibleVersion, listLibraryEntries, type LibraryEntry } from './bible-library';
 
-	let { storage = undefined }: { storage?: WorkspaceStorage | null } = $props();
+	const { storage = undefined }: { storage?: WorkspaceStorage | null } = $props();
 
 	const workspace = getWorkspaceState();
 	const effectiveStorage = $derived(storage ?? workspace?.storage ?? null);
+	const effectiveScope = $derived<WorkspaceStorageScope | null>(
+		effectiveStorage && workspace?.workspaceId
+			? { workspaceId: workspace.workspaceId, storage: effectiveStorage }
+			: null
+	);
 
 	let entries = $state<LibraryEntry[]>([]);
 	let loading = $state(true);
@@ -19,6 +23,9 @@
 	let notice = $state('');
 	let deleteTarget = $state<LibraryEntry | null>(null);
 	let deleting = $state(false);
+	let loadRequest = 0;
+	let lastStorage: WorkspaceStorage | null = null;
+	let lastWorkspaceId: string | null = null;
 
 	const canDelete = $derived(
 		!!effectiveStorage && typeof effectiveStorage.deleteFile === 'function'
@@ -41,26 +48,35 @@
 		}
 	}
 
-	async function loadEntries() {
-		const current = effectiveStorage;
+	async function loadEntries(current = effectiveScope) {
+		const request = ++loadRequest;
 		if (!current) {
+			entries = [];
 			loading = false;
 			return;
 		}
 		loading = true;
 		error = '';
 		try {
-			entries = await listLibraryEntries(current);
-			autoReconcileDefaultVersion(entries);
+			const nextEntries = await listLibraryEntries(current);
+			if (request !== loadRequest) return;
+			entries = nextEntries;
+			autoReconcileDefaultVersion(nextEntries);
 		} catch (err) {
+			if (request !== loadRequest) return;
 			error = err instanceof Error ? err.message : 'Não foi possível listar as Bíblias.';
 		} finally {
-			loading = false;
+			if (request === loadRequest) loading = false;
 		}
 	}
 
-	onMount(() => {
-		void loadEntries();
+	$effect(() => {
+		const current = effectiveScope;
+		if (current?.storage === lastStorage && current?.workspaceId === lastWorkspaceId) return;
+		lastStorage = current?.storage ?? null;
+		lastWorkspaceId = current?.workspaceId ?? null;
+		entries = [];
+		void loadEntries(current);
 	});
 
 	async function refreshWorkspaceStatus() {
@@ -74,7 +90,7 @@
 	}
 
 	async function confirmDelete() {
-		const current = effectiveStorage;
+		const current = effectiveScope;
 		if (!current || !deleteTarget) return;
 		deleting = true;
 		error = '';
@@ -89,7 +105,8 @@
 			deleteTarget = null;
 			await refreshWorkspaceStatus();
 		} catch (err) {
-			error = err instanceof Error ? err.message : `Não foi possível excluir ${deleteTarget.fileName}.`;
+			error =
+				err instanceof Error ? err.message : `Não foi possível excluir ${deleteTarget.fileName}.`;
 		} finally {
 			deleting = false;
 		}
@@ -113,11 +130,15 @@
 	<div class="manager-head">
 		<p class="eyebrow">Biblioteca</p>
 		<h2 id="bible-manager-heading">Bíblias instaladas</h2>
-		<p class="intro">Versões em <code>bibles/</code>. A exclusão é permanente e não toca em notas ou sermões.</p>
+		<p class="intro">
+			Versões em <code>bibles/</code>. A exclusão é permanente e não toca em notas ou sermões.
+		</p>
 	</div>
 
-	{#if !effectiveStorage}
-		<p class="state-message" role="status">Workspace indisponível. Configure o armazenamento para gerenciar Bíblias.</p>
+	{#if !effectiveScope}
+		<p class="state-message" role="status">
+			Workspace indisponível. Configure o armazenamento para gerenciar Bíblias.
+		</p>
 	{:else if loading}
 		<p class="state-message" role="status" aria-live="polite">Carregando Bíblias…</p>
 	{:else if error && entries.length === 0}
@@ -126,13 +147,17 @@
 			<Button type="button" variant="outline" onclick={loadEntries}>Tentar novamente</Button>
 		</div>
 	{:else if entries.length === 0}
-		<p class="state-message" role="status">Nenhuma Bíblia instalada. Importe pela aba Armazenamento.</p>
+		<p class="state-message" role="status">
+			Nenhuma Bíblia instalada. Use os controles de importação abaixo.
+		</p>
 	{:else}
 		<ul class="library-list" aria-label="Bíblias instaladas">
 			{#each entries as entry (entry.fileName)}
 				{@const isInstalled = entry.status === 'installed'}
 				{@const installedCount = entries.filter((e) => e.status === 'installed').length}
-				{@const isDefault = isInstalled && (workspace?.preferences.defaultBibleVersionId === entry.fileName || installedCount === 1)}
+				{@const isDefault =
+					isInstalled &&
+					(workspace?.preferences.defaultBibleVersionId === entry.fileName || installedCount === 1)}
 				<li class:invalid={entry.status === 'invalid'}>
 					<span class="entry-main">
 						<div class="entry-title-row">
@@ -199,7 +224,8 @@
 			{/if}
 		</Dialog.Description>
 		<div class="dialog-actions">
-			<Button type="button" variant="outline" onclick={() => (deleteTarget = null)}>Cancelar</Button>
+			<Button type="button" variant="outline" onclick={() => (deleteTarget = null)}>Cancelar</Button
+			>
 			<Button type="button" variant="destructive" onclick={confirmDelete} disabled={deleting}>
 				{deleting ? 'Excluindo…' : 'Excluir'}
 			</Button>

@@ -71,6 +71,24 @@ describe('/config', () => {
 		await expect.element(storageTab).toHaveAttribute('aria-selected', 'true');
 	});
 
+	it('separates storage, workspace management and backup operations', async () => {
+		await page.viewport(1440, 900);
+		await render(ConfigPage);
+
+		const storageTab = page.getByRole('tab', { name: 'Armazenamento' });
+		const workspacesTab = page.getByRole('tab', { name: 'Workspaces' });
+		const backupsTab = page.getByRole('tab', { name: 'Backup e restauração' });
+		await expect.element(storageTab).toBeInTheDocument();
+		await expect.element(workspacesTab).toBeInTheDocument();
+		await expect.element(backupsTab).toBeInTheDocument();
+
+		await workspacesTab.click();
+		await expect.element(workspacesTab).toHaveAttribute('aria-selected', 'true');
+
+		await backupsTab.click();
+		await expect.element(backupsTab).toHaveAttribute('aria-selected', 'true');
+	});
+
 	it('exposes bibles and stats sections on desktop and mobile', async () => {
 		// SPECSFY: US-001 US-002 US-004 FR-001 FR-002 FR-004 NFR-001 AC-010
 		await page.viewport(1440, 900);

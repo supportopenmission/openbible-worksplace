@@ -38,6 +38,60 @@ fn initialize_requires_an_explicit_workspace_path() {
 }
 
 #[test]
+fn missing_workspace_file_is_an_empty_read() {
+	let workspace = std::env::temp_dir().join(format!(
+		"openbible-missing-file-test-{}",
+		std::process::id()
+	));
+	let mut context = crate::commands::workspace::WorkspaceContext::default();
+	crate::commands::workspace::initialize(&mut context, Some(workspace.to_string_lossy().into_owned()))
+		.expect("initialize workspace");
+
+	let result = crate::commands::workspace::read_file(
+		&context,
+		".openbible/preferences.json".into(),
+	)
+	.expect("a missing optional file must not be an I/O error");
+
+	assert_eq!(result, None);
+	if let Some(lock) = context.lock.take() {
+		crate::commands::lock::release(lock).expect("release lock");
+	}
+	let _ = std::fs::remove_dir_all(workspace);
+}
+
+#[test]
+fn initialize_preserves_an_existing_manifest() {
+	let workspace = std::env::temp_dir().join(format!(
+		"openbible-preserve-manifest-test-{}",
+		std::process::id()
+	));
+	std::fs::create_dir_all(workspace.join(".openbible")).expect("create manifest directory");
+	let manifest = br#"{
+  "workspaceId": "workspace-v2",
+  "formatVersion": 2,
+  "storageKind": "native",
+  "managedRoot": true
+}
+"#;
+	std::fs::write(workspace.join(".openbible/config.json"), manifest)
+		.expect("write v2 manifest fixture");
+
+	let mut context = crate::commands::workspace::WorkspaceContext::default();
+	crate::commands::workspace::initialize(&mut context, Some(workspace.to_string_lossy().into_owned()))
+		.expect("initialize workspace");
+
+	assert_eq!(
+		std::fs::read(workspace.join(".openbible/config.json")).expect("read manifest"),
+		manifest
+	);
+	if let Some(lock) = context.lock.take() {
+		crate::commands::lock::release(lock).expect("release lock");
+	}
+	let _ = std::fs::remove_dir_all(workspace);
+}
+
+#[test]
 fn delete_file_removes_a_workspace_relative_file() {
 	// SPECSFY: US-001 FR-002 NFR-003 AC-004
 	let workspace = std::env::temp_dir().join(format!("openbible-delete-test-{}", std::process::id()));

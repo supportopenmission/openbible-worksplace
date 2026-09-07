@@ -1,9 +1,19 @@
-import type { FileContent, WorkspaceStorage } from './types';
+import type { FileContent, WorkspaceStorage, WorkspaceStorageEntry } from './types';
 import { clearStoragePreference } from './environment';
 
 const DATABASE_NAME = 'openbible-workspace';
 const STORE_NAME = 'handles';
-const HANDLE_KEY = 'default';
+const DEFAULT_HANDLE_KEY = 'default';
+
+/**
+ * Chaveia handles pelo ID portátil do workspace. O fallback `default` fica
+ * reservado ao bootstrap legado, que ainda não conhece um ID antes de ler o
+ * manifesto.
+ */
+function handleKey(workspaceId?: string): string {
+	const normalized = workspaceId?.trim();
+	return normalized ? `workspace:${normalized}` : DEFAULT_HANDLE_KEY;
+}
 
 function pathParts(path: string): string[] {
 	const parts = path.split('/').filter(Boolean);
@@ -33,6 +43,7 @@ function directoryStorage(root: FileSystemDirectoryHandle): WorkspaceStorage {
 	return {
 		kind: 'local',
 		label: root.name || 'Pasta local',
+		localHandle: root,
 		ensureDirectory: async (path) => {
 			await getDirectory(path, true);
 		},
@@ -75,6 +86,14 @@ function directoryStorage(root: FileSystemDirectoryHandle): WorkspaceStorage {
 				if (handle.kind === 'file') files.push(name);
 			}
 			return files.sort();
+		},
+		listEntries: async (path): Promise<WorkspaceStorageEntry[]> => {
+			const directory = await getDirectory(path);
+			const entries: WorkspaceStorageEntry[] = [];
+			for await (const [name, handle] of directory.entries()) {
+				entries.push({ name, kind: handle.kind });
+			}
+			return entries.sort((left, right) => left.name.localeCompare(right.name));
 		}
 	};
 }
@@ -89,11 +108,14 @@ function openHandleDatabase(): Promise<IDBDatabase> {
 	});
 }
 
-export async function saveLocalWorkspaceHandle(handle: FileSystemDirectoryHandle): Promise<void> {
+export async function saveLocalWorkspaceHandle(
+	handle: FileSystemDirectoryHandle,
+	workspaceId?: string
+): Promise<void> {
 	const database = await openHandleDatabase();
 	await new Promise<void>((resolve, reject) => {
 		const transaction = database.transaction(STORE_NAME, 'readwrite');
-		transaction.objectStore(STORE_NAME).put(handle, HANDLE_KEY);
+		transaction.objectStore(STORE_NAME).put(handle, handleKey(workspaceId));
 		transaction.oncomplete = () => resolve();
 		transaction.onerror = () =>
 			reject(transaction.error ?? new Error('Unable to save workspace handle'));
@@ -101,10 +123,15 @@ export async function saveLocalWorkspaceHandle(handle: FileSystemDirectoryHandle
 	database.close();
 }
 
-export async function loadLocalWorkspaceHandle(): Promise<FileSystemDirectoryHandle | null> {
+export async function loadLocalWorkspaceHandle(
+	workspaceId?: string
+): Promise<FileSystemDirectoryHandle | null> {
 	const database = await openHandleDatabase();
 	const handle = await new Promise<FileSystemDirectoryHandle | null>((resolve, reject) => {
-		const request = database.transaction(STORE_NAME).objectStore(STORE_NAME).get(HANDLE_KEY);
+		const request = database
+			.transaction(STORE_NAME)
+			.objectStore(STORE_NAME)
+			.get(handleKey(workspaceId));
 		request.onsuccess = () =>
 			resolve((request.result as FileSystemDirectoryHandle | undefined) ?? null);
 		request.onerror = () => reject(request.error ?? new Error('Unable to load workspace handle'));

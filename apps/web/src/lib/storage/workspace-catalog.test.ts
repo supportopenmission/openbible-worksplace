@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { loadWorkspaceConfig, prepareWorkspace } from './workspace';
+import {
+	listCatalog,
+	markCatalogEntryDetached,
+	restoreCatalogEntry,
+	upsertCatalogEntry
+} from './workspace-catalog';
 import type { StorageKind, WorkspaceStorage } from './types';
 
 class CatalogMemoryStorage implements WorkspaceStorage {
@@ -99,5 +105,27 @@ describe('workspace catalog contract', () => {
 		expect(after.name).toBe('Novo nome');
 		expect(after.workspaceId).toBe(before.workspaceId);
 		expect(after.root).toBe(before.root);
+	});
+
+	// SPECSFY: US-003 FR-003 FR-004 NFR-003 AC-018
+	it('mantém a referência fora da lista ativa e permite restaurá-la', () => {
+		const workspaceId = 'workspace-detached-and-restored';
+		upsertCatalogEntry({
+			workspaceId,
+			nameCache: 'Workspace recuperável',
+			storageKind: 'opfs',
+			lastOpenedAt: null,
+			status: 'ready'
+		});
+
+		expect(listCatalog().some((entry) => entry.workspaceId === workspaceId)).toBe(true);
+		expect(markCatalogEntryDetached(workspaceId)).toBe(true);
+		expect(listCatalog().some((entry) => entry.workspaceId === workspaceId)).toBe(false);
+		expect(
+			listCatalog({ includeDetached: true }).find((entry) => entry.workspaceId === workspaceId)
+		).toMatchObject({ status: 'detached' });
+
+		expect(restoreCatalogEntry(workspaceId)).toMatchObject({ status: 'registered' });
+		expect(listCatalog().some((entry) => entry.workspaceId === workspaceId)).toBe(true);
 	});
 });

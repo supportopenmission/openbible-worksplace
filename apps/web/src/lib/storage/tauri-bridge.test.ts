@@ -23,4 +23,16 @@ describe('typed Tauri bridge', () => {
 			invokeWorkspaceCommand({ name: 'workspace.deleteFile', relativePath: '../outside.md' })
 		).rejects.toMatchObject({ code: 'path_outside_workspace' });
 	});
+
+	it('expõe exclusão transacional do registro com workspaceId obrigatório', async () => {
+		const result = await invokeWorkspaceCommand({
+			name: 'database.deleteWorkspace',
+			workspaceId: 'workspace-a'
+		});
+
+		expect(result.ok).toBe(true);
+		await expect(
+			invokeWorkspaceCommand({ name: 'database.deleteWorkspace', workspaceId: '  ' })
+		).rejects.toMatchObject({ code: 'workspace_id_required' });
+	});
 });

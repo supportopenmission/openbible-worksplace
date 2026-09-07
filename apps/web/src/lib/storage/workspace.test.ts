@@ -29,7 +29,8 @@ class MemoryStorage implements WorkspaceStorage {
 	}
 
 	async listFiles(path: string) {
-		const prefix = `${path.replace(/\/$/, '')}/`;
+		const normalized = path.replace(/\/$/, '');
+		const prefix = normalized === '' ? '' : `${normalized}/`;
 		return [...this.files.keys()]
 			.filter(
 				(filePath) => filePath.startsWith(prefix) && !filePath.slice(prefix.length).includes('/')
@@ -170,13 +171,49 @@ describe('workspace storage', () => {
 	it('só permite excluir uma raiz após provar ownership, scan e lock', async () => {
 		const storage = new MemoryStorage('native');
 		await prepareWorkspace(storage);
+		const manifest = JSON.parse(
+			new TextDecoder().decode(storage.files.get('.openbible/config.json'))
+		);
 
 		const guardedStorage = storage as MemoryStorage & {
 			deleteManagedRoot?: (workspaceId: string) => Promise<void>;
 		};
 		expect(typeof guardedStorage.deleteManagedRoot).toBe('function');
-		await guardedStorage.deleteManagedRoot?.('workspace-id');
+		await guardedStorage.deleteManagedRoot?.(manifest.workspaceId);
 		expect(storage.files.size).toBe(0);
+	});
+
+	// SPECSFY: US-003 FR-003 FR-004 NFR-001 NFR-002 NFR-003 AC-009
+	it('bloqueia exclusão quando o ID não corresponde ao manifesto', async () => {
+		const storage = new MemoryStorage('native');
+		await prepareWorkspace(storage);
+		const before = storage.files.size;
+
+		const guardedStorage = storage as MemoryStorage & {
+			deleteManagedRoot?: (workspaceId: string) => Promise<void>;
+		};
+		await expect(guardedStorage.deleteManagedRoot?.('outro-id')).rejects.toThrow();
+		expect(storage.files.size).toBe(before);
+		expect((storage as MemoryStorage & { forceDelete?: unknown }).forceDelete).toBeUndefined();
+	});
+
+	// SPECSFY: US-003 FR-003 FR-004 NFR-001 NFR-002 NFR-003 AC-010
+	it('bloqueia exclusão quando há arquivo desconhecido na raiz', async () => {
+		const storage = new MemoryStorage('native');
+		await prepareWorkspace(storage);
+		await storage.writeFile('estranho.txt', 'fora do controle do app');
+		const manifest = JSON.parse(
+			new TextDecoder().decode(storage.files.get('.openbible/config.json'))
+		);
+
+		const guardedStorage = storage as MemoryStorage & {
+			deleteManagedRoot?: (workspaceId: string) => Promise<void>;
+		};
+		await expect(
+			guardedStorage.deleteManagedRoot?.(manifest.workspaceId)
+		).rejects.toThrow(/desconhecidos/);
+		expect(await storage.fileExists('estranho.txt')).toBe(true);
+		expect((storage as MemoryStorage & { forceDelete?: unknown }).forceDelete).toBeUndefined();
 	});
 
 	// SPECSFY: US-003 FR-003 FR-004 NFR-001 NFR-002 NFR-003 AC-010
