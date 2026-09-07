@@ -40,7 +40,7 @@ A pessoa abre o leitor, escolhe uma versão OpenLP importada, navega por livro e
 
 #### Researchs executados
 
-- **R-001** [critical] Compatibilidade mínima do SQLite OpenLP — Verdict: verified — Confidence: high — Evidence: research/openbible-openlp.md#estrutura-openlp e `bibles_ACF.sqlite` — Budget: 1/1.
+- **R-001** [critical] Compatibilidade mínima do SQLite OpenLP, incluindo `bibles_ACF.sqlite` — Verdict: verified — Confidence: high — Evidence: research/openbible-openlp.md#estrutura-openlp — Budget: 1/1.
 - **R-002** [high] Hierarquia visual e controles do leitor de referência — Verdict: verified — Confidence: high — Evidence: research/openbible-openlp.md#referencia-visual-do-openbible — Budget: 1/1.
 
 #### Fontes e contexto consultados
@@ -60,7 +60,7 @@ A pessoa abre o leitor, escolhe uma versão OpenLP importada, navega por livro e
 
 #### Artefatos de pesquisa armazenados
 
-- `specs/draft/0003-leitor-biblia-sqlite/research/openbible-openlp.md` — observações e contratos externos, sem cópia de código de terceiros.
+- `specs/completed/0003-leitor-biblia-sqlite/research/openbible-openlp.md` — observações e contratos externos, sem cópia de código de terceiros.
 
 #### Dúvidas respondidas
 

@@ -40,9 +40,9 @@ Trocar só o motor de `/notes/[id]` para Milkdown (`@milkdown/kit` com CommonMar
 
 #### Researchs executados
 
-- **R-001**: Milkdown integra ao SvelteKit como editor Markdown por plugins? → Sim; `@milkdown/kit 7.22.1` ESM com `preset/commonmark`, `preset/gfm`, `plugin/slash`, `plugin/listener` e `transformer` sobre ProseMirror + remark; componente Svelte gerencia host DOM e ciclo de vida. Impacto: base da troca sem React.
-- **R-002**: Fence `:::verse{attrs}` com snapshot pode virar nó custom com roundtrip sem perda? → Sim, com schema ProseMirror dedicado + parser/serializador que preserva atributos (`versionId`, `version`, `bookId`, `book`, `chapter`, `verseStart`, `verseEnd`) e corpo snapshot; fallback preserva texto quando o fence é inválido. Impacto: paridade com `verse-block-extension.ts`.
-- **R-003**: Drawer mobile 90dvh e toolbar acima da navegação seguem padrões vigentes? → Sim; `Sheet` com `side=bottom` em 90dvh e `safe-area-inset-bottom` já usados em `VerseSelector` e `BibleReader`; toolbar é barra Svelte própria acima da barra mobile. Ao abrir o drawer de slash, o teclado virtual deve ser ocultado para não competir com a superfície de comandos. Impacto: sem novo padrão de overlay.
+- **R-001** [high] Milkdown integra ao SvelteKit como editor Markdown por plugins, com `@milkdown/kit 7.22.1` ESM e os plugins previstos — Verdict: verified — Confidence: high — Evidence: research/milkdown-kit-7.22.1.md#o-que-foi-consultado — Budget: 1/3.
+- **R-002** [high] Fence `:::verse{attrs}` pode virar nó custom com roundtrip sem perda e fallback textual — Verdict: verified — Confidence: high — Evidence: research/milkdown-kit-7.22.1.md#o-que-foi-consultado — Budget: 1/3.
+- **R-003** [medium] Drawer mobile 90dvh, safe area e toolbar acima da navegação seguem padrões já usados no leitor — Verdict: verified — Confidence: medium — Evidence: research/milkdown-kit-7.22.1.md#o-que-foi-consultado — Budget: 1/3.
 - Para claim material, uso futuro: `**R-00X** [critical] claim — Verdict: verified|refuted|unverifiable — Confidence: high|medium|low — Evidence: research/caminho#locator — Budget: usado/limite`.
 
 #### Fontes e contexto consultados
@@ -60,7 +60,7 @@ Trocar só o motor de `/notes/[id]` para Milkdown (`@milkdown/kit` com CommonMar
 
 #### Artefatos de pesquisa armazenados
 
-- `specs/defined/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/research/milkdown-kit-7.22.1.md`: origem npm + GitHub, versão 7.22.1, licença MIT e impacto na troca do motor.
+- `specs/completed/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/research/milkdown-kit-7.22.1.md`: origem npm + GitHub, versão 7.22.1, licença MIT e impacto na troca do motor.
 - Toda fonte externa efetivamente consultada tem evidência local em `research/`; conclusões normativas ficam neste `spec.md`.
 
 #### Dúvidas respondidas

@@ -23,8 +23,8 @@
 | 16 | 0016-multiplos-workspaces-modelo-vaults | Complete | — |
 | 17 | 0017-formatos-portateis-indice-reconstruivel | Complete | — |
 | 18 | 0018-backup-restauracao-workspace-pwa | Complete | — |
-| 19 | 0019-sincronizacao-local-first-automerge | Implementing | — |
-| 20 | 0020-agentes-ia-locais-controlados-workspace | Implementing | — |
+| 19 | 0019-sincronizacao-local-first-automerge | Complete | — |
+| 20 | 0020-agentes-ia-locais-controlados-workspace | Complete | — |
 
 ## Marcos
 

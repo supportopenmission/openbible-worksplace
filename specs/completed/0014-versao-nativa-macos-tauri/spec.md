@@ -59,7 +59,7 @@ Uma aplicação Tauri para macOS 13 Ventura ou mais recente, em binário univers
 
 #### Artefatos de pesquisa armazenados
 
-- `specs/planned/0014-versao-nativa-macos-tauri/research/local-context-2026-09-04.md`: consulta local ao código e aos contextos do projeto, acesso em 2026-09-04; indexa a base Svelte/storage/interface usada para as decisões desta spec.
+- `specs/completed/0014-versao-nativa-macos-tauri/research/local-context-2026-09-04.md`: consulta local ao código e aos contextos do projeto, acesso em 2026-09-04; indexa a base Svelte/storage/interface usada para as decisões desta spec.
 
 #### Dúvidas respondidas
 
@@ -602,15 +602,15 @@ Este projeto não usa React; portanto, nenhum bloco React ou composição ReUI �
 
 | Requisito | Cenário BDD | Nível | Arquivo/comando esperado | Evidência |
 | --- | --- | --- | --- | --- |
-| FR-001 | AC-001, AC-002, AC-003 | Unidade + Browser | `apps/web/src/lib/storage/tauri-storage.test.ts`; `bun run --cwd apps/web test:tdd` | Pending |
-| FR-001 | AC-008 | Browser | `apps/web/src/routes/onboarding.svelte.spec.ts` | Pending |
-| FR-002 | AC-004, AC-005, AC-010 | Contrato/integração | `apps/web/src/lib/storage/tauri-bridge.test.ts`; `cargo test` | Pending |
-| FR-003 | AC-006, AC-007, AC-008 | Integração | `apps/web/src/lib/storage/migration.test.ts` | Pending |
-| FR-004 | AC-009, AC-010, AC-012 | Unidade/integração | `apps/desktop/src-tauri/src/commands/lock_test.rs`; `apps/web/src/lib/storage/tauri-errors.test.ts` | Pending |
-| FR-005 | AC-003, AC-011, AC-012 | Build/smoke | script Tauri macOS + inspeção de binário universal | Pending |
-| NFR-001 | AC-005, AC-009, AC-010, AC-012 | Segurança/contrato | testes negativos, capabilities e `cargo test` | Pending |
-| NFR-002 | AC-001, AC-003, AC-011, AC-012 | Browser/E2E/build | Vitest Browser, Playwright e build macOS | Pending |
-| NFR-003 | AC-004, AC-006, AC-007, AC-008, AC-010 | Integração/medição | fixtures de migração/SQLite, checksums e medição de boot | Pending |
+| FR-001 | AC-001, AC-002, AC-003 | Unidade + Browser | `apps/web/src/lib/storage/tauri-storage.test.ts`; `bun run --cwd apps/web test:tdd` | Passed |
+| FR-001 | AC-008 | Browser | `apps/web/src/routes/onboarding.svelte.spec.ts` | Passed |
+| FR-002 | AC-004, AC-005, AC-010 | Contrato/integração | `apps/web/src/lib/storage/tauri-bridge.test.ts`; `cargo test` | Passed |
+| FR-003 | AC-006, AC-007, AC-008 | Integração | `apps/web/src/lib/storage/migration.test.ts` | Passed |
+| FR-004 | AC-009, AC-010, AC-012 | Unidade/integração | `apps/desktop/src-tauri/src/commands/lock_test.rs`; `apps/web/src/lib/storage/tauri-errors.test.ts` | Passed |
+| FR-005 | AC-003, AC-011, AC-012 | Build/smoke | script Tauri macOS + inspeção de binário universal | Passed |
+| NFR-001 | AC-005, AC-009, AC-010, AC-012 | Segurança/contrato | testes negativos, capabilities e `cargo test` | Passed |
+| NFR-002 | AC-001, AC-003, AC-011, AC-012 | Browser/E2E/build | Vitest Browser, Playwright e build macOS | Passed |
+| NFR-003 | AC-004, AC-006, AC-007, AC-008, AC-010 | Integração/medição | fixtures de migração/SQLite, checksums e medição de boot | Passed |
 
 ### 13. Validações
 

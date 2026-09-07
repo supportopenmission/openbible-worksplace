@@ -528,33 +528,33 @@ Blocos Svelte: `AppFrame` (shell sem mobile-header), `AppSidebar` (links + vers�
 
 | Requisito | Cenário BDD | Nível | Arquivo/comando esperado | Evidência |
 | --- | --- | --- | --- | --- |
-| FR-001 | AC-001 | Unidade | `apps/web/src/lib/pwa/pwa-shell.test.ts` / `vitest run pwa-shell` | GREEN 2026-09-03: suíte 196/196 |
-| FR-001 | AC-002 | Unidade | `apps/web/src/lib/pwa/pwa-shell.test.ts` / `vitest run pwa-shell` | GREEN 2026-09-03: suíte 196/196 |
-| FR-001 | AC-011 | Unidade | `apps/web/src/lib/pwa/pwa-shell.test.ts` / `vitest run pwa-shell` | GREEN 2026-09-03: suíte 196/196 |
-| FR-002 | AC-003 | Unidade | `apps/web/src/lib/pwa/pwa-shell.test.ts` / `vitest run pwa-shell` | GREEN 2026-09-03: suíte 196/196 |
-| FR-002 | AC-004 | Unidade | `apps/web/src/lib/pwa/pwa-shell.test.ts` / `vitest run pwa-shell` | GREEN 2026-09-03: suíte 196/196 |
-| FR-002 | AC-012 | Unidade | `apps/web/src/lib/pwa/pwa-shell.test.ts` / `vitest run pwa-shell` | GREEN 2026-09-03: suíte 196/196 |
-| FR-003 | AC-005 | Unidade | `apps/web/src/lib/pwa/offline-reminder.test.ts` / `vitest run offline-reminder` | GREEN 2026-09-03: suíte 196/196 |
-| FR-003 | AC-006 | Unidade | `apps/web/src/lib/pwa/offline-reminder.test.ts` / `vitest run offline-reminder` | GREEN 2026-09-03: suíte 196/196 |
-| FR-003 | AC-005 | Manual | abertura offline das 7 rotas | GREEN 2026-09-03: suíte 196/196 |
-| FR-004 | AC-004 | Unidade | `apps/web/src/lib/pwa/pwa-shell.test.ts` / `vitest run pwa-shell` | GREEN 2026-09-03: suíte 196/196 |
-| FR-004 | AC-010 | Unidade | `apps/web/src/lib/pwa/pwa-shell.test.ts` / `vitest run pwa-shell` | GREEN 2026-09-03: suíte 196/196 |
-| FR-004 | AC-004 | Manual | claro/escuro com notch | GREEN 2026-09-03: suíte 196/196 |
-| FR-005 | AC-009 | Unidade | `apps/web/src/lib/app-version.test.ts` / `vitest run app-version` | GREEN 2026-09-03: suíte 196/196 |
-| FR-005 | AC-009 | Manual | sidebar + config exibem 0.4.0 | GREEN 2026-09-03: suíte 196/196 |
-| FR-005 | AC-001 | Unidade | `apps/web/src/lib/app-version.test.ts` | GREEN 2026-09-03: suíte 196/196 |
-| FR-006 | AC-007 | Unidade | `apps/web/src/lib/pwa/daily-reminder.test.ts` / `vitest run daily-reminder` | GREEN 2026-09-03: suíte 196/196 |
-| FR-006 | AC-008 | Unidade | `apps/web/src/lib/pwa/daily-reminder.test.ts` / `vitest run daily-reminder` | GREEN 2026-09-03: suíte 196/196 |
-| FR-006 | AC-007 | Manual | disparo no horário | GREEN 2026-09-03: suíte 196/196 |
-| NFR-001 | AC-001 | Inspeção | manifesto/head + instalação | GREEN 2026-09-03: suíte 196/196 |
-| NFR-001 | AC-002 | Inspeção | ícones + maskable | GREEN 2026-09-03: suíte 196/196 |
-| NFR-001 | AC-009 | Inspeção | versão única | GREEN 2026-09-03: suíte 196/196 |
-| NFR-002 | AC-005 | Unidade | `vitest run offline-reminder` | GREEN 2026-09-03: suíte 196/196 |
-| NFR-002 | AC-006 | Unidade | `vitest run offline-reminder` | GREEN 2026-09-03: suíte 196/196 |
-| NFR-002 | AC-007 | Unidade | `vitest run daily-reminder` | GREEN 2026-09-03: suíte 196/196 |
-| NFR-003 | AC-003 | Inspeção | h1 por página + teclado | GREEN 2026-09-03: suíte 196/196 |
-| NFR-003 | AC-004 | Inspeção | safe-area + contraste | GREEN 2026-09-03: suíte 196/196 |
-| NFR-003 | AC-008 | Inspeção | permissão orientada | GREEN 2026-09-03: suíte 196/196 |
+| FR-001 | AC-001 | Unidade | `apps/web/src/lib/pwa/pwa-shell.test.ts` / `vitest run pwa-shell` | Passed 2026-09-03: suíte 196/196 |
+| FR-001 | AC-002 | Unidade | `apps/web/src/lib/pwa/pwa-shell.test.ts` / `vitest run pwa-shell` | Passed 2026-09-03: suíte 196/196 |
+| FR-001 | AC-011 | Unidade | `apps/web/src/lib/pwa/pwa-shell.test.ts` / `vitest run pwa-shell` | Passed 2026-09-03: suíte 196/196 |
+| FR-002 | AC-003 | Unidade | `apps/web/src/lib/pwa/pwa-shell.test.ts` / `vitest run pwa-shell` | Passed 2026-09-03: suíte 196/196 |
+| FR-002 | AC-004 | Unidade | `apps/web/src/lib/pwa/pwa-shell.test.ts` / `vitest run pwa-shell` | Passed 2026-09-03: suíte 196/196 |
+| FR-002 | AC-012 | Unidade | `apps/web/src/lib/pwa/pwa-shell.test.ts` / `vitest run pwa-shell` | Passed 2026-09-03: suíte 196/196 |
+| FR-003 | AC-005 | Unidade | `apps/web/src/lib/pwa/offline-reminder.test.ts` / `vitest run offline-reminder` | Passed 2026-09-03: suíte 196/196 |
+| FR-003 | AC-006 | Unidade | `apps/web/src/lib/pwa/offline-reminder.test.ts` / `vitest run offline-reminder` | Passed 2026-09-03: suíte 196/196 |
+| FR-003 | AC-005 | Manual | abertura offline das 7 rotas | Passed 2026-09-03: suíte 196/196 |
+| FR-004 | AC-004 | Unidade | `apps/web/src/lib/pwa/pwa-shell.test.ts` / `vitest run pwa-shell` | Passed 2026-09-03: suíte 196/196 |
+| FR-004 | AC-010 | Unidade | `apps/web/src/lib/pwa/pwa-shell.test.ts` / `vitest run pwa-shell` | Passed 2026-09-03: suíte 196/196 |
+| FR-004 | AC-004 | Manual | claro/escuro com notch | Passed 2026-09-03: suíte 196/196 |
+| FR-005 | AC-009 | Unidade | `apps/web/src/lib/app-version.test.ts` / `vitest run app-version` | Passed 2026-09-03: suíte 196/196 |
+| FR-005 | AC-009 | Manual | sidebar + config exibem 0.4.0 | Passed 2026-09-03: suíte 196/196 |
+| FR-005 | AC-001 | Unidade | `apps/web/src/lib/app-version.test.ts` | Passed 2026-09-03: suíte 196/196 |
+| FR-006 | AC-007 | Unidade | `apps/web/src/lib/pwa/daily-reminder.test.ts` / `vitest run daily-reminder` | Passed 2026-09-03: suíte 196/196 |
+| FR-006 | AC-008 | Unidade | `apps/web/src/lib/pwa/daily-reminder.test.ts` / `vitest run daily-reminder` | Passed 2026-09-03: suíte 196/196 |
+| FR-006 | AC-007 | Manual | disparo no horário | Passed 2026-09-03: suíte 196/196 |
+| NFR-001 | AC-001 | Inspeção | manifesto/head + instalação | Passed 2026-09-03: suíte 196/196 |
+| NFR-001 | AC-002 | Inspeção | ícones + maskable | Passed 2026-09-03: suíte 196/196 |
+| NFR-001 | AC-009 | Inspeção | versão única | Passed 2026-09-03: suíte 196/196 |
+| NFR-002 | AC-005 | Unidade | `vitest run offline-reminder` | Passed 2026-09-03: suíte 196/196 |
+| NFR-002 | AC-006 | Unidade | `vitest run offline-reminder` | Passed 2026-09-03: suíte 196/196 |
+| NFR-002 | AC-007 | Unidade | `vitest run daily-reminder` | Passed 2026-09-03: suíte 196/196 |
+| NFR-003 | AC-003 | Inspeção | h1 por página + teclado | Passed 2026-09-03: suíte 196/196 |
+| NFR-003 | AC-004 | Inspeção | safe-area + contraste | Passed 2026-09-03: suíte 196/196 |
+| NFR-003 | AC-008 | Inspeção | permissão orientada | Passed 2026-09-03: suíte 196/196 |
 
 ### 13. Validações
 

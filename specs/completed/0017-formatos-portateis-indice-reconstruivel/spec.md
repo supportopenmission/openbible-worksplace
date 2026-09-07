@@ -67,7 +67,7 @@ Notas, sermões, blocos de verso/vídeo e destaques terão fonte operacional loc
 
 #### Artefatos de pesquisa armazenados
 
-- `specs/review/0017-formatos-portateis-indice-reconstruivel/research/markdown-portability/evidence.md`: notas próprias, URLs e conclusões, consultado em 2026-09-05; sem reprodução de conteúdo protegido.
+- `specs/completed/0017-formatos-portateis-indice-reconstruivel/research/markdown-portability/evidence.md`: notas próprias, URLs e conclusões, consultado em 2026-09-05; sem reprodução de conteúdo protegido.
 - `specs/completed/0016-multiplos-workspaces-modelo-vaults/spec.md`: autoridade operacional SQLite/IndexedDB, `workspaceId`, `WorkspaceExportSource` e Bíblia SQLite/WASM separada, consultada em 2026-09-06.
 
 #### Dúvidas respondidas

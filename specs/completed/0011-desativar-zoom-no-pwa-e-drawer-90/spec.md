@@ -422,21 +422,21 @@ Blocos Svelte: `Sheet` (`sheet-content.svelte`, variante bottom 90%), campos nat
 
 | Requisito | Cenário BDD | Nível | Arquivo/comando esperado | Evidência |
 | --- | --- | --- | --- | --- |
-| FR-001 | AC-001 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | GREEN 2026-09-03: suíte 205/205 |
-| FR-001 | AC-002 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | GREEN 2026-09-03: suíte 205/205 |
-| FR-001 | AC-009 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | GREEN 2026-09-03: suíte 205/205 |
-| FR-002 | AC-003 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | GREEN 2026-09-03: suíte 205/205 |
-| FR-002 | AC-004 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | GREEN 2026-09-03: suíte 205/205 |
-| FR-002 | AC-005 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | GREEN 2026-09-03: suíte 205/205 |
-| FR-003 | AC-006 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | GREEN 2026-09-03: suíte 205/205 |
-| FR-003 | AC-007 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | GREEN 2026-09-03: suíte 205/205 |
-| FR-003 | AC-008 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | GREEN 2026-09-03: suíte 205/205 |
-| NFR-001 | AC-001 | Unidade | `vitest run mobile-viewport` | GREEN 2026-09-03: suíte 205/205 |
-| NFR-001 | AC-004 | Unidade | `vitest run mobile-viewport` | GREEN 2026-09-03: suíte 205/205 |
-| NFR-001 | AC-006 | Unidade | `vitest run mobile-viewport` | GREEN 2026-09-03: suíte 205/205 |
-| NFR-002 | AC-005 | Unidade | `vitest run mobile-viewport` | GREEN 2026-09-03: suíte 205/205 |
-| NFR-002 | AC-008 | Unidade | `vitest run mobile-viewport` | GREEN 2026-09-03: suíte 205/205 |
-| NFR-002 | AC-009 | Unidade | `vitest run mobile-viewport` | GREEN 2026-09-03: suíte 205/205 |
+| FR-001 | AC-001 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | Passed 2026-09-03: suíte 205/205 |
+| FR-001 | AC-002 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | Passed 2026-09-03: suíte 205/205 |
+| FR-001 | AC-009 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | Passed 2026-09-03: suíte 205/205 |
+| FR-002 | AC-003 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | Passed 2026-09-03: suíte 205/205 |
+| FR-002 | AC-004 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | Passed 2026-09-03: suíte 205/205 |
+| FR-002 | AC-005 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | Passed 2026-09-03: suíte 205/205 |
+| FR-003 | AC-006 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | Passed 2026-09-03: suíte 205/205 |
+| FR-003 | AC-007 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | Passed 2026-09-03: suíte 205/205 |
+| FR-003 | AC-008 | Unidade | `apps/web/src/lib/pwa/mobile-viewport.test.ts` / `vitest run mobile-viewport` | Passed 2026-09-03: suíte 205/205 |
+| NFR-001 | AC-001 | Unidade | `vitest run mobile-viewport` | Passed 2026-09-03: suíte 205/205 |
+| NFR-001 | AC-004 | Unidade | `vitest run mobile-viewport` | Passed 2026-09-03: suíte 205/205 |
+| NFR-001 | AC-006 | Unidade | `vitest run mobile-viewport` | Passed 2026-09-03: suíte 205/205 |
+| NFR-002 | AC-005 | Unidade | `vitest run mobile-viewport` | Passed 2026-09-03: suíte 205/205 |
+| NFR-002 | AC-008 | Unidade | `vitest run mobile-viewport` | Passed 2026-09-03: suíte 205/205 |
+| NFR-002 | AC-009 | Unidade | `vitest run mobile-viewport` | Passed 2026-09-03: suíte 205/205 |
 
 ### 13. Validações
 

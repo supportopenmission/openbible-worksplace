@@ -5,7 +5,7 @@
 | Formato | Specsfy/2.0 |
 | ID | SPEC-0020 |
 | Slug | 0020-agentes-ia-locais-controlados-workspace |
-| Status | Implementing |
+| Status | Complete |
 | Effort | 8 |
 | Effort updated at | 2026-09-05 |
 | Effort rationale | Integração de alto risco entre Tauri, cofre seguro do SO, PWA/gateway, isolamento por workspace, autoria canônica e revisão humana. Estimativa preliminar sujeita à revisão arquitetural. |
@@ -13,10 +13,10 @@
 | Milestones | Pós-BACKLOG-0017–0020; desktop/Tauri como driver inicial |
 | Definition Gate | Passed |
 | Plan Gate | Passed |
-| Delivery Gate | In Progress |
+| Delivery Gate | Passed |
 | Evidence Contract | 1 |
 | Interface para pessoas | Sim |
-| Atualizada em | 2026-09-05 |
+| Atualizada em | 2026-09-07 |
 
 ## Ato I — Definir
 
@@ -40,12 +40,12 @@ Uma execução controlada lê apenas o contexto explicitamente selecionado no wo
 
 #### Researchs executados
 
-- **R-001** [critical] O bridge atual possui comando de agente ou segredo? — Verdict: verified — Confidence: high — Evidence: `apps/web/src/lib/storage/tauri-bridge.ts#L3-L20` e `apps/desktop/src-tauri/src/lib.rs#L13-L24` — Budget: 1/1. Conclusão: só há operações de workspace, índice, Bíblia e migração; a capacidade é nova.
-- **R-002** [critical] Onde vivem hoje as fontes autorais e o índice? — Verdict: verified — Confidence: high — Evidence: `.specsfy/DATABASE.md#L10-L15` e `#L34-L38` — Budget: 1/1. Conclusão: Markdown/JSON são canônicos; SQLite é auxiliar/importado e handles ficam locais.
-- **R-003** [critical] O service worker pode ser backend persistente de agente? — Verdict: verified — Confidence: high — Evidence: `apps/web/src/service-worker.ts#L10-L66` — Budget: 1/1. Conclusão: implementação atual trata app shell, cache e navegação; não deve hospedar backend, chave ou fila durável.
-- **R-004** [critical] Existem dependências locais de OpenAI, cofre seguro ou gateway? — Verdict: verified — Confidence: high — Evidence: `apps/desktop/src-tauri/Cargo.toml#L15-L24` e busca local de dependências/fontes — Budget: 1/1. Conclusão: não há adapter, crate/plugin de segredo ou gateway implementado.
-- **R-005** [critical] Uma API key de provedor pode ficar no cliente web? — Verdict: verified — Confidence: high — Evidence: documentação oficial OpenAI em `https://platform.openai.com/docs/api-reference/introduction` e `https://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety` — Budget: 1/2. Conclusão: chaves não devem ser expostas em browser ou app cliente; a PWA exige gateway e sessão sem a chave do provedor.
-- **R-006** [critical] Há biblioteca Rust capaz de usar credential stores nativos? — Verdict: verified — Confidence: medium — Evidence: `https://github.com/open-source-cooperative/keyring-rs` e wiki oficial do projeto — Budget: 1/2. Conclusão: a implementação pode acessar Keychain, Credential Manager ou Secret Service atrás de uma interface Rust, mas precisa validar cada target e não pode ter fallback em arquivo.
+- **R-001** [critical] O bridge atual possui comando de agente ou segredo? — Verdict: verified — Confidence: high — Evidence: research/agent-boundaries.md#r-001 — Budget: 1/6.
+- **R-002** [critical] Onde vivem hoje as fontes autorais e o índice? — Verdict: verified — Confidence: high — Evidence: research/agent-boundaries.md#r-002 — Budget: 1/6.
+- **R-003** [critical] O service worker pode ser backend persistente de agente? — Verdict: verified — Confidence: high — Evidence: research/agent-boundaries.md#r-003 — Budget: 1/6.
+- **R-004** [critical] Existem dependências locais de OpenAI, cofre seguro ou gateway? — Verdict: verified — Confidence: high — Evidence: research/agent-boundaries.md#r-004 — Budget: 1/6.
+- **R-005** [critical] Uma API key de provedor pode ficar no cliente web? — Verdict: verified — Confidence: high — Evidence: research/agent-boundaries.md#r-005 — Budget: 1/6.
+- **R-006** [critical] Há biblioteca Rust capaz de usar credential stores nativos? — Verdict: verified — Confidence: medium — Evidence: research/agent-boundaries.md#r-006 — Budget: 1/6.
 
 #### Fontes e contexto consultados
 
@@ -62,7 +62,7 @@ Uma execução controlada lê apenas o contexto explicitamente selecionado no wo
 
 #### Artefatos de pesquisa armazenados
 
-- Nenhum artefato externo. As evidências são caminhos e linhas do repositório, preservados nesta spec.
+- `specs/completed/0020-agentes-ia-locais-controlados-workspace/research/agent-boundaries.md` — síntese local das fontes, decisões de fronteira e conclusão de segurança dos claims R-001–R-006.
 
 #### Dúvidas respondidas
 
@@ -637,7 +637,7 @@ tests/                                        # somente fase TDD posterior
 
 | IDs | BDD de referência | Teste TDD informado pelo BDD | RED observado | GREEN observado | Refactor/regressão |
 | --- | --- | --- | --- | --- | --- |
-| US-001, FR-001/002/003, NFR-001/007, AC-001/002/003/015 | AC-001/002/003/015 | `agent-profile-red.test.ts`, `agent-run-red.test.ts`, `agent-observability-red.test.ts` | RED histórico: 4 casos falharam por seam ausente; perfil usa fixture real e binding permanece não persistido | GREEN: perfil, execução redigida e observabilidade passaram na suíte focal e geral | Refactor: seam centralizada em `agent-command.ts`; cofre Tauri segue separado |
+| US-001, FR-001/002/003, NFR-001/007, AC-001/002/003/015 | AC-001/002/003/015 | `agent-profile-red.test.ts`, `agent-run-red.test.ts`, `agent-observability-red.test.ts`, `commands/ai_test.rs` | RED histórico: 4 casos web falharam por seam ausente; predecessor Rust foi materializado em T017 | GREEN: perfil, execução redigida, observabilidade e boundary nativa passaram | Refactor: seam web centralizada e cofre `keyring` sem fallback em arquivo/SQLite |
 | US-002, FR-004/005/006/012, NFR-002/003/006, AC-004/005/006 | AC-004/005/006 | `context-red.test.ts` | RED histórico: 3 casos falharam na asserção da seam ausente | GREEN: workspace/generation, paths relativos e ausência de tools passaram | Refactor: contexto mínimo e rejeição de generation obsoleta |
 | US-003, FR-007/008/011/012, NFR-002/004/008, AC-007/008/009/014 | AC-007/008/009/014 | `proposal-red.test.ts`, `agent-failure-red.test.ts` | RED histórico: 4 casos falharam na seam ausente | GREEN: preview, rejeição, aplicação revalidada e cancelamento passaram | Refactor: aplicação usa temporário e confirmação explícita |
 | US-004, FR-009/010/011, NFR-003/005/007/009, AC-010/011/012/013 | AC-010/011/012/013 | `gateway-red.test.ts`, `service-worker-boundary-red.test.ts` | RED histórico: 4 casos falharam na seam ausente | GREEN: preflight, sessão, revogação, falha e capability fora do service worker passaram | Refactor: token somente em memória e gateway sem envio implícito |
@@ -646,13 +646,11 @@ tests/                                        # somente fase TDD posterior
 
 | Requisito | Cenários BDD | Nível futuro | Arquivo/comando esperado | Evidência |
 | --- | --- | --- | --- | --- |
-| FR-001/002/003, NFR-001/007 | AC-001/002/003/015 | Unidade + domínio | `apps/web/src/lib/features/ai/workspace-agent-fixture.ts`, `agent-profile-red.test.ts`, `agent-run-red.test.ts`, `agent-observability-red.test.ts` | GREEN focal e geral; JSON redigido sem segredo |
-| FR-004/005/006/012, NFR-002/003/006 | AC-004/005/006/014 | Unidade + contrato | `apps/web/src/lib/features/ai/context-red.test.ts`, `agent-failure-red.test.ts` | GREEN focal e geral; fixture prepara WorkspaceStorage real |
-| FR-007/008/011/012, NFR-002/004/008 | AC-007/008/009/014 | Unidade + aplicação canônica | `apps/web/src/lib/features/ai/proposal-red.test.ts`, `agent-failure-red.test.ts` | GREEN focal e geral; arquivo autoral preservado antes/depois |
-| FR-009/010/011, NFR-003/005/007/009 | AC-010/011/012/013 | Contrato + PWA | `apps/web/src/lib/features/ai/gateway-red.test.ts`, `service-worker-boundary-red.test.ts` | GREEN focal e geral; SW não é backend |
-| NFR-008 | AC-007/008/010/012 | Interface futura | `AgentCapabilityPanel.svelte`, `AgentContextPicker.svelte`, `AgentProposalReview.svelte`, `ai-interface.test.ts` | Pending: fase 7 |
-
-<!-- specsfy:evidence {"task":"T027","refs":["US-001","US-002","US-003","US-004","FR-001","FR-002","FR-003","FR-004","FR-005","FR-006","FR-007","FR-008","FR-009","FR-010","FR-011","FR-012","NFR-001","NFR-002","NFR-003","NFR-004","NFR-005","NFR-006","NFR-007","NFR-008","NFR-009","AC-001","AC-002","AC-003","AC-004","AC-005","AC-006","AC-007","AC-008","AC-009","AC-010","AC-011","AC-012","AC-013","AC-014","AC-015"]} -->
+| FR-001/002/003, NFR-001/007 | AC-001, AC-002, AC-003, AC-015 | Unidade + domínio | `apps/web/src/lib/features/ai/workspace-agent-fixture.ts`, `agent-profile-red.test.ts`, `agent-run-red.test.ts`, `agent-observability-red.test.ts` | Passed: GREEN focal e geral; JSON redigido sem segredo |
+| FR-004/005/006/012, NFR-002/003/006 | AC-004, AC-005, AC-006, AC-014 | Unidade + contrato | `apps/web/src/lib/features/ai/context-red.test.ts`, `agent-failure-red.test.ts` | Passed: GREEN focal e geral; fixture prepara WorkspaceStorage real |
+| FR-007/008/011/012, NFR-002/004/008 | AC-007, AC-008, AC-009, AC-014 | Unidade + aplicação canônica | `apps/web/src/lib/features/ai/proposal-red.test.ts`, `agent-failure-red.test.ts` | Passed: GREEN focal e geral; arquivo autoral preservado antes/depois |
+| FR-009/010/011, NFR-003/005/007/009 | AC-010, AC-011, AC-012, AC-013 | Contrato + PWA | `apps/web/src/lib/features/ai/gateway-red.test.ts`, `service-worker-boundary-red.test.ts` | Passed: GREEN focal e geral; SW não é backend |
+| NFR-008 | AC-007, AC-008, AC-010, AC-012 | Interface entregue | `AgentCapabilityPanel.svelte`, `AgentContextPicker.svelte`, `AgentProposalReview.svelte`, `ai-interface.test.ts` | Passed: GREEN browser em 320/1440 px; foco, teclado, estados stale/erro/vazio e overflow verificados |
 
 ### 13. Validações
 
@@ -672,9 +670,9 @@ tests/                                        # somente fase TDD posterior
 
 #### Gate do Ato III — Entrega
 
-  - **Resultado**: In Progress em 2026-09-07; implementação web de domínio e regressão concluídas, mas cofre Rust/Tauri e interface permanecem pendentes.
-  - **Comandos**: `bun run --cwd apps/web test:tdd -- src/lib/features/ai`; `bun run --cwd apps/web test:tdd`; `bun run --cwd apps/web check-types`; `bunx eslint ...`; `node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check`; `node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check`.
-  - **Achados**: os 15 casos de AI e os 2 casos históricos de backup agora passam; a suíte geral passou com 168 arquivos/560 testes e TypeScript sem erros. Permanecem T017, T025, T026, T027, T028 e T029.
+  - **Resultado**: Passed em 2026-09-07; domínio web, cofre Rust/Tauri, capability PWA, seleção de contexto, revisão de proposta, regressão e interface foram entregues.
+  - **Comandos**: `bun run --cwd apps/web test:tdd -- --project server --maxWorkers=2`; `bun run --cwd apps/web test:tdd -- --project client --maxWorkers=1`; `bun run --cwd apps/web check-types`; `bunx eslint apps/web/src/lib/features/ai apps/web/vitest.config.ts`; `bun run --cwd apps/web build`; `cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml`; `cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml -- --check`; `node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check`; `node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check`.
+  - **Achados**: regressão controlada passou com 172 arquivos/575 testes (149 server/460 testes e 23 client/115 testes), T027 passou com 4 testes de rastreabilidade, Rust passou com 20 testes, build e checks estáticos passaram. A execução paralela sem limite apresentou falhas de infraestrutura (`Unknown system error -122`/iframe CORS), reproduzidas sem asserções RED e resolvidas com workers controlados.
 
 ### 14. Tarefas
 
@@ -812,13 +810,15 @@ tests/                                        # somente fase TDD posterior
 
   <!-- specsfy:evidence {"task":"T016","refs":["US-001","FR-001","FR-003","FR-012","NFR-001","NFR-003","AC-001","AC-003","AC-015"],"files":["apps/web/src/lib/features/ai/agent-profile.ts","apps/web/src/lib/features/ai/agent-profile-red.test.ts","apps/web/src/lib/features/ai/workspace-agent-fixture.ts"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/ai","exit":0},{"run":"bun run --cwd apps/web test:tdd","exit":0},{"run":"bun run --cwd apps/web check-types","exit":0}]} -->
 
-- [ ] T017 [P1] [CODE] [US-001] Implementar credential store Rust/Tauri nativo sem fallback e comandos redigidos em `apps/desktop/src-tauri/src/commands/ai.rs` — Refs: US-001, FR-001, FR-002, FR-003, NFR-001, NFR-007, AC-001, AC-002, AC-003, AC-015 — Depends: T001, T002, T003, T015
-  - [ ] **PREP**: Confirmar API de cofre do SO, ausência de fallback e predecessor RED.
-  - [ ] **EXECUTE**: Implementar boundary Rust/Tauri, allowlist IPC e respostas sem material secreto.
-  - [ ] **VERIFY**: Executar Rust tests da boundary, bridge tests e auditoria de logs/bundle.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; verificar estados indisponível/salvo/removido.
-  - [ ] **EVIDENCE**: Registrar comandos cargo/Vitest, saída e cobertura AC-001/002/003/015.
-  - [ ] **IMPROVE**: Remover qualquer fallback ou campo sensível detectado.
+- [x] T017 [P1] [CODE] [US-001] Implementar credential store Rust/Tauri nativo sem fallback e comandos redigidos em `apps/desktop/src-tauri/src/commands/ai.rs` — Refs: US-001, FR-001, FR-002, FR-003, NFR-001, NFR-007, AC-001, AC-002, AC-003, AC-015 — Depends: T001, T002, T003, T015
+  - [x] **PREP**: API `keyring` nativa, ausência de fallback e predecessores RED confirmados.
+  - [x] **EXECUTE**: Boundary Rust/Tauri, allowlist IPC e respostas sem material secreto implementadas.
+  - [x] **VERIFY**: Rust (20 testes), bridge (5 testes), TypeScript, lint e `cargo fmt --check` passaram.
+  - [x] **VISUAL**: Não aplicável: tarefa de boundary nativa sem tela; estados de capability ficam para T025.
+  - [x] **EVIDENCE**: Comandos e saídas registrados no bloco `specsfy:evidence` desta tarefa.
+  - [x] **IMPROVE**: Não há fallback; o segredo só é encaminhado ao credential store e não entra em retorno/log/workspace.
+
+  <!-- specsfy:evidence {"task":"T017","refs":["US-001","FR-001","FR-002","FR-003","NFR-001","NFR-007","AC-001","AC-002","AC-003","AC-015"],"files":["apps/desktop/src-tauri/Cargo.toml","apps/desktop/src-tauri/Cargo.lock","apps/desktop/src-tauri/src/commands/ai.rs","apps/desktop/src-tauri/src/commands/ai_test.rs","apps/desktop/src-tauri/src/commands/mod.rs","apps/desktop/src-tauri/src/lib.rs","apps/web/src/lib/storage/tauri-bridge.ts","apps/web/src/lib/storage/tauri-bridge.test.ts",".specsfy/STACK.md","docs/"],"commands":[{"run":"cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml","exit":0},{"run":"cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml -- --check","exit":0},{"run":"bun run --cwd apps/web test:tdd -- src/lib/storage/tauri-bridge.test.ts","exit":0},{"run":"bun run --cwd apps/web check-types","exit":0},{"run":"bunx eslint apps/web/src/lib/storage/tauri-bridge.ts apps/web/src/lib/storage/tauri-bridge.test.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
 - [x] T018 [P1] [CODE] [US-002] Implementar seleção por workspace/generation, paths relativos e primeira fatia sem tools em `apps/web/src/lib/features/ai/agent-context.ts` — Refs: US-002, FR-004, FR-005, FR-006, FR-012, NFR-002, NFR-003, NFR-006, AC-004, AC-005, AC-006 — Depends: T004, T005, T006
   - [x] **PREP**: Contrato WorkspaceStorage, geração, allowlist e fixture autoral confirmados.
@@ -893,47 +893,57 @@ tests/                                        # somente fase TDD posterior
 
 Atualizar `INTERFACE.md` com os blocos e componentes usados nesta fase.
 
-- [ ] T025 [P1] [CODE] [US-001] Implementar `AgentCapabilityPanel.svelte` em `apps/web/src/lib/features/ai/AgentCapabilityPanel.svelte` — Refs: US-001, US-004, FR-001, FR-009, FR-010, NFR-008, AC-001, AC-010 — Depends: T016, T017, T021
-  - [ ] **PREP**: Confirmar estados de capability e acessibilidade.
-  - [ ] **EXECUTE**: Implementar painel Svelte com estados explícitos e sem segredo no cliente.
-  - [ ] **VERIFY**: Executar testes de teclado, foco, mobile/desktop e tema claro/escuro.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; revisar curto/longo sem overflow.
-  - [ ] **EVIDENCE**: Registrar screenshots/commands e AC-001/010.
-  - [ ] **IMPROVE**: Corrigir hierarquia, foco e mensagens sem cor ornamental.
+- [x] T025 [P1] [CODE] [US-001] Implementar `AgentCapabilityPanel.svelte` em `apps/web/src/lib/features/ai/AgentCapabilityPanel.svelte` — Refs: US-001, US-004, FR-001, FR-009, FR-010, NFR-008, AC-001, AC-010 — Depends: T016, T017, T021
+  - [x] **PREP**: Confirmar estados de capability e acessibilidade.
+  - [x] **EXECUTE**: Implementar painel Svelte com estados explícitos e sem segredo no cliente.
+  - [x] **VERIFY**: Executar testes de teclado, foco, mobile/desktop e tema claro/escuro.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; revisar curto/longo sem overflow.
+  - [x] **EVIDENCE**: Registrar screenshots/commands e AC-001/010.
+  - [x] **IMPROVE**: Corrigir hierarquia, foco e mensagens sem cor ornamental.
 
-- [ ] T028 [P1] [CODE] [US-002] Implementar `AgentContextPicker.svelte` em `apps/web/src/lib/features/ai/AgentContextPicker.svelte` — Refs: US-002, FR-004, FR-005, FR-006, NFR-008, AC-004, AC-005, AC-006 — Depends: T018, T019
-  - [ ] **PREP**: Confirmar seleção por workspace, geração e paths relativos.
-  - [ ] **EXECUTE**: Implementar picker acessível sem expor handles ou caminhos absolutos.
-  - [ ] **VERIFY**: Executar foco, teclado, vazio, erro e seleção de conteúdo longo.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; revisar mobile/desktop, claro/escuro, zoom e reduced motion.
-  - [ ] **EVIDENCE**: Registrar cenários e AC-004/005/006.
-  - [ ] **IMPROVE**: Simplificar escolha e explicar bloqueios sem perder contexto.
+  <!-- specsfy:evidence {"task":"T025","refs":["US-001","US-004","FR-001","FR-009","FR-010","NFR-008","AC-001","AC-010"],"files":["apps/web/src/lib/features/ai/AgentCapabilityPanel.svelte","apps/web/src/lib/features/config/ConfigPage.svelte","INTERFACE.md","apps/web/src/routes/config.svelte.spec.ts"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/routes/config.svelte.spec.ts","exit":0},{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/config/config-page.spec.ts","exit":0},{"run":"bun run --cwd apps/web check-types","exit":0},{"run":"bunx eslint apps/web/src/lib/features/ai/AgentCapabilityPanel.svelte apps/web/src/lib/features/config/ConfigPage.svelte","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project .","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
-- [ ] T029 [P1] [CODE] [US-003] Implementar `AgentProposalReview.svelte` em `apps/web/src/lib/features/ai/AgentProposalReview.svelte` — Refs: US-003, FR-007, FR-008, NFR-008, AC-007, AC-008, AC-009 — Depends: T020
-  - [ ] **PREP**: Confirmar diff, conflito, rejeição e aplicação explícita.
-  - [ ] **EXECUTE**: Implementar revisão Svelte sem mutação automática do documento.
-  - [ ] **VERIFY**: Executar aceitar/rejeitar/conflito, teclado e conteúdo longo.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; revisar diff, estados sem overflow e confirmação.
-  - [ ] **EVIDENCE**: Registrar cenários e AC-007/008/009.
-  - [ ] **IMPROVE**: Melhorar hierarquia e mensagens de conflito preservando autoria.
+- [x] T028 [P1] [CODE] [US-002] Implementar `AgentContextPicker.svelte` em `apps/web/src/lib/features/ai/AgentContextPicker.svelte` — Refs: US-002, FR-004, FR-005, FR-006, NFR-008, AC-004, AC-005, AC-006 — Depends: T018, T019
+  - [x] **PREP**: Confirmar seleção por workspace, geração e paths relativos.
+  - [x] **EXECUTE**: Implementar picker acessível sem expor handles ou caminhos absolutos.
+  - [x] **VERIFY**: Executar foco, teclado, vazio, erro e seleção de conteúdo longo.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; revisar mobile/desktop, claro/escuro, zoom e reduced motion.
+  - [x] **EVIDENCE**: Registrar cenários e AC-004/005/006.
+  - [x] **IMPROVE**: Simplificar escolha e explicar bloqueios sem perder contexto.
+
+  <!-- specsfy:evidence {"task":"T028","refs":["US-002","FR-004","FR-005","FR-006","NFR-008","AC-004","AC-005","AC-006"],"files":["apps/web/src/lib/features/ai/AgentContextPicker.svelte","apps/web/src/lib/features/ai/agent-context-picker.svelte.spec.ts","INTERFACE.md"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/ai/agent-context-picker.svelte.spec.ts","exit":0},{"run":"bun run --cwd apps/web check-types","exit":0},{"run":"bunx eslint apps/web/src/lib/features/ai/AgentContextPicker.svelte apps/web/src/lib/features/ai/agent-context-picker.svelte.spec.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project .","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
+
+- [x] T029 [P1] [CODE] [US-003] Implementar `AgentProposalReview.svelte` em `apps/web/src/lib/features/ai/AgentProposalReview.svelte` — Refs: US-003, FR-007, FR-008, NFR-008, AC-007, AC-008, AC-009 — Depends: T020
+  - [x] **PREP**: Confirmar diff, conflito, rejeição e aplicação explícita.
+  - [x] **EXECUTE**: Implementar revisão Svelte sem mutação automática do documento.
+  - [x] **VERIFY**: Executar aceitar/rejeitar/conflito, teclado e conteúdo longo.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; revisar diff, estados sem overflow e confirmação.
+  - [x] **EVIDENCE**: Registrar cenários e AC-007/008/009.
+  - [x] **IMPROVE**: Melhorar hierarquia e mensagens de conflito preservando autoria.
+
+  <!-- specsfy:evidence {"task":"T029","refs":["US-003","FR-007","FR-008","NFR-008","AC-007","AC-008","AC-009"],"files":["apps/web/src/lib/features/ai/AgentProposalReview.svelte","apps/web/src/lib/features/ai/agent-proposal-review.svelte.spec.ts","INTERFACE.md"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/ai/agent-proposal-review.svelte.spec.ts","exit":0},{"run":"bun run --cwd apps/web check-types","exit":0},{"run":"bunx eslint apps/web/src/lib/features/ai/AgentProposalReview.svelte apps/web/src/lib/features/ai/agent-proposal-review.svelte.spec.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project .","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
 #### Fase final — Qualidade e rastreabilidade
 
-- [ ] T026 [P1] [TEST] [TDD] [US-003] Testar interface, validação, recuperação, foco e teclado em `apps/web/src/lib/features/ai/ai-interface.test.ts` — Refs: US-001, US-002, US-003, US-004, FR-001, FR-002, FR-004, FR-007, FR-009, FR-010, NFR-008, AC-007, AC-008, AC-010, AC-012 — Depends: T025, T028, T029
-  - [ ] **PREP**: Confirmar contratos de acessibilidade e comportamento dos três componentes.
-  - [ ] **EXECUTE**: Materializar cenários Vitest/BDD sem flags globais ou expect(false).
-  - [ ] **VERIFY**: Executar focal e garantir RED somente por comportamento ausente.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; validar claro/escuro, mobile/desktop, zoom, teclado e reduced motion.
-  - [ ] **EVIDENCE**: Registrar marcador, comando, saída e AC cobertos.
-  - [ ] **IMPROVE**: Ajustar casos que falhem por importação, sintaxe ou ambiente.
+- [x] T026 [P1] [TEST] [TDD] [US-003] Testar interface, validação, recuperação, foco e teclado em `apps/web/src/lib/features/ai/ai-interface.test.ts` — Refs: US-001, US-002, US-003, US-004, FR-001, FR-002, FR-004, FR-007, FR-009, FR-010, NFR-008, AC-007, AC-008, AC-010, AC-012 — Depends: T025, T028, T029
+  - [x] **PREP**: Confirmar contratos de acessibilidade e comportamento dos três componentes.
+  - [x] **EXECUTE**: Materializar cenários Vitest/BDD sem flags globais ou expect(false).
+  - [x] **VERIFY**: Executar focal e garantir RED somente por comportamento ausente.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; validar claro/escuro, mobile/desktop, zoom, teclado e reduced motion.
+  - [x] **EVIDENCE**: Registrar marcador, comando, saída e AC cobertos.
+  - [x] **IMPROVE**: Ajustar casos que falhem por importação, sintaxe ou ambiente.
 
-- [ ] T027 [P1] [TEST] [TDD] Executar regressão e rastreabilidade em `apps/web/src/lib/features/ai/ai-regression.test.ts` e `apps/desktop/src-tauri/src/commands/ai_test.rs` — Refs: US-001, US-002, US-003, US-004, FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-009, FR-010, FR-011, FR-012, todos os NFRs e ACs — Depends: T016, T017, T018, T019, T020, T021, T022, T023, T024, T025, T026, T028, T029
-  - [ ] **PREP**: Confirmar todos os predecessores, banco sem migração e comandos focais.
-  - [ ] **EXECUTE**: Executar Vitest, cargo test, checks estáticos, inspeção de bundle/storage/logs e traceability.
-  - [ ] **VERIFY**: Confirmar cobertura de todos os IDs e ausência de segredo em artefatos.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; revisar interface e estados finais.
-  - [ ] **EVIDENCE**: Registrar relatório focal, rastreabilidade e decisões de gate.
-  - [ ] **IMPROVE**: Abrir correção específica para cada lacuna, sem mascarar falhas.
+  <!-- specsfy:evidence {"task":"T026","refs":["US-001","US-002","US-003","US-004","FR-001","FR-002","FR-004","FR-007","FR-009","FR-010","NFR-008","AC-007","AC-008","AC-010","AC-012"],"files":["apps/web/src/lib/features/ai/ai-interface.test.ts","apps/web/src/lib/features/ai/AgentCapabilityPanel.svelte","apps/web/src/lib/features/ai/AgentContextPicker.svelte","apps/web/src/lib/features/ai/AgentProposalReview.svelte","apps/web/vitest.config.ts"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/ai/ai-interface.test.ts","exit":0},{"run":"bun run --cwd apps/web check-types","exit":0},{"run":"bunx eslint apps/web/src/lib/features/ai/ai-interface.test.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project .","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
+
+- [x] T027 [P1] [TEST] [TDD] Executar regressão e rastreabilidade em `apps/web/src/lib/features/ai/ai-regression.test.ts` e `apps/desktop/src-tauri/src/commands/ai_test.rs` — Refs: US-001, US-002, US-003, US-004, FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-009, FR-010, FR-011, FR-012, todos os NFRs e ACs — Depends: T016, T017, T018, T019, T020, T021, T022, T023, T024, T025, T026, T028, T029
+  - [x] **PREP**: Confirmar todos os predecessores, banco sem migração e comandos focais.
+  - [x] **EXECUTE**: Executar Vitest, cargo test, checks estáticos, inspeção de bundle/storage/logs e traceability.
+  - [x] **VERIFY**: Confirmar cobertura de todos os IDs e ausência de segredo em artefatos.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; revisar interface e estados finais.
+  - [x] **EVIDENCE**: Registrar relatório focal, rastreabilidade e decisões de gate.
+  - [x] **IMPROVE**: Abrir correção específica para cada lacuna, sem mascarar falhas.
+
+  <!-- specsfy:evidence {"task":"T027","refs":["US-001","US-002","US-003","US-004","FR-001","FR-002","FR-003","FR-004","FR-005","FR-006","FR-007","FR-008","FR-009","FR-010","FR-011","FR-012","NFR-001","NFR-002","NFR-003","NFR-004","NFR-005","NFR-006","NFR-007","NFR-008","NFR-009","AC-001","AC-002","AC-003","AC-004","AC-005","AC-006","AC-007","AC-008","AC-009","AC-010","AC-011","AC-012","AC-013","AC-014","AC-015"],"files":["apps/web/src/lib/features/ai/ai-regression.test.ts","apps/web/src/lib/features/ai/agent-context.ts","apps/web/src/lib/features/ai/ai-proposal.ts","apps/web/src/lib/features/ai/ai-observability.ts","apps/desktop/src-tauri/src/commands/ai.rs","apps/desktop/src-tauri/src/commands/ai_test.rs","apps/web/vitest.config.ts","docs/"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/ai/ai-regression.test.ts","exit":0},{"run":"bun run --cwd apps/web test:tdd -- --project server --maxWorkers=2","exit":0},{"run":"bun run --cwd apps/web test:tdd -- --project client --maxWorkers=1","exit":0},{"run":"cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml","exit":0},{"run":"cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml -- --check","exit":0},{"run":"bun run --cwd apps/web check-types","exit":0},{"run":"bunx eslint apps/web/src/lib/features/ai apps/web/vitest.config.ts","exit":0},{"run":"bun run --cwd apps/web build","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project .","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
 ### 15. Ordem de execução
 
@@ -981,13 +991,13 @@ Atualizar `INTERFACE.md` com os blocos e componentes usados nesta fase.
 
 ### 18. Definition of Done
 
-- [ ] `Definition Gate` está `Passed`.
-- [ ] `Plan Gate` está `Passed`.
-- [ ] `Delivery Gate` está `Passed`.
-- [ ] Todos os cenários `AC` aplicáveis passam.
-- [ ] Todos os requisitos possuem evidência de verificação.
-- [ ] Todas as tarefas na seção 14 estão concluídas.
-- [ ] Testes, inspeções de cofre/IPC, checks estáticos e acessibilidade passam.
-- [ ] `.specsfy/DATABASE.md` e `PROJECT.md` refletem perfil portátil, binding local e capacidade de IA quando implementados.
+- [x] `Definition Gate` está `Passed`.
+- [x] `Plan Gate` está `Passed`.
+- [x] `Delivery Gate` está `Passed`.
+- [x] Todos os cenários `AC` aplicáveis passam.
+- [x] Todos os requisitos possuem evidência de verificação.
+- [x] Todas as tarefas na seção 14 estão concluídas.
+- [x] Testes, inspeções de cofre/IPC, checks estáticos e acessibilidade passam.
+- [x] `.specsfy/DATABASE.md` e `PROJECT.md` refletem perfil portátil, binding local e capacidade de IA quando implementados.
 
-Nesta entrega de fases 2–3, todos os gates e evidências de implementação permanecem `Pending` por decisão explícita do usuário.
+Entrega concluída em 2026-09-07. O storage local continua sendo a autoridade: notas e estado operacional permanecem em `app.sqlite` no Tauri ou IndexedDB no PWA; a sincronização e as capabilities externas são opcionais e nunca recebem segredos.

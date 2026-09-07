@@ -490,27 +490,27 @@ specs/draft/0008-importar-biblias-por-url-do-bucket-r2/
 
 | Requisito | Cenário BDD | Nível | Arquivo/comando esperado | Evidência |
 | --- | --- | --- | --- | --- |
-| FR-001 | AC-001 | Unidade | `apps/web/src/lib/features/bible-remote/remote-manifest.test.ts`; `npm --prefix apps/web run test:tdd` | Pending |
-| FR-001 | AC-002 | Unidade | `apps/web/src/lib/features/bible-remote/remote-manifest.test.ts` | Pending |
-| FR-001 | AC-003 | Browser | `apps/web/src/lib/features/bible-remote/remote-import.svelte.spec.ts` | Pending |
-| FR-002 | AC-001 | Unidade/browser | `remote-manifest.test.ts`, `remote-import.svelte.spec.ts` | Pending |
-| FR-002 | AC-002 | Unidade | `remote-manifest.test.ts` | Pending |
-| FR-002 | AC-005 | Unidade/browser | `remote-download.test.ts`, `remote-import.svelte.spec.ts` | Pending |
-| FR-003 | AC-004 | Unidade | `apps/web/src/lib/features/bible-remote/remote-download.test.ts` | Pending |
-| FR-003 | AC-005 | Unidade/browser | `remote-download.test.ts`, `remote-import.svelte.spec.ts` | Pending |
-| FR-003 | AC-006 | Unidade | `apps/web/src/lib/features/bible-remote/remote-install.test.ts` | Pending |
-| FR-004 | AC-006 | Unidade | `apps/web/src/lib/features/bible-remote/remote-install.test.ts` | Pending |
-| FR-004 | AC-007 | Unidade | `remote-install.test.ts` | Pending |
-| FR-004 | AC-008 | Browser | `remote-import.svelte.spec.ts` | Pending |
-| FR-005 | AC-005 | Browser | `remote-import.svelte.spec.ts` | Pending |
-| FR-005 | AC-008 | Browser | `remote-import.svelte.spec.ts` | Pending |
-| FR-005 | AC-009 | Browser/inspeção | `remote-import.svelte.spec.ts`; 320px/1440px | Pending |
-| NFR-001 | AC-001 | Browser/inspeção | Vitest Browser; 320px/1440px | Pending |
-| NFR-001 | AC-005 | Browser | `remote-import.svelte.spec.ts` | Pending |
-| NFR-001 | AC-009 | Browser/inspeção | `remote-import.svelte.spec.ts`; foco e progresso | Pending |
-| NFR-002 | AC-004 | Unidade/browser | `remote-download.test.ts`; observação de rede | Pending |
-| NFR-002 | AC-005 | Unidade/browser | `remote-download.test.ts`; streaming sem travar | Pending |
-| NFR-002 | AC-006 | Unidade | `remote-install.test.ts`; continua após falhas | Pending |
+| FR-001 | AC-001 | Unidade | `apps/web/src/lib/features/bible-remote/remote-manifest.test.ts`; `npm --prefix apps/web run test:tdd` | Passed |
+| FR-001 | AC-002 | Unidade | `apps/web/src/lib/features/bible-remote/remote-manifest.test.ts` | Passed |
+| FR-001 | AC-003 | Browser | `apps/web/src/lib/features/bible-remote/remote-import.svelte.spec.ts` | Passed |
+| FR-002 | AC-001 | Unidade/browser | `remote-manifest.test.ts`, `remote-import.svelte.spec.ts` | Passed |
+| FR-002 | AC-002 | Unidade | `remote-manifest.test.ts` | Passed |
+| FR-002 | AC-005 | Unidade/browser | `remote-download.test.ts`, `remote-import.svelte.spec.ts` | Passed |
+| FR-003 | AC-004 | Unidade | `apps/web/src/lib/features/bible-remote/remote-download.test.ts` | Passed |
+| FR-003 | AC-005 | Unidade/browser | `remote-download.test.ts`, `remote-import.svelte.spec.ts` | Passed |
+| FR-003 | AC-006 | Unidade | `apps/web/src/lib/features/bible-remote/remote-install.test.ts` | Passed |
+| FR-004 | AC-006 | Unidade | `apps/web/src/lib/features/bible-remote/remote-install.test.ts` | Passed |
+| FR-004 | AC-007 | Unidade | `remote-install.test.ts` | Passed |
+| FR-004 | AC-008 | Browser | `remote-import.svelte.spec.ts` | Passed |
+| FR-005 | AC-005 | Browser | `remote-import.svelte.spec.ts` | Passed |
+| FR-005 | AC-008 | Browser | `remote-import.svelte.spec.ts` | Passed |
+| FR-005 | AC-009 | Browser/inspeção | `remote-import.svelte.spec.ts`; 320px/1440px | Passed |
+| NFR-001 | AC-001 | Browser/inspeção | Vitest Browser; 320px/1440px | Passed |
+| NFR-001 | AC-005 | Browser | `remote-import.svelte.spec.ts` | Passed |
+| NFR-001 | AC-009 | Browser/inspeção | `remote-import.svelte.spec.ts`; foco e progresso | Passed |
+| NFR-002 | AC-004 | Unidade/browser | `remote-download.test.ts`; observação de rede | Passed |
+| NFR-002 | AC-005 | Unidade/browser | `remote-download.test.ts`; streaming sem travar | Passed |
+| NFR-002 | AC-006 | Unidade | `remote-install.test.ts`; continua após falhas | Passed |
 
 ### 13. Validações
 

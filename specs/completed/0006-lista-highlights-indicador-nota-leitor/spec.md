@@ -61,7 +61,7 @@ A pessoa vê todos os destaques do workspace num sheet aberto pelos controles de
 
 #### Artefatos de pesquisa armazenados
 
-- `specs/planned/0006-lista-highlights-indicador-nota-leitor/research/consulta-local.md`: notas de proveniência das consultas ao repositório (2026-09-03, código do próprio projeto, sem licença de terceiro). Nenhuma API externa.
+- `specs/completed/0006-lista-highlights-indicador-nota-leitor/research/consulta-local.md`: notas de proveniência das consultas ao repositório (2026-09-03, código do próprio projeto, sem licença de terceiro). Nenhuma API externa.
 
 #### Dúvidas respondidas
 
@@ -614,33 +614,33 @@ Esta entrega é Svelte, não React. A tabela registra blocos Svelte equivalentes
 
 | Requisito | Cenário BDD | Nível | Arquivo/comando esperado | Evidência |
 | --- | --- | --- | --- | --- |
-| FR-001 | AC-001 | Unidade | `reader-highlights-repository.test.ts` | RED 2026-09-03 |
-| FR-001 | AC-002 | Unidade | `reader-highlights-repository.test.ts` | RED 2026-09-03 |
-| FR-001 | AC-003 | Unidade | `reader-highlights-repository.test.ts` | RED 2026-09-03 |
-| FR-002 | AC-004 | Unidade | `highlights-page.test.ts` | RED 2026-09-03 |
-| FR-002 | AC-006 | Unidade | `highlights-page.test.ts` | RED 2026-09-03 |
-| FR-002 | AC-016 | Browser | `navigation.svelte.spec.ts` | RED 2026-09-03 |
-| FR-003 | AC-007 | Unidade | `reader-note-indicators.test.ts` | RED 2026-09-03 |
-| FR-003 | AC-010 | Unidade | `reader-note-indicators.test.ts` | RED 2026-09-03 |
-| FR-003 | AC-011 | Unidade | `reader-note-indicators.test.ts` | RED 2026-09-03 |
-| FR-004 | AC-008 | Browser | `bible-reader.svelte.spec.ts` | RED 2026-09-03 |
-| FR-004 | AC-009 | Browser | `bible-reader.svelte.spec.ts` | RED 2026-09-03 |
-| FR-004 | AC-014 | Browser | `bible-reader.svelte.spec.ts` | RED 2026-09-03 |
-| FR-005 | AC-012 | Unidade | `reader-note-indicators.test.ts` | RED 2026-09-03 |
-| FR-005 | AC-013 | Unidade | `reader-note-indicators.test.ts` | RED 2026-09-03 |
-| FR-005 | AC-017 | Unidade | `reader-note-indicators.test.ts` | RED 2026-09-03 |
-| FR-006 | AC-001 | Unidade | `reader-highlights-repository.test.ts` | RED 2026-09-03 |
-| FR-006 | AC-002 | Unidade | `reader-highlights-repository.test.ts` | RED 2026-09-03 |
-| FR-006 | AC-005 | Unidade | `reader-highlights-repository.test.ts` | RED 2026-09-03 |
-| NFR-001 | AC-001 | Unidade | `reader-highlights-repository.test.ts` | RED 2026-09-03 |
-| NFR-001 | AC-007 | Unidade | `reader-note-indicators.test.ts` | RED 2026-09-03 |
-| NFR-001 | AC-014 | Browser | `bible-reader.svelte.spec.ts` | RED 2026-09-03 |
-| NFR-002 | AC-003 | Unidade | `reader-highlights-repository.test.ts` | RED 2026-09-03 |
-| NFR-002 | AC-011 | Unidade | `reader-note-indicators.test.ts` | RED 2026-09-03 |
-| NFR-002 | AC-015 | Unidade | `reader-highlights-repository.test.ts` | RED 2026-09-03 |
-| NFR-003 | AC-009 | Browser | `bible-reader.svelte.spec.ts` | RED 2026-09-03 |
-| NFR-003 | AC-012 | Unidade | `reader-note-indicators.test.ts` | RED 2026-09-03 |
-| NFR-003 | AC-017 | Unidade | `reader-note-indicators.test.ts` | RED 2026-09-03 |
+| FR-001 | AC-001 | Unidade | `reader-highlights-repository.test.ts` | Passed |
+| FR-001 | AC-002 | Unidade | `reader-highlights-repository.test.ts` | Passed |
+| FR-001 | AC-003 | Unidade | `reader-highlights-repository.test.ts` | Passed |
+| FR-002 | AC-004 | Unidade | `highlights-page.test.ts` | Passed |
+| FR-002 | AC-006 | Unidade | `highlights-page.test.ts` | Passed |
+| FR-002 | AC-016 | Browser | `navigation.svelte.spec.ts` | Passed |
+| FR-003 | AC-007 | Unidade | `reader-note-indicators.test.ts` | Passed |
+| FR-003 | AC-010 | Unidade | `reader-note-indicators.test.ts` | Passed |
+| FR-003 | AC-011 | Unidade | `reader-note-indicators.test.ts` | Passed |
+| FR-004 | AC-008 | Browser | `bible-reader.svelte.spec.ts` | Passed |
+| FR-004 | AC-009 | Browser | `bible-reader.svelte.spec.ts` | Passed |
+| FR-004 | AC-014 | Browser | `bible-reader.svelte.spec.ts` | Passed |
+| FR-005 | AC-012 | Unidade | `reader-note-indicators.test.ts` | Passed |
+| FR-005 | AC-013 | Unidade | `reader-note-indicators.test.ts` | Passed |
+| FR-005 | AC-017 | Unidade | `reader-note-indicators.test.ts` | Passed |
+| FR-006 | AC-001 | Unidade | `reader-highlights-repository.test.ts` | Passed |
+| FR-006 | AC-002 | Unidade | `reader-highlights-repository.test.ts` | Passed |
+| FR-006 | AC-005 | Unidade | `reader-highlights-repository.test.ts` | Passed |
+| NFR-001 | AC-001 | Unidade | `reader-highlights-repository.test.ts` | Passed |
+| NFR-001 | AC-007 | Unidade | `reader-note-indicators.test.ts` | Passed |
+| NFR-001 | AC-014 | Browser | `bible-reader.svelte.spec.ts` | Passed |
+| NFR-002 | AC-003 | Unidade | `reader-highlights-repository.test.ts` | Passed |
+| NFR-002 | AC-011 | Unidade | `reader-note-indicators.test.ts` | Passed |
+| NFR-002 | AC-015 | Unidade | `reader-highlights-repository.test.ts` | Passed |
+| NFR-003 | AC-009 | Browser | `bible-reader.svelte.spec.ts` | Passed |
+| NFR-003 | AC-012 | Unidade | `reader-note-indicators.test.ts` | Passed |
+| NFR-003 | AC-017 | Unidade | `reader-note-indicators.test.ts` | Passed |
 
 ### 13. Validações
 

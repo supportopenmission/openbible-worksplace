@@ -62,7 +62,7 @@ Quando há uma nota, o clique no ícone continua abrindo direto no split/abas. Q
 
 #### Artefatos de pesquisa armazenados
 
-- `specs/draft/0007-seletor-varias-notas-versiculo-leitor/research/consulta-local.md`: notas de proveniência das consultas ao repositório (2026-09-03, código do próprio projeto, sem licença de terceiro).
+- `specs/completed/0007-seletor-varias-notas-versiculo-leitor/research/consulta-local.md`: notas de proveniência das consultas ao repositório (2026-09-03, código do próprio projeto, sem licença de terceiro).
 
 #### Dúvidas respondidas
 
@@ -652,25 +652,28 @@ apps/web/src/routes/bible-reader.svelte.spec.ts
 
 | Requisito | Cenário BDD | Nível | Arquivo/comando esperado | Evidência |
 | --- | --- | --- | --- | --- |
-| FR-001 | AC-001 | Unidade | `reader-verse-notes.test.ts` | RED 2026-09-03 |
-| FR-001 | AC-002 | Unidade | `reader-verse-notes.test.ts` | Pending |
-| FR-002 | AC-004 | Unidade | `reader-verse-notes.test.ts` | Pending |
-| FR-002 | AC-005 | Unidade | `reader-verse-notes.test.ts` | Pending |
-| FR-003 | AC-008 | Unidade | `reader-verse-notes.test.ts` | Pending |
-| FR-004 | AC-006 | Browser | `bible-reader.svelte.spec.ts` | Pending |
-| FR-004 | AC-007 | Browser | `bible-reader.svelte.spec.ts` | Pending |
-| FR-005 | AC-011 | Browser | `bible-reader.svelte.spec.ts` | Pending |
-| FR-006 | AC-009 | Browser | `bible-reader.svelte.spec.ts` | Pending |
-| FR-007 | AC-015 | Unidade | `reader-verse-notes.test.ts` | Pending |
-| FR-007 | AC-016 | Unidade | `reader-verse-notes.test.ts` | Pending |
-| FR-008 | AC-010 | Unidade | `reader-verse-notes.test.ts` | Pending |
-| FR-009 | AC-014 | Unidade | `reader-note-indicators.test.ts` | Pending |
-| FR-010 | AC-003 | Unidade | `reader-verse-notes.test.ts` | Pending |
-| FR-010 | AC-017 | Unidade | `reader-note-indicators.test.ts` | Pending |
-| FR-010 | AC-018 | Unidade | `reader-verse-notes.test.ts` | Pending |
-| NFR-001 | AC-020 | Browser | `bible-reader.svelte.spec.ts` | Pending |
-| NFR-002 | AC-003 | Unidade | `reader-verse-notes.test.ts` | Pending |
-| NFR-003 | AC-005 | Unidade | `reader-verse-notes.test.ts` | Pending |
+| FR-001 | AC-001 | Unidade | `reader-verse-notes.test.ts` | Passed |
+| FR-001 | AC-002 | Unidade | `reader-verse-notes.test.ts` | Passed |
+| FR-002 | AC-004 | Unidade | `reader-verse-notes.test.ts` | Passed |
+| FR-002 | AC-005 | Unidade | `reader-verse-notes.test.ts` | Passed |
+| FR-003 | AC-008 | Unidade | `reader-verse-notes.test.ts` | Passed |
+| FR-004 | AC-006 | Browser | `bible-reader.svelte.spec.ts` | Passed |
+| FR-004 | AC-007 | Browser | `bible-reader.svelte.spec.ts` | Passed |
+| FR-005 | AC-011 | Browser | `bible-reader.svelte.spec.ts` | Passed |
+| FR-006 | AC-009 | Browser | `bible-reader.svelte.spec.ts` | Passed |
+| FR-006 | AC-012 | Browser | `bible-reader.svelte.spec.ts` | Passed |
+| FR-005 | AC-013 | Browser | `bible-reader.svelte.spec.ts` | Passed |
+| FR-007 | AC-015 | Unidade | `reader-verse-notes.test.ts` | Passed |
+| FR-007 | AC-016 | Unidade | `reader-verse-notes.test.ts` | Passed |
+| FR-008 | AC-010 | Unidade | `reader-verse-notes.test.ts` | Passed |
+| FR-009 | AC-014 | Unidade | `reader-note-indicators.test.ts` | Passed |
+| FR-010 | AC-003 | Unidade | `reader-verse-notes.test.ts` | Passed |
+| FR-010 | AC-017 | Unidade | `reader-note-indicators.test.ts` | Passed |
+| FR-010 | AC-018 | Unidade | `reader-verse-notes.test.ts` | Passed |
+| NFR-001 | AC-020 | Browser | `bible-reader.svelte.spec.ts` | Passed |
+| NFR-002 | AC-003 | Unidade | `reader-verse-notes.test.ts` | Passed |
+| FR-004 | AC-019 | Browser | `bible-reader.svelte.spec.ts` | Passed |
+| NFR-003 | AC-005 | Unidade | `reader-verse-notes.test.ts` | Passed |
 
 ### 13. Validações
 
@@ -706,7 +709,6 @@ Formato:
   - [x] **VISUAL**: Não aplicável — só teste TDD.
   - [x] **EVIDENCE**: Registrar RED na seção 11.
   - [x] **IMPROVE**: Revisar cobertura.
-
 - [x] T002 [TEST] [TDD] [US-001] Derivar do AC-002 em reader-verse-notes.test.ts — Refs: US-001, FR-001, FR-002, AC-002 — Depends: none
   - [x] **PREP**: Confirmar `formatMultiNoteBadge` ausente para 1 nota.
   - [x] **EXECUTE**: Caso TDD `SPECSFY: US-001 FR-001 FR-002 AC-002`.
@@ -810,6 +812,7 @@ Formato:
   - [x] **VISUAL**: Não aplicável — só teste TDD.
   - [x] **EVIDENCE**: Registrar RED na seção 11.
   - [x] **IMPROVE**: Revisar cobertura.
+  <!-- specsfy:evidence {"task":"T014","refs":["FR-009","NFR-002","AC-014"],"files":["apps/web/src/lib/features/bible/reader-note-indicators.test.ts"],"commands":[{"run":"bun run --cwd apps/web test:tdd src/lib/features/bible/reader-note-indicators.test.ts","exit":0}]} -->
 
 - [x] T015 [TEST] [TDD] Derivar do AC-015 em reader-verse-notes.test.ts — Refs: FR-007, NFR-002, AC-015 — Depends: none
   - [x] **PREP**: Confirmar leitura de title do frontmatter ausente.

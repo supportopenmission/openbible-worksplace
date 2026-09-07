@@ -97,7 +97,7 @@ acionável.
 
 #### Artefatos de pesquisa armazenados
 
-- `specs/in-progress/0018-backup-restauracao-workspace-pwa/research/backup-platform/evidence.md`:
+- `specs/completed/0018-backup-restauracao-workspace-pwa/research/backup-platform/evidence.md`:
   notas próprias, fontes oficiais, locators e impacto contratual; consultado em
   2026-09-05; nenhuma reprodução extensa de conteúdo protegido.
 
