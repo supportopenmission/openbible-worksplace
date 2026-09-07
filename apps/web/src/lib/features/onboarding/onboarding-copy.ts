@@ -2,17 +2,17 @@ export const onboardingCopy = {
 	intro: {
 		eyebrow: 'Primeiro passo',
 		title: 'Prepare seu espaço de estudo',
-		body: 'O OpenBible mantém seus estudos, sermões, notas e Bíblias em arquivos que você controla.'
+		body: 'O OpenBible salva suas notas e destaques no armazenamento local do workspace. Markdown fica reservado para exportação.'
 	},
 	storage: {
-		eyebrow: 'Onde seus arquivos ficam',
-		title: 'Escolha a pasta do OpenBible',
-		body: 'A pasta escolhida será a raiz do seu workspace. O OpenBible não cria uma subpasta adicional.'
+		eyebrow: 'Armazenamento do workspace',
+		title: 'Escolha onde os arquivos do workspace ficam',
+		body: 'A escolha vale para arquivos importados, como Bíblias. As notas novas continuam no banco local do app, não em arquivos Markdown.'
 	},
 	installing: {
 		eyebrow: 'Preparando o workspace',
-		title: 'Criando sua estrutura de arquivos',
-		body: 'Estamos preparando as pastas e os arquivos iniciais. Nada é enviado para a internet.'
+		title: 'Configurando seu espaço de estudo',
+		body: 'Estamos preparando o armazenamento local e os recursos iniciais. Nada é enviado para a internet.'
 	},
 	import: {
 		eyebrow: 'Conteúdo inicial',
@@ -22,7 +22,7 @@ export const onboardingCopy = {
 	complete: {
 		eyebrow: 'Tudo pronto',
 		title: 'Seu workspace está preparado',
-		body: 'A estrutura do OpenBible está pronta para receber seus estudos.'
+		body: 'Seu espaço está pronto. Escreva no app e exporte suas notas em Markdown quando precisar.'
 	}
 } as const;
 

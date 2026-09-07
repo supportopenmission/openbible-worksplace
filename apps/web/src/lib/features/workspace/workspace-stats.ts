@@ -1,4 +1,8 @@
 import type { WorkspaceStorage, WorkspaceStorageScope } from '$lib/storage/types';
+import {
+	getWorkspaceContentRepository,
+	workspaceContentContext
+} from '$lib/storage/workspace-content-storage';
 
 export interface WorkspaceStats {
 	workspaceId: string;
@@ -30,18 +34,21 @@ export async function collectWorkspaceStats(scope: WorkspaceStorageScope): Promi
 		if (bytes) bibleBytes += bytes.length;
 	}
 
-	const noteFiles = (await safeListFiles(storage, 'notes')).filter((fileName) =>
-		fileName.endsWith('.md')
-	);
+	const contentContext = workspaceContentContext(storage, { workspaceId });
+	const contentRecords = await getWorkspaceContentRepository(storage, contentContext).list(contentContext);
+	const persistedNotes = contentRecords.filter((record) => record.kind === 'note');
+	const noteFiles = persistedNotes.length > 0
+		? []
+		: (await safeListFiles(storage, 'notes')).filter((fileName) => fileName.endsWith('.md'));
 	let noteBytes = 0;
 	for (const fileName of noteFiles) {
 		const bytes = await storage.readFile(`notes/${fileName}`);
 		if (bytes) noteBytes += bytes.length;
 	}
 
-	const trashFiles = (await safeListFiles(storage, 'trash')).filter((fileName) =>
-		fileName.endsWith('.md')
-	);
+	const trashFiles = persistedNotes.length > 0
+		? []
+		: (await safeListFiles(storage, 'trash')).filter((fileName) => fileName.endsWith('.md'));
 
 	let sermons = 0;
 	for (const directory of SERMON_DIRECTORIES) {
@@ -52,7 +59,7 @@ export async function collectWorkspaceStats(scope: WorkspaceStorageScope): Promi
 	return {
 		workspaceId,
 		bibles: { count: bibleFiles.length, bytes: bibleBytes },
-		notes: { active: noteFiles.length, trash: trashFiles.length },
+		notes: { active: persistedNotes.length || noteFiles.length, trash: trashFiles.length },
 		sermons: { count: sermons },
 		bytesTotal: bibleBytes + noteBytes
 	};

@@ -31,8 +31,7 @@
 		type PortableExportSnapshot
 	} from '$lib/features/notes/note-export';
 	import { notePageChrome } from '$lib/features/notes/note-page-chrome.svelte';
-	import { createNote, readNote } from '$lib/features/notes/notes-repository';
-	import { serializeNoteFile } from '$lib/features/notes/note-markdown';
+	import { createNote, readNote, saveNote } from '$lib/features/notes/notes-repository';
 	import {
 		NOTE_EDITOR_WIDTHS,
 		readNoteToolbarEnabled,
@@ -78,47 +77,34 @@
 	let requestedStorage: WorkspaceStorage | null | undefined;
 
 	async function seedFallbackNote(id: string): Promise<WorkspaceStorage> {
-		const files = new Map<string, Uint8Array>();
-		const encoder = new TextEncoder();
-
 		const fallback: WorkspaceStorage = {
-			kind: 'opfs',
+			kind: 'native',
 			label: 'Memória local',
 			async ensureDirectory() {},
-			async writeFile(path, content) {
-				files.set(path, typeof content === 'string' ? encoder.encode(content) : content);
-			},
-			async readFile(path) {
-				return files.get(path) ?? null;
-			},
-			async fileExists(path) {
-				return files.has(path);
-			},
-			async deleteFile(path) {
-				files.delete(path);
-			},
-			async listFiles(dir) {
-				const prefix = `${dir.replace(/\/$/, '')}/`;
-				return [...files.keys()]
-					.filter((file) => file.startsWith(prefix) && !file.slice(prefix.length).includes('/'))
-					.map((file) => file.slice(prefix.length));
-			}
+			async writeFile() {},
+			async readFile() { return null; },
+			async fileExists() { return false; },
+			async listFiles() { return []; }
 		};
 
 		const now = new Date().toISOString();
-		const path = `notes/${id}.md`;
-		const parsed = serializeNoteFile({
+		await saveNote(fallback, {
+			id,
+			title: 'Nova nota',
+			createdAt: now,
+			updatedAt: now,
 			meta: {
 				id,
 				title: 'Nova nota',
 				createdAt: now,
 				updatedAt: now,
 				type: 'note',
-				path
+				path: `notes/${id}.md`
 			},
-			body: '\n# Nova nota\n'
+			body: '\n# Nova nota\n',
+			content: '\n# Nova nota\n',
+			path: `notes/${id}.md`
 		});
-		await fallback.writeFile(path, parsed);
 		return fallback;
 	}
 

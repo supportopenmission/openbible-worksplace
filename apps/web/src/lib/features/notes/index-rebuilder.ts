@@ -2,11 +2,11 @@ import { readManifest, type WorkspaceManifest } from '$lib/storage/workspace-cat
 import type { WorkspaceStorage } from '$lib/storage/types';
 import { parseNoteFile } from './portable-markdown';
 import {
-	createWorkspaceContentRepository,
 	type WorkspaceContentContext,
 	type WorkspaceContentProjection,
 	type WorkspaceContentRecord
 } from '$lib/storage/workspace-content-repository';
+import { getWorkspaceContentRepository } from '$lib/storage/workspace-content-storage';
 
 export interface IndexRebuildOptions {
 	onProgress?: (processed: number, total: number) => void;
@@ -147,7 +147,7 @@ export async function rebuildWorkspaceIndex(
 		generation: 0,
 		backend: backendFor(storage)
 	};
-	const repository = createWorkspaceContentRepository(context);
+	const repository = getWorkspaceContentRepository(storage, context);
 	const noteNames = await listOptionalFiles(storage, 'notes', '.md');
 	const highlightNames = await listOptionalFiles(storage, 'highlights', '.json');
 	const sources = [
@@ -156,7 +156,9 @@ export async function rebuildWorkspaceIndex(
 	];
 	const total = sources.length;
 	let processed = 0;
-	const pendingRecords: WorkspaceContentRecord[] = [];
+	const persistedRecords = await repository.list(context);
+	const pendingRecords: WorkspaceContentRecord[] = [...persistedRecords];
+	const persistedKeys = new Set(persistedRecords.map((record) => `${record.kind}:${record.id}`));
 
 	for (const source of sources) {
 		if (options.signal?.aborted) throw new WorkspaceIndexRebuildCancelledError();
@@ -176,7 +178,9 @@ export async function rebuildWorkspaceIndex(
 							context.workspaceId,
 							source.name
 						);
-				if (record) pendingRecords.push(record);
+				if (record && !persistedKeys.has(`${record.kind}:${record.id}`)) {
+					pendingRecords.push(record);
+				}
 			} catch {
 				// Registros inválidos permanecem disponíveis como fonte e não viram projeção.
 			}
@@ -185,7 +189,9 @@ export async function rebuildWorkspaceIndex(
 		options.onProgress?.(processed, total);
 	}
 	if (options.signal?.aborted) throw new WorkspaceIndexRebuildCancelledError();
-	for (const record of pendingRecords) await repository.write(record);
+	for (const record of pendingRecords) {
+		if (!persistedKeys.has(`${record.kind}:${record.id}`)) await repository.write(record);
+	}
 
 	const projection = await repository.rebuild(context);
 	projections.set(projectionKey(context), cloneProjection(projection));

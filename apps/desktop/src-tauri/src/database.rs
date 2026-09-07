@@ -210,6 +210,12 @@ impl WorkspaceDatabase {
             .and_then(serde_json::Value::as_str)
             .unwrap_or(created_at);
         let transaction = self.connection.transaction()?;
+        transaction.execute(
+            "INSERT OR IGNORE INTO workspaces
+               (workspace_id, name, status, schema_version, created_at, updated_at)
+             VALUES (?1, ?1, 'ready', 1, ?2, ?2)",
+            params![workspace_id, created_at],
+        )?;
 
         match kind {
             "note" => {
@@ -284,6 +290,35 @@ impl WorkspaceDatabase {
             _ => return Err(DatabaseError::Path),
         }
 
+        transaction.commit()?;
+        Ok(())
+    }
+
+    pub fn delete_workspace_content(
+        &mut self,
+        workspace_id: &str,
+        kind: &str,
+        id: &str,
+    ) -> Result<(), DatabaseError> {
+        if workspace_id.trim().is_empty() || id.trim().is_empty() {
+            return Err(DatabaseError::Path);
+        }
+        let transaction = self.connection.transaction()?;
+        match kind {
+            "note" => {
+                transaction.execute(
+                    "DELETE FROM workspace_notes WHERE workspace_id = ?1 AND note_id = ?2",
+                    params![workspace_id, id],
+                )?;
+            }
+            "highlight" => {
+                transaction.execute(
+                    "DELETE FROM workspace_highlights WHERE workspace_id = ?1 AND highlight_id = ?2",
+                    params![workspace_id, id],
+                )?;
+            }
+            _ => return Err(DatabaseError::Path),
+        }
         transaction.commit()?;
         Ok(())
     }
@@ -763,6 +798,24 @@ pub fn write_workspace_content(
         .ok_or_else(|| CommandError::new("database_unavailable", true))?;
     database
         .write_workspace_content(&record)
+        .map_err(|_| CommandError::new("persistence_conflict", true))
+}
+
+#[tauri::command]
+pub fn delete_workspace_content(
+    workspace_id: String,
+    kind: String,
+    id: String,
+    state: tauri::State<'_, std::sync::Mutex<Option<WorkspaceDatabase>>>,
+) -> Result<(), CommandError> {
+    let mut database_state = state
+        .lock()
+        .map_err(|_| CommandError::new("database_state_error", true))?;
+    let database = database_state
+        .as_mut()
+        .ok_or_else(|| CommandError::new("database_unavailable", true))?;
+    database
+        .delete_workspace_content(&workspace_id, &kind, &id)
         .map_err(|_| CommandError::new("persistence_conflict", true))
 }
 

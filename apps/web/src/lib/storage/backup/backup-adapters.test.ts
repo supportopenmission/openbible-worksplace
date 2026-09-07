@@ -63,6 +63,13 @@ describe('adapters de backend e sinks do backup', () => {
 			},
 			async writeContent(record) {
 				values.push(structuredClone(record));
+			},
+			async deleteContent(workspaceId, kind, id) {
+				const index = values.findIndex(
+					(record) =>
+						record.workspaceId === workspaceId && record.kind === kind && record.id === id
+				);
+				if (index >= 0) values.splice(index, 1);
 			}
 		};
 		const sqliteContext = { ...context, backend: 'sqlite' as const };
@@ -70,6 +77,8 @@ describe('adapters de backend e sinks do backup', () => {
 		await repository.write(note('sqlite'));
 
 		expect(await repository.list(sqliteContext)).toEqual([note('sqlite')]);
+		await repository.remove(sqliteContext, 'note', 'sqlite-note');
+		expect(await repository.list(sqliteContext)).toEqual([]);
 	});
 
 	it('trata WorkspaceStorage somente como sink físico do pacote', async () => {

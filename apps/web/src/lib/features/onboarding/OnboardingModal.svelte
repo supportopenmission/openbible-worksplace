@@ -3,8 +3,9 @@
 	import {
 		CheckCircle2,
 		Clock3,
+		Database,
+		FileText,
 		FolderOpen,
-		FolderTree,
 		LoaderCircle,
 		Upload
 	} from '@lucide/svelte';
@@ -13,10 +14,7 @@
 	import RemoteBibleImport from '$lib/features/bible-remote/RemoteBibleImport.svelte';
 	import { getDirectoryPickerError } from './onboarding-errors';
 	import { importBibleFiles, prepareWorkspace } from '$lib/storage/workspace';
-	import {
-		shouldOfferStorageChoice,
-		supportsFileSystemAccess
-	} from '$lib/storage/environment';
+	import { shouldOfferStorageChoice, supportsFileSystemAccess } from '$lib/storage/environment';
 	import type {
 		ImportResult,
 		ProgressCallback,
@@ -78,11 +76,10 @@
 
 	const copy = $derived(onboardingCopy[step]);
 	const stepNumber = $derived(steps.indexOf(step) + 1);
-	const offersStorageChoice = $derived(
-		storageMode === 'opfs' && shouldOfferStorageChoice()
-	);
+	const offersStorageChoice = $derived(storageMode === 'opfs' && shouldOfferStorageChoice());
 	const showBrowserStorageChoice = $derived(
-		step === 'storage' && (storageMode === 'opfs' ? offersStorageChoice : supportsFileSystemAccess())
+		step === 'storage' &&
+			(storageMode === 'opfs' ? offersStorageChoice : supportsFileSystemAccess())
 	);
 	const hasImported = $derived(results.some((result) => result.status === 'imported'));
 	const hasRejected = $derived(results.some((result) => result.status === 'rejected'));
@@ -316,31 +313,31 @@
 				{#if step === 'intro'}
 					<p class="storage-note">
 						{offersStorageChoice
-							? 'Neste app instalado, você escolherá entre uma pasta do computador e o armazenamento do navegador.'
+							? 'Neste app instalado, você escolherá onde os arquivos do workspace ficam. As notas são salvas no armazenamento local do app.'
 							: storageMode === 'native'
-								? 'Neste app, os arquivos ficam em uma pasta nativa do seu computador.'
-							: storageMode === 'opfs'
-								? 'Neste ambiente, os arquivos ficam no armazenamento privado do navegador.'
-								: 'Neste ambiente, você escolherá uma pasta local para guardar os arquivos.'}
+								? 'Neste app, os arquivos importados ficam na raiz escolhida e as notas são salvas no app.sqlite.'
+								: storageMode === 'opfs'
+									? 'Neste ambiente, os arquivos ficam no armazenamento privado do navegador e as notas no IndexedDB.'
+									: 'Neste ambiente, os arquivos importados ficam na raiz escolhida e as notas no armazenamento local do app.'}
 					</p>
 
 					<ul class="feature-list" aria-label="Como funciona">
 						<li>
 							<span class="feature-icon" aria-hidden="true"
-								><FolderOpen size={16} strokeWidth={1.75} /></span
+								><Database size={16} strokeWidth={1.75} /></span
 							>
 							<div>
-								<strong>Arquivos seus</strong>
-								<span>Markdown e SQLite ficam no armazenamento escolhido.</span>
+								<strong>Notas no banco</strong>
+								<span>Notas e destaques ficam no armazenamento local do workspace.</span>
 							</div>
 						</li>
 						<li>
 							<span class="feature-icon" aria-hidden="true"
-								><FolderTree size={16} strokeWidth={1.75} /></span
+								><FileText size={16} strokeWidth={1.75} /></span
 							>
 							<div>
-								<strong>Estrutura clara</strong>
-								<span>Pastas separadas para estudos, sermões, notas e anexos.</span>
+								<strong>Markdown para exportar</strong>
+								<span>Exporte suas notas quando quiser, sem alterar a fonte salva no app.</span>
 							</div>
 						</li>
 						<li>
@@ -359,8 +356,10 @@
 							><FolderOpen size={18} strokeWidth={1.75} /></span
 						>
 						<div>
-							<strong>Escolha uma pasta raiz</strong>
-							<span>O conteúdo existente será preservado.</span>
+							<strong>Escolha o armazenamento dos arquivos</strong>
+							<span
+								>Arquivos importados serão preservados; notas novas não serão criadas como Markdown.</span
+							>
 						</div>
 					</div>
 					{#if showBrowserStorageChoice}

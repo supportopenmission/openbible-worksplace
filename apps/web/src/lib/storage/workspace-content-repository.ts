@@ -29,12 +29,14 @@ export interface WorkspaceContentProjection {
 export interface WorkspaceContentDriver {
 	write(record: WorkspaceContentRecord): Promise<void>;
 	list(context: WorkspaceContentContext): Promise<WorkspaceContentRecord[]>;
+	remove?(context: WorkspaceContentContext, kind: WorkspaceContentKind, id: string): Promise<void>;
 }
 
 export type WorkspaceContentRepository = {
 	readonly backend: WorkspaceContentBackend;
 	write(record: WorkspaceContentRecord): Promise<void>;
 	list(context: WorkspaceContentContext): Promise<WorkspaceContentRecord[]>;
+	remove(context: WorkspaceContentContext, kind: WorkspaceContentKind, id: string): Promise<void>;
 	rebuild(context: WorkspaceContentContext): Promise<WorkspaceContentProjection>;
 };
 
@@ -112,6 +114,10 @@ function createMemoryDriver(backend: WorkspaceContentBackend): WorkspaceContentD
 			return [...records.values()]
 				.filter((record) => record.workspaceId === workspaceId)
 				.map(cloneRecord);
+		},
+		async remove(context, kind, id) {
+			const workspaceId = assertContext(context);
+			records.delete(`${workspaceId}\u0000${kind}\u0000${id}`);
 		}
 	};
 }
@@ -136,6 +142,25 @@ export function createWorkspaceContentRepository(
 				);
 			}
 			return driver.list(activeContext);
+		},
+		async remove(activeContext, kind, id) {
+			assertContext(activeContext);
+			if (activeContext.backend !== context.backend) {
+				throw new WorkspaceContentRepositoryError(
+					'CONTEXT_MISMATCH',
+					'O backend do contexto não corresponde ao repositório.'
+				);
+			}
+			if (!id.trim()) {
+				throw new WorkspaceContentRepositoryError('INVALID_RECORD', 'ID do registro é obrigatório.');
+			}
+			if (!driver.remove) {
+				throw new WorkspaceContentRepositoryError(
+					'INVALID_RECORD',
+					'O backend não suporta exclusão de conteúdo.'
+				);
+			}
+			await driver.remove(activeContext, kind, id);
 		},
 		async rebuild(activeContext) {
 			const records = await this.list(activeContext);

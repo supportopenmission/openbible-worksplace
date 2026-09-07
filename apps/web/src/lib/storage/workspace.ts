@@ -9,6 +9,7 @@ import {
 	getCatalogEntry,
 	upsertCatalogEntry
 } from './workspace-catalog';
+import { bindWorkspaceStorage } from './workspace-content-storage';
 export { validateBackupManifest, validateRestoreEntry } from './backup/backup-contract';
 export {
 	enumerateBackupEntries,
@@ -93,8 +94,6 @@ export async function* streamBackupEntry(
 export const WORKSPACE_DIRECTORIES = [
 	'.openbible',
 	'bibles',
-	'notes/theology',
-	'notes/studies',
 	'sermons/drafts',
 	'sermons/preached',
 	'sermons/series',
@@ -105,8 +104,7 @@ export const WORKSPACE_DIRECTORIES = [
 	'attachments/images',
 	'attachments/audio',
 	'attachments/pdf',
-	'attachments/files',
-	'trash'
+	'attachments/files'
 ] as const;
 
 const template = (type: string, heading: string) =>
@@ -118,8 +116,7 @@ export const WORKSPACE_FILES = [
 		content: '{\n  "version": 1,\n  "enabled": false,\n  "lastSyncAt": null\n}\n'
 	},
 	{ path: 'templates/sermon.md', content: template('sermon', 'Novo sermão') },
-	{ path: 'templates/study.md', content: template('study', 'Novo estudo') },
-	{ path: 'templates/note.md', content: template('note', 'Nova nota') }
+	{ path: 'templates/study.md', content: template('study', 'Novo estudo') }
 ] as const;
 
 function decodeJson<T>(bytes: Uint8Array | null): T | null {
@@ -150,6 +147,7 @@ export async function prepareWorkspace(
 	// Manifesto v2 idempotente: cria ou migra sem mover conteúdo autoral.
 	const manifest = await ensureManifest(storage);
 	if (manifest) {
+		bindWorkspaceStorage(storage, manifest.workspaceId);
 		if (storage.kind === 'local' && storage.localHandle) {
 			// Um handle por workspace evita que a última pasta escolhida substitua
 			// as demais após um reload. O bootstrap sem ID continua usando a chave

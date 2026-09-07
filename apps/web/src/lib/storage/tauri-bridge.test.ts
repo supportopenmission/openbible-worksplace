@@ -36,6 +36,25 @@ describe('typed Tauri bridge', () => {
 		).rejects.toMatchObject({ code: 'workspace_id_required' });
 	});
 
+	it('expõe exclusão de conteúdo autoral por workspace, tipo e id', async () => {
+		await expect(
+			invokeWorkspaceCommand({
+				name: 'database.deleteContent',
+				workspaceId: 'workspace-a',
+				kind: 'note',
+				id: 'note-a'
+			})
+		).resolves.toMatchObject({ ok: true });
+		await expect(
+			invokeWorkspaceCommand({
+				name: 'database.deleteContent',
+				workspaceId: 'workspace-a',
+				kind: 'note',
+				id: '../outside'
+			})
+		).rejects.toMatchObject({ code: 'content_id_required' });
+	});
+
 	// SPECSFY: US-001 US-002 FR-002 FR-003 NFR-001 NFR-004 AC-005 AC-020 AC-030
 	it('expõe somente comandos de persistência sync allowlisted e escopados', async () => {
 		const result = await invokeWorkspaceCommand({

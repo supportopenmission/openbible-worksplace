@@ -151,8 +151,6 @@ pub fn initialize(
     }
     fs::create_dir_all(root.join(".openbible"))?;
     fs::create_dir_all(root.join("bibles"))?;
-    fs::create_dir_all(root.join("notes"))?;
-    fs::create_dir_all(root.join("trash"))?;
     let lock = lock::acquire(&root)?;
     context.root = Some(root.clone());
     context.lock = Some(lock);

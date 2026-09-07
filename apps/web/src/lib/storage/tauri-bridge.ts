@@ -6,6 +6,7 @@ export type WorkspaceCommand =
 	| { name: 'database.deleteWorkspace'; workspaceId: string }
 	| { name: 'database.listContent'; workspaceId: string }
 	| { name: 'database.writeContent'; record: WorkspaceContentRecord }
+	| { name: 'database.deleteContent'; workspaceId: string; kind: 'note' | 'highlight'; id: string }
 	| {
 			name: 'sync.writeNote';
 			workspaceId: string;
@@ -117,6 +118,15 @@ function payload(command: WorkspaceCommand | UnknownWorkspaceCommand): Record<st
 		}
 		case 'database.writeContent':
 			return { record: command.record };
+		case 'database.deleteContent':
+			if (command.kind !== 'note' && command.kind !== 'highlight') {
+				throw new TauriCommandError({ code: 'content_kind_required', recoverable: false });
+			}
+			return {
+				workspaceId: validateSyncKey(String(command.workspaceId ?? ''), 'workspace_id_required'),
+				kind: command.kind,
+				id: validateSyncKey(String(command.id ?? ''), 'content_id_required')
+			};
 		case 'sync.writeNote':
 			return {
 				workspaceId: validateSyncKey(String(command.workspaceId ?? ''), 'workspace_id_required'),
@@ -221,6 +231,7 @@ function tauriCommandName(command: WorkspaceCommand): string {
 		'database.deleteWorkspace': 'delete_workspace_record',
 		'database.listContent': 'list_workspace_content',
 		'database.writeContent': 'write_workspace_content',
+		'database.deleteContent': 'delete_workspace_content',
 		'sync.writeNote': 'sync_write_note',
 		'sync.writeSnapshot': 'sync_write_snapshot',
 		'sync.appendChange': 'sync_append_change',

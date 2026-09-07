@@ -21,6 +21,7 @@ import {
 import { TauriCommandError } from './tauri-bridge';
 import { loadWorkspaceConfig } from './workspace';
 import { chooseNativeWorkspace } from './workspace-choice';
+import { bindWorkspaceStorage } from './workspace-content-storage';
 import {
 	attachCatalogMethods,
 	capabilitiesForKind,
@@ -66,7 +67,8 @@ export function describeAdapter(kind: StorageKind): {
 	return { kind, backend: capabilities.backend, capabilities };
 }
 
-function withCatalog(storage: WorkspaceStorage): WorkspaceStorage {
+function withCatalog(storage: WorkspaceStorage, workspaceId?: string): WorkspaceStorage {
+	if (workspaceId) bindWorkspaceStorage(storage, workspaceId);
 	attachCatalogMethods(storage);
 	const mutable = storage as WorkspaceStorage & { capabilities?: StorageCapabilities };
 	if (!mutable.capabilities) {
@@ -264,7 +266,7 @@ export async function openWorkspaceStorage(
 				'A pasta do workspace está ausente ou inacessível. O cadastro foi preservado.'
 			);
 		}
-		const storage = withCatalog(createTauriStorage());
+		const storage = withCatalog(createTauriStorage(), entry.workspaceId);
 		const manifest = await readManifest(storage).catch(() => null);
 		if (!manifest) {
 			throw new WorkspaceOpenError(
@@ -288,7 +290,7 @@ export async function openWorkspaceStorage(
 		if (typeof entry.localRef === 'string') {
 			let storage: WorkspaceStorage;
 			try {
-				storage = withCatalog(await openOpfsLogicalRoot(entry.localRef));
+				storage = withCatalog(await openOpfsLogicalRoot(entry.localRef), entry.workspaceId);
 			} catch {
 				throw new WorkspaceOpenError(
 					workspaceId,
@@ -306,7 +308,7 @@ export async function openWorkspaceStorage(
 			}
 			return storage;
 		}
-		const storage = withCatalog(await createOpfsStorage());
+		const storage = withCatalog(await createOpfsStorage(), entry.workspaceId);
 		const manifest = await readManifest(storage).catch(() => null);
 		if (!manifest) {
 			throw new WorkspaceOpenError(
@@ -346,7 +348,7 @@ export async function openWorkspaceStorage(
 			'O navegador revogou o acesso à pasta. Permita de novo para continuar.'
 		);
 	}
-	const storage = withCatalog(createLocalStorageFromHandle(handle));
+	const storage = withCatalog(createLocalStorageFromHandle(handle), entry.workspaceId);
 	const manifest = await readManifest(storage).catch(() => null);
 	if (!manifest) {
 		throw new WorkspaceOpenError(

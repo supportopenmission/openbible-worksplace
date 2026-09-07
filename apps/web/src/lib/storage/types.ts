@@ -48,6 +48,8 @@ export type ProgressCallback = (value: number) => void;
 export interface WorkspaceStorage {
 	kind: StorageKind;
 	label: string;
+	/** Identidade do workspace para conteúdo autoral no backend operacional. */
+	workspaceId?: string;
 	/** Handle da pasta local; a referência fica no IndexedDB local e nunca no catálogo/sync. */
 	localHandle?: FileSystemDirectoryHandle;
 	ensureDirectory(path: string): Promise<void>;

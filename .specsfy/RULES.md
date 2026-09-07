@@ -6,7 +6,7 @@ manifests dos workspaces.
 
 ## Arquitetura
 
-- Manter Markdown com YAML frontmatter como fonte primária dos sermões, estudos e notas; usar SQLite local apenas para índices, destaques e dados auxiliares.
+- Manter o backend operacional como fonte primária das notas (SQLite `app.sqlite` no Tauri e IndexedDB no PWA); Markdown com YAML frontmatter é exportação derivada e formato de recuperação legado. Sermões e estudos preservam seus formatos portáteis conforme suas specs.
 
 - Gravar tema, tela inicial e última leitura em `.openbible/preferences.json` no workspace; o `localStorage` é cache de primeiro paint, não a fonte File Over Apps.
 - No desktop Tauri, a pasta escolhida pela pessoa é a raiz única de dados Files Over App; `localStorage` pode guardar somente o ponteiro do caminho para reabrir o workspace, nunca notas, configurações ou bancos fora dessa pasta.

@@ -36,6 +36,7 @@ import type {
 import type { WorkspaceCatalogEntry } from '$lib/storage/workspace-catalog';
 import type { WorkspaceOpenFailureReason } from '$lib/storage/storage-registry';
 import { loadWorkspaceConfig, prepareWorkspace } from '$lib/storage/workspace';
+import { bindWorkspaceStorage } from '$lib/storage/workspace-content-storage';
 
 export type WorkspaceUiStatus = 'loading' | WorkspaceStatus;
 
@@ -270,6 +271,7 @@ export class WorkspaceState {
 				this.applyMigrationFailure(snapshot, error);
 				return;
 			}
+			if (migration) bindWorkspaceStorage(snapshot.storage, migration.manifest.workspaceId);
 			this.apply(snapshot);
 			if (migration) {
 				touchLastOpened(migration.manifest.workspaceId);
@@ -310,6 +312,7 @@ export class WorkspaceState {
 	async markConfigured(storage: WorkspaceStorage) {
 		const previousId = getActiveWorkspace().workspaceId;
 		const migration = await migrateLegacyWorkspace(storage);
+		if (migration) bindWorkspaceStorage(storage, migration.manifest.workspaceId);
 		const configured = await this.readConfiguredStorage(storage, migration?.manifest.workspaceId);
 		this.applyConfiguredStorage(storage, configured);
 		if (migration) {

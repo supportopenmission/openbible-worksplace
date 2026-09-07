@@ -49,8 +49,9 @@ manifests.
   ser disponibilizada.
 - SQLite local e Markdown com YAML frontmatter são decisões de produto; a
   fundação de workspaces da SPEC-0016 já materializa `app.sqlite` no Tauri e
-  `openbible-workspace` em IndexedDB no PWA. O Markdown continua a fonte
-  portátil das notas futuras e PDF é uma saída de exportação posterior.
+  `openbible-workspace` em IndexedDB no PWA. As notas são gravadas nesses
+  backends; Markdown é exportação portátil e recuperação legada, e PDF é uma
+  saída de exportação posterior.
 - A aplicação deve funcionar via `localhost` e ser hospedada na Cloudflare como
   PWA mobile usando `@sveltejs/adapter-cloudflare` como adapter oficial do
   SvelteKit; a aplicação web já está configurada para esse adapter em

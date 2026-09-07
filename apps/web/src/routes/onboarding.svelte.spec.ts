@@ -33,6 +33,18 @@ function createStorage(): WorkspaceStorage {
 }
 
 describe('OpenBible onboarding', () => {
+	it('explica que notas ficam no banco e Markdown é exportação', async () => {
+		await render(OnboardingModal, { props: { storageMode: 'native' } });
+
+		await expect
+			.element(page.getByText(/notas e destaques no armazenamento local do workspace/i))
+			.toBeInTheDocument();
+		await expect
+			.element(page.getByText(/markdown fica reservado para exportação/i))
+			.toBeInTheDocument();
+		await expect.element(page.getByText(/pastas separadas para estudos/i)).not.toBeInTheDocument();
+	});
+
 	it('keeps the dialog available when local folder access fails', async () => {
 		// SPECSFY: US-001 FR-001 FR-005 NFR-001 NFR-002 AC-003
 		await render(OnboardingModal, {

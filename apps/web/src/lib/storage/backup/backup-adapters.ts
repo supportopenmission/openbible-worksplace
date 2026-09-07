@@ -99,6 +99,14 @@ export function createIndexedDbContentDriver(adapter: IndexedDbWorkspaceAdapter)
 				const rightKey = `${right.kind}:${right.id}`;
 				return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
 			});
+		},
+		async remove(context, kind, id) {
+			const store = kind === 'note'
+				? INDEXEDDB_WORKSPACE_STORES.notes
+				: INDEXEDDB_WORKSPACE_STORES.highlights;
+			await adapter.transaction([store], 'readwrite', (transaction) =>
+				transaction.objectStore(store).delete([context.workspaceId, id])
+			);
 		}
 	};
 }
@@ -113,6 +121,7 @@ export function createIndexedDbContentRepository(
 export interface NativeWorkspaceContentPort {
 	listContent(workspaceId: string): Promise<WorkspaceContentRecord[]>;
 	writeContent(record: WorkspaceContentRecord): Promise<void>;
+	deleteContent?(workspaceId: string, kind: 'note' | 'highlight', id: string): Promise<void>;
 }
 
 export function createNativeSqliteContentPort(): NativeWorkspaceContentPort {
@@ -123,6 +132,9 @@ export function createNativeSqliteContentPort(): NativeWorkspaceContentPort {
 		},
 		async writeContent(record) {
 			await invokeWorkspaceCommand({ name: 'database.writeContent', record });
+		},
+		async deleteContent(workspaceId, kind, id) {
+			await invokeWorkspaceCommand({ name: 'database.deleteContent', workspaceId, kind, id });
 		}
 	};
 }
@@ -130,7 +142,11 @@ export function createNativeSqliteContentPort(): NativeWorkspaceContentPort {
 export function createNativeSqliteContentDriver(port: NativeWorkspaceContentPort): WorkspaceContentDriver {
 	return {
 		write: (record) => port.writeContent(record),
-		list: (context) => port.listContent(context.workspaceId)
+		list: (context) => port.listContent(context.workspaceId),
+		remove: async (context, kind, id) => {
+			if (!port.deleteContent) throw new Error('workspace_content_delete_unavailable');
+			await port.deleteContent(context.workspaceId, kind, id);
+		}
 	};
 }
 

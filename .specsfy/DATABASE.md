@@ -120,8 +120,8 @@ remoção transacional do registro em `app.sqlite` ou IndexedDB.
 | `bibles/*.sqlite` | `metadata` (opcional)        | `key`, `value`                                          | `key = 'name'` fornece o nome da versão; o nome do arquivo é o fallback                |
 | Pasta/OPFS        | `.openbible/preferences.json` | `theme`, `readerSelection` | Fonte File Over Apps das preferências; `localStorage` é cache para o primeiro paint (`initialRoute` removida em SPEC-0012) |
 | Pasta/OPFS        | `.openbible/index.sqlite`     | `note_verse_ref`, `reader_highlight` e índices auxiliares | Fonte legada de migração/recovery; não é o backend operacional novo nem substitui o SQLite bíblico |
-| Pasta/OPFS        | `notes/<noteId>.md`           | frontmatter YAML + corpo Markdown                      | Exportação/entrada legada; o backend operacional novo é SQLite nativo no Tauri ou IndexedDB no PWA |
-| Pasta/OPFS        | `trash/<noteId>.md`           | mesmo formato de `notes/`                              | Lixeira; arquivo original preservado até remoção manual futura                                                                      |
+| Pasta/OPFS        | `notes/<noteId>.md`           | frontmatter YAML + corpo Markdown                      | Caminho virtual de exportação; arquivos existentes são somente recuperação legada; notas novas não criam essa pasta |
+| Pasta/OPFS        | `trash/<noteId>.md`           | mesmo formato de `notes/`                              | Estrutura legada de lixeira; não é criada nem usada pelo backend operacional novo |
 | IndexedDB         | `openbible-workspace`         | handle da pasta                                        | Só no modo `local`; permissão `readwrite` é revalidada a cada visita                  |
 
 ## Decisões, ownership e retenção
@@ -161,10 +161,10 @@ remoção transacional do registro em `app.sqlite` ou IndexedDB.
 - Backup, exportação e sincronização seguem as decisões registradas nas
   SPEC-0018, SPEC-0019 e SPEC-0020; a retenção detalhada de outros artefatos
   permanece pendente quando não estiver descrita abaixo.
-- A SPEC-0013 troca somente o motor visual das notas por Milkdown. O arquivo
-  `notes/<noteId>.md` mantém o mesmo YAML e fence `:::verse`; a reindexação após
-  autosave continua escrevendo `note_verse_ref` sem migration ou mudança de
-  schema.
+- A SPEC-0013 troca somente o motor visual das notas por Milkdown. A
+  representação Markdown `notes/<noteId>.md` permanece o formato portátil de
+  exportação, enquanto a reindexação após autosave continua escrevendo
+  `note_verse_ref` sem migration ou mudança de schema.
 
 ### SPEC-0019 e SPEC-0020 — Sincronização local e agentes
 

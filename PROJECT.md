@@ -43,8 +43,10 @@ As capacidades principais planejadas são:
 O MVP não terá autenticação, colaboração entre pessoas ou uma conta centralizada.
 O registro operacional de workspaces usa SQLite no desktop Tauri e IndexedDB no
 PWA, com `workspaceId` como escopo. A fonte legada de pasta/manifesto é mantida
-para migração e recovery. Sermões e notas terão Markdown com YAML frontmatter
-como fonte portátil; PDF é exportação, não o banco de origem. A sincronização
+para migração e recovery. As notas são persistidas no backend operacional
+(SQLite `app.sqlite` no Tauri ou IndexedDB no PWA); Markdown com YAML
+frontmatter é exportação portátil e recuperação legada, e PDF é exportação,
+não o banco de origem. A sincronização
 entre dispositivos é opt-in, mantém notas e estado operacional nos backends
 locais e pode usar um endpoint WebSocket seguro configurado pela pessoa, sem
 exigir relay obrigatório.
