@@ -10,9 +10,9 @@ documentação oficial consultada em 2026-09-05.
 
 O `Repo` recebe um `StorageAdapter` para persistência local e zero ou mais
 `NetworkAdapter`s para comunicação com peers. Mudanças locais e recebidas são
-salvas pelo adapter anexado. Impacto: o OpenBible deve manter a fonte autoral
-fora do estado CRDT e definir adapters por backend, sem exigir rede para abrir
-um workspace.
+salvas pelo adapter anexado. Impacto: o OpenBible deve manter o estado de
+replicação separado do banco operacional de notas e definir adapters por
+backend, sem exigir rede para abrir um workspace.
 
 ## Protocolo por documento e independente do transporte
 
@@ -20,18 +20,20 @@ Fonte: [Automerge Concepts](https://automerge.org/docs/reference/concepts/),
 documentação oficial consultada em 2026-09-05.
 
 O protocolo de sync é transport-agnostic e opera por documento; o repository
-coordena vários documentos e adapters. Impacto: o vínculo deve usar IDs estáveis
-por unidade autoral, não um único documento gigante nem o SQLite de índice.
+coordena vários documentos e adapters. Impacto: o vínculo deve usar IDs
+estáveis por documento e `workspaceId`, não um único documento gigante nem o
+banco bruto de notas.
 
-## Persistência local no navegador e filesystem
+## Persistência local no navegador e banco nativo
 
 Fonte: [Automerge Storage](https://automerge.org/docs/reference/repositories/storage/),
 documentação oficial consultada em 2026-09-05.
 
-Há adapters oficiais para IndexedDB e filesystem Node; adapters próprios podem
-usar qualquer key/value store com range queries. Sem `StorageAdapter`, o repo é
-transitório. Impacto: PWA e Tauri podem compartilhar o contrato e diferir na
-persistência; o estado CRDT local precisa sobreviver a reinício.
+Há adapters oficiais para IndexedDB e adapters próprios podem usar um
+key/value store com range queries. O OpenBible deve persistir estado CRDT e
+notas por meio do contrato local: IndexedDB no PWA e `app.sqlite` no Tauri;
+filesystem, OPFS e `.openbible/index.sqlite` ficam restritos a migração,
+exportação ou recovery explícitos.
 
 ## Offline e reconexão
 

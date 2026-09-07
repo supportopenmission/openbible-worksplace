@@ -5,18 +5,26 @@
 | Formato | Specsfy/2.0 |
 | ID | SPEC-0019 |
 | Slug | 0019-sincronizacao-local-first-automerge |
-| Status | Planned |
+| Status | Defined |
 | Effort | 9 |
 | Effort updated at | 2026-09-05 |
 | Effort rationale | Integra CRDT, dois backends de armazenamento, transporte configurável, bridge de edição externa, segurança de peers e preservação autoral. |
 | ClickUp Task | |
 | Milestones | Pós formatos portáteis e backup; preparação para sincronização entre aparelhos |
 | Definition Gate | Passed |
-| Plan Gate | Passed |
-| Delivery Gate | In Progress |
+| Plan Gate | Pending |
+| Delivery Gate | Pending |
 | Evidence Contract | 1 |
 | Interface para pessoas | Sim |
-| Atualizada em | 2026-09-05 |
+| Atualizada em | 2026-09-07 |
+
+> **Atualização normativa de 2026-09-07:** as notas e o estado operacional do
+> workspace são persistidos no backend local do runtime: `app.sqlite` no Tauri
+> e IndexedDB versionado no PWA. Markdown/JSON são exportações portáteis e
+> entradas explícitas de migração/recovery; `.openbible/index.sqlite`, paths,
+> handles e catálogo não são backend ativo nem payload de sincronização. Esta
+> alteração de persistência reabre os Atos I–III; as evidências anteriores que
+> dependem de Markdown/JSON como fonte primária ficam pendentes de reconciliação.
 
 ## Ato I — Definir
 
@@ -24,18 +32,23 @@
 
 #### Problema
 
-O OpenBible mantém os arquivos autorais localmente, mas ainda não possui uma
-forma de reconciliar alterações offline feitas em desktop Tauri, PWA e outros
-aparelhos. Sincronizar `.openbible/index.sqlite`, paths ou handles causaria
-conflitos de dispositivo e faria uma projeção local parecer fonte autoral.
+O OpenBible mantém notas e workspaces no backend local de cada runtime, mas
+ainda não possui uma forma de reconciliar alterações offline feitas em desktop
+Tauri, PWA e outros aparelhos. Sincronizar `.openbible/index.sqlite`, paths ou
+handles causaria conflitos de dispositivo e faria uma projeção local ou um
+artefato de exportação parecer a autoridade do workspace.
 
 #### Resultado desejado
 
 Uma réplica local-first usa Automerge apenas para estado operacional de
-replicação por documento, mantendo Markdown/JSON como fonte portátil e o SQLite
-como projeção descartável. Alterações locais continuam disponíveis sem rede,
-convergem ao reconectar por transporte configurável e preservam divergências
-externas para decisão explícita.
+replicação por documento. Notas e registros do workspace continuam no backend
+operacional local do runtime — `app.sqlite` no Tauri e IndexedDB versionado no
+PWA — sob o contrato comum escopado por `workspaceId`. Markdown/JSON são
+exportações portáteis e entradas explícitas de migração/recovery, enquanto
+`.openbible/index.sqlite`, paths, handles e catálogo permanecem legados ou
+locais. Alterações locais continuam disponíveis sem rede, convergem ao
+reconectar por transporte configurável e preservam divergências externas para
+decisão explícita.
 
 #### Métricas de sucesso
 
@@ -47,8 +60,10 @@ externas para decisão explícita.
   payloads de sincronização, conforme inspeção de contrato.
 - Uma fila de 10.000 deltas respeita limite de memória configurado e expõe
   progresso, falha e retry sem carregar o workspace inteiro.
-- Após reconstrução de uma réplica, 100% dos arquivos autorais da fixture abrem
-  sem o índice; a reconstrução do índice é posterior e independente.
+- Após reconstrução de uma réplica, 100% das notas da fixture abrem a partir do
+  backend operacional local; o estado CRDT e as projeções podem ser
+  reconstruídos sem depender de `.openbible/index.sqlite`, e as exportações
+  Markdown/JSON continuam regeneráveis.
 
 ### 2. Research e esclarecimentos
 
@@ -80,16 +95,17 @@ externas para decisão explícita.
 
 #### Dúvidas respondidas
 
-- **Q**: Automerge substitui Markdown/JSON ou SQLite? → **A**: não; é estado operacional de replicação, enquanto Markdown/JSON continuam portáteis e o SQLite continua projeção local.
+- **Q**: Automerge substitui o backend local ou as exportações? → **A**: não; é estado operacional de replicação por documento. As notas e os registros do workspace permanecem no backend operacional (`app.sqlite` no Tauri e IndexedDB no PWA), enquanto Markdown/JSON continuam exportações portáteis e entradas explícitas de migração/recovery.
 - **Q**: A PWA precisa de um processo local para sincronizar? → **A**: não; o contrato permite storage no browser e transportes opcionais; o uso local não depende de servidor.
 - **Q**: Relay público pode ser produção? → **A**: não; produção usa endpoint próprio/controlado com TLS, autenticação e política de acesso.
-- **Q**: O que pode ser sincronizado? → **A**: somente documentos autorais mapeados por IDs estáveis e estado CRDT necessário; paths, handles, catálogo, índices, caches e segredos ficam no dispositivo.
+- **Q**: O que pode ser sincronizado? → **A**: somente documentos e estado CRDT necessários, mapeados por IDs estáveis e pelo `workspaceId`; o conteúdo é aplicado ao backend local do runtime, nunca ao banco bruto. Paths, handles, catálogo, `.openbible/index.sqlite`, caches e segredos ficam no dispositivo.
 
 #### Dúvidas abertas
 
-- A versão final dos pacotes Automerge e o adapter de storage específico serão
-  escolhidos na fase de tarefas após verificar a matriz Tauri/PWA; a escolha não
-  muda este contrato.
+- A versão final dos pacotes Automerge e a forma física das tabelas SQLite e
+  object stores IndexedDB serão escolhidas na fase de tarefas após verificar a
+  matriz Tauri/PWA; a escolha não muda o contrato de que ambos são os backends
+  operacionais das notas e do workspace.
 - A implantação operacional do relay próprio e sua política de retenção ficam
   fora da primeira fatia; a spec exige apenas boundary, configuração segura e
   fallback local.
@@ -101,8 +117,10 @@ externas para decisão explícita.
 
 #### Incluído
 
-- Identidade estável de documento e mapeamento local para arquivos autorais.
-- Repository Automerge com storage adapter local para PWA/Tauri.
+- Identidade estável de documento e mapeamento local para registros do backend,
+  com destino opcional de exportação.
+- Repository Automerge com storage adapter local sobre `app.sqlite` no Tauri e
+  IndexedDB versionado no PWA.
 - Transportes locais e WebSocket configurável, reconexão e fila de deltas.
 - Merge de alterações concorrentes, bridge para edição externa e preservação de
   divergência sem sobrescrita silenciosa.
@@ -123,33 +141,38 @@ externas para decisão explícita.
 
 - **Pessoa autora**: escolhe workspace/documentos, habilita peers, edita e
   resolve divergências.
-- **Réplica local**: Tauri ou PWA que persiste estado e fonte portátil no
-  dispositivo.
+- **Réplica local**: Tauri ou PWA que persiste notas, registros do workspace e
+  estado CRDT no backend operacional do dispositivo.
 - **Peer autorizado**: outra réplica do mesmo workspace com escopo concedido.
 - **Relay configurado**: transporte intermediário opcional que encaminha
   mensagens, sem ser fonte exclusiva.
-- **Bridge externo**: observador/materializador que detecta edição fora do app e
-  produz uma reconciliação recuperável.
+- **Bridge externo**: fronteira de importação/recovery que detecta alteração de
+  exportação ou fonte legada fora do app e produz uma reconciliação recuperável,
+  sem transformar o arquivo em backend ativo.
 
 ### 4. Princípios e restrições do projeto
 
-- **PR-001**: Files over Apps; Markdown/JSON permanecem fontes legíveis sem
-  OpenBible, Automerge, relay ou rede.
-- **PR-002**: Automerge guarda replicação e histórico operacional; não substitui
-  a fonte portátil nem o backup.
+- **PR-001**: o backend local do runtime é a autoridade operacional das notas e
+  do workspace: `app.sqlite` no Tauri e IndexedDB no PWA, sempre escopado por
+  `workspaceId`.
+- **PR-002**: Automerge guarda replicação e histórico operacional por documento;
+  não substitui o backend local, não sincroniza banco bruto e não é formato de
+  exportação.
 - **PR-003**: documentos têm IDs estáveis independentes de nome, caminho,
   posição ou aparelho.
-- **PR-004**: paths, handles, catálogo, `index.sqlite`, caches, locks e
-  credenciais são locais e jamais entram em conteúdo ou payload de sync.
+- **PR-004**: paths, handles, catálogo, `.openbible/index.sqlite`, caches,
+  locks e credenciais são locais ou legados e jamais entram em conteúdo ou
+  payload de sync.
 - **PR-005**: cada workspace possui escopo próprio; nenhum estado cruza
   workspaces por acidente.
 - **PR-006**: indisponibilidade de rede nunca bloqueia leitura, edição ou
   abertura local.
 - **PR-007**: conflitos materiais são preservados e apresentados, não resolvidos
   por descarte silencioso.
-- **PR-008**: manter Svelte/TypeScript, adaptadores `WorkspaceStorage`,
-  `sql.js`/rusqlite existentes e o isolamento Tauri/PWA definido nas specs
-  anteriores.
+- **PR-008**: manter Svelte/TypeScript, `WorkspaceStorage`,
+  `WorkspaceContentRepository`, SQLite/rusqlite no Tauri, IndexedDB no PWA e o
+  isolamento definido nas specs anteriores; `sql.js`/WASM continua somente no
+  leitor da Bíblia.
 - **PR-009**: TLS protege o transporte, mas não torna o relay incapaz de ler ou
   reter o estado sincronizado. A primeira fatia não promete criptografia ponta
   a ponta nem apagamento remoto de cópias já entregues.
@@ -166,7 +189,8 @@ produzindo e abrir os arquivos mesmo se nenhum relay estiver disponível.
 
 **Por que P1**: local-first é o valor central do produto.
 **Teste independente**: desligar a rede, editar uma nota, reiniciar e abrir o
-arquivo e o índice reconstruído.
+registro persistido no backend local, regenerando exportação e projeção quando
+necessário.
 **Requisitos**: FR-001, FR-002, NFR-001, NFR-004.
 
 #### US-002 — Sincronizar mudanças entre aparelhos (P1)
@@ -213,15 +237,16 @@ Feature: edição local-first
     Then a nota e o estado local podem ser reabertos após reinício
 ```
 
-#### AC-002 — materializar fonte portátil
+#### AC-002 — manter o backend operacional
 **Cobre**: US-001, FR-001, NFR-004
 ```gherkin
 @US-001 @FR-001 @NFR-004 @AC-002
-Feature: fonte autoral
+Feature: fonte operacional
   Scenario: abrir sem estado de replicação
-    Given Markdown e JSON materializados no workspace
+    Given uma nota persistida no backend operacional do runtime
     When o estado Automerge é removido ou indisponível
-    Then os arquivos continuam legíveis e editáveis pelo contrato portátil
+    Then a nota continua legível e editável a partir de `app.sqlite` no Tauri ou IndexedDB no PWA
+    And Markdown/JSON podem ser regenerados como exportação sem depender do CRDT
 ```
 
 #### AC-003 — falha de storage local
@@ -312,15 +337,15 @@ Feature: conflito concorrente
     Then a alteração não é descartada silenciosamente e a divergência fica sinalizada
 ```
 
-#### AC-011 — bridge de edição externa
+#### AC-011 — bridge de importação externa
 **Cobre**: US-003, FR-005, NFR-004
 ```gherkin
 @US-003 @FR-005 @NFR-004 @AC-011
 Feature: edição fora do app
-  Scenario: arquivo alterado no editor externo
-    Given um Markdown materializado muda fora do OpenBible
+  Scenario: exportação alterada fora do app
+    Given uma exportação Markdown ou uma fonte legada muda fora do OpenBible
     When o bridge compara a geração anterior e a atual
-    Then ele produz uma proposta de reconciliação sem sobrescrever a fonte
+    Then ele produz uma proposta explícita de importação/reconciliação para o backend local sem sobrescrever o registro persistido
 ```
 
 #### AC-012 — conflito preservado
@@ -334,15 +359,16 @@ Feature: recuperação de conflito
     Then ambas as versões permanecem recuperáveis e a pessoa recebe ação explícita
 ```
 
-#### AC-013 — materialização sem índice
+#### AC-013 — reconstrução da projeção local
 **Cobre**: US-003, FR-005, NFR-001
 ```gherkin
 @US-003 @FR-005 @NFR-001 @AC-013
 Feature: reconstrução
-  Scenario: índice ausente após sync
-    Given uma réplica recebeu fonte autoral sem index.sqlite
+  Scenario: projeção ausente após sync
+    Given uma réplica recebeu o estado CRDT de uma nota e sua projeção local está ausente
     When o workspace abre
-    Then a nota fica disponível e o índice pode ser reconstruído depois
+    Then a nota fica disponível no backend operacional e a projeção pode ser reconstruída depois
+    And a reconstrução não consulta nem cria dependência de `.openbible/index.sqlite`
 ```
 
 #### AC-014 — payload sem path
@@ -419,9 +445,10 @@ Feature: disponibilidade local
 @US-001 @FR-002 @NFR-004 @AC-020
 Feature: storage nativo
   Scenario: persistir no Tauri
-    Given um workspace nativo com raiz real selecionada
-    When o repository grava estado operacional
-    Then ele usa o adapter permitido dentro da raiz sem caminho arbitrário da UI
+    Given um workspace nativo ativo no Tauri
+    When o repository grava uma nota ou estado operacional
+    Then ele usa o adapter allowlisted do `app.sqlite` escopado por `workspaceId`
+    And não grava a fonte ativa na raiz do workspace nem aceita caminho arbitrário da UI
 ```
 
 #### AC-021 — adapter PWA
@@ -431,8 +458,9 @@ Feature: storage nativo
 Feature: storage PWA
   Scenario: persistir no navegador
     Given um workspace lógico no PWA
-    When o repository grava um delta
-    Then o estado fica no backend local associado ao workspace e sobrevive a refresh
+    When o repository grava uma nota ou delta
+    Then o estado fica no IndexedDB versionado `openbible-workspace` associado ao `workspaceId`
+    And sobrevive a refresh sem depender de OPFS, File System Access ou service worker como backend
 ```
 
 #### AC-022 — backpressure
@@ -443,7 +471,7 @@ Feature: volume de deltas
   Scenario: fila acima do alvo
     Given uma fila local acima do limite de memória configurado
     When novas mudanças chegam
-    Then o sistema aplica backpressure e mantém a última fonte autoral intacta
+    Then o sistema aplica backpressure e mantém o último registro persistido no backend operacional intacto
 ```
 
 #### AC-023 — compactação segura
@@ -454,7 +482,7 @@ Feature: histórico compacto
   Scenario: compactar estado replicado
     Given um documento com histórico acima do limite
     When a compactação é executada
-    Then o snapshot permanece recuperável e a fonte portátil não é removida
+    Then o snapshot permanece recuperável e a nota persistida no backend operacional não é removida
 ```
 
 #### AC-024 — mensagem inválida
@@ -508,9 +536,10 @@ Feature: estado de sync
 @US-003 @FR-006 @NFR-004 @AC-028
 Feature: projeção descartável
   Scenario: transportar documento
-    Given o workspace possui index.sqlite reconstruível
+    Given o workspace possui uma projeção local reconstruível e um backend operacional ativo
     When um pacote de sync é criado
-    Then o índice não é incluído e a fonte autoral continua suficiente
+    Then a projeção e o banco bruto não são incluídos
+    And o payload contém somente deltas/documentos autorizados
 ```
 
 #### AC-029 — edição sem relay obrigatório
@@ -539,11 +568,11 @@ Feature: boundary de transporte
 
 #### Funcionais
 
-- **FR-001**: O sistema deve atribuir um ID estável a cada documento autoral sincronizável e manter uma projeção local entre ID, workspace e arquivo relativo, sem depender do caminho para identidade.
-- **FR-002**: O sistema deve persistir estado CRDT localmente por backend de storage, conservar deltas pendentes e materializar Markdown/JSON sem exigir relay.
+- **FR-001**: O sistema deve atribuir um ID estável a cada documento sincronizável e manter uma referência local entre ID, `workspaceId`, registro do backend operacional e eventual destino de exportação, sem depender do caminho para identidade.
+- **FR-002**: O sistema deve persistir notas, estado CRDT e deltas pendentes no backend operacional do runtime — `app.sqlite` no Tauri e IndexedDB versionado no PWA — e permitir exportar Markdown/JSON sem exigir relay.
 - **FR-003**: O sistema deve aceitar zero ou mais transportes configuráveis, incluindo adapter local e WebSocket, com reconexão, fila, timeout, retry e remoção segura do endpoint; habilitar relay exige consentimento de que ele pode observar ou reter o estado CRDT.
 - **FR-004**: O sistema deve trocar deltas por documento e mesclar alterações concorrentes preservando histórico, snapshot recuperável e divergências materiais sem descarte silencioso.
-- **FR-005**: O sistema deve detectar edição externa, comparar gerações, materializar fontes autorais e preservar ambas as versões quando a reconciliação não puder provar equivalência.
+- **FR-005**: O sistema deve detectar alteração em exportação ou fonte legada, comparar gerações, propor importação/reconciliação para o backend operacional e preservar ambas as versões quando a equivalência não puder ser provada.
 - **FR-006**: O sistema deve impor escopo por workspace/documento, pairing e revogação de peers, rejeitar payloads inválidos, manter paths, handles, índices, caches e credenciais fora do sync e informar que revogação não apaga cópias já entregues.
 
 #### Não funcionais
@@ -551,7 +580,7 @@ Feature: boundary de transporte
 - **NFR-001**: Disponibilidade local — leitura e edição de documentos previamente carregados devem continuar sem rede ou relay; verificar com testes offline e reinício em PWA/Tauri.
 - **NFR-002**: Segurança e privacidade — mensagens não podem transportar segredo, path absoluto, handle ou índice; endpoint inseguro e payload inválido devem ser bloqueados; TLS não pode ser apresentado como E2EE e o consentimento ao relay confiável deve ser verificável por contrato e testes de abuso.
 - **NFR-003**: Recursos — fila, retry e compactação devem respeitar limites configuráveis, backpressure e memória; verificar com fixture de 10.000 deltas e métricas de bytes, latência e falhas.
-- **NFR-004**: Recuperabilidade e interoperabilidade — Markdown/JSON e o workspace devem continuar utilizáveis sem estado CRDT, e adapters substituíveis devem manter o contrato; verificar removendo estado operacional e reconstruindo índice.
+- **NFR-004**: Recuperabilidade e interoperabilidade — notas e o workspace devem continuar utilizáveis a partir de `app.sqlite`/IndexedDB sem estado CRDT, exportações Markdown/JSON devem ser regeneráveis e adapters substituíveis devem manter o contrato; verificar removendo estado CRDT e reconstruindo projeções.
 
 #### Erros e casos-limite
 
@@ -560,8 +589,8 @@ Feature: boundary de transporte
 - Relay seguro por transporte, mas não confiável para o conteúdo → não
   habilitar; esta fatia não oferece E2EE nem promete remoção de réplicas remotas.
 - Payload excedente, desconhecido ou malformado → rejeitar a mensagem sem executar comandos, paths ou SQL arbitrário.
-- Arquivo renomeado, removido ou alterado externamente → preservar estado e oferecer reconciliação, sem overwrite silencioso.
-- Compactação ou reconstrução do índice falha → manter CRDT e fontes autorais, marcar projeção pendente e tentar posteriormente.
+- Exportação ou fonte legada renomeada, removida ou alterada externamente → preservar o registro do backend e oferecer importação/reconciliação explícita, sem overwrite silencioso.
+- Compactação ou reconstrução da projeção falha → manter CRDT e registros no backend operacional, marcar a projeção pendente e tentar posteriormente.
 
 ## Ato II — Projetar e provar
 
@@ -569,24 +598,27 @@ Feature: boundary de transporte
 
 #### Contexto existente
 
-- `apps/web` usa Svelte/SvelteKit, TypeScript, Milkdown e `WorkspaceStorage`;
-  Tauri usa Rust/rusqlite para filesystem nativo. O OPFS/IndexedDB é isolado
-  do app shell conforme as specs anteriores.
-- Markdown/JSON autorais ficam na raiz do workspace; `.openbible/index.sqlite`
-  e catálogo são derivados ou locais. O backup exclui ambos do pacote por
-  padrão.
+- `apps/web` usa Svelte/SvelteKit, TypeScript, Milkdown,
+  `WorkspaceStorage` e `WorkspaceContentRepository`; o PWA persiste notas,
+  workspaces e estado CRDT no IndexedDB versionado `openbible-workspace`.
+- Tauri usa Rust/rusqlite para o `app.sqlite` da instalação. OPFS, File System
+  Access, manifestos e `.openbible/index.sqlite` permanecem fontes legadas de
+  migração/recovery; Markdown/JSON são exportações e entradas explícitas, não
+  o backend ativo. O backup continua excluindo índices e referências locais.
 
 #### Arquitetura e módulos
 
 - `SyncDocumentRegistry`: mapeia ID estável, tipo autoral, workspace e arquivo
   relativo; não expõe path absoluto ao domínio.
-- `SyncRepository`: facade de domínio sobre `Repo`, `StorageAdapter` e
-  `NetworkAdapter[]`; inicializa o backend correto por runtime e desativa rede
-  sem desativar storage local.
-- `SyncMaterializer`: transforma snapshot/deltas em Markdown/JSON usando os
-  writers da spec 0017; grava por barreira de geração e reconstrói índice depois.
-- `ExternalEditBridge`: observa hashes/gerações dos arquivos, classifica edição
-  externa e cria proposta ou cópia recuperável quando não há merge seguro.
+- `SyncRepository`: facade de domínio sobre `Repo`,
+  `WorkspaceContentRepository`, `StorageAdapter` e `NetworkAdapter[]`; inicializa
+  o backend correto por runtime e desativa rede sem desativar storage local.
+- `SyncMaterializer`: aplica snapshot/deltas aos registros de notas do backend
+  operacional, grava por barreira de geração, reconstrói projeções depois e usa
+  os writers da spec 0017 somente para exportação.
+- `ExternalEditBridge`: observa exportações ou fontes legadas, classifica uma
+  possível importação externa e cria proposta ou cópia recuperável quando não
+  há merge seguro; nunca trata o arquivo como autoridade ativa.
 - `PeerPolicy` e `SyncEnvelopeGuard`: controlam escopo, pairing, revogação,
   limites, validação e exclusão de paths/handles/segredos.
 - `SyncDiagnostics`: emite estado local de conexão, fila, bytes, retry,
@@ -594,27 +626,37 @@ Feature: boundary de transporte
 
 #### Migrations
 
-Não há migration de SQLite autoral. O índice continua reconstruível. A
-implementação criará apenas área operacional reservada e versionada para estado
-CRDT, com migração idempotente e rollback que nunca remove Markdown/JSON.
+A implementação deve criar área operacional versionada para estado CRDT e fila
+nos backends ativos: a migration SQL idempotente
+`apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` em
+`app.sqlite` no Tauri e o upgrade de schema v2 para v3 no IndexedDB
+`openbible-workspace` no PWA. Ambos devem criar os registros/object stores
+`sync_documents`, `sync_snapshots`, `sync_changes`, `sync_queue`, `sync_peers`,
+`sync_endpoints` e `sync_conflicts`, sempre com `workspaceId` quando o registro
+for de domínio. O schema deve permitir rollback/recovery sem remover notas e
+não pode criar estado ativo em `.openbible/index.sqlite`, OPFS ou na raiz do
+workspace.
 
 #### Models
 
-`SyncDocumentRef` (workspaceId, documentId, kind, relativePath, schemaVersion),
+`SyncDocumentRef` (workspaceId, documentId, kind, backendRecordId,
+exportRelativePath opcional, schemaVersion),
 `SyncPeerPolicy` (peerId, workspaceId, scope, status, createdAt, revokedAt),
 `SyncEndpoint` (endpointId, workspaceId, transport, url sem segredo, status),
 `SyncQueueState` (documentId, pendingCount, bytes, retryAt, lastErrorCode) e
 `SyncConflict` (documentId, generation local/externa, status, recoveryRef).
 
-Paths físicos, handles, tokens, chaves e `index.sqlite` ficam fora desses
-contratos portáteis; referências locais podem existir apenas no adapter.
+Paths físicos, handles, tokens, chaves e `.openbible/index.sqlite` ficam fora
+desses contratos portáteis; referências de exportação/legado podem existir
+somente no adapter ou na camada explícita de importação/recovery.
 
 #### Controllers e casos de uso
 
 `enableWorkspaceSync`, `disableWorkspaceSync`, `pairPeer`, `revokePeer`,
-`retrySync`, `resolveExternalConflict` e `rebuildMaterializedFiles` são casos
-de uso da facade Svelte/Tauri. A UI não fornece path arbitrário, SQL, envelope
-ou credencial para o domínio; comandos Tauri usam allowlist tipada.
+`retrySync`, `resolveExternalConflict`, `exportWorkspace` e
+`importExternalChange` são casos de uso da facade Svelte/Tauri. A UI não
+fornece path arbitrário, SQL, envelope ou credencial para o domínio; comandos
+Tauri usam allowlist tipada.
 
 #### Views e experiência
 
@@ -625,16 +667,18 @@ conflito. A tela precisa informar que o uso local continua quando a rede falha.
 
 #### Queries e repositórios
 
-O índice SQLite apenas recebe projeções de arquivos materializados. Consultas de
-sync usam registry local e storage do Automerge por ID; nenhuma query abre
-`index.sqlite` para obter conteúdo autoral.
+Consultas de sync usam o contrato comum do backend operacional e o storage do
+Automerge por ID; no Tauri o conteúdo é lido/escrito em `app.sqlite` e no PWA
+em IndexedDB. Projeções podem ser reconstruídas depois, e nenhuma query abre
+`.openbible/index.sqlite` ou usa arquivo exportado para obter a nota ativa.
 
 #### Jobs e processamento assíncrono
 
 `syncPump` processa uma fila por documento com backoff e limite de concorrência;
-`materializePump` grava arquivos em ordem de geração; `indexRebuild` é posterior
-e idempotente. Interrupção deixa estado recuperável e não promove temporário a
-fonte autoral.
+`materializePump` aplica registros em ordem de geração no backend operacional e
+`exportPump` produz arquivos portáteis somente por solicitação; `indexRebuild` é
+posterior e idempotente. Interrupção deixa estado recuperável e não promove
+exportação ou temporário a fonte do workspace.
 
 #### Estrutura de arquivos
 
@@ -651,7 +695,9 @@ apps/web/src/lib/features/sync/
   sync-network-adapters.ts
   SyncSettings.svelte
 apps/desktop/src-tauri/src/commands/sync.rs
-.openbible/          # somente estado operacional versionado e excluído do backup
+apps/desktop/src-tauri/migrations/003_create_sync_operational.sql
+apps/web/src/lib/storage/indexeddb-workspace-adapter.ts  # stores versionados
+.openbible/          # somente legado/migração/recovery; não é backend ativo
 ```
 
 ### 9. Modelo de dados
@@ -660,11 +706,11 @@ apps/desktop/src-tauri/src/commands/sync.rs
 
 | Entidade | Identidade | Atributos e regras | Relações |
 | --- | --- | --- | --- |
-| SyncDocumentRef | `documentId` estável | `workspaceId`, kind, schemaVersion, relativePath local; path não é identidade | N..1 workspace; 1..1 fonte materializada local |
-| Automerge document | URL/ID Automerge local | snapshot, changes, heads, versão; estado operacional, não exportação | 1..1 `SyncDocumentRef` por réplica |
+| SyncDocumentRef | `documentId` estável | `workspaceId`, kind, `backendRecordId`, schemaVersion e destino opcional de exportação; path não é identidade | N..1 workspace; 1..1 registro operacional por réplica |
+| Automerge document | URL/ID Automerge local | snapshot, changes, heads, versão; estado operacional de replicação, não exportação nem banco bruto | 1..1 `SyncDocumentRef` por réplica |
 | SyncPeerPolicy | `peerId` + workspace | escopo, estado ativo/revogado, timestamps; sem segredo | N..1 workspace |
 | SyncEndpoint | endpoint local | transporte, URL sem token, status; configurável | N..1 workspace; N peers |
-| SyncConflict | ID local | documento, gerações, status, recoveryRef; não contém cópia secreta em diagnóstico | N..1 documento |
+| SyncConflict | ID local | documento, gerações, status, recoveryRef; não contém cópia secreta em diagnóstico | N..1 documento; registro operacional local |
 | SyncQueueState | documento + réplica | contagem, bytes, retry, código de erro | N..1 documento |
 
 #### Estados e transições
@@ -683,9 +729,11 @@ apps/desktop/src-tauri/src/commands/sync.rs
 #### Migração e retenção
 
 O estado CRDT pode ser compactado por documento depois de snapshot verificável;
-retenção nunca remove a fonte Markdown/JSON nem a última versão recuperável.
-Dados operacionais podem ser purgados ao desabilitar sync, mas o workspace e a
-fonte autoral permanecem. O backup restaura somente conteúdo portátil por padrão.
+retenção nunca remove a nota persistida no backend operacional nem a última
+versão recuperável. Dados de sync podem ser purgados ao desabilitar sync, mas
+o workspace e as notas em `app.sqlite`/IndexedDB permanecem. O backup/exportação
+gera conteúdo portátil a partir do snapshot e exclui referências locais, tokens
+e índices.
 
 ### 10. Interfaces e contratos
 
@@ -702,8 +750,9 @@ fonte autoral permanecem. O backup restaura somente conteúdo portátil por padr
 
 #### Telas e responsabilidades
 
-- Config > Storage/Workspace: habilitar sync, selecionar escopo, endpoint e
-  storage; entrada e saída ficam no workspace ativo.
+- Config > Storage/Workspace: habilitar sync, selecionar escopo e endpoint e
+  visualizar o backend determinado pelo runtime; entrada e saída ficam no
+  workspace ativo.
 - Painel de status do workspace: fila, último sync, erro, retry e modo offline.
 - Painel de peer/conflito: pairing, revogação e revisão recuperável de
   divergência externa.
@@ -712,7 +761,8 @@ fonte autoral permanecem. O backup restaura somente conteúdo portátil por padr
 
 - `Configuração → Storage/Workspace → Sincronização`; o workspace ativo aparece
   no breadcrumb e no seletor já definido em SPEC-0016. A pessoa abre a
-  configuração, escolhe escopo, confirma endpoint/pairing e retorna ao editor.
+  configuração, vê o backend (`app.sqlite` ou IndexedDB), escolhe escopo,
+  confirma endpoint/pairing e retorna ao editor.
 - Um conflito leva ao painel de revisão sem trocar o workspace; cancelar
   preserva a fonte atual.
 
@@ -730,7 +780,8 @@ fonte autoral permanecem. O backup restaura somente conteúdo portátil por padr
 
 #### Formulários e ações
 
-- Endpoint: URL, transporte e rótulo; token nunca é campo persistido no
+- Endpoint: URL, transporte e rótulo; o backend de notas é informativo e
+  determinado pelo runtime. Token nunca é campo persistido no
   workspace; Tauri usa cofre do SO, PWA mantém token apenas em memória, e
   entrada insegura recebe erro antes do save. Antes de habilitar, a interface
   explica que o relay pode observar/reter o estado e que não há E2EE.
@@ -810,8 +861,9 @@ contêm IDs opacos/códigos/timestamps/contagens, nunca texto, token ou path.
 
 - **Unidade**: registry, policy, guard, fila, materializer e classificação da
   edição externa.
-- **Integração/contrato**: adapters de storage PWA/Tauri, transportes local/
-  WebSocket, round-trip Automerge e bridge Markdown/JSON.
+- **Integração/contrato**: adapters `app.sqlite`/IndexedDB, transportes local/
+  WebSocket, round-trip Automerge, aplicação de snapshots ao backend ativo e
+  bridge explícita de importação/exportação Markdown/JSON.
 - **BDD/aceite**: AC-001 a AC-030 são a referência; cada caso deve manter os
   marcadores de história, requisito e cenário.
 - **Runner TDD**: Vitest existente em `apps/web`, com `test:tdd` conforme as
@@ -819,9 +871,17 @@ contêm IDs opacos/códigos/timestamps/contagens, nunca texto, token ou path.
 - **E2E**: fluxo Config > Storage/Workspace, pairing, offline, reconexão e
   revisão de conflito em navegador; Tauri focal para boundary nativo.
 - **Verificação manual**: somente revisão visual e teste de perda de permissão/
-  rede quando o runner não simular a plataforma.
+  rede quando o runner não simular a plataforma; conferir que nenhuma nota ativa
+  depende de filesystem/OPFS e que o backend exibido corresponde ao runtime.
 
 #### Evidência RED-GREEN-REFACTOR
+
+> **Evidência histórica:** os REDs abaixo foram produzidos antes da atualização
+> normativa de 2026-09-07. Eles comprovam a seam inicial, mas não comprovam os
+> contratos agora explícitos de persistência de notas em `app.sqlite`/IndexedDB.
+> T001, T002, T011–T013, T020–T023 e T028 foram reabertas para reconciliação;
+> os arquivos e comandos históricos permanecem preservados, e uma nova rodada
+> RED será exigida antes do Plan Gate.
 
 Os 30 casos TDD foram materializados e executados em Vitest. Cada caso atravessa
 `executeSync`, que importa dinamicamente o módulo existente
@@ -834,7 +894,7 @@ a fase 7 não foi iniciada.
 
 | ACs | Arquivo | RED observado | GREEN | Refactor |
 | --- | --- | --- | --- | --- |
-| AC-001, AC-002, AC-003, AC-004, AC-019, AC-020, AC-021, AC-026 | `apps/web/src/lib/features/sync/sync-document-registry.test.ts` | 8 REDs: exportação pública `syncWorkspace` ausente após chamada pela fixture | Pending | Pending |
+| AC-001, AC-002, AC-003, AC-004, AC-019, AC-020, AC-021, AC-026 | `apps/web/src/lib/features/sync/sync-document-registry.test.ts` | AC-001 foi rederivado para exigir `indexeddb`/`workspaceId`; a execução focal produziu 8 REDs porque a exportação pública `syncWorkspace` ainda está ausente | Pending | Pending |
 | AC-005, AC-006, AC-007, AC-022, AC-025, AC-027, AC-030 | `apps/web/src/lib/features/sync/sync-network-adapters.test.ts` | 7 REDs: exportação pública `syncWorkspace` ausente após chamada pela fixture | Pending | Pending |
 | AC-008, AC-009, AC-010, AC-023, AC-029 | `apps/web/src/lib/features/sync/sync-repository.test.ts` | 5 REDs: exportação pública `syncWorkspace` ausente após chamada pela fixture | Pending | Pending |
 | AC-011, AC-012, AC-013 | `apps/web/src/lib/features/sync/external-edit-bridge.test.ts` | 3 REDs: exportação pública `syncWorkspace` ausente após chamada pela fixture | Pending | Pending |
@@ -845,9 +905,15 @@ Comando focal: `bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-do
 
 ### 12. Plano de testes e rastreabilidade
 
+> As linhas de evidência RED já registradas continuam como histórico da seam
+> inicial. Para os ACs alterados pela decisão de persistência, a evidência fica
+> `Pending` até os testes afirmarem explicitamente `app.sqlite`, IndexedDB,
+> `workspaceId` e a exclusão de `.openbible/index.sqlite` do backend ativo e do
+> payload.
+
 | Requisito | Cenários BDD | Nível | Arquivo/comando esperado | Evidência |
 | --- | --- | --- | --- | --- |
-| FR-001 | AC-001, AC-002, AC-019 | Unidade/integração | `sync-document-registry.test.ts` | RED: chamada à seam `syncWorkspace` alcançada; exportação pública ausente |
+| FR-001 | AC-001, AC-002, AC-019 | Unidade/integração | `sync-document-registry.test.ts` | AC-001 RED: contrato espera backend `indexeddb` e `workspaceId`; seam `syncWorkspace` ainda ausente |
 | FR-002 | AC-003, AC-004, AC-020, AC-021, AC-026 | Unidade/contrato | `sync-document-registry.test.ts` | RED: chamada à seam `syncWorkspace` alcançada; exportação pública ausente |
 | FR-003 | AC-005, AC-006, AC-007, AC-022, AC-025, AC-027, AC-030 | Integração | `sync-network-adapters.test.ts` | RED: chamada à seam `syncWorkspace` alcançada; exportação pública ausente |
 | FR-004 | AC-008, AC-009, AC-010, AC-023, AC-029 | Unidade/integração | `sync-repository.test.ts` | RED: chamada à seam `syncWorkspace` alcançada; exportação pública ausente |
@@ -862,20 +928,28 @@ Comando focal: `bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-do
 
 #### Gate do Ato I — Definição
 
-- **Resultado**: Passed em 2026-09-05 — READY; formato válido, cobertura mínima confirmada e fronteiras local-first, relay e edição externa revisadas.
+- **Resultado atual**: Passed em 2026-09-07 — READY; a definição agora declara
+  `app.sqlite` no Tauri e IndexedDB `openbible-workspace` no PWA como backends
+  das notas, com Automerge operacional, Markdown/JSON como exportação/importação
+  explícita e fontes legadas fora do backend ativo.
 - **Comando**: `node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/planned/0019-sincronizacao-local-first-automerge/spec.md --allow-draft`
 - **FIND-SEC-001** [P1] [Resolved] TLS/pairing não declaravam que o relay ainda pode observar ou reter o estado — Refs: FR-003, FR-006, NFR-002, AC-017, AC-018, AC-025 — Evidence: spec.md:90 — Effect: a pessoa poderia interpretar transporte seguro como E2EE e superestimar revogação — Suggestion: resolvido com consentimento explícito, token PWA apenas em memória, ausência de promessa E2EE e aviso de que revogação não apaga cópias entregues.
 - **FIND-ARCH-001** [P2] [Resolved] credencial de relay tinha storage “seguro” genérico apesar de a PWA não possuir cofre equivalente — Refs: AC-018, FR-006 — Evidence: spec.md:151 — Effect: implementação poderia persistir token silenciosamente no browser — Suggestion: resolvido com cofre do SO no Tauri e sessão somente em memória no PWA.
+- **FIND-ARCH-002** [P1] [Resolved] a versão anterior tratava Markdown/JSON como fonte e SQLite como projeção — Refs: FR-001, FR-002, FR-005, NFR-004, AC-002, AC-011, AC-013, AC-020, AC-021 — Evidence: spec.md:44-47, 600-631 — Effect: implementação poderia gravar notas no filesystem/OPFS e divergir da decisão de `app.sqlite`/IndexedDB — Suggestion: resolvido ao tornar `app.sqlite`/IndexedDB os backends operacionais, explicitar migration v3/SQL 003 e limitar arquivos a exportação/importação/recovery.
 
 #### Gate do Ato II — Plano
 
-- **Resultado**: Passed em 2026-09-05 — 45 tarefas materializadas, 30 predecessores TDD concluídos com RED comportamental, todos os 44 IDs cobertos e interface validada.
+- **Resultado atual**: Pending — o plano precisa reconciliar os REDs afetados,
+  incluir migration versionada para `app.sqlite` e upgrade dos object stores
+  IndexedDB, além de atualizar a rastreabilidade.
 - **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/planned/0019-sincronizacao-local-first-automerge/spec.md`
 - **Achados**: `validate_tasks --allow-draft`, `validate_tasks` e `validate_interface_tasks` passaram; o auditor global mantém somente marcadores órfãos históricos de outras specs, fora desta spec.
 
 #### Gate do Ato III — Entrega
 
-- **Resultado**: In Progress em 2026-09-05; somente testes RED foram criados, sem implementação de produção.
+- **Resultado atual**: Pending — nenhuma implementação nova desta revisão foi
+  validada; o resultado anterior fica preservado como histórico e não pode
+  aprovar a persistência corrigida.
 - **Comando**: `node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/planned/0019-sincronizacao-local-first-automerge/spec.md apps/web/src/lib/features/sync`
   - **Achados**: `Rastreabilidade: 44/44 IDs cobertos em 6 arquivos de teste. RESULTADO: OK`. A execução contra a raiz inteira ainda lista marcadores órfãos históricos de outras specs; eles ficam fora do escopo desta spec.
 
@@ -885,21 +959,21 @@ Formato canônico: - [ ] TNNN [TIPO] [US-NNN] Ação com caminho — Refs: IDs �
 
 #### Fase 1 — RED TDD informado pelo BDD
 
-- [x] T001 [TEST] [TDD] [US-001] Derivar teste Vitest do AC-001 em apps/web/src/lib/features/sync/sync-document-registry.test.ts — Refs: US-001, FR-001, NFR-001, AC-001 — Depends: none
-  - [x] **PREP**: Ler o Gherkin do AC-001, confirmar contrato público e preparar fixture determinística.
-  - [x] **EXECUTE**: Escrever um caso Vitest com marcador SPECSFY: US-001 FR-001 NFR-001 AC-001 invocando executeSync, que exige a exportação pública syncWorkspace de $lib/storage/workspace, e sem arquivo feature.
-  - [x] **VERIFY**: Executar bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-document-registry.test.ts e observar RED por comportamento ausente, nunca por importação, sintaxe ou fixture inválida.
-  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste e não altera superfície visual.
-  - [x] **EVIDENCE**: Registrar comando, causa comportamental do RED e IDs nas seções 11–13.
-  - [x] **IMPROVE**: Revisar fixture e seam público, registrando ajuste ou ausência justificada.
+- [x] T001 [TEST] [TDD] [US-001] Reconciliar o teste Vitest do AC-001 com a persistência da nota no backend operacional (`app.sqlite`/IndexedDB) em apps/web/src/lib/features/sync/sync-document-registry.test.ts — Refs: US-001, FR-001, NFR-001, AC-001 — Depends: none
+  - [x] **PREP**: Ler o Gherkin do AC-001, confirmar backend esperado por runtime e preparar fixture determinística.
+  - [x] **EXECUTE**: Reescrever o caso Vitest para provar a reabertura da nota persistida em `app.sqlite`/IndexedDB após reinício sem rede.
+  - [x] **VERIFY**: Executar `bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-document-registry.test.ts`; o RED foi comportamental porque `syncWorkspace` ainda não é exportado.
+  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste de persistência.
+  - [x] **EVIDENCE**: Registrado comando exit 1, backend esperado `indexeddb`, causa do RED e IDs nas seções 11–13.
+  - [x] **IMPROVE**: Fixture explicita `workspaceId` e backend browser, sem depender de path como identidade.
 
-- [x] T002 [TEST] [TDD] [US-001] Derivar teste Vitest do AC-002 em apps/web/src/lib/features/sync/sync-document-registry.test.ts — Refs: US-001, FR-001, NFR-004, AC-002 — Depends: none
-  - [x] **PREP**: Ler o Gherkin do AC-002, confirmar contrato público e preparar fixture determinística.
-  - [x] **EXECUTE**: Escrever um caso Vitest com marcador SPECSFY: US-001 FR-001 NFR-004 AC-002 invocando executeSync, que exige a exportação pública syncWorkspace de $lib/storage/workspace, e sem arquivo feature.
-  - [x] **VERIFY**: Executar bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-document-registry.test.ts e observar RED por comportamento ausente, nunca por importação, sintaxe ou fixture inválida.
-  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste e não altera superfície visual.
-  - [x] **EVIDENCE**: Registrar comando, causa comportamental do RED e IDs nas seções 11–13.
-  - [x] **IMPROVE**: Revisar fixture e seam público, registrando ajuste ou ausência justificada.
+- [ ] T002 [TEST] [TDD] [US-001] Reconciliar o teste Vitest do AC-002 com a abertura da nota no backend operacional sem estado CRDT e a regeneração de exportação em apps/web/src/lib/features/sync/sync-document-registry.test.ts — Refs: US-001, FR-001, NFR-004, AC-002 — Depends: none
+  - [ ] **PREP**: Ler o Gherkin do AC-002, confirmar o backend operacional e preparar fixture sem estado CRDT.
+  - [ ] **EXECUTE**: Reescrever o caso para abrir/editar a nota em `app.sqlite`/IndexedDB e regenerar Markdown/JSON como exportação.
+  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental do contrato ausente, nunca falha estrutural.
+  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de persistência/exportação.
+  - [ ] **EVIDENCE**: Registrar comando, backend exercitado e IDs nas seções 11–13.
+  - [ ] **IMPROVE**: Revisar fixture e ausência de dependência de filesystem/OPFS.
 
 - [x] T003 [TEST] [TDD] [US-001] Derivar teste Vitest do AC-003 em apps/web/src/lib/features/sync/sync-document-registry.test.ts — Refs: US-001, FR-002, NFR-001, AC-003 — Depends: none
   - [x] **PREP**: Ler o Gherkin do AC-003, confirmar contrato público e preparar fixture determinística.
@@ -965,29 +1039,29 @@ Formato canônico: - [ ] TNNN [TIPO] [US-NNN] Ação com caminho — Refs: IDs �
   - [x] **EVIDENCE**: Registrar comando, causa comportamental do RED e IDs nas seções 11–13.
   - [x] **IMPROVE**: Revisar fixture e seam público, registrando ajuste ou ausência justificada.
 
-- [x] T011 [TEST] [TDD] [US-003] Derivar teste Vitest do AC-011 em apps/web/src/lib/features/sync/external-edit-bridge.test.ts — Refs: US-003, FR-005, NFR-004, AC-011 — Depends: none
-  - [x] **PREP**: Ler o Gherkin do AC-011, confirmar contrato público e preparar fixture determinística.
-  - [x] **EXECUTE**: Escrever um caso Vitest com marcador SPECSFY: US-003 FR-005 NFR-004 AC-011 invocando executeSync, que exige a exportação pública syncWorkspace de $lib/storage/workspace, e sem arquivo feature.
-  - [x] **VERIFY**: Executar bun run --cwd apps/web test:tdd -- src/lib/features/sync/external-edit-bridge.test.ts e observar RED por comportamento ausente, nunca por importação, sintaxe ou fixture inválida.
-  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste e não altera superfície visual.
-  - [x] **EVIDENCE**: Registrar comando, causa comportamental do RED e IDs nas seções 11–13.
-  - [x] **IMPROVE**: Revisar fixture e seam público, registrando ajuste ou ausência justificada.
+- [ ] T011 [TEST] [TDD] [US-003] Reconciliar o teste Vitest do AC-011 para importação explícita de exportação/fonte legada em apps/web/src/lib/features/sync/external-edit-bridge.test.ts — Refs: US-003, FR-005, NFR-004, AC-011 — Depends: none
+  - [ ] **PREP**: Ler o Gherkin do AC-011, separar exportação/legado de backend ativo e preparar fixture determinística.
+  - [ ] **EXECUTE**: Reescrever o caso para produzir proposta de importação sem sobrescrever o registro persistido.
+  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental, sem falha estrutural.
+  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de bridge.
+  - [ ] **EVIDENCE**: Registrar comando, origem externa, backend alvo e IDs nas seções 11–13.
+  - [ ] **IMPROVE**: Revisar fixture, gerações e recuperação.
 
-- [x] T012 [TEST] [TDD] [US-003] Derivar teste Vitest do AC-012 em apps/web/src/lib/features/sync/external-edit-bridge.test.ts — Refs: US-003, FR-005, NFR-002, AC-012 — Depends: none
-  - [x] **PREP**: Ler o Gherkin do AC-012, confirmar contrato público e preparar fixture determinística.
-  - [x] **EXECUTE**: Escrever um caso Vitest com marcador SPECSFY: US-003 FR-005 NFR-002 AC-012 invocando executeSync, que exige a exportação pública syncWorkspace de $lib/storage/workspace, e sem arquivo feature.
-  - [x] **VERIFY**: Executar bun run --cwd apps/web test:tdd -- src/lib/features/sync/external-edit-bridge.test.ts e observar RED por comportamento ausente, nunca por importação, sintaxe ou fixture inválida.
-  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste e não altera superfície visual.
-  - [x] **EVIDENCE**: Registrar comando, causa comportamental do RED e IDs nas seções 11–13.
-  - [x] **IMPROVE**: Revisar fixture e seam público, registrando ajuste ou ausência justificada.
+- [ ] T012 [TEST] [TDD] [US-003] Reconciliar o teste Vitest do AC-012 para preservar conflito entre importação externa e registro persistido em apps/web/src/lib/features/sync/external-edit-bridge.test.ts — Refs: US-003, FR-005, NFR-002, AC-012 — Depends: none
+  - [ ] **PREP**: Ler o Gherkin do AC-012 e preparar versões externa/importada e persistida.
+  - [ ] **EXECUTE**: Reescrever o caso para manter ambas as versões recuperáveis sem substituir a nota do backend.
+  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental, sem falha estrutural.
+  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de conflito.
+  - [ ] **EVIDENCE**: Registrar comando, referências de recuperação e IDs nas seções 11–13.
+  - [ ] **IMPROVE**: Revisar fixture e ausência de overwrite silencioso.
 
-- [x] T013 [TEST] [TDD] [US-003] Derivar teste Vitest do AC-013 em apps/web/src/lib/features/sync/external-edit-bridge.test.ts — Refs: US-003, FR-005, NFR-001, AC-013 — Depends: none
-  - [x] **PREP**: Ler o Gherkin do AC-013, confirmar contrato público e preparar fixture determinística.
-  - [x] **EXECUTE**: Escrever um caso Vitest com marcador SPECSFY: US-003 FR-005 NFR-001 AC-013 invocando executeSync, que exige a exportação pública syncWorkspace de $lib/storage/workspace, e sem arquivo feature.
-  - [x] **VERIFY**: Executar bun run --cwd apps/web test:tdd -- src/lib/features/sync/external-edit-bridge.test.ts e observar RED por comportamento ausente, nunca por importação, sintaxe ou fixture inválida.
-  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste e não altera superfície visual.
-  - [x] **EVIDENCE**: Registrar comando, causa comportamental do RED e IDs nas seções 11–13.
-  - [x] **IMPROVE**: Revisar fixture e seam público, registrando ajuste ou ausência justificada.
+- [ ] T013 [TEST] [TDD] [US-003] Reconciliar o teste Vitest do AC-013 para reconstruir projeção sem depender de `.openbible/index.sqlite` em apps/web/src/lib/features/sync/external-edit-bridge.test.ts — Refs: US-003, FR-005, NFR-001, AC-013 — Depends: none
+  - [ ] **PREP**: Ler o Gherkin do AC-013 e preparar backend operacional com projeção ausente.
+  - [ ] **EXECUTE**: Reescrever o caso para abrir a nota no backend e reconstruir a projeção sem consultar `.openbible/index.sqlite`.
+  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental, sem falha estrutural.
+  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de recuperação.
+  - [ ] **EVIDENCE**: Registrar comando, backend, projeção e IDs nas seções 11–13.
+  - [ ] **IMPROVE**: Revisar fixture e idempotência do rebuild.
 
 - [x] T014 [TEST] [TDD] [US-003] Derivar teste Vitest do AC-014 em apps/web/src/lib/features/sync/sync-envelope-guard.test.ts — Refs: US-003, FR-006, NFR-002, AC-014 — Depends: none
   - [x] **PREP**: Ler o Gherkin do AC-014, confirmar contrato público e preparar fixture determinística.
@@ -1037,37 +1111,37 @@ Formato canônico: - [ ] TNNN [TIPO] [US-NNN] Ação com caminho — Refs: IDs �
   - [x] **EVIDENCE**: Registrar comando, causa comportamental do RED e IDs nas seções 11–13.
   - [x] **IMPROVE**: Revisar fixture e seam público, registrando ajuste ou ausência justificada.
 
-- [x] T020 [TEST] [TDD] [US-001] Derivar teste Vitest do AC-020 em apps/web/src/lib/features/sync/sync-document-registry.test.ts — Refs: US-001, FR-002, NFR-004, AC-020 — Depends: none
-  - [x] **PREP**: Ler o Gherkin do AC-020, confirmar contrato público e preparar fixture determinística.
-  - [x] **EXECUTE**: Escrever um caso Vitest com marcador SPECSFY: US-001 FR-002 NFR-004 AC-020 invocando executeSync, que exige a exportação pública syncWorkspace de $lib/storage/workspace, e sem arquivo feature.
-  - [x] **VERIFY**: Executar bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-document-registry.test.ts e observar RED por comportamento ausente, nunca por importação, sintaxe ou fixture inválida.
-  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste e não altera superfície visual.
-  - [x] **EVIDENCE**: Registrar comando, causa comportamental do RED e IDs nas seções 11–13.
-  - [x] **IMPROVE**: Revisar fixture e seam público, registrando ajuste ou ausência justificada.
+- [ ] T020 [TEST] [TDD] [US-001] Reconciliar o teste Vitest do AC-020 para provar persistência da nota e do estado CRDT no `app.sqlite` do Tauri em apps/web/src/lib/features/sync/sync-document-registry.test.ts — Refs: US-001, FR-002, NFR-004, AC-020 — Depends: none
+  - [ ] **PREP**: Ler o Gherkin do AC-020, confirmar `app.sqlite`, migration e `workspaceId`, e preparar fixture determinística.
+  - [ ] **EXECUTE**: Reescrever o caso Vitest para provar que o Tauri grava nota e estado CRDT no `app.sqlite`, sem filesystem como backend ativo.
+  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental, sem falha estrutural.
+  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de boundary nativo.
+  - [ ] **EVIDENCE**: Registrar comando, migration, backend exercitado e IDs nas seções 11–13.
+  - [ ] **IMPROVE**: Revisar fixture, allowlist e isolamento por `workspaceId`.
 
-- [x] T021 [TEST] [TDD] [US-001] Derivar teste Vitest do AC-021 em apps/web/src/lib/features/sync/sync-document-registry.test.ts — Refs: US-001, FR-002, NFR-004, AC-021 — Depends: none
-  - [x] **PREP**: Ler o Gherkin do AC-021, confirmar contrato público e preparar fixture determinística.
-  - [x] **EXECUTE**: Escrever um caso Vitest com marcador SPECSFY: US-001 FR-002 NFR-004 AC-021 invocando executeSync, que exige a exportação pública syncWorkspace de $lib/storage/workspace, e sem arquivo feature.
-  - [x] **VERIFY**: Executar bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-document-registry.test.ts e observar RED por comportamento ausente, nunca por importação, sintaxe ou fixture inválida.
-  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste e não altera superfície visual.
-  - [x] **EVIDENCE**: Registrar comando, causa comportamental do RED e IDs nas seções 11–13.
-  - [x] **IMPROVE**: Revisar fixture e seam público, registrando ajuste ou ausência justificada.
+- [ ] T021 [TEST] [TDD] [US-001] Reconciliar o teste Vitest do AC-021 para provar persistência da nota e do estado CRDT no IndexedDB `openbible-workspace` em apps/web/src/lib/features/sync/sync-document-registry.test.ts — Refs: US-001, FR-002, NFR-004, AC-021 — Depends: none
+  - [ ] **PREP**: Ler o Gherkin do AC-021, confirmar banco `openbible-workspace`, stores versionados e `workspaceId`.
+  - [ ] **EXECUTE**: Reescrever o caso Vitest para provar persistência da nota e do estado CRDT no IndexedDB, sem OPFS/FSA/service worker como backend.
+  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental, sem falha estrutural.
+  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de boundary PWA.
+  - [ ] **EVIDENCE**: Registrar comando, stores, backend exercitado e IDs nas seções 11–13.
+  - [ ] **IMPROVE**: Revisar fixture, upgrade de schema e isolamento por `workspaceId`.
 
-- [x] T022 [TEST] [TDD] [US-002] Derivar teste Vitest do AC-022 em apps/web/src/lib/features/sync/sync-network-adapters.test.ts — Refs: US-002, FR-003, NFR-003, AC-022 — Depends: none
-  - [x] **PREP**: Ler o Gherkin do AC-022, confirmar contrato público e preparar fixture determinística.
-  - [x] **EXECUTE**: Escrever um caso Vitest com marcador SPECSFY: US-002 FR-003 NFR-003 AC-022 invocando executeSync, que exige a exportação pública syncWorkspace de $lib/storage/workspace, e sem arquivo feature.
-  - [x] **VERIFY**: Executar bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-network-adapters.test.ts e observar RED por comportamento ausente, nunca por importação, sintaxe ou fixture inválida.
-  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste e não altera superfície visual.
-  - [x] **EVIDENCE**: Registrar comando, causa comportamental do RED e IDs nas seções 11–13.
-  - [x] **IMPROVE**: Revisar fixture e seam público, registrando ajuste ou ausência justificada.
+- [ ] T022 [TEST] [TDD] [US-002] Reconciliar o teste Vitest do AC-022 para manter o registro persistido intacto sob backpressure em apps/web/src/lib/features/sync/sync-network-adapters.test.ts — Refs: US-002, FR-003, NFR-003, AC-022 — Depends: none
+  - [ ] **PREP**: Ler o Gherkin do AC-022 e preparar fila vinculada a uma nota persistida no backend ativo.
+  - [ ] **EXECUTE**: Reescrever o caso para provar backpressure sem sobrescrever/remover o último registro do backend.
+  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental, sem falha estrutural.
+  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de fila.
+  - [ ] **EVIDENCE**: Registrar comando, métricas da fila, backend e IDs nas seções 11–13.
+  - [ ] **IMPROVE**: Revisar fixture e limite configurável.
 
-- [x] T023 [TEST] [TDD] [US-002] Derivar teste Vitest do AC-023 em apps/web/src/lib/features/sync/sync-repository.test.ts — Refs: US-002, FR-004, NFR-003, AC-023 — Depends: none
-  - [x] **PREP**: Ler o Gherkin do AC-023, confirmar contrato público e preparar fixture determinística.
-  - [x] **EXECUTE**: Escrever um caso Vitest com marcador SPECSFY: US-002 FR-004 NFR-003 AC-023 invocando executeSync, que exige a exportação pública syncWorkspace de $lib/storage/workspace, e sem arquivo feature.
-  - [x] **VERIFY**: Executar bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-repository.test.ts e observar RED por comportamento ausente, nunca por importação, sintaxe ou fixture inválida.
-  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste e não altera superfície visual.
-  - [x] **EVIDENCE**: Registrar comando, causa comportamental do RED e IDs nas seções 11–13.
-  - [x] **IMPROVE**: Revisar fixture e seam público, registrando ajuste ou ausência justificada.
+- [ ] T023 [TEST] [TDD] [US-002] Reconciliar o teste Vitest do AC-023 para compactar estado sem remover a nota do backend operacional em apps/web/src/lib/features/sync/sync-repository.test.ts — Refs: US-002, FR-004, NFR-003, AC-023 — Depends: none
+  - [ ] **PREP**: Ler o Gherkin do AC-023 e preparar snapshot verificável no backend operacional.
+  - [ ] **EXECUTE**: Reescrever o caso para compactar CRDT sem remover a nota de `app.sqlite`/IndexedDB.
+  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental, sem falha estrutural.
+  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de compactação.
+  - [ ] **EVIDENCE**: Registrar comando, snapshot, backend e IDs nas seções 11–13.
+  - [ ] **IMPROVE**: Revisar fixture e recuperação após compactação.
 
 - [x] T024 [TEST] [TDD] [US-004] Derivar teste Vitest do AC-024 em apps/web/src/lib/features/sync/sync-envelope-guard.test.ts — Refs: US-004, FR-006, NFR-002, AC-024 — Depends: none
   - [x] **PREP**: Ler o Gherkin do AC-024, confirmar contrato público e preparar fixture determinística.
@@ -1101,13 +1175,13 @@ Formato canônico: - [ ] TNNN [TIPO] [US-NNN] Ação com caminho — Refs: IDs �
   - [x] **EVIDENCE**: Registrar comando, causa comportamental do RED e IDs nas seções 11–13.
   - [x] **IMPROVE**: Revisar fixture e seam público, registrando ajuste ou ausência justificada.
 
-- [x] T028 [TEST] [TDD] [US-003] Derivar teste Vitest do AC-028 em apps/web/src/lib/features/sync/sync-envelope-guard.test.ts — Refs: US-003, FR-006, NFR-004, AC-028 — Depends: none
-  - [x] **PREP**: Ler o Gherkin do AC-028, confirmar contrato público e preparar fixture determinística.
-  - [x] **EXECUTE**: Escrever um caso Vitest com marcador SPECSFY: US-003 FR-006 NFR-004 AC-028 invocando executeSync, que exige a exportação pública syncWorkspace de $lib/storage/workspace, e sem arquivo feature.
-  - [x] **VERIFY**: Executar bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-envelope-guard.test.ts e observar RED por comportamento ausente, nunca por importação, sintaxe ou fixture inválida.
-  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste e não altera superfície visual.
-  - [x] **EVIDENCE**: Registrar comando, causa comportamental do RED e IDs nas seções 11–13.
-  - [x] **IMPROVE**: Revisar fixture e seam público, registrando ajuste ou ausência justificada.
+- [ ] T028 [TEST] [TDD] [US-003] Reconciliar o teste Vitest do AC-028 para rejeitar projeções e banco bruto no payload, permitindo apenas deltas/documentos autorizados em apps/web/src/lib/features/sync/sync-envelope-guard.test.ts — Refs: US-003, FR-006, NFR-004, AC-028 — Depends: none
+  - [ ] **PREP**: Ler o Gherkin do AC-028 e preparar banco bruto, projeção e delta autorizado como fixture.
+  - [ ] **EXECUTE**: Reescrever o caso para rejeitar `app.sqlite`, IndexedDB, `.openbible/index.sqlite` e projeções no payload.
+  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental, sem falha estrutural.
+  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de segurança do envelope.
+  - [ ] **EVIDENCE**: Registrar comando, campos rejeitados/aceitos e IDs nas seções 11–13.
+  - [ ] **IMPROVE**: Revisar fixture e ausência de vazamento de path, índice ou banco bruto.
 
 - [x] T029 [TEST] [TDD] [US-001] Derivar teste Vitest do AC-029 em apps/web/src/lib/features/sync/sync-repository.test.ts — Refs: US-001, FR-003, NFR-001, AC-029 — Depends: none
   - [x] **PREP**: Ler o Gherkin do AC-029, confirmar contrato público e preparar fixture determinística.
@@ -1127,7 +1201,7 @@ Formato canônico: - [ ] TNNN [TIPO] [US-NNN] Ação com caminho — Refs: IDs �
 
 #### Fase 2 — Código e contratos
 
-- [ ] T031 [CODE] Implementar registry, contratos de documento e guard de envelope em apps/web/src/lib/features/sync/ — Refs: US-001, US-003, US-004, FR-001, FR-006, NFR-002, NFR-004, AC-001, AC-002, AC-014, AC-015, AC-016, AC-018, AC-024, AC-028 — Depends: T001, T002, T014, T015, T016, T018, T024, T028
+- [ ] T031 [CODE] Implementar registry, contratos de documento vinculados ao registro do backend e guard de envelope em apps/web/src/lib/features/sync/ — Refs: US-001, US-003, US-004, FR-001, FR-006, NFR-002, NFR-004, AC-001, AC-002, AC-014, AC-015, AC-016, AC-018, AC-024, AC-028 — Depends: T001, T002, T014, T015, T016, T018, T024, T028
   - [ ] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace.
   - [ ] **EXECUTE**: Implementar a menor entrega compatível com os contratos públicos e executar o documentator antes do fechamento.
   - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
@@ -1135,15 +1209,15 @@ Formato canônico: - [ ] TNNN [TIPO] [US-NNN] Ação com caminho — Refs: IDs �
   - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
   - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
 
-- [ ] T032 [CODE] Implementar adapters locais PWA/Tauri e fila persistente em apps/web/src/lib/features/sync/sync-storage-adapters.ts — Refs: US-001, US-002, FR-002, NFR-001, NFR-003, NFR-004, AC-003, AC-004, AC-020, AC-021, AC-026 — Depends: T003, T004, T020, T021, T026
-  - [ ] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace.
-  - [ ] **EXECUTE**: Implementar a menor entrega compatível com os contratos públicos e executar o documentator antes do fechamento.
+- [ ] T032 [CODE] Implementar adapters locais PWA/Tauri e fila persistente em `app.sqlite`/IndexedDB em apps/web/src/lib/features/sync/sync-storage-adapters.ts, com `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` e upgrade v3 de object stores em `openbible-workspace` — Refs: US-001, US-002, FR-002, NFR-001, NFR-003, NFR-004, AC-003, AC-004, AC-020, AC-021, AC-026 — Depends: T003, T004, T020, T021, T026
+  - [ ] **PREP**: Confirmar RED dos predecessores, o schema v2 existente, o `workspaceId` obrigatório e a fronteira entre backend ativo e fontes legadas.
+  - [ ] **EXECUTE**: Criar migration SQL versionada para `app.sqlite`, upgrade transacional dos object stores no IndexedDB `openbible-workspace` e adapters equivalentes; não criar estado ativo em `.openbible/index.sqlite`, OPFS ou filesystem.
   - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
   - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
   - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
   - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
 
-- [ ] T033 [CODE] Implementar facade de repository, adapters local/WebSocket, retry e backpressure em apps/web/src/lib/features/sync/sync-repository.ts — Refs: US-002, US-004, FR-003, NFR-001, NFR-003, AC-005, AC-006, AC-007, AC-022, AC-025, AC-027, AC-030 — Depends: T005, T006, T007, T022, T025, T027, T030
+- [ ] T033 [CODE] Implementar facade de repository sobre o backend operacional, adapters local/WebSocket, retry e backpressure em apps/web/src/lib/features/sync/sync-repository.ts — Refs: US-002, US-004, FR-003, NFR-001, NFR-003, AC-005, AC-006, AC-007, AC-022, AC-025, AC-027, AC-030 — Depends: T005, T006, T007, T022, T025, T027, T030
   - [ ] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace.
   - [ ] **EXECUTE**: Implementar a menor entrega compatível com os contratos públicos e executar o documentator antes do fechamento.
   - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
@@ -1159,7 +1233,7 @@ Formato canônico: - [ ] TNNN [TIPO] [US-NNN] Ação com caminho — Refs: IDs �
   - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
   - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
 
-- [ ] T035 [CODE] Implementar materializer e rebuild posterior do índice em apps/web/src/lib/features/sync/sync-materializer.ts — Refs: US-003, FR-005, NFR-001, NFR-004, AC-011, AC-012, AC-013 — Depends: T011, T012, T013
+- [ ] T035 [CODE] Implementar aplicação de snapshots ao backend operacional, exportação e rebuild posterior das projeções em apps/web/src/lib/features/sync/sync-materializer.ts — Refs: US-003, FR-005, NFR-001, NFR-004, AC-011, AC-012, AC-013 — Depends: T011, T012, T013
   - [ ] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace.
   - [ ] **EXECUTE**: Implementar a menor entrega compatível com os contratos públicos e executar o documentator antes do fechamento.
   - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
@@ -1201,9 +1275,9 @@ Formato canônico: - [ ] TNNN [TIPO] [US-NNN] Ação com caminho — Refs: IDs �
   - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
   - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
 
-- [ ] T040 [CODE] Integrar comandos allowlisted no Tauri em apps/desktop/src-tauri/src/commands/sync.rs — Refs: US-001, US-002, FR-002, FR-003, NFR-001, NFR-004, AC-005, AC-020, AC-030 — Depends: T005, T020, T030
-  - [ ] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace.
-  - [ ] **EXECUTE**: Implementar a menor entrega compatível com os contratos públicos e executar o documentator antes do fechamento.
+- [ ] T040 [CODE] Integrar comandos allowlisted no Tauri e a persistência em `app.sqlite` em apps/desktop/src-tauri/src/commands/sync.rs — Refs: US-001, US-002, FR-002, FR-003, NFR-001, NFR-004, AC-005, AC-020, AC-030 — Depends: T005, T020, T030
+  - [ ] **PREP**: Confirmar RED dos predecessores, migrations versionadas, escopo por `workspaceId` e ausência de SQL/path arbitrário vindo da UI.
+  - [ ] **EXECUTE**: Implementar comandos allowlisted que leem/escrevem notas e estado CRDT em `app.sqlite`, sem expor o filesystem como backend ativo, e executar o documentator antes do fechamento.
   - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
   - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
   - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
@@ -1225,17 +1299,17 @@ Formato canônico: - [ ] TNNN [TIPO] [US-NNN] Ação com caminho — Refs: IDs �
   - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
   - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
 
-- [ ] T043 [CODE] Atualizar .specsfy/DATABASE.md com estado CRDT operacional e projeções locais — Refs: FR-001, FR-002, FR-004, FR-005, NFR-004, AC-002, AC-009, AC-013 — Depends: T002, T009, T013
-  - [ ] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace.
-  - [ ] **EXECUTE**: Implementar a menor entrega compatível com os contratos públicos e executar o documentator antes do fechamento.
+- [ ] T043 [CODE] Atualizar .specsfy/DATABASE.md com notas, estado CRDT, fila, peers, conflitos e projeções em `app.sqlite`/IndexedDB — Refs: FR-001, FR-002, FR-004, FR-005, NFR-004, AC-002, AC-009, AC-013 — Depends: T002, T009, T013
+  - [ ] **PREP**: Confirmar migrations, tabelas/object stores, campos, chaves por `workspaceId` e fontes legadas somente para recovery.
+  - [ ] **EXECUTE**: Registrar o inventário completo de notas, estado CRDT, fila, peers, conflitos e projeções nos dois backends, preservando `.openbible/index.sqlite` como legado e executar o documentator antes do fechamento.
   - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
   - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
   - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
   - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
 
-- [ ] T044 [CODE] Atualizar .specsfy/RULES.md e PROJECT.md com sync opt-in e ausência de relay obrigatório — Refs: FR-003, FR-006, NFR-001, NFR-002, AC-006, AC-018, AC-029 — Depends: T006, T018, T029
-  - [ ] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace.
-  - [ ] **EXECUTE**: Implementar a menor entrega compatível com os contratos públicos e executar o documentator antes do fechamento.
+- [ ] T044 [CODE] Atualizar .specsfy/RULES.md e PROJECT.md com sync opt-in, backend de notas em `app.sqlite`/IndexedDB e ausência de relay obrigatório — Refs: FR-002, FR-003, FR-006, NFR-001, NFR-002, AC-006, AC-018, AC-029 — Depends: T006, T018, T029
+  - [ ] **PREP**: Confirmar que a regra vigente descreve `app.sqlite` no Tauri, IndexedDB no PWA, `workspaceId` e fontes legadas.
+  - [ ] **EXECUTE**: Atualizar somente as projeções derivadas de regra e finalidade, sem transformar esta tarefa em nova fonte normativa; executar o documentator antes do fechamento.
   - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
   - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
   - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
@@ -1257,9 +1331,12 @@ As tarefas T041–T044 mantêm projeções derivadas sem criar fonte normativa p
 
 ### 15. Ordem de execução
 
-- Caminho crítico: T001/T002/T014/T016 → T031 → T032/T033/T034/T035/T036 → T037/T038/T039/T040 → T041/T042/T043/T044 → T045.
+- Caminho crítico: T001/T002/T014/T016 → T031 → T032 [MIGRATION] → T033/T034/T035/T036 → T037/T038/T039/T040 → T041/T042/T043/T044 → T045.
 - Tarefas paralelas: T001–T030 podem ser materializadas em paralelo por arquivo/seam; T037, T038 e T039 podem ser implementadas em paralelo após os contratos.
-- Estratégia de MVP: storage local, registry, sync por documento, WebSocket opt-in, materialização segura, policy de peer e configuração mínima; compactação avançada e transports adicionais ficam posteriores.
+- Estratégia de MVP: backend local comum com notas em `app.sqlite`/IndexedDB,
+  registry, sync por documento, WebSocket opt-in, aplicação segura de snapshots,
+  exportação/importação explícita, policy de peer e configuração mínima;
+  compactação avançada e transports adicionais ficam posteriores.
 
 ## Ato III — Entregar e validar
 
@@ -1276,13 +1353,15 @@ As tarefas T041–T044 mantêm projeções derivadas sem criar fonte normativa p
   cópias recuperáveis e revisão explícita.
 - Crescimento do histórico → snapshots, compactação observável e limites.
 - Relay inseguro ou indisponível → opt-in, TLS/auth exigidos, fallback local.
-- Dois backends divergentes → contrato de adapters, fixtures equivalentes e
-  reconstrução do índice.
+- Dois backends divergentes → contrato de adapters, fixtures equivalentes,
+  migrations versionadas e paridade de notas/estado entre `app.sqlite` e
+  IndexedDB.
 
 #### Suposições
 
-- A pessoa aceita que Automerge seja operacional e que Markdown/JSON sejam a
-  saída portátil principal.
+- A pessoa aceita que Automerge seja operacional, que `app.sqlite` no Tauri e
+  IndexedDB no PWA sejam os backends das notas e que Markdown/JSON sejam a
+  saída portátil principal e uma entrada explícita de migration/recovery.
 - O primeiro transporte remoto será WebSocket configurável; outros são extensões.
 - O PWA não depende de servidor interno persistente; service worker permanece
   app shell/cache, não backend de sync.
@@ -1291,21 +1370,27 @@ As tarefas T041–T044 mantêm projeções derivadas sem criar fonte normativa p
 
 - **DEC-001**: Automerge por documento autoral estável — reduz documento gigante,
   permite sync seletivo e acompanha o protocolo oficial por documento.
-- **DEC-002**: Markdown/JSON continuam fontes — preserva Files over Apps,
-  Obsidian/GitHub/PDF e backup sem dependência do CRDT.
-- **DEC-003**: SQLite é projeção — evita conflito binário e mantém rebuild por
-  `sql.js`/rusqlite.
+- **DEC-002**: `app.sqlite` no Tauri e IndexedDB no PWA são os backends
+  operacionais das notas e do workspace; ambos são acessados por contrato comum
+  escopado por `workspaceId`.
+- **DEC-003**: Automerge replica documentos e deltas, mas não sincroniza o banco
+  bruto; snapshots são aplicados ao backend operacional e as projeções são
+  reconstruíveis.
 - **DEC-004**: transportes são adapters opcionais — PWA/Tauri mantêm uso local;
   WebSocket é extensão, não fundamento de disponibilidade.
 - **DEC-005**: relay próprio em produção — servidor público/exemplo não oferece
   garantias de segurança e confiabilidade.
-- **DEC-006**: credenciais, paths, handles, catálogo, cache e índice não
+- **DEC-006**: credenciais, paths, handles, catálogo, cache, `.openbible/index.sqlite`
+  e bancos brutos não
   sincronizam — reduz vazamento e mantém identidade dependente do dispositivo.
 - **DEC-007**: bridge para edição externa — convergência do estado não garante
   merge semântico seguro de um arquivo alterado fora do app.
 - **DEC-008**: relay confiável sem promessa de E2EE na primeira fatia — TLS
   protege trânsito, mas o servidor pode observar/reter estado; revogação só
   bloqueia tráfego futuro e não apaga cópias já entregues.
+- **DEC-009**: Markdown/JSON são exportações portáteis e entradas explícitas de
+  migração/recovery; `.openbible/index.sqlite`, filesystem e OPFS não são
+  backends ativos.
 
 ### 18. Definition of Done
 
@@ -1315,4 +1400,11 @@ As tarefas T041–T044 mantêm projeções derivadas sem criar fonte normativa p
 - [ ] Todos os ACs aplicáveis passam após as fases 6 e 7.
 - [ ] Todos os requisitos possuem evidência de verificação.
 - [ ] Tarefas, testes e documentação são concluídos em fases posteriores.
-- [ ] `.specsfy/DATABASE.md` e `PROJECT.md` refletem a persistência operacional e a capacidade quando implementadas.
+- [ ] Notas, estado CRDT, fila, peers e conflitos persistem com paridade de
+  contrato em `app.sqlite` no Tauri e IndexedDB `openbible-workspace` no PWA,
+  sempre escopados por `workspaceId`.
+- [ ] `.specsfy/DATABASE.md`, `.specsfy/STACK.md`, `PROJECT.md` e a
+  documentação técnica refletem a persistência operacional e a capacidade
+  quando implementadas.
+- [ ] Markdown/JSON foram verificados como exportação/importação explícita e
+  `.openbible/index.sqlite` não foi usado como backend ativo ou payload de sync.

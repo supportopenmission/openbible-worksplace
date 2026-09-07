@@ -2,11 +2,25 @@ import { expect, it } from 'vitest';
 import { createSyncFixture, executeSync, offlineNote } from './sync-test-fixtures';
 
 // SPECSFY: US-001 FR-001 NFR-001 AC-001
-it('AC-001 persists an offline edit in the sync document manifest', async () => {
+it('AC-001 persists an offline note in the runtime backend', async () => {
   const storage = await createSyncFixture();
-  const manifest = await executeSync(storage, { type: 'save', path: 'notes/studies/offline.md', content: offlineNote.replace('legível', 'preservada') });
-  expect(manifest.documents).toBeDefined();
-  expect(manifest.documents).toContainEqual({ documentId: 'note-offline-001', relativePath: 'notes/studies/offline.md', pending: true });
+  const manifest = await executeSync(storage, {
+    type: 'save',
+    path: 'notes/studies/offline.md',
+    content: offlineNote.replace('legível', 'preservada'),
+    workspaceId: 'workspace-sync-001',
+    storageKind: 'browser'
+  });
+  expect(manifest).toMatchObject({
+    backend: 'indexeddb',
+    workspaceId: 'workspace-sync-001',
+    localSaveConfirmed: true
+  });
+  expect(manifest.documents).toContainEqual({
+    documentId: 'note-offline-001',
+    workspaceId: 'workspace-sync-001',
+    pending: true
+  });
 });
 
 // SPECSFY: US-001 FR-001 NFR-004 AC-002
