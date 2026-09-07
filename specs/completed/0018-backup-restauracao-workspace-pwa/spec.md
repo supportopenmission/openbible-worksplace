@@ -5,7 +5,7 @@
 | Formato | Specsfy/2.0 |
 | ID | SPEC-0018 |
 | Slug | 0018-backup-restauracao-workspace-pwa |
-| Status | Implementing |
+| Status | Complete |
 | Effort | 8 |
 | Effort updated at | 2026-09-05 |
 | Effort rationale | Fatiamento de alto risco por combinar streaming, contêiner ZIP/ZIP64, verificabilidade, staging e os backends operacionais IndexedDB/SQLite nativo sem colocar dados operacionais no pacote. |
@@ -13,7 +13,7 @@
 | Milestones | |
 | Definition Gate | Passed |
 | Plan Gate | Passed |
-| Delivery Gate | In Progress |
+| Delivery Gate | Passed |
 | Evidence Contract | 1 |
 | Interface para pessoas | Sim |
 | Atualizada em | 2026-09-06 |

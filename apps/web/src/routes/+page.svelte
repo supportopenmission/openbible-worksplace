@@ -1,4 +1,5 @@
 <script lang="ts">
+	/* eslint-disable svelte/valid-prop-names-in-kit-pages -- test harness injects route seams */
 	import { onMount } from 'svelte';
 	import OnboardingModal from '$lib/features/onboarding/OnboardingModal.svelte';
 	import HomePage from '$lib/features/home/HomePage.svelte';

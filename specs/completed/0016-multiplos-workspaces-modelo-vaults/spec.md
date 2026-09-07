@@ -5,7 +5,7 @@
 | Formato | Specsfy/2.0 |
 | ID | SPEC-0016 |
 | Slug | 0016-multiplos-workspaces-modelo-vaults |
-| Status | Implementing |
+| Status | Complete |
 | Effort | 9 |
 | Effort updated at | 2026-09-06 |
 | Effort rationale | A atualização troca os backends ativos de filesystem por SQLite nativo no Tauri e IndexedDB no PWA, preserva migração legada, exige paridade transacional, isolamento por workspace e replanejamento da persistência antes de retomar a implementação. |
@@ -13,7 +13,7 @@
 | Milestones | |
 | Definition Gate | Passed |
 | Plan Gate | Passed |
-| Delivery Gate | In Progress |
+| Delivery Gate | Passed |
 | Evidence Contract | 1 |
 | Interface para pessoas | Sim |
 | Atualizada em | 2026-09-06 |
@@ -1443,9 +1443,11 @@ A coluna mantém “Não aplicável” para React porque a aplicação usa Svelt
 
 - [x] `Definition Gate` está `Passed` após a revisão de 2026-09-06.
 - [x] `Plan Gate` está `Passed` após T030–T038 serem materializadas com RED válido e o plano T030–T053 ser validado.
-- [ ] `Delivery Gate` está `Pending`; a implementação da arquitetura revisada está autorizada pelo Plan Gate, mas ainda não foi concluída.
-- [ ] Os cenários AC-013–AC-021 passam nos adapters SQLite e IndexedDB.
-- [ ] Todos os requisitos FR/NFR revisados possuem evidência de verificação.
-- [ ] Todas as tarefas vigentes da seção 14 estão concluídas.
-- [ ] Testes, checks estáticos, migrações e documentação da arquitetura revisada passam.
-- [ ] O contrato `WorkspaceExportSource` está pronto para a spec de parser/exportação Markdown/PDF, sem implementar essa exportação nesta fatia.
+- [x] `Delivery Gate` está `Passed`; a implementação da arquitetura revisada foi concluída e verificada.
+- [x] Os cenários AC-013–AC-021 passam nos adapters SQLite e IndexedDB.
+- [x] Todos os requisitos FR/NFR revisados possuem evidência de verificação.
+- [x] Todas as tarefas vigentes da seção 14 estão concluídas.
+- [x] Testes, checks estáticos, migrações e documentação da arquitetura revisada passam; o baseline global documentado permanece fora da fatia.
+- [x] O contrato `WorkspaceExportSource` está pronto para a spec de parser/exportação Markdown/PDF, sem implementar essa exportação nesta fatia.
+
+Estado desta fase: Complete. Definition, Plan e Delivery Gate estão Passed.

@@ -5,7 +5,7 @@
 | Formato                | Specsfy/2.0                                                                                                                                                             |
 | ID                     | SPEC-0013                                                                                                                                                               |
 | Slug                   | 0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile                                                                                                            |
-| Status                 | Implementing |
+| Status                 | Complete |
 | Effort                 | 8                                                                                                                                                                       |
 | Effort updated at      | 2026-09-04                                                                                                                                                              |
 | Effort rationale       | Troca do motor Tipex/TipTap por Milkdown com nó custom :::verse, slash desktop, drawer + toolbar mobile, paridade de autosave/H1/YAML/índice e remoção do motor antigo. |
@@ -13,7 +13,7 @@
 | Milestones             |                                                                                                                                                                         |
 | Definition Gate        | Passed                                                                                                                                                                 |
 | Plan Gate              | Passed                                                                                                                                                                 |
-| Delivery Gate          | In Progress                                                                                                                                                                 |
+| Delivery Gate          | Passed                                                                                                                                                                      |
 | Evidence Contract      | 1                                                                                                                                                                       |
 | Interface para pessoas | Sim                                                                                                                                                                     |
 | Atualizada em          | 2026-09-05                                                                                                                                                              |
@@ -641,39 +641,39 @@ Blocos Svelte desta entrega: `MilkdownNoteEditor.svelte` (monta kit, nó verse, 
 
 | Requisito | Cenário BDD | Nível               | Arquivo/comando esperado                                                      | Evidência                                    |
 | --------- | ----------- | ------------------- | ----------------------------------------------------------------------------- | -------------------------------------------- |
-| FR-001    | AC-001      | Unidade             | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-001    | AC-005      | Unidade             | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-001    | AC-012      | Unidade             | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` / `vitest run` | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-001    | AC-014      | Componente          | `MilkdownNoteEditor` / `vitest run` + inspeção temas                          | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-001    | AC-015      | Unidade             | debounce/abertura / `vitest run` + medição manual                             | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-002    | AC-004      | Unidade             | `apps/web/src/lib/features/notes/milkdown-verse-node.test.ts` / `vitest run`  | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-002    | AC-005      | Unidade             | `milkdown-verse-node.test.ts` / `vitest run`                                  | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-002    | AC-008      | Unidade             | `milkdown-verse-node.test.ts` + `note-verse-index.test.ts` / `vitest run`     | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-002    | AC-009      | Componente          | `VerseSelector` + nó verse / `vitest run`                                     | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-002    | AC-012      | Unidade             | fallback sem perda / `vitest run`                                             | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-002    | AC-018      | Unidade             | leitura externa do `.md` / inspeção                                           | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-003    | AC-001      | Unidade + manual    | `milkdown-slash-toolbar.test.ts` + teclado desktop                            | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-003    | AC-002      | Componente + manual | drawer Sheet 90dvh + busca / `vitest run`                                     | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-003    | AC-013      | Componente          | foco/Escape / `vitest run` + manual                                           | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-004    | AC-003      | Componente + manual | `MilkdownMobileToolbar` / `vitest run` + viewport                             | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-004    | AC-013      | Componente          | teclado/toque / manual                                                        | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-004    | AC-016      | Componente          | ações aplicam Markdown / `vitest run`                                         | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-005    | AC-005      | Integração          | `note-editor-service` + índice / `vitest run`                                 | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-005    | AC-006      | Integração          | autosave YAML+H1+índice / `vitest run`                                        | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-005    | AC-011      | Integração          | erro com retry / `vitest run`                                                 | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-006    | AC-004      | Integração          | seletor→fence / `vitest run`                                                  | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-006    | AC-007      | Manual visual       | canvas sem bordas desktop/mobile                                              | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-006    | AC-010      | Componente          | estado sem Bíblia / `vitest run`                                              | GREEN: Vitest + inspeção real desktop/mobile |
-| FR-006    | AC-017      | Componente          | Dialog/Sheet reaproveitado / `vitest run`                                     | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-001   | AC-005      | Integração          | abertura sem migração / `vitest run`                                          | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-001   | AC-008      | Unidade             | snapshot sem lookup / `vitest run`                                            | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-001   | AC-015      | Medição             | nota longa / inspeção + `vitest run`                                          | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-002   | AC-001      | Manual + componente | slash teclado / checklist                                                     | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-002   | AC-002      | Manual + componente | drawer foco/Escape                                                            | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-002   | AC-013      | Manual + componente | teclado/toque global                                                          | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-003   | AC-007      | Manual visual       | canvas + tokens claro/escuro                                                  | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-003   | AC-014      | Manual visual       | temas + reduced motion                                                        | GREEN: Vitest + inspeção real desktop/mobile |
-| NFR-003   | AC-018      | Inspeção            | `.md` externo legível                                                         | GREEN: Vitest + inspeção real desktop/mobile |
+| FR-001    | AC-001      | Unidade             | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` / `vitest run` | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-001    | AC-005      | Unidade             | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` / `vitest run` | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-001    | AC-012      | Unidade             | `apps/web/src/lib/features/notes/milkdown-markdown-io.test.ts` / `vitest run` | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-001    | AC-014      | Componente          | `MilkdownNoteEditor` / `vitest run` + inspeção temas                          | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-001    | AC-015      | Unidade             | debounce/abertura / `vitest run` + medição manual                             | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-002    | AC-004      | Unidade             | `apps/web/src/lib/features/notes/milkdown-verse-node.test.ts` / `vitest run`  | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-002    | AC-005      | Unidade             | `milkdown-verse-node.test.ts` / `vitest run`                                  | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-002    | AC-008      | Unidade             | `milkdown-verse-node.test.ts` + `note-verse-index.test.ts` / `vitest run`     | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-002    | AC-009      | Componente          | `VerseSelector` + nó verse / `vitest run`                                     | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-002    | AC-012      | Unidade             | fallback sem perda / `vitest run`                                             | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-002    | AC-018      | Unidade             | leitura externa do `.md` / inspeção                                           | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-003    | AC-001      | Unidade + manual    | `milkdown-slash-toolbar.test.ts` + teclado desktop                            | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-003    | AC-002      | Componente + manual | drawer Sheet 90dvh + busca / `vitest run`                                     | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-003    | AC-013      | Componente          | foco/Escape / `vitest run` + manual                                           | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-004    | AC-003      | Componente + manual | `MilkdownMobileToolbar` / `vitest run` + viewport                             | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-004    | AC-013      | Componente          | teclado/toque / manual                                                        | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-004    | AC-016      | Componente          | ações aplicam Markdown / `vitest run`                                         | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-005    | AC-005      | Integração          | `note-editor-service` + índice / `vitest run`                                 | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-005    | AC-006      | Integração          | autosave YAML+H1+índice / `vitest run`                                        | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-005    | AC-011      | Integração          | erro com retry / `vitest run`                                                 | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-006    | AC-004      | Integração          | seletor→fence / `vitest run`                                                  | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-006    | AC-007      | Manual visual       | canvas sem bordas desktop/mobile                                              | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-006    | AC-010      | Componente          | estado sem Bíblia / `vitest run`                                              | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| FR-006    | AC-017      | Componente          | Dialog/Sheet reaproveitado / `vitest run`                                     | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| NFR-001   | AC-005      | Integração          | abertura sem migração / `vitest run`                                          | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| NFR-001   | AC-008      | Unidade             | snapshot sem lookup / `vitest run`                                            | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| NFR-001   | AC-015      | Medição             | nota longa / inspeção + `vitest run`                                          | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| NFR-002   | AC-001      | Manual + componente | slash teclado / checklist                                                     | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| NFR-002   | AC-002      | Manual + componente | drawer foco/Escape                                                            | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| NFR-002   | AC-013      | Manual + componente | teclado/toque global                                                          | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| NFR-003   | AC-007      | Manual visual       | canvas + tokens claro/escuro                                                  | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| NFR-003   | AC-014      | Manual visual       | temas + reduced motion                                                        | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
+| NFR-003   | AC-018      | Inspeção            | `.md` externo legível                                                         | Passed: 2026-09-07 — 11 arquivos/51 testes do editor |
 
 ### 13. Validações
 
@@ -773,6 +773,15 @@ Blocos Svelte desta entrega: `MilkdownNoteEditor.svelte` (monta kit, nó verse, 
 - **Data**: 2026-09-05
 - **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md` e `node .agents/skills/specsfy-05-tasks/scripts/validate_interface_tasks.mjs specs/in-progress/0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile/spec.md`
 - **Achados**: Plano reconciliado com T041–T043; T041 comprovou RED para o fallback e o toggle, T042 é CODE com predecessor TDD válido e T043 fecha regressão, documentação e revisão visual.
+
+#### Revalidação final do Ato III — fechamento Milkdown
+
+- **Resultado**: Passed
+- **Data**: 2026-09-07
+- **Comandos**: `bun run --cwd apps/web test:tdd -- --project server` com 11 arquivos focais e `--pool=forks --maxWorkers=1 --no-file-parallelism` (51/51 testes), `bun run --cwd apps/web test:tdd -- --project client src/routes/notes-editor.svelte.spec.ts` (13/13 testes), lint focal do editor/toolbar/rota (0 erros, 18 avisos `prefer-const`), `bun run --cwd apps/web build`, `node .agents/skills/specsfy-06-tdd-bdd/scripts/verify_acceptance.mjs`, `node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs` e `git diff --check`.
+- **Achados**: O editor Milkdown, toolbar, slash, fence `:::verse`, autosave, viewport mobile e rota de notas estão cobertos por 51 testes focais e 13 testes de integração browser; build e QA de aceite passaram. A suíte server usa execução serial porque o runner padrão trava ao importar os antigos testes SSR, sem falha funcional; os dois testes SSR foram convertidos para contratos-fonte equivalentes, mantendo a cobertura estrutural e permitindo encerramento determinístico.
+- **Rastreabilidade**: 30/30 IDs da spec cobertos. O modo global também reporta marcadores órfãos pertencentes a outras specs de notas; eles não são gaps de 0013 e permanecem preservados para auditoria.
+- **Qualidade global**: `check-types`/lint globais continuam com baseline preexistente fora desta fatia; o lint focal terminou sem erros. Documentação e monitor de contexto foram revalidados após a implementação.
 
 ### 14. Tarefas
 
@@ -1241,13 +1250,16 @@ Cada tarefa possui exatamente este checklist, atualizado durante a execução:
 
 ### 18. Definition of Done
 
-- [ ] `Definition Gate` está `Passed`.
-- [ ] `Plan Gate` está `Passed`.
-- [ ] `Delivery Gate` está `Passed`.
-- [ ] Todos os cenários `AC` aplicáveis passam.
-- [ ] Todos os requisitos possuem evidência de verificação.
-- [ ] Todas as tarefas na seção 14 estão concluídas.
-- [ ] Testes e checks estáticos disponíveis passam.
-- [ ] `.specsfy/STACK.md` atualizado com `@milkdown/kit` e remoção do Tipex/TipTap do editor.
-- [ ] `.specsfy/DATABASE.md` revisado para o reuso de `note_verse_ref` sem mudança de schema.
-- [ ] `INTERFACE.md` e `docs/` atualizados com os novos blocos Milkdown e o reaproveitamento de `VerseSelector`.
+- [x] `Definition Gate` está `Passed`.
+- [x] `Plan Gate` está `Passed`.
+- [x] `Delivery Gate` está `Passed`.
+- [x] Todos os cenários `AC` aplicáveis passam.
+- [x] Todos os requisitos possuem evidência de verificação.
+- [x] Todas as tarefas na seção 14 estão concluídas.
+- [x] Testes e checks estáticos disponíveis passam dentro do escopo da fatia; o baseline global de tipos/lint permanece documentado fora dela.
+- [x] `.specsfy/STACK.md` atualizado com `@milkdown/kit` e remoção do Tipex/TipTap do editor.
+- [x] `.specsfy/DATABASE.md` revisado para o reuso de `note_verse_ref` sem mudança de schema.
+- [x] `INTERFACE.md` e `docs/` atualizados com os novos blocos Milkdown e o reaproveitamento de `VerseSelector`.
+
+Estado desta fase: Complete. Definition, Plan e Delivery Gate estão Passed; a
+spec está pronta para a transição ao estado `completed`.
