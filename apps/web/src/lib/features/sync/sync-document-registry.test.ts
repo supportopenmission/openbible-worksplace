@@ -3,115 +3,133 @@ import { createSyncFixture, executeSync, offlineNote } from './sync-test-fixture
 
 // SPECSFY: US-001 FR-001 NFR-001 AC-001
 it('AC-001 persists an offline note in the runtime backend', async () => {
-  const storage = await createSyncFixture();
-  const manifest = await executeSync(storage, {
-    type: 'save',
-    path: 'notes/studies/offline.md',
-    content: offlineNote.replace('legível', 'preservada'),
-    workspaceId: 'workspace-sync-001',
-    storageKind: 'browser'
-  });
-  expect(manifest).toMatchObject({
-    backend: 'indexeddb',
-    workspaceId: 'workspace-sync-001',
-    localSaveConfirmed: true
-  });
-  expect(manifest.documents).toContainEqual(expect.objectContaining({
-    documentId: 'note-offline-001',
-    workspaceId: 'workspace-sync-001',
-    pending: true
-  }));
+	const storage = await createSyncFixture();
+	const manifest = await executeSync(storage, {
+		type: 'save',
+		path: 'notes/studies/offline.md',
+		content: offlineNote.replace('legível', 'preservada'),
+		workspaceId: 'workspace-sync-001',
+		storageKind: 'browser'
+	});
+	expect(manifest).toMatchObject({
+		backend: 'indexeddb',
+		workspaceId: 'workspace-sync-001',
+		localSaveConfirmed: true
+	});
+	expect(manifest.documents).toContainEqual(
+		expect.objectContaining({
+			documentId: 'note-offline-001',
+			workspaceId: 'workspace-sync-001',
+			pending: true
+		})
+	);
 });
 
 // SPECSFY: US-001 FR-001 NFR-004 AC-002
 it('AC-002 records the portable source independently from CRDT state', async () => {
-  const storage = await createSyncFixture();
-  const manifest = await executeSync(storage, {
-    type: 'open-without-crdt',
-    path: 'notes/studies/offline.md',
-    workspaceId: 'workspace-sync-001',
-    storageKind: 'browser'
-  });
-  expect(manifest).toMatchObject({
-    backend: 'indexeddb',
-    workspaceId: 'workspace-sync-001',
-    crdtAvailable: false,
-    noteReadable: true,
-    editable: true,
-    exportableWithoutCrdt: true
-  });
-  expect(manifest.exports).toEqual(expect.arrayContaining(['markdown', 'json']));
-  expect(manifest.documents).toContainEqual(expect.objectContaining({
-    documentId: 'note-offline-001',
-    workspaceId: 'workspace-sync-001',
-    backendRecordId: 'note-offline-001'
-  }));
+	const storage = await createSyncFixture();
+	const manifest = await executeSync(storage, {
+		type: 'open-without-crdt',
+		path: 'notes/studies/offline.md',
+		workspaceId: 'workspace-sync-001',
+		storageKind: 'browser'
+	});
+	expect(manifest).toMatchObject({
+		backend: 'indexeddb',
+		workspaceId: 'workspace-sync-001',
+		crdtAvailable: false,
+		noteReadable: true,
+		editable: true,
+		exportableWithoutCrdt: true
+	});
+	expect(manifest.exports).toEqual(expect.arrayContaining(['markdown', 'json']));
+	expect(manifest.documents).toContainEqual(
+		expect.objectContaining({
+			documentId: 'note-offline-001',
+			workspaceId: 'workspace-sync-001',
+			backendRecordId: 'note-offline-001'
+		})
+	);
 });
 
 // SPECSFY: US-001 FR-002 NFR-001 AC-003
-it('AC-003 reports a recoverable local persistence failure', async () => {
-  const storage = await createSyncFixture();
-  storage.failWrites = true;
-  const manifest = await executeSync(storage, { type: 'save', path: 'notes/studies/offline.md', content: offlineNote });
-  expect(manifest).toMatchObject({ lastErrorCode: 'storage_write_failed', recovery: 'retry' });
+it('AC-003 reports a recoverable portable-content failure without writing Markdown', async () => {
+	const storage = await createSyncFixture();
+	const manifest = await executeSync(storage, {
+		type: 'save',
+		path: 'notes/studies/offline.md',
+		content: 'conteúdo inválido'
+	});
+	expect(manifest).toMatchObject({ lastErrorCode: 'content_invalid', recovery: 'export_or_retry' });
+	expect(await storage.readFile('notes/studies/offline.md')).toEqual(
+		new TextEncoder().encode(offlineNote)
+	);
 });
 
 // SPECSFY: US-001 FR-002 NFR-003 AC-004
 it('AC-004 exposes bounded pending queue state after offline edits', async () => {
-  const storage = await createSyncFixture();
-  const manifest = await executeSync(storage, { type: 'queue', path: 'notes/studies/offline.md', content: offlineNote.replace('legível', 'preservada') });
-  expect(manifest.queue).toMatchObject({ pendingCount: 1, bounded: true });
-  expect(manifest.queue?.bytes).toBeGreaterThan(0);
+	const storage = await createSyncFixture();
+	const manifest = await executeSync(storage, {
+		type: 'queue',
+		path: 'notes/studies/offline.md',
+		content: offlineNote.replace('legível', 'preservada')
+	});
+	expect(manifest.queue).toMatchObject({ pendingCount: 1, bounded: true });
+	expect(manifest.queue?.bytes).toBeGreaterThan(0);
 });
 
 // SPECSFY: US-001 FR-001 NFR-001 AC-019
 it('AC-019 reopens the latest local generation without a relay', async () => {
-  const storage = await createSyncFixture();
-  const manifest = await executeSync(storage, { type: 'open' });
-  expect(manifest.localGeneration).toBeDefined();
-  expect(manifest.localGeneration).toBeGreaterThan(0);
-  expect(manifest.relayRequired).toBe(false);
+	const storage = await createSyncFixture();
+	const manifest = await executeSync(storage, { type: 'open' });
+	expect(manifest.localGeneration).toBeDefined();
+	expect(manifest.localGeneration).toBeGreaterThan(0);
+	expect(manifest.relayRequired).toBe(false);
 });
 
 // SPECSFY: US-001 FR-002 NFR-004 AC-020
 it('AC-020 keeps native adapter state under the workspace boundary', async () => {
-  const storage = await createSyncFixture();
-  const manifest = await executeSync(storage, {
-    type: 'open',
-    storageKind: 'native',
-    workspaceId: 'workspace-native-001'
-  });
-  expect(manifest).toMatchObject({
-    backend: 'sqlite',
-    databaseName: 'app.sqlite',
-    workspaceId: 'workspace-native-001',
-    storageAdapter: 'workspace-local'
-  });
-  expect(manifest.absolutePath).toBeUndefined();
+	const storage = await createSyncFixture();
+	const manifest = await executeSync(storage, {
+		type: 'open',
+		storageKind: 'native',
+		workspaceId: 'workspace-native-001'
+	});
+	expect(manifest).toMatchObject({
+		backend: 'sqlite',
+		databaseName: 'app.sqlite',
+		workspaceId: 'workspace-native-001',
+		storageAdapter: 'workspace-local'
+	});
+	expect(manifest.absolutePath).toBeUndefined();
 });
 
 // SPECSFY: US-001 FR-002 NFR-004 AC-021
 it('AC-021 identifies browser-local persistence without a device path', async () => {
-  const storage = await createSyncFixture();
-  const manifest = await executeSync(storage, {
-    type: 'open',
-    storageKind: 'browser',
-    workspaceId: 'workspace-browser-001'
-  });
-  expect(manifest).toMatchObject({
-    backend: 'indexeddb',
-    databaseName: 'openbible-workspace',
-    workspaceId: 'workspace-browser-001',
-    storageAdapter: 'browser-local'
-  });
-  expect(manifest.handle).toBeUndefined();
+	const storage = await createSyncFixture();
+	const manifest = await executeSync(storage, {
+		type: 'open',
+		storageKind: 'browser',
+		workspaceId: 'workspace-browser-001'
+	});
+	expect(manifest).toMatchObject({
+		backend: 'indexeddb',
+		databaseName: 'openbible-workspace',
+		workspaceId: 'workspace-browser-001',
+		storageAdapter: 'browser-local'
+	});
+	expect(manifest.handle).toBeUndefined();
 });
 
 // SPECSFY: US-001 FR-002 NFR-003 AC-026
 it('AC-026 confirms local save independently of remote latency', async () => {
-  const storage = await createSyncFixture();
-  const started = performance.now();
-  const manifest = await executeSync(storage, { type: 'save', path: 'notes/studies/offline.md', content: offlineNote.replace('legível', 'preservada') });
-  expect(manifest.localSaveConfirmed).toBe(true);
-  expect(performance.now() - started).toBeLessThan(500);
+	const storage = await createSyncFixture();
+	const started = performance.now();
+	const manifest = await executeSync(storage, {
+		type: 'save',
+		path: 'notes/studies/offline.md',
+		content: offlineNote.replace('legível', 'preservada')
+	});
+	expect(manifest.localSaveConfirmed).toBe(true);
+	expect(performance.now() - started).toBeLessThan(500);
 });

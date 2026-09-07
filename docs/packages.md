@@ -12,6 +12,7 @@
 | Terceiro | desenvolvimento | @tauri-apps/cli | ^2.11.4 | Command line interface for building Tauri apps | https://github.com/tauri-apps/tauri | https://github.com/tauri-apps/tauri |
 | Terceiro | produção | @automerge/automerge | 3.4.1 | Javascript implementation of automerge, backed by @automerge/automerge-wasm | github:automerge/automerge | — |
 | Terceiro | produção | @automerge/automerge-repo | 2.5.6 | A repository object to manage a collection of automerge documents | https://github.com/automerge/automerge-repo/tree/master/packages/automerge-repo | https://github.com/automerge/automerge-repo/tree/master/packages/automerge-repo |
+| Terceiro | produção | @automerge/automerge-repo-network-websocket | 2.5.6 | isomorphic node/browser Websocket network adapter for Automerge Repo | https://github.com/automerge/automerge-repo/tree/master/packages/automerge-repo-network-websocket | https://github.com/automerge/automerge-repo/tree/master/packages/automerge-repo-network-websocket |
 | Terceiro | produção | @friendofsvelte/tipex | 0.2.0 | Finalidade não descrita nos metadados locais. | https://github.com/friendofsvelte/tipex | https://github.com/friendofsvelte/tipex |
 | Terceiro | produção | @milkdown/kit | 7.22.1 | Finalidade não descrita nos metadados locais. | https://github.com/Milkdown/milkdown | https://github.com/Milkdown/milkdown |
 | Terceiro | produção | @tauri-apps/api | ^2.11.1 | Tauri API definitions | https://github.com/tauri-apps/tauri | https://github.com/tauri-apps/tauri |
@@ -20,6 +21,7 @@
 | Terceiro | produção | @tauri-apps/plugin-updater | ^2.11.0 | Finalidade não descrita nos metadados locais. | https://github.com/tauri-apps/plugins-workspace | https://github.com/tauri-apps/plugins-workspace |
 | Terceiro | produção | @tiptap/extension-highlight | 2.27.2 | highlight extension for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
 | Terceiro | produção | bible-passage-reference-parser | ^4.0.0 | Identifies and parses Bible references (like John 3:16) in 50 languages. | git://github.com/openbibleinfo/Bible-Passage-Reference-Parser | git://github.com/openbibleinfo/Bible-Passage-Reference-Parser |
+| Terceiro | produção | bs58check | 3.0.1 | A straightforward implementation of base58-check encoding | https://github.com/bitcoinjs/bs58check | https://github.com/bitcoinjs/bs58check |
 | Terceiro | produção | clsx | ^2.1.1 | A tiny (239B) utility for constructing className strings conditionally. | lukeed/clsx | — |
 | Terceiro | produção | remark-directive | ^4.0.0 | remark plugin to support directives | remarkjs/remark-directive | — |
 | Terceiro | produção | sql.js | ^1.14.2 | SQLite library with support for opening and writing databases, prepared statements, and more. This SQLite library is in pure javascript (compiled with emscripten). | http://github.com/sql-js/sql.js | http://github.com/sql-js/sql.js |

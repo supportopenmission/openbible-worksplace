@@ -1,7 +1,10 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { getWorkspaceState } from '$lib/features/workspace/workspace-state.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import SyncStatus from './SyncStatus.svelte';
+	import type { SyncStatusKind } from './SyncStatus.svelte';
+	import { connectSyncWorkspace, disconnectSyncWorkspace } from './sync-automerge';
 
 	const workspace = getWorkspaceState();
 
@@ -21,10 +24,55 @@
 			: 'IndexedDB · openbible-workspace'
 	);
 	const workspaceLabel = $derived(workspace?.workspaceId ?? 'Workspace ativo');
-	const syncStatus = $derived(syncEnabled ? 'offline' : 'local');
+	let syncStatus = $state<SyncStatusKind>('local');
+	let lastSuccessAt = $state<string | null>(null);
+	let lastErrorCode = $state<string | null>(null);
+
+	function settingsKey(): string | null {
+		const workspaceId = workspace?.workspaceId;
+		return workspaceId ? `openbible:sync-settings:${workspaceId}` : null;
+	}
+
+	function persistSettings() {
+		const key = settingsKey();
+		if (!key) return;
+		try {
+			localStorage.setItem(
+				key,
+				JSON.stringify({ enabled: syncEnabled, endpoint, scope, pairedPeer })
+			);
+		} catch {
+			// A restricted browser keeps the setting in the current session only.
+		}
+	}
+
+	onMount(() => {
+		const key = settingsKey();
+		if (!key) return;
+		try {
+			const value = JSON.parse(localStorage.getItem(key) ?? 'null') as {
+				enabled?: boolean;
+				endpoint?: string;
+				scope?: string;
+				pairedPeer?: string;
+			} | null;
+			if (!value) return;
+			syncEnabled = value.enabled === true;
+			endpoint = typeof value.endpoint === 'string' ? value.endpoint : '';
+			scope = typeof value.scope === 'string' ? value.scope : scope;
+			pairedPeer = typeof value.pairedPeer === 'string' ? value.pairedPeer : '';
+			if (syncEnabled && endpoint) void saveSettings();
+		} catch {
+			// Invalid local settings are ignored and can be replaced by a new save.
+		}
+	});
 
 	function validateEndpoint(): boolean {
-		if (!syncEnabled || !endpoint.trim()) return true;
+		if (!syncEnabled) return true;
+		if (!endpoint.trim()) {
+			error = 'Informe o endpoint WebSocket seguro do workspace.';
+			return false;
+		}
 		if (!endpoint.trim().startsWith('wss://')) {
 			error = 'Use um endpoint WebSocket seguro começando com wss://.';
 			return false;
@@ -38,10 +86,36 @@
 		if (!validateEndpoint()) return;
 		saving = true;
 		try {
-			await Promise.resolve();
-			message = syncEnabled
-				? 'Sincronização habilitada para este workspace. O uso local continua disponível.'
-				: 'Sincronização desabilitada. As notas continuam somente neste dispositivo.';
+			if (!syncEnabled) {
+				if (workspace?.storage) await disconnectSyncWorkspace(workspace.storage);
+				persistSettings();
+				syncStatus = 'local';
+				lastErrorCode = null;
+				message = 'Sincronização desabilitada. As notas continuam somente neste dispositivo.';
+				return;
+			}
+			if (!workspace?.storage) throw new Error('workspace_storage_unavailable');
+			syncStatus = 'connecting';
+			const diagnostics = await connectSyncWorkspace(
+				workspace.storage,
+				endpoint,
+				pairedPeer || undefined
+			);
+			lastSuccessAt = diagnostics.lastSuccessAt;
+			lastErrorCode = diagnostics.lastErrorCode;
+			if (diagnostics.status === 'blocked' || diagnostics.status === 'retrying') {
+				syncStatus = 'error';
+				message =
+					'A conexão remota não foi estabelecida; as alterações locais continuam disponíveis.';
+			} else {
+				syncStatus = diagnostics.status === 'online' ? 'synced' : 'connecting';
+				message = 'Sincronização habilitada para este workspace. O uso local continua disponível.';
+			}
+			persistSettings();
+		} catch (caught) {
+			syncStatus = 'error';
+			lastErrorCode = caught instanceof Error ? caught.message : 'sync_connection_failed';
+			message = 'A conexão remota falhou; as alterações locais continuam disponíveis.';
 		} finally {
 			saving = false;
 		}
@@ -60,6 +134,7 @@
 			await Promise.resolve();
 			pairedPeer = normalized;
 			peerId = '';
+			persistSettings();
 			message = `Dispositivo “${normalized}” vinculado somente a este workspace.`;
 		} finally {
 			pairing = false;
@@ -70,6 +145,7 @@
 		if (!pairedPeer) return;
 		message = `Dispositivo “${pairedPeer}” revogado. Cópias locais não são apagadas.`;
 		pairedPeer = '';
+		persistSettings();
 	}
 </script>
 
@@ -83,7 +159,11 @@
 				as notas continuam disponíveis localmente.
 			</p>
 		</div>
-		<span class:active={syncEnabled} class="sync-state" aria-label={syncEnabled ? 'Sincronização ativa' : 'Sincronização local'}>
+		<span
+			class:active={syncEnabled}
+			class="sync-state"
+			aria-label={syncEnabled ? 'Sincronização ativa' : 'Sincronização local'}
+		>
 			{syncEnabled ? 'Ativa' : 'Somente local'}
 		</span>
 	</div>
@@ -101,7 +181,8 @@
 
 	<SyncStatus
 		status={syncStatus}
-		lastSuccessAt={null}
+		{lastSuccessAt}
+		{lastErrorCode}
 		onRetry={syncEnabled ? saveSettings : undefined}
 	/>
 
@@ -120,7 +201,10 @@
 	<div class="sync-section">
 		<div class="sync-section-heading">
 			<h3>Transporte</h3>
-			<p>O primeiro transporte remoto usa WebSocket seguro. O relay pode observar ou reter o estado; esta versão não oferece E2EE.</p>
+			<p>
+				O primeiro transporte remoto usa WebSocket seguro. O relay pode observar ou reter o estado;
+				esta versão não oferece E2EE.
+			</p>
 		</div>
 		<label class="toggle-row">
 			<input type="checkbox" bind:checked={syncEnabled} />

@@ -6,6 +6,7 @@ import {
 import type { WorkspaceContentRecord } from '$lib/storage/workspace-content-repository';
 import type { Note, NoteMeta } from './note-types';
 import { parseNoteFile } from './note-markdown';
+import { persistSyncRecord, removeSyncRecord } from '$lib/features/sync/sync-automerge';
 
 const defaultStorage: WorkspaceStorage = {
 	kind: 'opfs',
@@ -33,14 +34,12 @@ function parseMeta(
 	fallback: { createdAt: string; updatedAt: string }
 ): NoteMeta | null {
 	if (!isRecord(value)) return null;
-	if (
-		typeof value.id !== 'string' ||
-		typeof value.title !== 'string' ||
-		value.type !== 'note'
-	) {
+	if (typeof value.id !== 'string' || typeof value.title !== 'string' || value.type !== 'note') {
 		return null;
 	}
-	const schemaVersion = Number.isInteger(value.schemaVersion) ? Number(value.schemaVersion) : undefined;
+	const schemaVersion = Number.isInteger(value.schemaVersion)
+		? Number(value.schemaVersion)
+		: undefined;
 	const pinned = typeof value.pinned === 'boolean' ? value.pinned : undefined;
 	const description = typeof value.description === 'string' ? value.description : undefined;
 	const unknownFields = isRecord(value.unknownFields)
@@ -117,7 +116,9 @@ function resolvedStorage(storage?: WorkspaceStorage): WorkspaceStorage {
 async function listRecords(storage: WorkspaceStorage): Promise<WorkspaceContentRecord[]> {
 	const context = workspaceContentContext(storage);
 	const primary = await getWorkspaceContentRepository(storage, context).list(context);
-	const knownIds = new Set(primary.filter((record) => record.kind === 'note').map((record) => record.id));
+	const knownIds = new Set(
+		primary.filter((record) => record.kind === 'note').map((record) => record.id)
+	);
 	let legacyNames: string[] = [];
 	if (!storage.workspaceId) {
 		try {
@@ -191,15 +192,20 @@ export async function createNote(storage?: WorkspaceStorage): Promise<Note> {
 		content: TEMPLATE,
 		path: virtualNotePath(id)
 	};
-	await getWorkspaceContentRepository(resolved).write(noteRecord(resolved, note));
+	const record = noteRecord(resolved, note);
+	await getWorkspaceContentRepository(resolved).write(record);
+	await persistSyncRecord(resolved, record);
 	return note;
 }
 
 export async function readNote(storage: WorkspaceStorage, id: string): Promise<Note | null>;
 export async function readNote(id: string): Promise<Note | null>;
-export async function readNote(storageOrId: WorkspaceStorage | string, id?: string): Promise<Note | null> {
+export async function readNote(
+	storageOrId: WorkspaceStorage | string,
+	id?: string
+): Promise<Note | null> {
 	const storage = typeof storageOrId === 'string' ? defaultStorage : storageOrId;
-	const noteId = typeof storageOrId === 'string' ? storageOrId : id ?? '';
+	const noteId = typeof storageOrId === 'string' ? storageOrId : (id ?? '');
 	return noteId ? findNote(storage, noteId) : null;
 }
 
@@ -229,7 +235,9 @@ export async function saveNote(
 		path: virtualNotePath(note.id),
 		updatedAt: now
 	};
-	await getWorkspaceContentRepository(storage).write(noteRecord(storage, saved));
+	const record = noteRecord(storage, saved);
+	await getWorkspaceContentRepository(storage).write(record);
+	await persistSyncRecord(storage, record);
 	return saved;
 }
 
@@ -262,10 +270,15 @@ export async function loadNoteSummariesForPaths(
 
 export async function trashNote(storage: WorkspaceStorage, id: string): Promise<void>;
 export async function trashNote(id: string): Promise<void>;
-export async function trashNote(storageOrId: WorkspaceStorage | string, id?: string): Promise<void> {
+export async function trashNote(
+	storageOrId: WorkspaceStorage | string,
+	id?: string
+): Promise<void> {
 	const storage = typeof storageOrId === 'string' ? defaultStorage : storageOrId;
-	const noteId = typeof storageOrId === 'string' ? storageOrId : id ?? '';
+	const noteId = typeof storageOrId === 'string' ? storageOrId : (id ?? '');
 	if (!noteId) throw new Error('Nota não encontrada.');
 	const context = workspaceContentContext(storage);
+	const current = await findNote(storage, noteId);
+	if (current) await removeSyncRecord(storage, noteRecord(storage, current));
 	await getWorkspaceContentRepository(storage, context).remove(context, 'note', noteId);
 }

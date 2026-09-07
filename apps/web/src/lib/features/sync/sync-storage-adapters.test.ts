@@ -131,16 +131,19 @@ describe('sync storage adapters', () => {
 			writeContent: vi.fn(async () => undefined)
 		};
 		const operationalPort: NativeSyncOperationalPort = {
-			ensureSchema: vi.fn(async (): Promise<{
-				backend: 'sqlite';
-				databaseName: 'app.sqlite';
-				schemaVersion: number;
-			}> => ({
-				backend: 'sqlite',
-				databaseName: 'app.sqlite',
-				schemaVersion: 3
-			})),
+			ensureSchema: vi.fn(
+				async (): Promise<{
+					backend: 'sqlite';
+					databaseName: 'app.sqlite';
+					schemaVersion: number;
+				}> => ({
+					backend: 'sqlite',
+					databaseName: 'app.sqlite',
+					schemaVersion: 3
+				})
+			),
 			writeDocument: vi.fn(async () => undefined),
+			readState: vi.fn(async () => ({ note: null, snapshot: null, queue: null })),
 			writeSnapshot: vi.fn(async () => undefined),
 			appendChange: vi.fn(async () => undefined),
 			readQueue: vi.fn(async () => null),

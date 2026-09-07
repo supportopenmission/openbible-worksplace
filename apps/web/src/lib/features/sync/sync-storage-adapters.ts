@@ -40,12 +40,19 @@ export interface SyncQueueRecord {
 	updatedAt: string;
 }
 
+export interface SyncStoredState {
+	note: WorkspaceContentRecord | null;
+	snapshot: SyncSnapshotRecord | null;
+	queue: SyncQueueRecord | null;
+}
+
 export interface SyncOperationalStorageAdapter {
 	readonly backend: SyncBackend;
 	readonly databaseName: 'app.sqlite' | 'openbible-workspace';
 	readonly content: WorkspaceContentRepository;
 	ensureSchema(): Promise<{ backend: SyncBackend; schemaVersion: number }>;
 	writeDocument(document: SyncDocumentRef): Promise<void>;
+	readState(workspaceId: string, documentId: string): Promise<SyncStoredState>;
 	writeSnapshot(snapshot: SyncSnapshotRecord): Promise<void>;
 	appendChange(change: IndexedDbSyncChange): Promise<void>;
 	readQueue(workspaceId: string, documentId: string): Promise<SyncQueueRecord | null>;
@@ -55,6 +62,7 @@ export interface SyncOperationalStorageAdapter {
 export interface NativeSyncOperationalPort {
 	ensureSchema(): Promise<{ backend: 'sqlite'; databaseName: 'app.sqlite'; schemaVersion: number }>;
 	writeDocument(document: SyncDocumentRef): Promise<void>;
+	readState(workspaceId: string, documentId: string): Promise<SyncStoredState>;
 	writeSnapshot(snapshot: SyncSnapshotRecord): Promise<void>;
 	appendChange(change: IndexedDbSyncChange): Promise<void>;
 	readQueue(workspaceId: string, documentId: string): Promise<SyncQueueRecord | null>;
@@ -88,7 +96,8 @@ function validateQueue(queue: SyncQueueRecord): void {
 	if (!Number.isInteger(queue.pendingCount) || queue.pendingCount < 0) {
 		throw new Error('sync_queue_count_invalid');
 	}
-	if (!Number.isInteger(queue.bytes) || queue.bytes < 0) throw new Error('sync_queue_bytes_invalid');
+	if (!Number.isInteger(queue.bytes) || queue.bytes < 0)
+		throw new Error('sync_queue_bytes_invalid');
 }
 
 function toIndexedDbDocument(document: SyncDocumentRef): IndexedDbSyncDocument {
@@ -113,6 +122,31 @@ function toIndexedDbQueue(queue: SyncQueueRecord): IndexedDbSyncQueue {
 	return { ...queue };
 }
 
+function isSyncSnapshot(value: unknown): value is IndexedDbSyncSnapshot {
+	if (!value || typeof value !== 'object') return false;
+	const candidate = value as Partial<IndexedDbSyncSnapshot>;
+	return (
+		typeof candidate.workspaceId === 'string' &&
+		typeof candidate.documentId === 'string' &&
+		Number.isInteger(candidate.snapshotVersion) &&
+		typeof candidate.stateJson === 'string' &&
+		typeof candidate.headsJson === 'string' &&
+		typeof candidate.createdAt === 'string'
+	);
+}
+
+function isSyncQueue(value: unknown): value is IndexedDbSyncQueue {
+	if (!value || typeof value !== 'object') return false;
+	const candidate = value as Partial<IndexedDbSyncQueue>;
+	return (
+		typeof candidate.workspaceId === 'string' &&
+		typeof candidate.documentId === 'string' &&
+		Number.isInteger(candidate.pendingCount) &&
+		Number.isInteger(candidate.bytes) &&
+		typeof candidate.updatedAt === 'string'
+	);
+}
+
 export function createIndexedDbSyncStorageAdapter(
 	context: WorkspaceContentContext,
 	adapter: IndexedDbWorkspaceAdapter = createIndexedDbWorkspaceAdapter()
@@ -132,8 +166,44 @@ export function createIndexedDbSyncStorageAdapter(
 			await adapter.transaction(
 				[INDEXEDDB_WORKSPACE_STORES.syncDocuments],
 				'readwrite',
-				(transaction) => transaction.objectStore(INDEXEDDB_WORKSPACE_STORES.syncDocuments).put(toIndexedDbDocument(document))
+				(transaction) =>
+					transaction
+						.objectStore(INDEXEDDB_WORKSPACE_STORES.syncDocuments)
+						.put(toIndexedDbDocument(document))
 			);
+		},
+		async readState(workspaceId, documentId) {
+			requireWorkspaceId(workspaceId);
+			requireDocumentId(documentId);
+			const [records, snapshots, queue] = await Promise.all([
+				content.list(context),
+				adapter.transaction([INDEXEDDB_WORKSPACE_STORES.syncSnapshots], 'readonly', (transaction) =>
+					transaction.objectStore(INDEXEDDB_WORKSPACE_STORES.syncSnapshots).getAll()
+				),
+				adapter.transaction([INDEXEDDB_WORKSPACE_STORES.syncQueue], 'readonly', (transaction) =>
+					transaction
+						.objectStore(INDEXEDDB_WORKSPACE_STORES.syncQueue)
+						.get([workspaceId, documentId])
+				)
+			]);
+			const snapshot =
+				(Array.isArray(snapshots) ? snapshots : [])
+					.filter(isSyncSnapshot)
+					.filter(
+						(candidate) =>
+							candidate.workspaceId === workspaceId && candidate.documentId === documentId
+					)
+					.sort((left, right) => right.snapshotVersion - left.snapshotVersion)[0] ?? null;
+			const note =
+				records.find(
+					(record) =>
+						record.workspaceId === workspaceId && record.id === documentId && record.kind === 'note'
+				) ?? null;
+			return {
+				note,
+				snapshot,
+				queue: isSyncQueue(queue) ? queue : null
+			};
 		},
 		async writeSnapshot(snapshot) {
 			requireWorkspaceId(snapshot.workspaceId);
@@ -144,13 +214,20 @@ export function createIndexedDbSyncStorageAdapter(
 			await adapter.transaction(
 				[INDEXEDDB_WORKSPACE_STORES.syncSnapshots],
 				'readwrite',
-				(transaction) => transaction.objectStore(INDEXEDDB_WORKSPACE_STORES.syncSnapshots).put(toIndexedDbSnapshot(snapshot))
+				(transaction) =>
+					transaction
+						.objectStore(INDEXEDDB_WORKSPACE_STORES.syncSnapshots)
+						.put(toIndexedDbSnapshot(snapshot))
 			);
 		},
 		async appendChange(change) {
 			requireWorkspaceId(change.workspaceId);
 			requireDocumentId(change.documentId);
-			if (!change.changeId.trim() || change.byteSize < 0 || change.byteSize !== change.changeBlob.byteLength) {
+			if (
+				!change.changeId.trim() ||
+				change.byteSize < 0 ||
+				change.byteSize !== change.changeBlob.byteLength
+			) {
 				throw new Error('sync_change_invalid');
 			}
 			await adapter.transaction(
@@ -163,7 +240,10 @@ export function createIndexedDbSyncStorageAdapter(
 			const value = await adapter.transaction(
 				[INDEXEDDB_WORKSPACE_STORES.syncQueue],
 				'readonly',
-				(transaction) => transaction.objectStore(INDEXEDDB_WORKSPACE_STORES.syncQueue).get([workspaceId, documentId])
+				(transaction) =>
+					transaction
+						.objectStore(INDEXEDDB_WORKSPACE_STORES.syncQueue)
+						.get([workspaceId, documentId])
 			);
 			return value && typeof value === 'object' ? (value as SyncQueueRecord) : null;
 		},
@@ -172,7 +252,8 @@ export function createIndexedDbSyncStorageAdapter(
 			await adapter.transaction(
 				[INDEXEDDB_WORKSPACE_STORES.syncQueue],
 				'readwrite',
-				(transaction) => transaction.objectStore(INDEXEDDB_WORKSPACE_STORES.syncQueue).put(toIndexedDbQueue(queue))
+				(transaction) =>
+					transaction.objectStore(INDEXEDDB_WORKSPACE_STORES.syncQueue).put(toIndexedDbQueue(queue))
 			);
 		}
 	};
@@ -193,6 +274,7 @@ export function createNativeSqliteSyncStorageAdapter(
 			validateDocument(document);
 			return operationalPort.writeDocument(document);
 		},
+		readState: (workspaceId, documentId) => operationalPort.readState(workspaceId, documentId),
 		writeSnapshot: (snapshot) => operationalPort.writeSnapshot(snapshot),
 		appendChange: (change) => operationalPort.appendChange(change),
 		readQueue: (workspaceId, documentId) => operationalPort.readQueue(workspaceId, documentId),

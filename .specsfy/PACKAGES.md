@@ -12,6 +12,7 @@
 | npm | desenvolvimento | @tauri-apps/cli | ^2.11.4 | Command line interface for building Tauri apps | https://github.com/tauri-apps/tauri |
 | npm | produção | @automerge/automerge | 3.4.1 | Javascript implementation of automerge, backed by @automerge/automerge-wasm | github:automerge/automerge |
 | npm | produção | @automerge/automerge-repo | 2.5.6 | A repository object to manage a collection of automerge documents | https://github.com/automerge/automerge-repo/tree/master/packages/automerge-repo |
+| npm | produção | @automerge/automerge-repo-network-websocket | 2.5.6 | isomorphic node/browser Websocket network adapter for Automerge Repo | https://github.com/automerge/automerge-repo/tree/master/packages/automerge-repo-network-websocket |
 | npm | produção | @friendofsvelte/tipex | 0.2.0 | Finalidade não descrita nos metadados locais. | https://github.com/friendofsvelte/tipex |
 | npm | produção | @milkdown/kit | 7.22.1 | Finalidade não descrita nos metadados locais. | https://github.com/Milkdown/milkdown |
 | npm | produção | @tauri-apps/api | ^2.11.1 | Tauri API definitions | https://github.com/tauri-apps/tauri |
@@ -20,6 +21,7 @@
 | npm | produção | @tauri-apps/plugin-updater | ^2.11.0 | Finalidade não descrita nos metadados locais. | https://github.com/tauri-apps/plugins-workspace |
 | npm | produção | @tiptap/extension-highlight | 2.27.2 | highlight extension for tiptap | https://github.com/ueberdosis/tiptap |
 | npm | produção | bible-passage-reference-parser | ^4.0.0 | Identifies and parses Bible references (like John 3:16) in 50 languages. | git://github.com/openbibleinfo/Bible-Passage-Reference-Parser |
+| npm | produção | bs58check | 3.0.1 | A straightforward implementation of base58-check encoding | https://github.com/bitcoinjs/bs58check |
 | npm | produção | clsx | ^2.1.1 | A tiny (239B) utility for constructing className strings conditionally. | lukeed/clsx |
 | npm | produção | remark-directive | ^4.0.0 | remark plugin to support directives | remarkjs/remark-directive |
 | npm | produção | sql.js | ^1.14.2 | SQLite library with support for opening and writing databases, prepared statements, and more. This SQLite library is in pure javascript (compiled with emscripten). | http://github.com/sql-js/sql.js |

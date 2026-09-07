@@ -3,7 +3,7 @@
 <!-- specsfy:documentator:start -->
 ## Resumo
 
-- Arquivos de teste: 113.
+- Arquivos de teste: 118.
 - Runner: não identificado.
 - Scripts: build: turbo run build; check-types: turbo run check-types; dev: turbo run dev; lint: turbo run lint; format: prettier --write .; format:check: prettier --check ..
 
@@ -15,10 +15,14 @@
 | apps/web/src/lib/bible/parser/translations.test.ts |
 | apps/web/src/lib/bible/repository/bible-repository.test.ts |
 | apps/web/src/lib/bible/stores/bible-reference-viewer.test.ts |
+| apps/web/src/lib/features/ai/agent-context-picker.svelte.spec.ts |
 | apps/web/src/lib/features/ai/agent-failure-red.test.ts |
 | apps/web/src/lib/features/ai/agent-observability-red.test.ts |
 | apps/web/src/lib/features/ai/agent-profile-red.test.ts |
+| apps/web/src/lib/features/ai/agent-proposal-review.svelte.spec.ts |
 | apps/web/src/lib/features/ai/agent-run-red.test.ts |
+| apps/web/src/lib/features/ai/ai-interface.test.ts |
+| apps/web/src/lib/features/ai/ai-regression.test.ts |
 | apps/web/src/lib/features/ai/context-red.test.ts |
 | apps/web/src/lib/features/ai/gateway-red.test.ts |
 | apps/web/src/lib/features/ai/proposal-red.test.ts |
@@ -89,6 +93,7 @@
 | apps/web/src/lib/features/sync/peer-conflict-panel.svelte.spec.ts |
 | apps/web/src/lib/features/sync/peer-conflict-panel.test.ts |
 | apps/web/src/lib/features/sync/peer-policy.test.ts |
+| apps/web/src/lib/features/sync/sync-automerge.test.ts |
 | apps/web/src/lib/features/sync/sync-database-inventory.test.ts |
 | apps/web/src/lib/features/sync/sync-document-registry.test.ts |
 | apps/web/src/lib/features/sync/sync-envelope-guard.test.ts |

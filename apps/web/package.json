@@ -21,6 +21,7 @@
   "dependencies": {
     "@automerge/automerge": "3.4.1",
     "@automerge/automerge-repo": "2.5.6",
+    "@automerge/automerge-repo-network-websocket": "2.5.6",
     "@friendofsvelte/tipex": "0.2.0",
     "@milkdown/kit": "7.22.1",
     "@tauri-apps/api": "^2.11.1",
@@ -29,6 +30,7 @@
     "@tauri-apps/plugin-updater": "^2.11.0",
     "@tiptap/extension-highlight": "2.27.2",
     "bible-passage-reference-parser": "^4.0.0",
+    "bs58check": "3.0.1",
     "clsx": "^2.1.1",
     "remark-directive": "^4.0.0",
     "sql.js": "^1.14.2",

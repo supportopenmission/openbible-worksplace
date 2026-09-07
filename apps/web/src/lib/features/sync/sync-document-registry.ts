@@ -1,12 +1,11 @@
 import type { WorkspaceStorage } from '$lib/storage/types';
-import {
-	createSyncEnvelope,
-	rejectEnvelopeFields,
-	type SyncEnvelope
-} from './sync-envelope-guard';
+import { createSyncEnvelope, rejectEnvelopeFields, type SyncEnvelope } from './sync-envelope-guard';
 import { createSyncRepository, syncRepositoryCommand } from './sync-repository';
 import { createSyncMaterializer } from './sync-materializer';
 import { createSyncPeerPolicy } from './peer-policy';
+import { getWorkspaceContentRepository } from '$lib/storage/workspace-content-storage';
+import { parseNoteFile } from '$lib/features/notes/note-markdown';
+import { persistSyncRecord, scopeSyncWorkspaceStorage } from './sync-automerge';
 
 export type SyncBackend = 'sqlite' | 'indexeddb';
 export type SyncRuntimeStorageKind = 'native' | 'browser';
@@ -65,7 +64,10 @@ function databaseNameFor(backend: SyncBackend): 'app.sqlite' | 'openbible-worksp
 	return backend === 'sqlite' ? 'app.sqlite' : 'openbible-workspace';
 }
 
-async function documentIdForPath(storage: WorkspaceStorage, path: string | undefined): Promise<string> {
+async function documentIdForPath(
+	storage: WorkspaceStorage,
+	path: string | undefined
+): Promise<string> {
 	if (!path) return 'workspace-document-unknown';
 	const bytes = await storage.readFile(path);
 	if (bytes) {
@@ -73,7 +75,12 @@ async function documentIdForPath(storage: WorkspaceStorage, path: string | undef
 		const match = content.match(/^id:\s*([^\n]+)$/m);
 		if (match?.[1]) return match[1].trim();
 	}
-	return path.split('/').at(-1)?.replace(/\.[^.]+$/, '') || 'workspace-document-unknown';
+	return (
+		path
+			.split('/')
+			.at(-1)
+			?.replace(/\.[^.]+$/, '') || 'workspace-document-unknown'
+	);
 }
 
 function documentRef(
@@ -118,18 +125,32 @@ export async function syncWorkspace(
 		case 'save': {
 			const workspaceId = workspaceIdFor(command);
 			const documentId = await documentIdForPath(storage, command.path);
-			if (command.path && command.content !== undefined) {
-				try {
-					await storage.writeFile(command.path, command.content);
-				} catch {
-					return { lastErrorCode: 'storage_write_failed', recovery: 'retry' };
-				}
+			if (command.content === undefined) {
+				return { lastErrorCode: 'content_required', recovery: 'retry' };
 			}
+			let parsed;
+			try {
+				parsed = parseNoteFile(command.content, command.path ?? `notes/${documentId}.md`);
+			} catch {
+				return { lastErrorCode: 'content_invalid', recovery: 'export_or_retry' };
+			}
+			const scopedStorage = scopeSyncWorkspaceStorage(storage, workspaceId);
+			const record = {
+				kind: 'note' as const,
+				id: parsed.meta.id || documentId,
+				workspaceId,
+				schemaVersion: parsed.meta.schemaVersion ?? 1,
+				payload: { meta: parsed.meta, body: parsed.body },
+				createdAt: parsed.meta.createdAt,
+				updatedAt: parsed.meta.updatedAt
+			};
+			await getWorkspaceContentRepository(scopedStorage, { workspaceId, backend }).write(record);
+			await persistSyncRecord(scopedStorage, record);
 			return {
 				...localDocumentManifest(
 					workspaceId,
 					backend,
-					documentRef(documentId, workspaceId, backend, command.path, true)
+					documentRef(record.id, workspaceId, backend, undefined, true)
 				),
 				localSaveConfirmed: true
 			};
@@ -138,7 +159,11 @@ export async function syncWorkspace(
 			const workspaceId = requireWorkspaceId(command.workspaceId);
 			const documentId = await documentIdForPath(storage, command.path);
 			return {
-				...localDocumentManifest(workspaceId, backend, documentRef(documentId, workspaceId, backend, command.path)),
+				...localDocumentManifest(
+					workspaceId,
+					backend,
+					documentRef(documentId, workspaceId, backend, command.path)
+				),
 				crdtAvailable: false,
 				noteReadable: true,
 				editable: true,
@@ -150,7 +175,11 @@ export async function syncWorkspace(
 			const workspaceId = workspaceIdFor(command);
 			const documentId = await documentIdForPath(storage, command.path);
 			return {
-				...localDocumentManifest(workspaceId, backend, documentRef(documentId, workspaceId, backend, command.path)),
+				...localDocumentManifest(
+					workspaceId,
+					backend,
+					documentRef(documentId, workspaceId, backend, command.path)
+				),
 				localGeneration: 1,
 				relayRequired: false,
 				storageAdapter: backend === 'sqlite' ? 'workspace-local' : 'browser-local'
@@ -161,7 +190,11 @@ export async function syncWorkspace(
 			const documentId = await documentIdForPath(storage, command.path);
 			const bytes = new TextEncoder().encode(command.content ?? '').byteLength;
 			return {
-				...localDocumentManifest(workspaceId, backend, documentRef(documentId, workspaceId, backend, command.path, true)),
+				...localDocumentManifest(
+					workspaceId,
+					backend,
+					documentRef(documentId, workspaceId, backend, command.path, true)
+				),
 				queue: { pendingCount: 1, bounded: true, bytes }
 			};
 		}
@@ -182,7 +215,9 @@ export async function syncWorkspace(
 			const envelope = createSyncEnvelope({
 				workspaceId,
 				documents: [document],
-				deltas: [{ documentId: document.documentId, workspaceId, changeId: 'pending-001', bytes: 0 }]
+				deltas: [
+					{ documentId: document.documentId, workspaceId, changeId: 'pending-001', bytes: 0 }
+				]
 			});
 			return {
 				payload: envelope,
@@ -192,7 +227,9 @@ export async function syncWorkspace(
 		}
 		case 'pair-peer': {
 			const workspaceId = requireWorkspaceId(command.workspaceId);
-			const peer = createSyncPeerPolicy(workspaceId).pair(command.peerId ?? '', ['note-offline-001']);
+			const peer = createSyncPeerPolicy(workspaceId).pair(command.peerId ?? '', [
+				'note-offline-001'
+			]);
 			return {
 				peers: [
 					{
@@ -237,7 +274,11 @@ export async function syncWorkspace(
 			const workspaceId = requireWorkspaceId(command.workspaceId);
 			const repository = createSyncRepository(storage, { backend, workspaceId });
 			return {
-				...localDocumentManifest(workspaceId, backend, documentRef('note-offline-001', workspaceId, backend)),
+				...localDocumentManifest(
+					workspaceId,
+					backend,
+					documentRef('note-offline-001', workspaceId, backend)
+				),
 				notePersisted: true,
 				compaction: repository.compact()
 			};

@@ -5,8 +5,8 @@
 
 | Tipo | Quantidade |
 | --- | --- |
-| Código | 699 |
-| Testes | 113 |
+| Código | 707 |
+| Testes | 118 |
 
 ## Diagramas
 
