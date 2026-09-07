@@ -93,7 +93,6 @@ import { resolveToolbarVisibility } from './note-toolbar';
 	let coreModule: typeof import('@milkdown/kit/core') | null = null;
 	let commonmarkModule: typeof import('@milkdown/kit/preset/commonmark') | null = null;
 	let saveService: ReturnType<typeof createNoteEditorService> | null = null;
-	let saveStatus = $state<SaveStatus>('idle');
 	let initError = $state('');
 	let slashOpen = $state(false);
 	let slashQuery = $state('');
@@ -157,6 +156,7 @@ let toolbarResolved = $derived(
 			if (externalTitle !== noteTitle && document.activeElement !== titleEl) {
 				noteTitle = externalTitle;
 				if (titleEl && titleEl.innerText !== externalTitle) {
+					// eslint-disable-next-line svelte/no-dom-manipulating -- synchronize external contenteditable content without stealing focus
 					titleEl.innerText = externalTitle;
 				}
 			}
@@ -164,6 +164,7 @@ let toolbarResolved = $derived(
 			if (externalDesc !== noteDescription && document.activeElement !== descriptionEl) {
 				noteDescription = externalDesc;
 				if (descriptionEl && descriptionEl.innerText !== externalDesc) {
+					// eslint-disable-next-line svelte/no-dom-manipulating -- synchronize external contenteditable content without stealing focus
 					descriptionEl.innerText = externalDesc;
 				}
 			}
@@ -549,12 +550,11 @@ let toolbarResolved = $derived(
 			try {
 				pos = view.posAtDOM(figure, 0);
 			} catch {
-				pos = null;
+				// pos stays null when the DOM node is not mapped by ProseMirror.
 			}
 			let node = pos != null ? view.state.doc.nodeAt(pos) : null;
 			if ((!node || node.type.name !== 'video') && pos != null) {
 				node = null;
-				pos = null;
 			}
 			if (!node) {
 				view.state.doc.descendants((child, childPos) => {
@@ -876,7 +876,6 @@ let toolbarResolved = $derived(
 					note,
 					storage,
 					onStatusChange: (status) => {
-						saveStatus = status;
 						onStatusChange?.(status);
 					},
 					onSaved
