@@ -14,8 +14,9 @@ Relação: relaciona cada arquivo observado à sua superfície.
 | Outras fontes | apps/desktop/src-tauri/src/commands/lock_test.rs | — |
 | Outras fontes | apps/desktop/src-tauri/src/commands/migration.rs | — |
 | Outras fontes | apps/desktop/src-tauri/src/commands/mod.rs | — |
+| Outras fontes | apps/desktop/src-tauri/src/commands/sync.rs | — |
 | Outras fontes | apps/desktop/src-tauri/src/commands/workspace.rs | FORMAT_VERSION, MigrationState, MANAGED_TOP_LEVEL |
-| Outras fontes | apps/desktop/src-tauri/src/database.rs | MIGRATION_001, MIGRATION_002, APP_DATABASE_FILE, CURRENT_SCHEMA_VERSION, DatabaseError |
+| Outras fontes | apps/desktop/src-tauri/src/database.rs | MIGRATION_001, MIGRATION_002, MIGRATION_003, APP_DATABASE_FILE, CURRENT_SCHEMA_VERSION, DatabaseError |
 | Outras fontes | apps/desktop/src-tauri/src/lib.rs | — |
 | Outras fontes | apps/desktop/src-tauri/src/main.rs | — |
 | Outras fontes | apps/web/.svelte-kit/ambient.d.ts | BACKGROUND, BAT_THEME, BORDER_BACKGROUND, BORDER_FOREGROUND, BROWSER, CHROME_DESKTOP, CODEX_CI, CODEX_SESSION_ID |
@@ -258,7 +259,6 @@ Relação: relaciona cada arquivo observado à sua superfície.
 | Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.CsG63tbc.css | — |
 | Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.DEycNB_8.css | — |
 | Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.DVoyJ9ww.css | — |
-| Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.Df66ovmK.css | — |
 <!-- specsfy:documentator:end -->
 
 ## Fontes de aplicação relevantes

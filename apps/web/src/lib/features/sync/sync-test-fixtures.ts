@@ -13,7 +13,53 @@ export type SyncCommand = {
   fields?: string[];
 };
 
-export type SyncManifest = Record<string, any>;
+type SyncDocument = {
+	documentId?: string;
+	workspaceId?: string;
+	heads?: string[];
+	mergedFields?: string[];
+};
+
+type SyncConflict = {
+	documentId?: string;
+	status?: string;
+	recoverable?: boolean;
+};
+
+export type SyncManifest = {
+	[key: string]: unknown;
+	documents?: SyncDocument[];
+	envelope?: object;
+	credentials?: { storage?: string; exported?: boolean };
+	excludedPaths?: string[];
+	sourceFiles?: string[];
+	payload?: object;
+	externalEdits?: Array<Record<string, unknown> & { baseHash?: string }>;
+	conflicts?: SyncConflict[];
+	index?: Record<string, unknown>;
+	peers?: Array<Record<string, unknown>>;
+	exports?: string[];
+	queue?: { pendingCount?: number; bounded?: boolean; bytes?: number };
+	localGeneration?: number;
+	relayRequired?: boolean;
+	absolutePath?: string;
+	handle?: unknown;
+	localSaveConfirmed?: boolean;
+	endpoint?: {
+		transport?: string;
+		authorized?: boolean;
+		pendingDocuments?: string[];
+		enabled?: boolean;
+	};
+	transports?: string[];
+	retry?: { attempts?: number; recoverable?: boolean; backoffMs?: number };
+	queuePolicy?: { maxBytes?: number; backpressure?: string };
+	endpointPolicy?: { productionRequiresTls?: boolean; insecureStatus?: string };
+	diagnostics?: { status?: string; lastSuccessAt?: string | null; lastErrorCode?: string | null };
+	protocol?: { version?: number; transportAgnostic?: boolean };
+	merge?: { orderIndependent?: boolean; missingChanges?: number };
+	compaction?: { sourceRetained?: boolean; snapshotRecoverable?: boolean; snapshotVersion?: number; maxBytes?: number };
+};
 
 type SyncWorkspaceModule = typeof import('$lib/storage/workspace') & {
   syncWorkspace?: (storage: WorkspaceStorage, command: SyncCommand) => Promise<SyncManifest>;
@@ -34,7 +80,7 @@ export class SyncMemoryStorage implements WorkspaceStorage {
   readonly files = new Map<string, Uint8Array>();
   failWrites = false;
 
-  async ensureDirectory(_path: string): Promise<void> {}
+	async ensureDirectory(): Promise<void> {}
   async writeFile(path: string, content: FileContent): Promise<void> {
     if (this.failWrites) throw new Error('fixture-write-failed');
     this.files.set(path, typeof content === 'string' ? new TextEncoder().encode(content) : content);

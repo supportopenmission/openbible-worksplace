@@ -55,3 +55,7 @@ manifests dos workspaces.
 - Manter no máximo uma referência local por workspaceId no catálogo; colisão de ID se resolve atualizando a localização existente ou criando cópia independente com novo ID.
 
 - Remover da lista nunca apaga arquivos; excluir workspace exige raiz dedicada com marcador gerenciado comprovado e bloqueia sem opção de forçar em qualquer dúvida.
+
+## Sincronização
+
+- Na SPEC-0019, a sincronização entre dispositivos é opt-in por workspace e por dispositivo; sem configuração explícita, o app permanece somente local. As notas e o estado operacional continuam persistidos no app.sqlite no Tauri ou no IndexedDB versionado no PWA, sempre escopados por workspaceId. Nenhum relay é obrigatório; quando houver endpoint WebSocket, ele deve usar transporte seguro, autenticação configurada e permitir revogação.

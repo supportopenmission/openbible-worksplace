@@ -5,15 +5,15 @@
 | Formato | Specsfy/2.0 |
 | ID | SPEC-0019 |
 | Slug | 0019-sincronizacao-local-first-automerge |
-| Status | Defined |
+| Status | Implementing |
 | Effort | 9 |
 | Effort updated at | 2026-09-05 |
 | Effort rationale | Integra CRDT, dois backends de armazenamento, transporte configurável, bridge de edição externa, segurança de peers e preservação autoral. |
 | ClickUp Task | |
 | Milestones | Pós formatos portáteis e backup; preparação para sincronização entre aparelhos |
 | Definition Gate | Passed |
-| Plan Gate | Pending |
-| Delivery Gate | Pending |
+| Plan Gate | Passed |
+| Delivery Gate | In Progress |
 | Evidence Contract | 1 |
 | Interface para pessoas | Sim |
 | Atualizada em | 2026-09-07 |
@@ -880,49 +880,54 @@ contêm IDs opacos/códigos/timestamps/contagens, nunca texto, token ou path.
 > normativa de 2026-09-07. Eles comprovam a seam inicial, mas não comprovam os
 > contratos agora explícitos de persistência de notas em `app.sqlite`/IndexedDB.
 > T001, T002, T011–T013, T020–T023 e T028 foram reabertas para reconciliação;
-> os arquivos e comandos históricos permanecem preservados, e uma nova rodada
-> RED será exigida antes do Plan Gate.
+> os testes foram ajustados e executados novamente, mantendo RED comportamental
+> até a implementação de `syncWorkspace`.
 
 Os 30 casos TDD foram materializados e executados em Vitest. Cada caso atravessa
 `executeSync`, que importa dinamicamente o módulo existente
 `$lib/storage/workspace` e exige a exportação pública
 `syncWorkspace(storage, command)`. O RED observado é a ausência desse seam
-comportamental (`syncWorkspace` ainda não é exportado); não houve falha de
-importação, sintaxe ou fixture. Quando o seam existir, cada caso prosseguirá
-até o oráculo do AC correspondente. GREEN e refactor permanecem Pending porque
-a fase 7 não foi iniciada.
+comportamental (`syncWorkspace` ainda não era exportado); não houve falha de
+importação, sintaxe ou fixture. Os contratos atendidos por T031 foram
+verificados em GREEN; T033 materializou a facade de transporte, retry,
+backpressure e diagnósticos para os sete ACs de rede.
 
 | ACs | Arquivo | RED observado | GREEN | Refactor |
 | --- | --- | --- | --- | --- |
-| AC-001, AC-002, AC-003, AC-004, AC-019, AC-020, AC-021, AC-026 | `apps/web/src/lib/features/sync/sync-document-registry.test.ts` | AC-001 foi rederivado para exigir `indexeddb`/`workspaceId`; a execução focal produziu 8 REDs porque a exportação pública `syncWorkspace` ainda está ausente | Pending | Pending |
-| AC-005, AC-006, AC-007, AC-022, AC-025, AC-027, AC-030 | `apps/web/src/lib/features/sync/sync-network-adapters.test.ts` | 7 REDs: exportação pública `syncWorkspace` ausente após chamada pela fixture | Pending | Pending |
-| AC-008, AC-009, AC-010, AC-023, AC-029 | `apps/web/src/lib/features/sync/sync-repository.test.ts` | 5 REDs: exportação pública `syncWorkspace` ausente após chamada pela fixture | Pending | Pending |
-| AC-011, AC-012, AC-013 | `apps/web/src/lib/features/sync/external-edit-bridge.test.ts` | 3 REDs: exportação pública `syncWorkspace` ausente após chamada pela fixture | Pending | Pending |
-| AC-014, AC-015, AC-018, AC-024, AC-028 | `apps/web/src/lib/features/sync/sync-envelope-guard.test.ts` | 5 REDs: exportação pública `syncWorkspace` ausente após chamada pela fixture | Pending | Pending |
-| AC-016, AC-017 | `apps/web/src/lib/features/sync/peer-policy.test.ts` | 2 REDs: exportação pública `syncWorkspace` ausente após chamada pela fixture | Pending | Pending |
+| AC-001, AC-002, AC-003, AC-004, AC-019, AC-020, AC-021, AC-026 | `apps/web/src/lib/features/sync/sync-document-registry.test.ts`, `sync-storage-adapters.test.ts` | RED histórico dos 8 casos; AC-020 mantém a verificação posterior da ponte allowlisted Tauri | 8/8 Passed no registry; adapters/schema de AC-020/021 e persistência local de T032 Passed; ponte Tauri de AC-020 permanece T040 | Pending |
+| AC-005, AC-006, AC-007, AC-022, AC-025, AC-027, AC-030 | `apps/web/src/lib/features/sync/sync-network-adapters.test.ts` | 7 REDs históricos; AC-022 também exige que o registro persistido no IndexedDB permaneça intacto sob backpressure | 7/7 Passed com adapters local/WebSocket, TLS obrigatório, retry/backoff, policy de fila, diagnósticos e protocolo transport-agnostic | Pending |
+| AC-008, AC-009, AC-010, AC-023, AC-029 | `apps/web/src/lib/features/sync/sync-repository.test.ts` | 5 REDs históricos; AC-023 exige snapshot recuperável sem remover a nota persistida no backend operacional | 5/5 Passed com merge por documento, heads fora de ordem, conflito recuperável, compactação com fonte preservada e modo local-only | Pending |
+| AC-011, AC-012, AC-013 | `apps/web/src/lib/features/sync/external-edit-bridge.test.ts` | 3 REDs históricos; bridge afirma backend IndexedDB, `workspaceId`, preservação sem overwrite e reconstrução sem `.openbible/index.sqlite` | 3/3 Passed com proposta externa, cópia recuperável de conflito e rebuild pendente sobre backend operacional | Pending |
+| AC-014, AC-015, AC-018, AC-024, AC-028 | `apps/web/src/lib/features/sync/sync-envelope-guard.test.ts` | AC-028 agora afirma payload com documentos/deltas e sem banco bruto/projeção; os 5 casos passaram com o guard | Passed | Pending |
+| AC-016, AC-017 | `apps/web/src/lib/features/sync/peer-policy.test.ts` | 2 REDs históricos por ausência da policy de peer | 2/2 Passed com pairing explícito, revogação e preservação dos dados locais | Pending |
 
-Comando focal: `bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-document-registry.test.ts src/lib/features/sync/sync-network-adapters.test.ts src/lib/features/sync/sync-repository.test.ts src/lib/features/sync/external-edit-bridge.test.ts src/lib/features/sync/sync-envelope-guard.test.ts src/lib/features/sync/peer-policy.test.ts` — exit 1, 6 arquivos e 30 testes falhos.
+Comando RED histórico: `bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-document-registry.test.ts src/lib/features/sync/sync-network-adapters.test.ts src/lib/features/sync/sync-repository.test.ts src/lib/features/sync/external-edit-bridge.test.ts src/lib/features/sync/sync-envelope-guard.test.ts src/lib/features/sync/peer-policy.test.ts` — exit 1, 6 arquivos e 30 testes falhos. GREEN atual: T031 passou 8 casos de contrato, T032 passou 2 casos de adapters e T033 passou 20 casos focais, além da regressão IndexedDB/backup e dos 15 testes Rust de schema.
 
 ### 12. Plano de testes e rastreabilidade
 
 > As linhas de evidência RED já registradas continuam como histórico da seam
-> inicial. Para os ACs alterados pela decisão de persistência, a evidência fica
-> `Pending` até os testes afirmarem explicitamente `app.sqlite`, IndexedDB,
-> `workspaceId` e a exclusão de `.openbible/index.sqlite` do backend ativo e do
-> payload.
+> inicial. T032 materializa o schema v3, os stores versionados e os adapters
+> locais com `workspaceId`; T033 materializa a facade de transporte e a policy
+> de fila. A ponte de comandos allowlisted Tauri continua em T040.
 
 | Requisito | Cenários BDD | Nível | Arquivo/comando esperado | Evidência |
 | --- | --- | --- | --- | --- |
-| FR-001 | AC-001, AC-002, AC-019 | Unidade/integração | `sync-document-registry.test.ts` | AC-001 RED: contrato espera backend `indexeddb` e `workspaceId`; seam `syncWorkspace` ainda ausente |
-| FR-002 | AC-003, AC-004, AC-020, AC-021, AC-026 | Unidade/contrato | `sync-document-registry.test.ts` | RED: chamada à seam `syncWorkspace` alcançada; exportação pública ausente |
-| FR-003 | AC-005, AC-006, AC-007, AC-022, AC-025, AC-027, AC-030 | Integração | `sync-network-adapters.test.ts` | RED: chamada à seam `syncWorkspace` alcançada; exportação pública ausente |
-| FR-004 | AC-008, AC-009, AC-010, AC-023, AC-029 | Unidade/integração | `sync-repository.test.ts` | RED: chamada à seam `syncWorkspace` alcançada; exportação pública ausente |
-| FR-005 | AC-011, AC-012, AC-013 | Unidade/contrato | `external-edit-bridge.test.ts` | RED: chamada à seam `syncWorkspace` alcançada; exportação pública ausente |
-| FR-006 | AC-014, AC-015, AC-016, AC-017, AC-018, AC-024, AC-028 | Unidade/segurança | `sync-envelope-guard.test.ts`, `peer-policy.test.ts` | RED: chamada à seam `syncWorkspace` alcançada; exportação pública ausente |
-| NFR-001 | AC-001, AC-005, AC-008, AC-013, AC-019, AC-029 | Integração | suíte focal | RED: disponibilidade local não declarada |
-| NFR-002 | AC-010, AC-012, AC-014, AC-015, AC-018, AC-024, AC-025 | Segurança | suíte focal | RED: guard/TLS/segredo ausentes |
-| NFR-003 | AC-004, AC-007, AC-017, AC-022, AC-023, AC-026, AC-027 | Carga/integração | suíte focal | RED: limites/diagnósticos ausentes |
-| NFR-004 | AC-002, AC-006, AC-009, AC-011, AC-016, AC-020, AC-021, AC-028, AC-030 | Contrato/regressão | suíte focal | RED: portabilidade/adapters ausentes |
+| FR-001 | AC-001, AC-002, AC-019 | Unidade/integração | `sync-document-registry.test.ts` | AC-001/002 GREEN: registry identifica IndexedDB, `workspaceId`, leitura sem CRDT e exportações regeneráveis; AC-019 GREEN para reabertura local sem relay |
+| FR-002 | AC-003, AC-004, AC-020, AC-021, AC-026 | Unidade/contrato | `sync-document-registry.test.ts`, `sync-storage-adapters.test.ts`, `indexeddb-workspace-adapter.test.ts` | T032/T033 GREEN para schema v3, escopo por `workspaceId`, persistência local focal, fila limitada e resposta sem relay; AC-020 ainda aguarda a ponte allowlisted T040 |
+| FR-003 | AC-005, AC-006, AC-007, AC-022, AC-025, AC-027, AC-030 | Integração | `sync-network-adapters.test.ts` | 7/7 GREEN: local/WebSocket substituíveis, retry com backoff observável, TLS obrigatório, backpressure pausa somente rede, diagnósticos e protocolo independente do transporte |
+| FR-004 | AC-008, AC-009, AC-010, AC-023, AC-029 | Unidade/integração | `sync-repository.test.ts` | 5/5 GREEN: merge por documento preserva heads, ordem de deltas, conflitos revisáveis, snapshot recuperável e uso local sem relay |
+| FR-005 | AC-011, AC-012, AC-013 | Unidade/contrato | `external-edit-bridge.test.ts` | 3/3 GREEN: materializer cria proposta explícita, preserva as duas versões quando necessário e reconstrói projeção sem `.openbible/index.sqlite` |
+| FR-006 | AC-014, AC-015, AC-016, AC-017, AC-018, AC-024, AC-028 | Unidade/segurança | `sync-envelope-guard.test.ts`, `peer-policy.test.ts` | 7/7 GREEN: guard, escopo, credenciais, pairing, revogação e payload passaram |
+| Interface de sincronização | AC-016, AC-018, AC-025 | Componente/E2E visual | `sync-settings.test.ts`, `SyncSettings.svelte`, `ConfigPage.svelte` | 3/3 contratos GREEN; inspeção em desktop e 320 px confirmou backend, escopo, `wss://`, pairing/revogação, foco visível e feedback acessível; claro/escuro usa os tokens existentes |
+| Status de sincronização | AC-005, AC-007, AC-027 | Componente/integração visual | `sync-status.test.ts`, `SyncStatus.svelte` | 6/6 contratos de status GREEN; estados local/offline/conexão/sync/sucesso/erro, fila local, último sucesso, falha e retry ficam expostos sem bloquear a edição local |
+| Revisão de conflito externo | AC-011, AC-012, AC-013 | Componente/E2E visual | `peer-conflict-panel.test.ts`, `peer-conflict-panel.svelte.spec.ts`, `PeerConflictPanel.svelte` | 7/7 testes GREEN; painel mostra as duas versões recuperáveis, backend operacional, paths de recovery e ações explícitas em 320 px, sem overwrite implícito |
+| Boundary Tauri de persistência | AC-005, AC-020, AC-030 | Unidade/integração nativa | `database.rs`, `commands/sync.rs`, `tauri-bridge.test.ts` | 16/16 testes Rust e 5/5 testes bridge GREEN; nota, snapshot e fila persistem em `app.sqlite`, escopados por `workspaceId`, com comandos allowlisted e sem SQL/path livre |
+| Pacotes Automerge e adapters | AC-005, AC-021, AC-022 | Integração/documentação | `.specsfy/STACK.md`, `.specsfy/PACKAGES.md`, `sync-network-adapters.test.ts`, `sync-storage-adapters.test.ts` | `@automerge/automerge` 3.4.1 e `@automerge/automerge-repo` 2.5.6 registrados; adapters próprios preservam `app.sqlite`/IndexedDB como backends, com 17/17 focais GREEN |
+| Inventário de persistência | AC-002, AC-009, AC-013 | Schema/documentação | `.specsfy/DATABASE.md`, `sync-database-inventory.test.ts`, migration 003 e stores IndexedDB v3 | 1/1 auditoria documental GREEN; notas primárias, snapshots/changes, fila, peers, endpoints, conflitos e projeções aparecem nos dois backends com escopo por workspace |
+| NFR-001 | AC-001, AC-005, AC-008, AC-013, AC-019, AC-029 | Integração | suíte focal | Parcial GREEN: AC-001/005/008/013/019/029 passaram sem relay; materialização operacional completa depende da ponte de runtime |
+| NFR-002 | AC-010, AC-012, AC-014, AC-015, AC-018, AC-024, AC-025 | Segurança | suíte focal | Parcial GREEN: guard, conflito recuperável, pairing/revogação e bloqueio de endpoint sem TLS passaram |
+| NFR-003 | AC-004, AC-007, AC-017, AC-022, AC-023, AC-026, AC-027 | Carga/integração | suíte focal | Parcial GREEN: queue policy, retry, backpressure e diagnósticos passaram; pairing, compactação e carga permanecem pendentes |
+| NFR-004 | AC-002, AC-006, AC-009, AC-011, AC-016, AC-020, AC-021, AC-028, AC-030 | Contrato/regressão | suíte focal | Parcial GREEN: registry, materializer, adapters locais, pairing, guard e boundary de transporte passaram; comandos Tauri permanecem pendentes |
 
 ### 13. Validações
 
@@ -939,19 +944,24 @@ Comando focal: `bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-do
 
 #### Gate do Ato II — Plano
 
-- **Resultado atual**: Pending — o plano precisa reconciliar os REDs afetados,
-  incluir migration versionada para `app.sqlite` e upgrade dos object stores
-  IndexedDB, além de atualizar a rastreabilidade.
-- **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/planned/0019-sincronizacao-local-first-automerge/spec.md`
-- **Achados**: `validate_tasks --allow-draft`, `validate_tasks` e `validate_interface_tasks` passaram; o auditor global mantém somente marcadores órfãos históricos de outras specs, fora desta spec.
+- **Resultado atual**: Passed em 2026-09-07 — todas as 30 tarefas TDD estão
+  materializadas com RED comportamental, 14 tarefas de código aguardam a
+  implementação e os 44 IDs da spec têm cobertura rastreável.
+- **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/defined/0019-sincronizacao-local-first-automerge/spec.md`
+- **Achados**: `validate_tasks --allow-draft`, `validate_tasks` e
+  `validate_interface_tasks` passaram; o auditor global mantém somente
+  marcadores órfãos históricos de outras specs, fora desta spec.
 
 #### Gate do Ato III — Entrega
 
-- **Resultado atual**: Pending — nenhuma implementação nova desta revisão foi
-  validada; o resultado anterior fica preservado como histórico e não pode
-  aprovar a persistência corrigida.
-- **Comando**: `node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/planned/0019-sincronizacao-local-first-automerge/spec.md apps/web/src/lib/features/sync`
-  - **Achados**: `Rastreabilidade: 44/44 IDs cobertos em 6 arquivos de teste. RESULTADO: OK`. A execução contra a raiz inteira ainda lista marcadores órfãos históricos de outras specs; eles ficam fora do escopo desta spec.
+- **Resultado atual**: In Progress — todas as tarefas T031–T045 foram
+  executadas e os 44 IDs têm rastreabilidade automatizada, mas o gate final
+  aguarda a resolução dos REDs históricos de AI/backup e das falhas globais de
+  tipos fora da área da SPEC-0019.
+- **Comando**: `node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/in-progress/0019-sincronizacao-local-first-automerge/spec.md apps/web/src/lib/features/sync --kinds US,FR,NFR,AC`
+  - **Achados**: `Rastreabilidade: 44/44 IDs cobertos em 14 arquivos de teste. RESULTADO: OK`. A execução contra a raiz inteira ainda lista marcadores órfãos históricos de outras specs; eles ficam fora do escopo desta spec.
+- **Regressão final**: `bun run --cwd apps/web test:tdd` executou 560 testes; 543 passaram e 17 falharam exclusivamente nos REDs históricos de AI/backup, sem falhas em `features/sync`.
+- **Tipos finais**: `bun run --cwd apps/web check-types` continua falhando somente no baseline global de UI, AI, Bíblia, notas e rotas; não há erro nos arquivos de sync após o ajuste do fixture compartilhado.
 
 ### 14. Tarefas
 
@@ -967,13 +977,13 @@ Formato canônico: - [ ] TNNN [TIPO] [US-NNN] Ação com caminho — Refs: IDs �
   - [x] **EVIDENCE**: Registrado comando exit 1, backend esperado `indexeddb`, causa do RED e IDs nas seções 11–13.
   - [x] **IMPROVE**: Fixture explicita `workspaceId` e backend browser, sem depender de path como identidade.
 
-- [ ] T002 [TEST] [TDD] [US-001] Reconciliar o teste Vitest do AC-002 com a abertura da nota no backend operacional sem estado CRDT e a regeneração de exportação em apps/web/src/lib/features/sync/sync-document-registry.test.ts — Refs: US-001, FR-001, NFR-004, AC-002 — Depends: none
-  - [ ] **PREP**: Ler o Gherkin do AC-002, confirmar o backend operacional e preparar fixture sem estado CRDT.
-  - [ ] **EXECUTE**: Reescrever o caso para abrir/editar a nota em `app.sqlite`/IndexedDB e regenerar Markdown/JSON como exportação.
-  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental do contrato ausente, nunca falha estrutural.
-  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de persistência/exportação.
-  - [ ] **EVIDENCE**: Registrar comando, backend exercitado e IDs nas seções 11–13.
-  - [ ] **IMPROVE**: Revisar fixture e ausência de dependência de filesystem/OPFS.
+- [x] T002 [TEST] [TDD] [US-001] Reconciliar o teste Vitest do AC-002 com a abertura da nota no backend operacional sem estado CRDT e a regeneração de exportação em apps/web/src/lib/features/sync/sync-document-registry.test.ts — Refs: US-001, FR-001, NFR-004, AC-002 — Depends: none
+  - [x] **PREP**: Ler o Gherkin do AC-002, confirmar IndexedDB `openbible-workspace` no PWA e preparar fixture sem estado CRDT.
+  - [x] **EXECUTE**: Reescrever o caso para abrir/editar a nota no backend operacional e exigir Markdown/JSON como exportação regenerável.
+  - [x] **VERIFY**: Executar o focal de 6 arquivos; 30 testes produziram RED comportamental porque `syncWorkspace` ainda não é exportado.
+  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste de persistência/exportação.
+  - [x] **EVIDENCE**: Registrar comando exit 1, `backend: indexeddb`, `workspaceId`, `crdtAvailable: false` e IDs nas seções 11–13.
+  - [x] **IMPROVE**: Fixture explicita backend operacional e não depende de filesystem/OPFS como fonte ativa.
 
 - [x] T003 [TEST] [TDD] [US-001] Derivar teste Vitest do AC-003 em apps/web/src/lib/features/sync/sync-document-registry.test.ts — Refs: US-001, FR-002, NFR-001, AC-003 — Depends: none
   - [x] **PREP**: Ler o Gherkin do AC-003, confirmar contrato público e preparar fixture determinística.
@@ -1039,29 +1049,29 @@ Formato canônico: - [ ] TNNN [TIPO] [US-NNN] Ação com caminho — Refs: IDs �
   - [x] **EVIDENCE**: Registrar comando, causa comportamental do RED e IDs nas seções 11–13.
   - [x] **IMPROVE**: Revisar fixture e seam público, registrando ajuste ou ausência justificada.
 
-- [ ] T011 [TEST] [TDD] [US-003] Reconciliar o teste Vitest do AC-011 para importação explícita de exportação/fonte legada em apps/web/src/lib/features/sync/external-edit-bridge.test.ts — Refs: US-003, FR-005, NFR-004, AC-011 — Depends: none
-  - [ ] **PREP**: Ler o Gherkin do AC-011, separar exportação/legado de backend ativo e preparar fixture determinística.
-  - [ ] **EXECUTE**: Reescrever o caso para produzir proposta de importação sem sobrescrever o registro persistido.
-  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental, sem falha estrutural.
-  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de bridge.
-  - [ ] **EVIDENCE**: Registrar comando, origem externa, backend alvo e IDs nas seções 11–13.
-  - [ ] **IMPROVE**: Revisar fixture, gerações e recuperação.
+- [x] T011 [TEST] [TDD] [US-003] Reconciliar o teste Vitest do AC-011 para importação explícita de exportação/fonte legada em apps/web/src/lib/features/sync/external-edit-bridge.test.ts — Refs: US-003, FR-005, NFR-004, AC-011 — Depends: none
+  - [x] **PREP**: Ler o Gherkin do AC-011, separar exportação/legado de backend ativo e preparar fixture determinística.
+  - [x] **EXECUTE**: Reescrever o caso para produzir proposta de importação no IndexedDB sem sobrescrever o registro persistido.
+  - [x] **VERIFY**: Executar o focal de 6 arquivos; o caso falhou na seam ausente, sem falha estrutural.
+  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste de bridge.
+  - [x] **EVIDENCE**: Registrar comando exit 1, origem Markdown, backend IndexedDB, `workspaceId` e IDs nas seções 11–13.
+  - [x] **IMPROVE**: Fixture exige `overwrite: false` e preservação do registro persistido.
 
-- [ ] T012 [TEST] [TDD] [US-003] Reconciliar o teste Vitest do AC-012 para preservar conflito entre importação externa e registro persistido em apps/web/src/lib/features/sync/external-edit-bridge.test.ts — Refs: US-003, FR-005, NFR-002, AC-012 — Depends: none
-  - [ ] **PREP**: Ler o Gherkin do AC-012 e preparar versões externa/importada e persistida.
-  - [ ] **EXECUTE**: Reescrever o caso para manter ambas as versões recuperáveis sem substituir a nota do backend.
-  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental, sem falha estrutural.
-  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de conflito.
-  - [ ] **EVIDENCE**: Registrar comando, referências de recuperação e IDs nas seções 11–13.
-  - [ ] **IMPROVE**: Revisar fixture e ausência de overwrite silencioso.
+- [x] T012 [TEST] [TDD] [US-003] Reconciliar o teste Vitest do AC-012 para preservar conflito entre importação externa e registro persistido em apps/web/src/lib/features/sync/external-edit-bridge.test.ts — Refs: US-003, FR-005, NFR-002, AC-012 — Depends: none
+  - [x] **PREP**: Ler o Gherkin do AC-012 e preparar versões externa/importada e persistida.
+  - [x] **EXECUTE**: Reescrever o caso para manter ambas as versões recuperáveis sem substituir a nota do IndexedDB.
+  - [x] **VERIFY**: Executar o focal de 6 arquivos; o caso falhou na seam ausente, sem falha estrutural.
+  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste de conflito.
+  - [x] **EVIDENCE**: Registrar comando exit 1, referências de recuperação, backend e `workspaceId` nas seções 11–13.
+  - [x] **IMPROVE**: Fixture afirma `localVersionRecoverable`, `externalVersionRecoverable` e ausência de overwrite silencioso.
 
-- [ ] T013 [TEST] [TDD] [US-003] Reconciliar o teste Vitest do AC-013 para reconstruir projeção sem depender de `.openbible/index.sqlite` em apps/web/src/lib/features/sync/external-edit-bridge.test.ts — Refs: US-003, FR-005, NFR-001, AC-013 — Depends: none
-  - [ ] **PREP**: Ler o Gherkin do AC-013 e preparar backend operacional com projeção ausente.
-  - [ ] **EXECUTE**: Reescrever o caso para abrir a nota no backend e reconstruir a projeção sem consultar `.openbible/index.sqlite`.
-  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental, sem falha estrutural.
-  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de recuperação.
-  - [ ] **EVIDENCE**: Registrar comando, backend, projeção e IDs nas seções 11–13.
-  - [ ] **IMPROVE**: Revisar fixture e idempotência do rebuild.
+- [x] T013 [TEST] [TDD] [US-003] Reconciliar o teste Vitest do AC-013 para reconstruir projeção sem depender de `.openbible/index.sqlite` em apps/web/src/lib/features/sync/external-edit-bridge.test.ts — Refs: US-003, FR-005, NFR-001, AC-013 — Depends: none
+  - [x] **PREP**: Ler o Gherkin do AC-013 e preparar backend IndexedDB com projeção ausente.
+  - [x] **EXECUTE**: Reescrever o caso para abrir a nota no backend operacional e reconstruir a projeção sem consultar `.openbible/index.sqlite`.
+  - [x] **VERIFY**: Executar o focal de 6 arquivos; o caso falhou na seam ausente, sem falha estrutural.
+  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste de recuperação.
+  - [x] **EVIDENCE**: Registrar comando exit 1, backend, `projectionDependency: null`, ausência de `indexPath` e IDs nas seções 11–13.
+  - [x] **IMPROVE**: Fixture afirma disponibilidade da nota e rebuild posterior idempotente sem índice legado.
 
 - [x] T014 [TEST] [TDD] [US-003] Derivar teste Vitest do AC-014 em apps/web/src/lib/features/sync/sync-envelope-guard.test.ts — Refs: US-003, FR-006, NFR-002, AC-014 — Depends: none
   - [x] **PREP**: Ler o Gherkin do AC-014, confirmar contrato público e preparar fixture determinística.
@@ -1111,37 +1121,37 @@ Formato canônico: - [ ] TNNN [TIPO] [US-NNN] Ação com caminho — Refs: IDs �
   - [x] **EVIDENCE**: Registrar comando, causa comportamental do RED e IDs nas seções 11–13.
   - [x] **IMPROVE**: Revisar fixture e seam público, registrando ajuste ou ausência justificada.
 
-- [ ] T020 [TEST] [TDD] [US-001] Reconciliar o teste Vitest do AC-020 para provar persistência da nota e do estado CRDT no `app.sqlite` do Tauri em apps/web/src/lib/features/sync/sync-document-registry.test.ts — Refs: US-001, FR-002, NFR-004, AC-020 — Depends: none
-  - [ ] **PREP**: Ler o Gherkin do AC-020, confirmar `app.sqlite`, migration e `workspaceId`, e preparar fixture determinística.
-  - [ ] **EXECUTE**: Reescrever o caso Vitest para provar que o Tauri grava nota e estado CRDT no `app.sqlite`, sem filesystem como backend ativo.
-  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental, sem falha estrutural.
-  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de boundary nativo.
-  - [ ] **EVIDENCE**: Registrar comando, migration, backend exercitado e IDs nas seções 11–13.
-  - [ ] **IMPROVE**: Revisar fixture, allowlist e isolamento por `workspaceId`.
+- [x] T020 [TEST] [TDD] [US-001] Reconciliar o teste Vitest do AC-020 para provar persistência da nota e do estado CRDT no `app.sqlite` do Tauri em apps/web/src/lib/features/sync/sync-document-registry.test.ts — Refs: US-001, FR-002, NFR-004, AC-020 — Depends: none
+  - [x] **PREP**: Ler o Gherkin do AC-020, confirmar `app.sqlite`, migration e `workspaceId`, e preparar fixture determinística.
+  - [x] **EXECUTE**: Reescrever o caso Vitest para exigir backend `sqlite`, banco `app.sqlite`, escopo por `workspaceId` e ausência de path arbitrário.
+  - [x] **VERIFY**: Executar o focal de 6 arquivos; o caso falhou na seam ausente, sem falha estrutural.
+  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste de boundary nativo.
+  - [x] **EVIDENCE**: Registrar comando exit 1, `app.sqlite`, boundary do workspace e IDs nas seções 11–13.
+  - [x] **IMPROVE**: Fixture mantém allowlist implícita e não aceita `absolutePath`.
 
-- [ ] T021 [TEST] [TDD] [US-001] Reconciliar o teste Vitest do AC-021 para provar persistência da nota e do estado CRDT no IndexedDB `openbible-workspace` em apps/web/src/lib/features/sync/sync-document-registry.test.ts — Refs: US-001, FR-002, NFR-004, AC-021 — Depends: none
-  - [ ] **PREP**: Ler o Gherkin do AC-021, confirmar banco `openbible-workspace`, stores versionados e `workspaceId`.
-  - [ ] **EXECUTE**: Reescrever o caso Vitest para provar persistência da nota e do estado CRDT no IndexedDB, sem OPFS/FSA/service worker como backend.
-  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental, sem falha estrutural.
-  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de boundary PWA.
-  - [ ] **EVIDENCE**: Registrar comando, stores, backend exercitado e IDs nas seções 11–13.
-  - [ ] **IMPROVE**: Revisar fixture, upgrade de schema e isolamento por `workspaceId`.
+- [x] T021 [TEST] [TDD] [US-001] Reconciliar o teste Vitest do AC-021 para provar persistência da nota e do estado CRDT no IndexedDB `openbible-workspace` em apps/web/src/lib/features/sync/sync-document-registry.test.ts — Refs: US-001, FR-002, NFR-004, AC-021 — Depends: none
+  - [x] **PREP**: Ler o Gherkin do AC-021, confirmar banco `openbible-workspace`, stores versionados e `workspaceId`.
+  - [x] **EXECUTE**: Reescrever o caso Vitest para exigir IndexedDB `openbible-workspace`, backend `indexeddb`, isolamento por `workspaceId` e ausência de handle.
+  - [x] **VERIFY**: Executar o focal de 6 arquivos; o caso falhou na seam ausente, sem falha estrutural.
+  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste de boundary PWA.
+  - [x] **EVIDENCE**: Registrar comando exit 1, banco/store esperado, backend e IDs nas seções 11–13.
+  - [x] **IMPROVE**: Fixture exclui OPFS/FSA/service worker como backend e mantém upgrade versionado como requisito de implementação.
 
-- [ ] T022 [TEST] [TDD] [US-002] Reconciliar o teste Vitest do AC-022 para manter o registro persistido intacto sob backpressure em apps/web/src/lib/features/sync/sync-network-adapters.test.ts — Refs: US-002, FR-003, NFR-003, AC-022 — Depends: none
-  - [ ] **PREP**: Ler o Gherkin do AC-022 e preparar fila vinculada a uma nota persistida no backend ativo.
-  - [ ] **EXECUTE**: Reescrever o caso para provar backpressure sem sobrescrever/remover o último registro do backend.
-  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental, sem falha estrutural.
-  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de fila.
-  - [ ] **EVIDENCE**: Registrar comando, métricas da fila, backend e IDs nas seções 11–13.
-  - [ ] **IMPROVE**: Revisar fixture e limite configurável.
+- [x] T022 [TEST] [TDD] [US-002] Reconciliar o teste Vitest do AC-022 para manter o registro persistido intacto sob backpressure em apps/web/src/lib/features/sync/sync-network-adapters.test.ts — Refs: US-002, FR-003, NFR-003, AC-022 — Depends: none
+  - [x] **PREP**: Ler o Gherkin do AC-022 e preparar fila vinculada a uma nota persistida no IndexedDB.
+  - [x] **EXECUTE**: Reescrever o caso para afirmar que backpressure pausa somente rede e preserva o registro local.
+  - [x] **VERIFY**: Executar o focal de 6 arquivos; o caso falhou na seam ausente, sem falha estrutural.
+  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste de fila.
+  - [x] **EVIDENCE**: Registrar comando exit 1, `backend: indexeddb`, `workspaceId`, registro preservado e IDs nas seções 11–13.
+  - [x] **IMPROVE**: Fixture explicita `persistedRecordIntact` e `noteStillReadable`, impedindo descarte local silencioso.
 
-- [ ] T023 [TEST] [TDD] [US-002] Reconciliar o teste Vitest do AC-023 para compactar estado sem remover a nota do backend operacional em apps/web/src/lib/features/sync/sync-repository.test.ts — Refs: US-002, FR-004, NFR-003, AC-023 — Depends: none
-  - [ ] **PREP**: Ler o Gherkin do AC-023 e preparar snapshot verificável no backend operacional.
-  - [ ] **EXECUTE**: Reescrever o caso para compactar CRDT sem remover a nota de `app.sqlite`/IndexedDB.
-  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental, sem falha estrutural.
-  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de compactação.
-  - [ ] **EVIDENCE**: Registrar comando, snapshot, backend e IDs nas seções 11–13.
-  - [ ] **IMPROVE**: Revisar fixture e recuperação após compactação.
+- [x] T023 [TEST] [TDD] [US-002] Reconciliar o teste Vitest do AC-023 para compactar estado sem remover a nota do backend operacional em apps/web/src/lib/features/sync/sync-repository.test.ts — Refs: US-002, FR-004, NFR-003, AC-023 — Depends: none
+  - [x] **PREP**: Ler o Gherkin do AC-023 e preparar snapshot verificável no IndexedDB operacional.
+  - [x] **EXECUTE**: Reescrever o caso para afirmar que snapshot e nota permanecem recuperáveis após compactação.
+  - [x] **VERIFY**: Executar o focal de 6 arquivos; o caso falhou na seam ausente, sem falha estrutural.
+  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste de compactação.
+  - [x] **EVIDENCE**: Registrar comando exit 1, snapshot, backend IndexedDB, `workspaceId` e IDs nas seções 11–13.
+  - [x] **IMPROVE**: Fixture explicita `notePersisted` e `snapshotRecoverable`, impedindo retenção destrutiva.
 
 - [x] T024 [TEST] [TDD] [US-004] Derivar teste Vitest do AC-024 em apps/web/src/lib/features/sync/sync-envelope-guard.test.ts — Refs: US-004, FR-006, NFR-002, AC-024 — Depends: none
   - [x] **PREP**: Ler o Gherkin do AC-024, confirmar contrato público e preparar fixture determinística.
@@ -1175,13 +1185,13 @@ Formato canônico: - [ ] TNNN [TIPO] [US-NNN] Ação com caminho — Refs: IDs �
   - [x] **EVIDENCE**: Registrar comando, causa comportamental do RED e IDs nas seções 11–13.
   - [x] **IMPROVE**: Revisar fixture e seam público, registrando ajuste ou ausência justificada.
 
-- [ ] T028 [TEST] [TDD] [US-003] Reconciliar o teste Vitest do AC-028 para rejeitar projeções e banco bruto no payload, permitindo apenas deltas/documentos autorizados em apps/web/src/lib/features/sync/sync-envelope-guard.test.ts — Refs: US-003, FR-006, NFR-004, AC-028 — Depends: none
-  - [ ] **PREP**: Ler o Gherkin do AC-028 e preparar banco bruto, projeção e delta autorizado como fixture.
-  - [ ] **EXECUTE**: Reescrever o caso para rejeitar `app.sqlite`, IndexedDB, `.openbible/index.sqlite` e projeções no payload.
-  - [ ] **VERIFY**: Executar a suíte focal e observar RED comportamental, sem falha estrutural.
-  - [ ] **VISUAL**: Não aplicável: esta tarefa só materializa teste de segurança do envelope.
-  - [ ] **EVIDENCE**: Registrar comando, campos rejeitados/aceitos e IDs nas seções 11–13.
-  - [ ] **IMPROVE**: Revisar fixture e ausência de vazamento de path, índice ou banco bruto.
+- [x] T028 [TEST] [TDD] [US-003] Reconciliar o teste Vitest do AC-028 para rejeitar projeções e banco bruto no payload, permitindo apenas deltas/documentos autorizados em apps/web/src/lib/features/sync/sync-envelope-guard.test.ts — Refs: US-003, FR-006, NFR-004, AC-028 — Depends: none
+  - [x] **PREP**: Ler o Gherkin do AC-028 e preparar banco bruto, projeção e delta autorizado como fixture.
+  - [x] **EXECUTE**: Reescrever o caso para afirmar payload com `workspaceId`, documentos/deltas autorizados e sem banco bruto/projeção/`.openbible/index.sqlite`.
+  - [x] **VERIFY**: Executar o focal de 6 arquivos; o caso falhou na seam ausente, sem falha estrutural.
+  - [x] **VISUAL**: Não aplicável: esta tarefa só materializa teste de segurança do envelope.
+  - [x] **EVIDENCE**: Registrar comando exit 1, payload permitido, campos excluídos e IDs nas seções 11–13.
+  - [x] **IMPROVE**: Fixture exclui projeção e banco bruto sem bloquear documentos/deltas CRDT autorizados.
 
 - [x] T029 [TEST] [TDD] [US-001] Derivar teste Vitest do AC-029 em apps/web/src/lib/features/sync/sync-repository.test.ts — Refs: US-001, FR-003, NFR-001, AC-029 — Depends: none
   - [x] **PREP**: Ler o Gherkin do AC-029, confirmar contrato público e preparar fixture determinística.
@@ -1201,119 +1211,133 @@ Formato canônico: - [ ] TNNN [TIPO] [US-NNN] Ação com caminho — Refs: IDs �
 
 #### Fase 2 — Código e contratos
 
-- [ ] T031 [CODE] Implementar registry, contratos de documento vinculados ao registro do backend e guard de envelope em apps/web/src/lib/features/sync/ — Refs: US-001, US-003, US-004, FR-001, FR-006, NFR-002, NFR-004, AC-001, AC-002, AC-014, AC-015, AC-016, AC-018, AC-024, AC-028 — Depends: T001, T002, T014, T015, T016, T018, T024, T028
-  - [ ] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace.
-  - [ ] **EXECUTE**: Implementar a menor entrega compatível com os contratos públicos e executar o documentator antes do fechamento.
-  - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
-  - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
-  - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
+- [x] T031 [CODE] Implementar registry, contratos de documento vinculados ao registro do backend e guard de envelope em apps/web/src/lib/features/sync/ — Refs: US-001, US-003, US-004, FR-001, FR-006, NFR-002, NFR-004, AC-001, AC-002, AC-014, AC-015, AC-016, AC-018, AC-024, AC-028 — Depends: T001, T002, T014, T015, T016, T018, T024, T028
+  - [x] **PREP**: Confirmar RED dos predecessores, boundary `syncWorkspace`, contratos `SyncDocumentRef`/`SyncEnvelope` e dependências do `workspaceId`.
+  - [x] **EXECUTE**: Implementar `sync-document-registry.ts`, `sync-envelope-guard.ts` e exportação pública em `storage/workspace.ts`; documentator reconstruído.
+  - [x] **VERIFY**: Focal de 8 casos passou; lint dos arquivos alterados passou. `check-types` global foi executado e mantém falhas preexistentes fora de sync, sem erro em `features/sync` ou `workspace.ts`.
+  - [x] **VISUAL**: Não aplicável: T031 altera contratos e boundary de domínio, sem superfície visual.
+  - [x] **EVIDENCE**: Registrar comandos, resultado, arquivos e IDs nas seções 11–13; comentário `specsfy:evidence` adicionado abaixo.
+  - [x] **IMPROVE**: Guard usa unions literais, `unknown`/tipos explícitos e rejeita paths, SQL, comandos, projeções, banco bruto e credenciais.
+  <!-- specsfy:evidence {"task":"T031","refs":["US-001","US-003","US-004","FR-001","FR-006","NFR-002","NFR-004","AC-001","AC-002","AC-014","AC-015","AC-016","AC-018","AC-024","AC-028"],"files":["apps/web/src/lib/features/sync/sync-document-registry.ts","apps/web/src/lib/features/sync/sync-envelope-guard.ts","apps/web/src/lib/storage/workspace.ts","apps/web/src/lib/features/sync/sync-document-registry.test.ts","apps/web/src/lib/features/sync/sync-envelope-guard.test.ts","apps/web/src/lib/features/sync/sync-repository.test.ts","docs/",".specsfy/PACKAGES.md"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-document-registry.test.ts src/lib/features/sync/sync-envelope-guard.test.ts src/lib/features/sync/peer-policy.test.ts -t 'AC-001|AC-002|AC-014|AC-015|AC-016|AC-018|AC-024|AC-028'","exit":0},{"run":"bunx eslint apps/web/src/lib/features/sync/sync-document-registry.ts apps/web/src/lib/features/sync/sync-envelope-guard.ts apps/web/src/lib/features/sync/sync-document-registry.test.ts apps/web/src/lib/features/sync/sync-envelope-guard.test.ts apps/web/src/lib/features/sync/sync-repository.test.ts apps/web/src/lib/storage/workspace.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
-- [ ] T032 [CODE] Implementar adapters locais PWA/Tauri e fila persistente em `app.sqlite`/IndexedDB em apps/web/src/lib/features/sync/sync-storage-adapters.ts, com `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` e upgrade v3 de object stores em `openbible-workspace` — Refs: US-001, US-002, FR-002, NFR-001, NFR-003, NFR-004, AC-003, AC-004, AC-020, AC-021, AC-026 — Depends: T003, T004, T020, T021, T026
-  - [ ] **PREP**: Confirmar RED dos predecessores, o schema v2 existente, o `workspaceId` obrigatório e a fronteira entre backend ativo e fontes legadas.
-  - [ ] **EXECUTE**: Criar migration SQL versionada para `app.sqlite`, upgrade transacional dos object stores no IndexedDB `openbible-workspace` e adapters equivalentes; não criar estado ativo em `.openbible/index.sqlite`, OPFS ou filesystem.
-  - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
-  - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
-  - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
+- [x] T032 [CODE] Implementar adapters locais PWA/Tauri e fila persistente em `app.sqlite`/IndexedDB em apps/web/src/lib/features/sync/sync-storage-adapters.ts, com `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` e upgrade v3 de object stores em `openbible-workspace` — Refs: US-001, US-002, FR-002, NFR-001, NFR-003, NFR-004, AC-003, AC-004, AC-020, AC-021, AC-026 — Depends: T003, T004, T020, T021, T026
+  - [x] **PREP**: Confirmar RED dos predecessores, o schema v2 existente, o `workspaceId` obrigatório e a fronteira entre backend ativo e fontes legadas.
+  - [x] **EXECUTE**: Criar migration SQL versionada para `app.sqlite`, upgrade v3 idempotente dos object stores no IndexedDB `openbible-workspace` e adapters equivalentes; nenhum estado ativo foi criado em `.openbible/index.sqlite`, OPFS ou filesystem.
+  - [x] **VERIFY**: Adapter focal passou 2/2; IndexedDB/backup passou 4/4; Rust passou 15/15; lint passou. `check-types` global foi executado e mantém somente falhas preexistentes fora de sync; não há erro nos módulos alterados.
+  - [x] **VISUAL**: Não aplicável: T032 altera persistência, migration e contratos de adapter, sem superfície visual.
+  - [x] **EVIDENCE**: Registrar comandos, resultado, arquivos e IDs nas seções 11–13; comentário `specsfy:evidence` adicionado abaixo.
+  - [x] **IMPROVE**: Adapters validam `workspaceId`, backend e contadores; `syncRecordFromContent` recebe o backend explicitamente; a porta nativa restringe a implementação futura aos comandos operacionais allowlisted.
+  <!-- specsfy:evidence {"task":"T032","refs":["US-001","US-002","FR-002","NFR-001","NFR-003","NFR-004","AC-003","AC-004","AC-020","AC-021","AC-026"],"files":["apps/desktop/src-tauri/migrations/003_create_sync_operational.sql","apps/desktop/src-tauri/src/database.rs","apps/web/src/lib/storage/indexeddb-workspace-adapter.ts","apps/web/src/lib/features/sync/sync-storage-adapters.ts","apps/web/src/lib/features/sync/sync-storage-adapters.test.ts","apps/web/src/lib/storage/workspace.ts",".specsfy/DATABASE.md","docs/",".specsfy/PACKAGES.md"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-storage-adapters.test.ts","exit":0},{"run":"bun run --cwd apps/web test:tdd -- src/lib/storage/indexeddb-workspace-adapter.test.ts src/lib/storage/backup/backup-adapters.test.ts","exit":0},{"run":"cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml","exit":0},{"run":"bunx eslint apps/web/src/lib/features/sync/sync-storage-adapters.ts apps/web/src/lib/features/sync/sync-storage-adapters.test.ts apps/web/src/lib/storage/indexeddb-workspace-adapter.ts apps/web/src/lib/storage/workspace.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
-- [ ] T033 [CODE] Implementar facade de repository sobre o backend operacional, adapters local/WebSocket, retry e backpressure em apps/web/src/lib/features/sync/sync-repository.ts — Refs: US-002, US-004, FR-003, NFR-001, NFR-003, AC-005, AC-006, AC-007, AC-022, AC-025, AC-027, AC-030 — Depends: T005, T006, T007, T022, T025, T027, T030
-  - [ ] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace.
-  - [ ] **EXECUTE**: Implementar a menor entrega compatível com os contratos públicos e executar o documentator antes do fechamento.
-  - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
-  - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
-  - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
+- [x] T033 [CODE] Implementar facade de repository sobre o backend operacional, adapters local/WebSocket, retry e backpressure em apps/web/src/lib/features/sync/sync-repository.ts — Refs: US-002, US-004, FR-003, NFR-001, NFR-003, AC-005, AC-006, AC-007, AC-022, AC-025, AC-027, AC-030 — Depends: T005, T006, T007, T022, T025, T027, T030
+  - [x] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace; os 7 casos focais de transporte/backpressure permanecem RED por ausência da facade.
+  - [x] **EXECUTE**: Implementar `sync-repository.ts` com adapters local/WebSocket, retry/backoff, policy de fila/backpressure e protocolo transport-agnostic; conectar os comandos da seam `syncWorkspace` e reconstruir `docs/`.
+  - [x] **VERIFY**: Testes focais passaram 20/20 e lint passou. `check-types` global foi executado e mantém falhas preexistentes em UI, AI, sql.js e testes de notas/rotas; nenhum erro foi reportado nos módulos `features/sync` alterados.
+  - [x] **VISUAL**: Não aplicável: T033 altera facade, transporte e contratos de domínio, sem superfície visual.
+  - [x] **EVIDENCE**: Registrar comandos, resultado, arquivos e IDs nas seções 11–13; comentário `specsfy:evidence` adicionado abaixo.
+  - [x] **IMPROVE**: Backoff exponencial é limitado, endpoint `ws://` é bloqueado, o adapter local não depende de relay e backpressure pausa somente a rede.
+  <!-- specsfy:evidence {"task":"T033","refs":["US-002","US-004","FR-003","NFR-001","NFR-003","AC-005","AC-006","AC-007","AC-022","AC-025","AC-027","AC-030"],"files":["apps/web/src/lib/features/sync/sync-repository.ts","apps/web/src/lib/features/sync/sync-document-registry.ts","apps/web/src/lib/features/sync/sync-network-adapters.test.ts","apps/web/src/lib/features/sync/sync-document-registry.test.ts","apps/web/src/lib/features/sync/sync-envelope-guard.test.ts","docs/",".specsfy/PACKAGES.md"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-document-registry.test.ts src/lib/features/sync/sync-network-adapters.test.ts src/lib/features/sync/sync-envelope-guard.test.ts","exit":0},{"run":"bunx eslint apps/web/src/lib/features/sync/sync-repository.ts apps/web/src/lib/features/sync/sync-document-registry.ts apps/web/src/lib/features/sync/sync-network-adapters.test.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
-- [ ] T034 [CODE] Implementar merge por documento, snapshot e compactação em apps/web/src/lib/features/sync/sync-repository.ts — Refs: US-002, US-003, FR-004, NFR-001, NFR-002, NFR-003, NFR-004, AC-008, AC-009, AC-010, AC-023 — Depends: T008, T009, T010, T023
-  - [ ] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace.
-  - [ ] **EXECUTE**: Implementar a menor entrega compatível com os contratos públicos e executar o documentator antes do fechamento.
-  - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
-  - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
-  - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
+- [x] T034 [CODE] Implementar merge por documento, snapshot e compactação em apps/web/src/lib/features/sync/sync-repository.ts — Refs: US-002, US-003, FR-004, NFR-001, NFR-002, NFR-003, NFR-004, AC-008, AC-009, AC-010, AC-023 — Depends: T008, T009, T010, T023
+  - [x] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace; os 4 casos de merge/compactação e o caso de remoção segura do endpoint permanecem RED por ausência da facade.
+  - [x] **EXECUTE**: Implementar merge por documento, heads independentes, ordem de deltas, conflito revisável, snapshot compacto recuperável e remoção segura do endpoint em `sync-repository.ts`/`syncWorkspace`; reconstruir `docs/`.
+  - [x] **VERIFY**: Testes focais passaram 5/5 e lint passou. `check-types` global foi executado e mantém falhas preexistentes fora de sync; nenhum erro foi reportado nos módulos alterados.
+  - [x] **VISUAL**: Não aplicável: T034 altera estado de domínio, histórico e compactação, sem superfície visual.
+  - [x] **EVIDENCE**: Registrar comandos, resultado, arquivos e IDs nas seções 11–13; comentário `specsfy:evidence` adicionado abaixo.
+  - [x] **IMPROVE**: Heads, conflitos e snapshots têm estados explícitos; a compactação declara fonte preservada e limite de bytes, e o modo local desabilita apenas o endpoint remoto.
+  <!-- specsfy:evidence {"task":"T034","refs":["US-002","US-003","FR-004","NFR-001","NFR-002","NFR-003","NFR-004","AC-008","AC-009","AC-010","AC-023","AC-029"],"files":["apps/web/src/lib/features/sync/sync-repository.ts","apps/web/src/lib/features/sync/sync-document-registry.ts","apps/web/src/lib/features/sync/sync-repository.test.ts","docs/",".specsfy/PACKAGES.md"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-repository.test.ts","exit":0},{"run":"bunx eslint apps/web/src/lib/features/sync/sync-repository.ts apps/web/src/lib/features/sync/sync-document-registry.ts apps/web/src/lib/features/sync/sync-repository.test.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
-- [ ] T035 [CODE] Implementar aplicação de snapshots ao backend operacional, exportação e rebuild posterior das projeções em apps/web/src/lib/features/sync/sync-materializer.ts — Refs: US-003, FR-005, NFR-001, NFR-004, AC-011, AC-012, AC-013 — Depends: T011, T012, T013
-  - [ ] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace.
-  - [ ] **EXECUTE**: Implementar a menor entrega compatível com os contratos públicos e executar o documentator antes do fechamento.
-  - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
-  - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
-  - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
+- [x] T035 [CODE] Implementar aplicação de snapshots ao backend operacional, exportação e rebuild posterior das projeções em apps/web/src/lib/features/sync/sync-materializer.ts — Refs: US-003, FR-005, NFR-001, NFR-004, AC-011, AC-012, AC-013 — Depends: T011, T012, T013
+  - [x] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace; os 3 casos TDD de bridge estavam RED por ausência do materializer.
+  - [x] **EXECUTE**: Implementar `sync-materializer.ts` para aplicar snapshots, propor importação externa, preservar conflitos e reconstruir projeções sem usar `.openbible/index.sqlite`; exportar a camada pela seam pública e reconstruir `docs/`.
+  - [x] **VERIFY**: Testes focais passaram 3/3 e lint passou. `check-types` global foi executado e mantém falhas preexistentes fora de sync; o erro novo do retorno de projection foi corrigido e não permanece.
+  - [x] **VISUAL**: Não aplicável: T035 altera materialização, exportação e projeções de domínio, sem superfície visual.
+  - [x] **EVIDENCE**: Registrar comandos, resultado, arquivos e IDs nas seções 11–13; comentário `specsfy:evidence` adicionado abaixo.
+  - [x] **IMPROVE**: Paths externos são validados como relativos a `notes/`, conflitos são copiados sem overwrite e a ponte de conteúdo é opcional/injetável para manter o backend operacional como autoridade.
+  <!-- specsfy:evidence {"task":"T035","refs":["US-003","FR-005","NFR-001","NFR-004","AC-011","AC-012","AC-013"],"files":["apps/web/src/lib/features/sync/sync-materializer.ts","apps/web/src/lib/features/sync/sync-document-registry.ts","apps/web/src/lib/features/sync/external-edit-bridge.test.ts","apps/web/src/lib/storage/workspace.ts","docs/",".specsfy/PACKAGES.md"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync/external-edit-bridge.test.ts","exit":0},{"run":"bunx eslint apps/web/src/lib/features/sync/sync-materializer.ts apps/web/src/lib/features/sync/sync-document-registry.ts apps/web/src/lib/features/sync/external-edit-bridge.test.ts apps/web/src/lib/storage/workspace.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
-- [ ] T036 [CODE] Implementar policy de pairing, escopo e revogação em apps/web/src/lib/features/sync/peer-policy.ts — Refs: US-004, FR-006, NFR-002, NFR-003, NFR-004, AC-014, AC-015, AC-016, AC-017, AC-018, AC-024 — Depends: T014, T015, T016, T017, T018, T024
-  - [ ] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace.
-  - [ ] **EXECUTE**: Implementar a menor entrega compatível com os contratos públicos e executar o documentator antes do fechamento.
-  - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
-  - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
-  - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
+- [x] T036 [CODE] Implementar policy de pairing, escopo e revogação em apps/web/src/lib/features/sync/peer-policy.ts — Refs: US-004, FR-006, NFR-002, NFR-003, NFR-004, AC-014, AC-015, AC-016, AC-017, AC-018, AC-024 — Depends: T014, T015, T016, T017, T018, T024
+  - [x] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace; pairing e revogação permanecem RED por ausência da policy.
+  - [x] **EXECUTE**: Implementar `peer-policy.ts` com escopo por workspace, pairing explícito, revogação e credenciais não exportáveis; conectar a seam pública e reconstruir `docs/`.
+  - [x] **VERIFY**: Testes focais passaram 7/7 e lint passou. `check-types` global foi executado e mantém falhas preexistentes fora de sync; nenhum erro foi reportado nos módulos alterados.
+  - [x] **VISUAL**: Não aplicável: T036 altera policy e boundary de segurança, sem superfície visual.
+  - [x] **EVIDENCE**: Registrar comandos, resultado, arquivos e IDs nas seções 11–13; comentário `specsfy:evidence` adicionado abaixo.
+  - [x] **IMPROVE**: Revogação mantém cópias locais, impede autorização futura e não aceita reativação silenciosa de peer revogado; escopos são normalizados e deduplicados.
+  <!-- specsfy:evidence {"task":"T036","refs":["US-004","FR-006","NFR-002","NFR-003","NFR-004","AC-014","AC-015","AC-016","AC-017","AC-018","AC-024"],"files":["apps/web/src/lib/features/sync/peer-policy.ts","apps/web/src/lib/features/sync/sync-document-registry.ts","apps/web/src/lib/features/sync/sync-envelope-guard.ts","apps/web/src/lib/features/sync/peer-policy.test.ts","apps/web/src/lib/features/sync/sync-envelope-guard.test.ts","apps/web/src/lib/storage/workspace.ts","docs/",".specsfy/PACKAGES.md"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync/peer-policy.test.ts src/lib/features/sync/sync-envelope-guard.test.ts","exit":0},{"run":"bunx eslint apps/web/src/lib/features/sync/peer-policy.ts apps/web/src/lib/features/sync/sync-document-registry.ts apps/web/src/lib/features/sync/peer-policy.test.ts apps/web/src/lib/features/sync/sync-envelope-guard.ts apps/web/src/lib/storage/workspace.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
 #### Fase de interface
 
-- [ ] T037 [CODE] Criar tela Svelte de configuração em apps/web/src/lib/features/sync/SyncSettings.svelte e registrar o bloco em INTERFACE.md — Refs: US-004, FR-003, FR-006, NFR-002, NFR-004, AC-016, AC-018, AC-025 — Depends: T016, T018, T024, T025
-  - [ ] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace.
-  - [ ] **EXECUTE**: Implementar a menor entrega compatível com os contratos públicos e executar o documentator antes do fechamento.
-  - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
-  - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
-  - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
+- [x] T037 [CODE] Criar tela Svelte de configuração em apps/web/src/lib/features/sync/SyncSettings.svelte e registrar o bloco em INTERFACE.md — Refs: US-004, FR-003, FR-006, NFR-002, NFR-004, AC-016, AC-018, AC-025 — Depends: T016, T018, T024, T025
+  - [x] **PREP**: Confirmados os contratos de workspace/storage, pairing e os predecessores T016, T018, T024 e T025; o boundary visual permanece em `ConfigPage`/`Storage/Workspace`, sem expor credenciais nem alterar a autoridade de `app.sqlite` ou IndexedDB.
+  - [x] **EXECUTE**: Implementar `SyncSettings.svelte`, compor o bloco no painel `Storage/Workspace` de `ConfigPage`, registrar o contrato em `INTERFACE.md` e executar o documentator.
+  - [x] **VERIFY**: Teste focal e regressão relacionada passaram; lint passou. `check-types` global foi executado e mantém falhas preexistentes em primitivas UI, AI, sql.js e testes de notas/rotas, sem erro novo em `SyncSettings`, `ConfigPage` ou `features/sync`.
+  - [x] **VISUAL**: Inspecionados bordas, espaçamentos, margens, padding e tipografia em claro e tokens de tema, desktop, mobile em 320 px, zoom/overflow, foco por teclado, erro de endpoint, pairing e revogação; os estados exibem feedback semântico e a mídia `prefers-reduced-motion` está preservada.
+  - [x] **EVIDENCE**: Comandos, resultado, arquivos e IDs registrados nas seções 11–13 e no comentário JSON abaixo.
+  - [x] **IMPROVE**: Isolado o bloco em `SyncSettings`, reutilizado `Button`, explicitados os backends locais e removida qualquer affordance de token; a persistência efetiva permanece nas tarefas de runtime, não nesta configuração visual.
+  <!-- specsfy:evidence {"task":"T037","refs":["US-004","FR-003","FR-006","NFR-002","NFR-004","AC-016","AC-018","AC-025"],"files":["apps/web/src/lib/features/sync/SyncSettings.svelte","apps/web/src/lib/features/sync/sync-settings.test.ts","apps/web/src/lib/features/config/ConfigPage.svelte","INTERFACE.md","docs/",".specsfy/PACKAGES.md"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-settings.test.ts","exit":0},{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-settings.test.ts src/lib/features/config/config-page.spec.ts src/lib/features/config/t024-backup.svelte.spec.ts","exit":0},{"run":"bunx eslint apps/web/src/lib/features/sync/SyncSettings.svelte apps/web/src/lib/features/sync/sync-settings.test.ts apps/web/src/lib/features/config/ConfigPage.svelte","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
-- [ ] T038 [CODE] Criar bloco Svelte de status em apps/web/src/lib/features/sync/SyncStatus.svelte e registrar estados em INTERFACE.md — Refs: US-002, US-004, FR-003, NFR-001, NFR-003, AC-005, AC-007, AC-027 — Depends: T005, T007, T027
-  - [ ] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace.
-  - [ ] **EXECUTE**: Implementar a menor entrega compatível com os contratos públicos e executar o documentator antes do fechamento.
-  - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
-  - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
-  - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
+- [x] T038 [CODE] Criar bloco Svelte de status em apps/web/src/lib/features/sync/SyncStatus.svelte e registrar estados em INTERFACE.md — Refs: US-002, US-004, FR-003, NFR-001, NFR-003, AC-005, AC-007, AC-027 — Depends: T005, T007, T027
+  - [x] **PREP**: Confirmados os REDs históricos de AC-005, AC-007 e AC-027, o contrato de diagnósticos do repository T033 e o boundary visual reutilizável em `SyncSettings`/header, sem tornar relay obrigatório.
+  - [x] **EXECUTE**: Implementar `SyncStatus.svelte` com props para status, fila, último sucesso, erro e retry; compor em `SyncSettings`, registrar estados em `INTERFACE.md` e executar o documentator.
+  - [x] **VERIFY**: Contratos focais passaram 6/6 e lint passou. `check-types` global foi executado e mantém falhas preexistentes em primitivas UI, AI, sql.js e testes de notas/rotas, sem erro novo em `SyncStatus`, `SyncSettings` ou `features/sync`.
+  - [x] **VISUAL**: Inspecionados bordas, espaçamentos, margens, padding e tipografia em claro/escuro por tokens existentes, desktop, mobile em 320 px, zoom/overflow e foco; estado local/offline mostra fila e último sucesso, erro tem ação de retry e `prefers-reduced-motion` foi preservado.
+  - [x] **EVIDENCE**: Comandos, resultado, arquivos e IDs registrados nas seções 11–13 e no comentário JSON abaixo.
+  - [x] **IMPROVE**: O bloco é reutilizável e prop-driven, separa diagnóstico de conectividade da autoridade local e usa feedback semântico sem animação obrigatória.
+  <!-- specsfy:evidence {"task":"T038","refs":["US-002","US-004","FR-003","NFR-001","NFR-003","AC-005","AC-007","AC-027"],"files":["apps/web/src/lib/features/sync/SyncStatus.svelte","apps/web/src/lib/features/sync/sync-status.test.ts","apps/web/src/lib/features/sync/SyncSettings.svelte","INTERFACE.md","docs/",".specsfy/PACKAGES.md"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-status.test.ts src/lib/features/sync/sync-settings.test.ts","exit":0},{"run":"bunx eslint apps/web/src/lib/features/sync/SyncStatus.svelte apps/web/src/lib/features/sync/SyncSettings.svelte apps/web/src/lib/features/sync/sync-status.test.ts apps/web/src/lib/features/sync/sync-settings.test.ts apps/web/src/lib/features/config/ConfigPage.svelte","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
-- [ ] T039 [CODE] Criar painel Svelte de revisão em apps/web/src/lib/features/sync/PeerConflictPanel.svelte e registrar ações em INTERFACE.md — Refs: US-003, FR-005, NFR-002, NFR-004, AC-011, AC-012, AC-013 — Depends: T011, T012, T013
-  - [ ] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace.
-  - [ ] **EXECUTE**: Implementar a menor entrega compatível com os contratos públicos e executar o documentator antes do fechamento.
-  - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
-  - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
-  - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
+- [x] T039 [CODE] Criar painel Svelte de revisão em apps/web/src/lib/features/sync/PeerConflictPanel.svelte e registrar ações em INTERFACE.md — Refs: US-003, FR-005, NFR-002, NFR-004, AC-011, AC-012, AC-013 — Depends: T011, T012, T013
+  - [x] **PREP**: Confirmados os REDs dos predecessores T011–T013, os contratos de materialização e o boundary em que arquivo externo é apenas recovery; `app.sqlite`/IndexedDB continuam como autoridade.
+  - [x] **EXECUTE**: Implementar `PeerConflictPanel.svelte` com backend/workspace, duas versões recuperáveis, alerta `needs-review` e ações explícitas para manter local ou revisar externo; registrar em `INTERFACE.md` e executar o documentator.
+  - [x] **VERIFY**: Testes focais e browser passaram 7/7 e lint passou. `check-types` global foi executado e mantém falhas preexistentes em primitivas UI, AI, sql.js e testes de notas/rotas, sem erro novo em `PeerConflictPanel` ou `features/sync`.
+  - [x] **VISUAL**: Inspecionados bordas, espaçamentos, margens, padding e tipografia em claro/escuro por tokens existentes, desktop, mobile em 320 px, zoom/overflow, teclado e foco; o teste browser cobriu conflito e vazio, com botões explícitos e `prefers-reduced-motion`.
+  - [x] **EVIDENCE**: Comandos, resultado, arquivos e IDs registrados nas seções 11–13 e no comentário JSON abaixo.
+  - [x] **IMPROVE**: O painel não executa merge silencioso, mantém paths relativos de recovery, informa o backend operacional e separa callbacks de decisão das fontes persistentes.
+  <!-- specsfy:evidence {"task":"T039","refs":["US-003","FR-005","NFR-002","NFR-004","AC-011","AC-012","AC-013"],"files":["apps/web/src/lib/features/sync/PeerConflictPanel.svelte","apps/web/src/lib/features/sync/peer-conflict-panel.test.ts","apps/web/src/lib/features/sync/peer-conflict-panel.svelte.spec.ts","apps/web/src/lib/features/sync/external-edit-bridge.test.ts","INTERFACE.md","docs/",".specsfy/PACKAGES.md"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync/peer-conflict-panel.svelte.spec.ts src/lib/features/sync/peer-conflict-panel.test.ts src/lib/features/sync/external-edit-bridge.test.ts","exit":0},{"run":"bunx eslint apps/web/src/lib/features/sync/PeerConflictPanel.svelte apps/web/src/lib/features/sync/peer-conflict-panel.test.ts apps/web/src/lib/features/sync/peer-conflict-panel.svelte.spec.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
-- [ ] T040 [CODE] Integrar comandos allowlisted no Tauri e a persistência em `app.sqlite` em apps/desktop/src-tauri/src/commands/sync.rs — Refs: US-001, US-002, FR-002, FR-003, NFR-001, NFR-004, AC-005, AC-020, AC-030 — Depends: T005, T020, T030
-  - [ ] **PREP**: Confirmar RED dos predecessores, migrations versionadas, escopo por `workspaceId` e ausência de SQL/path arbitrário vindo da UI.
-  - [ ] **EXECUTE**: Implementar comandos allowlisted que leem/escrevem notas e estado CRDT em `app.sqlite`, sem expor o filesystem como backend ativo, e executar o documentator antes do fechamento.
-  - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
-  - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
-  - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
+- [x] T040 [CODE] Integrar comandos allowlisted no Tauri e a persistência em `app.sqlite` em apps/desktop/src-tauri/src/commands/sync.rs — Refs: US-001, US-002, FR-002, FR-003, NFR-001, NFR-004, AC-005, AC-020, AC-030 — Depends: T005, T020, T030
+  - [x] **PREP**: Confirmadas as migrations v3, tabelas operacionais, escopo obrigatório por `workspaceId` e a ausência de uma API de SQL/path livre na UI; os REDs T005, T020 e T030 eram comportamentais antes da implementação.
+  - [x] **EXECUTE**: Implementados `sync_write_note`, `sync_write_snapshot`, `sync_append_change` e `sync_read_state` sobre `app.sqlite`, registrados no handler Tauri e expostos no bridge TypeScript com validação de IDs e bytes; a nota continua no banco operacional, não no filesystem.
+  - [x] **VERIFY**: Rust passou 16/16, bridge passou 5/5 e lint/rustfmt passaram. `check-types` global foi executado e mantém falhas preexistentes em primitivas UI, AI, sql.js e testes de notas/rotas, sem erro novo em `tauri-bridge`.
+  - [x] **VISUAL**: Não aplicável: T040 altera somente o boundary nativo, persistência e allowlist; as superfícies visuais de T037–T039 já foram verificadas em claro/escuro, mobile/desktop, teclado e zoom.
+  - [x] **EVIDENCE**: Comandos, resultado, arquivos e IDs registrados nas seções 11–13 e no comentário JSON abaixo.
+  - [x] **IMPROVE**: Operações são transacionais e idempotentes, mudanças duplicadas não inflacionam a fila, estado CRDT e nota ficam recuperáveis e chaves com path são rejeitadas antes do banco.
+  <!-- specsfy:evidence {"task":"T040","refs":["US-001","US-002","FR-002","FR-003","NFR-001","NFR-004","AC-005","AC-020","AC-030"],"files":["apps/desktop/src-tauri/src/commands/sync.rs","apps/desktop/src-tauri/src/commands/mod.rs","apps/desktop/src-tauri/src/lib.rs","apps/desktop/src-tauri/src/database.rs","apps/desktop/src-tauri/migrations/003_create_sync_operational.sql","apps/web/src/lib/storage/tauri-bridge.ts","apps/web/src/lib/storage/tauri-bridge.test.ts","docs/",".specsfy/PACKAGES.md"],"commands":[{"run":"cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml","exit":0},{"run":"bun run --cwd apps/web test:tdd -- src/lib/storage/tauri-bridge.test.ts src/lib/storage/tauri-security.test.ts","exit":0},{"run":"bunx eslint apps/web/src/lib/storage/tauri-bridge.ts apps/web/src/lib/storage/tauri-bridge.test.ts","exit":0},{"run":"rustfmt --edition 2021 --check apps/desktop/src-tauri/src/commands/sync.rs","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
-- [ ] T041 [CODE] Atualizar inventário de interface em INTERFACE.md para os blocos de sync — Refs: US-004, FR-003, FR-005, NFR-004, AC-011, AC-016, AC-027 — Depends: T011, T016, T027
-  - [ ] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace.
-  - [ ] **EXECUTE**: Implementar a menor entrega compatível com os contratos públicos e executar o documentator antes do fechamento.
-  - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
-  - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
-  - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
+- [x] T041 [CODE] Atualizar inventário de interface em INTERFACE.md para os blocos de sync — Refs: US-004, FR-003, FR-005, NFR-004, AC-011, AC-016, AC-027 — Depends: T011, T016, T027
+  - [x] **PREP**: Confirmados os contratos de T011, T016 e T027 e auditados os registros existentes de `SyncSettings`, `SyncStatus` e `PeerConflictPanel`; o ajuste restante é de composição/documentação, sem criar nova fonte normativa.
+  - [x] **EXECUTE**: Consolidar no `INTERFACE.md` os blocos `SyncSettings`, `SyncStatus` e `PeerConflictPanel`, a composição em `/config` e os estados local/offline, conexão, fila, erro e `needs-review`; executar o documentator.
+  - [x] **VERIFY**: Auditoria focal passou 7/7, lint passou e a regressão dos contratos de interface passou; `check-types` global permanece com falhas preexistentes fora dos arquivos alterados.
+  - [x] **VISUAL**: Conferidos bordas, espaçamentos, margens, padding e tipografia registrados para claro/escuro, mobile/desktop, teclado, zoom, foco e `prefers-reduced-motion`; o inventário agora espelha os estados efetivamente verificados.
+  - [x] **EVIDENCE**: Comandos, resultado, arquivos e IDs registrados nas seções 11–13 e no comentário JSON abaixo.
+  - [x] **IMPROVE**: Evitada duplicação de linhas; o inventário distingue composição, feedback e revisão, e explicita que o storage local continua autoridade.
+  <!-- specsfy:evidence {"task":"T041","refs":["US-004","FR-003","FR-005","NFR-004","AC-011","AC-016","AC-027"],"files":["INTERFACE.md","apps/web/src/lib/features/sync/sync-interface-inventory.test.ts","apps/web/src/lib/features/sync/SyncSettings.svelte","apps/web/src/lib/features/sync/SyncStatus.svelte","apps/web/src/lib/features/sync/PeerConflictPanel.svelte","docs/",".specsfy/PACKAGES.md"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-interface-inventory.test.ts src/lib/features/sync/sync-settings.test.ts src/lib/features/sync/sync-status.test.ts","exit":0},{"run":"bunx eslint apps/web/src/lib/features/sync/sync-interface-inventory.test.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
-- [ ] T042 [CODE] Reconstruir .specsfy/STACK.md e .specsfy/PACKAGES.md após selecionar pacotes Automerge — Refs: FR-002, FR-003, NFR-003, AC-005, AC-021, AC-022 — Depends: T005, T021, T022
-  - [ ] **PREP**: Confirmar RED dos predecessores, boundary e dependências do workspace.
-  - [ ] **EXECUTE**: Implementar a menor entrega compatível com os contratos públicos e executar o documentator antes do fechamento.
-  - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
-  - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
-  - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
+- [x] T042 [CODE] Reconstruir .specsfy/STACK.md e .specsfy/PACKAGES.md após selecionar pacotes Automerge — Refs: FR-002, FR-003, NFR-003, AC-005, AC-021, AC-022 — Depends: T005, T021, T022
+  - [x] **PREP**: Confirmados os REDs T005/T021/T022, os adapters próprios e a decisão de `app.sqlite`/IndexedDB como backends operacionais antes da seleção de pacote.
+  - [x] **EXECUTE**: Selecionados e instalados `@automerge/automerge@3.4.1` e `@automerge/automerge-repo@2.5.6`; reconstruídos `.specsfy/STACK.md`, `.specsfy/PACKAGES.md` e `docs/`, sem instalar storage IndexedDB paralelo.
+  - [x] **VERIFY**: Focal de rede/storage/registry passou 17/17 e lint passou. `check-types` global foi executado e mantém falhas preexistentes fora de sync/Automerge, sem erro novo nos módulos alterados.
+  - [x] **VISUAL**: Não aplicável: T042 altera dependências e inventários técnicos, sem superfície visual; as interfaces consumidoras foram verificadas nas T037–T041 em claro/escuro, mobile/desktop, teclado e zoom.
+  - [x] **EVIDENCE**: Comandos, resultado, arquivos e IDs registrados nas seções 11–13 e no comentário JSON abaixo.
+  - [x] **IMPROVE**: A escolha evita adapters oficiais de storage que criariam uma fonte paralela; `Repo` e core ficam disponíveis para a implementação CRDT posterior sobre os seams já verificados.
+  <!-- specsfy:evidence {"task":"T042","refs":["FR-002","FR-003","NFR-003","AC-005","AC-021","AC-022"],"files":["apps/web/package.json","bun.lock",".specsfy/STACK.md",".specsfy/PACKAGES.md","apps/web/src/lib/features/sync/sync-repository.ts","apps/web/src/lib/features/sync/sync-storage-adapters.ts","apps/web/src/lib/features/sync/sync-network-adapters.test.ts","docs/"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-network-adapters.test.ts src/lib/features/sync/sync-storage-adapters.test.ts src/lib/features/sync/sync-document-registry.test.ts","exit":0},{"run":"bunx eslint apps/web/src/lib/features/sync/sync-repository.ts apps/web/src/lib/features/sync/sync-storage-adapters.ts apps/web/src/lib/features/sync/sync-network-adapters.test.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
-- [ ] T043 [CODE] Atualizar .specsfy/DATABASE.md com notas, estado CRDT, fila, peers, conflitos e projeções em `app.sqlite`/IndexedDB — Refs: FR-001, FR-002, FR-004, FR-005, NFR-004, AC-002, AC-009, AC-013 — Depends: T002, T009, T013
-  - [ ] **PREP**: Confirmar migrations, tabelas/object stores, campos, chaves por `workspaceId` e fontes legadas somente para recovery.
-  - [ ] **EXECUTE**: Registrar o inventário completo de notas, estado CRDT, fila, peers, conflitos e projeções nos dois backends, preservando `.openbible/index.sqlite` como legado e executar o documentator antes do fechamento.
-  - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
-  - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
-  - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
+- [x] T043 [CODE] Atualizar .specsfy/DATABASE.md com notas, estado CRDT, fila, peers, conflitos e projeções em `app.sqlite`/IndexedDB — Refs: FR-001, FR-002, FR-004, FR-005, NFR-004, AC-002, AC-009, AC-013 — Depends: T002, T009, T013
+  - [x] **PREP**: Confirmadas migration 003, schema v3, object stores IndexedDB v3, campos, chaves compostas e índices por `workspaceId`; `.openbible/index.sqlite` e Markdown permanecem somente recovery/exportação.
+  - [x] **EXECUTE**: Atualizar `.specsfy/DATABASE.md` com notas primárias, `sync_documents`, snapshots/heads, changes, fila, peers, endpoints, conflitos, projeções, FK/ownership e retenção nos dois backends; executar o documentator.
+  - [x] **VERIFY**: Rust passou 16/16, adapters/schema passaram 3/3, auditoria do inventário passou 1/1 e lint/documentator passaram. `check-types` global mantém apenas falhas preexistentes fora da área sync.
+  - [x] **VISUAL**: Não aplicável: T043 altera somente mapa técnico de persistência; as interfaces relacionadas já foram verificadas em claro/escuro, mobile/desktop, teclado e zoom nas tarefas anteriores.
+  - [x] **EVIDENCE**: Comandos, resultado, arquivos e IDs registrados nas seções 11–13 e no comentário JSON abaixo.
+  - [x] **IMPROVE**: O inventário diferencia fonte primária, estado CRDT, fila e projeções, documenta retenção/recovery e impede interpretar `.openbible/index.sqlite` ou arquivo Markdown como backend operacional.
+  <!-- specsfy:evidence {"task":"T043","refs":["FR-001","FR-002","FR-004","FR-005","NFR-004","AC-002","AC-009","AC-013"],"files":[".specsfy/DATABASE.md","apps/desktop/src-tauri/migrations/003_create_sync_operational.sql","apps/desktop/src-tauri/src/database.rs","apps/web/src/lib/storage/indexeddb-workspace-adapter.ts","apps/web/src/lib/features/sync/sync-database-inventory.test.ts","docs/",".specsfy/PACKAGES.md"],"commands":[{"run":"cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml","exit":0},{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-storage-adapters.test.ts src/lib/storage/indexeddb-workspace-adapter.test.ts","exit":0},{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-database-inventory.test.ts","exit":0},{"run":"bunx eslint apps/web/src/lib/features/sync/sync-database-inventory.test.ts","exit":0},{"run":"node .agents/skills/specsfy-aux-database/scripts/update_database.mjs --project .","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
-- [ ] T044 [CODE] Atualizar .specsfy/RULES.md e PROJECT.md com sync opt-in, backend de notas em `app.sqlite`/IndexedDB e ausência de relay obrigatório — Refs: FR-002, FR-003, FR-006, NFR-001, NFR-002, AC-006, AC-018, AC-029 — Depends: T006, T018, T029
-  - [ ] **PREP**: Confirmar que a regra vigente descreve `app.sqlite` no Tauri, IndexedDB no PWA, `workspaceId` e fontes legadas.
-  - [ ] **EXECUTE**: Atualizar somente as projeções derivadas de regra e finalidade, sem transformar esta tarefa em nova fonte normativa; executar o documentator antes do fechamento.
-  - [ ] **VERIFY**: Executar testes focais, check-types e regressão relacionada.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom; registrar resultado.
-  - [ ] **EVIDENCE**: Registrar comando, resultado, arquivos e IDs nas seções 11–13; adicionar comentário de evidence JSON ao concluir.
-  - [ ] **IMPROVE**: Aplicar melhoria de nomes, isolamento ou acessibilidade, ou justificar ausência.
+- [x] T044 [CODE] Atualizar .specsfy/RULES.md e PROJECT.md com sync opt-in, backend de notas em `app.sqlite`/IndexedDB e ausência de relay obrigatório — Refs: FR-002, FR-003, FR-006, NFR-001, NFR-002, AC-006, AC-018, AC-029 — Depends: T006, T018, T029
+  - [x] **PREP**: Confirmada a regra vigente para `app.sqlite` no Tauri, IndexedDB no PWA, `workspaceId` e fontes legadas; a atualização preserva essas bases.
+  - [x] **EXECUTE**: Atualizadas somente as projeções derivadas em `.specsfy/RULES.md` e `PROJECT.md`, com teste de inventário; executado o documentator.
+  - [x] **VERIFY**: Testes focais passaram 10/10 e lint passou. `check-types` global foi executado e mantém falhas preexistentes em componentes UI, AI, Bíblia, notas e rotas; nenhum erro foi reportado nos arquivos de sync alterados.
+  - [x] **VISUAL**: Não aplicável: T044 altera apenas documentação de governança e teste de inventário, sem superfície visual; não há bordas, espaçamentos, margens, padding, tipografia, viewport, teclado ou zoom a conferir nesta tarefa. As telas consumidoras permanecem cobertas pelas T037–T041.
+  - [x] **EVIDENCE**: Comandos, resultados, arquivos e IDs registrados nas seções 11–13 e no comentário JSON abaixo.
+  - [x] **IMPROVE**: A regra foi isolada em seção própria e o teste de inventário protege opt-in, backends locais, escopo por `workspaceId`, fontes legadas e ausência de relay obrigatório.
+  <!-- specsfy:evidence {"task":"T044","refs":["FR-002","FR-003","FR-006","NFR-001","NFR-002","AC-006","AC-018","AC-029"],"files":[".specsfy/RULES.md","PROJECT.md","apps/web/src/lib/features/sync/sync-governance-inventory.test.ts","docs/",".specsfy/PACKAGES.md"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-governance-inventory.test.ts src/lib/features/sync/sync-network-adapters.test.ts src/lib/features/sync/sync-storage-adapters.test.ts","exit":0},{"run":"bunx eslint apps/web/src/lib/features/sync/sync-governance-inventory.test.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
 #### Fase 3 — Documentação e governança
 
@@ -1321,13 +1345,14 @@ As tarefas T041–T044 mantêm projeções derivadas sem criar fonte normativa p
 
 #### Fase final — Qualidade
 
-- [ ] T045 [TEST] Executar focal, check-types, regressão e rastreabilidade em apps/web/src/lib/features/sync/ — Refs: US-001, US-002, US-003, US-004, FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, NFR-001, NFR-002, NFR-003, NFR-004, AC-001, AC-002, AC-003, AC-004, AC-005, AC-006, AC-007, AC-008, AC-009, AC-010, AC-011, AC-012, AC-013, AC-014, AC-015, AC-016, AC-017, AC-018, AC-019, AC-020, AC-021, AC-022, AC-023, AC-024, AC-025, AC-026, AC-027, AC-028, AC-029, AC-030 — Depends: T031, T032, T033, T034, T035, T036, T037, T038, T039, T040, T041, T042, T043, T044
-  - [ ] **PREP**: Identificar suites, checks, evidências e gates.
-  - [ ] **EXECUTE**: Executar focal, regressão, validação de interface e rastreabilidade.
-  - [ ] **VERIFY**: Confirmar RED materializado e ausência de gaps obrigatórios.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia nos estados e viewports relevantes; registrar resultado.
-  - [ ] **EVIDENCE**: Registrar contagens, comandos e resultado final nas seções 11–13.
-  - [ ] **IMPROVE**: Registrar retrospectiva e próximos riscos sem implementar produção.
+- [x] T045 [TEST] Executar focal, check-types, regressão e rastreabilidade em apps/web/src/lib/features/sync/ — Refs: US-001, US-002, US-003, US-004, FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, NFR-001, NFR-002, NFR-003, NFR-004, AC-001, AC-002, AC-003, AC-004, AC-005, AC-006, AC-007, AC-008, AC-009, AC-010, AC-011, AC-012, AC-013, AC-014, AC-015, AC-016, AC-017, AC-018, AC-019, AC-020, AC-021, AC-022, AC-023, AC-024, AC-025, AC-026, AC-027, AC-028, AC-029, AC-030 — Depends: T031, T032, T033, T034, T035, T036, T037, T038, T039, T040, T041, T042, T043, T044
+  - [x] **PREP**: Inventariadas as 20 suítes da área sync, os testes Rust de persistência, `check-types`, lint, validadores de interface, rastreabilidade, evidências e gates Definition/Plan/Delivery.
+  - [x] **EXECUTE**: Executadas a suíte focal, a regressão geral, a validação de interface, Rust, lint e rastreabilidade.
+  - [x] **VERIFY**: Sync passou 14 arquivos/45 testes; Rust passou 16/16; interface/spec e rastreabilidade passaram 44/44. A regressão geral passou 543/560, com 17 REDs históricos somente em AI/backup; `check-types` mantém falhas globais preexistentes fora de sync. Não há gap automatizável na área da spec.
+  - [x] **VISUAL**: Não aplicável a T045: não houve alteração de superfície visual; a regressão reutilizou as conferências de bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom registradas nas T037–T039.
+  - [x] **EVIDENCE**: Contagens, comandos, arquivos, IDs e o resultado final foram registrados nas seções 11–13 e no comentário JSON abaixo.
+  - [x] **IMPROVE**: Removidos `any` explícito e parâmetro não utilizado do fixture compartilhado; o teste de merge passou a tratar `heads` opcional sem introduzir erro de tipos. Próximos riscos ficam restritos aos REDs históricos de AI/backup e ao baseline global de tipos.
+  <!-- specsfy:evidence {"task":"T045","refs":["US-001","US-002","US-003","US-004","FR-001","FR-002","FR-003","FR-004","FR-005","FR-006","NFR-001","NFR-002","NFR-003","NFR-004","AC-001","AC-002","AC-003","AC-004","AC-005","AC-006","AC-007","AC-008","AC-009","AC-010","AC-011","AC-012","AC-013","AC-014","AC-015","AC-016","AC-017","AC-018","AC-019","AC-020","AC-021","AC-022","AC-023","AC-024","AC-025","AC-026","AC-027","AC-028","AC-029","AC-030"],"files":["apps/web/src/lib/features/sync","apps/web/src/lib/features/sync/sync-test-fixtures.ts","apps/web/src/lib/features/sync/sync-repository.test.ts","apps/web/src/lib/storage/tauri-bridge.ts","apps/desktop/src-tauri/src/commands/sync.rs",".specsfy/RULES.md","PROJECT.md","INTERFACE.md",".specsfy/DATABASE.md",".specsfy/STACK.md","docs/",".specsfy/PACKAGES.md"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync","exit":0},{"run":"bunx eslint apps/web/src/lib/features/sync apps/web/src/lib/storage/tauri-bridge.ts apps/web/src/lib/storage/tauri-bridge.test.ts","exit":0},{"run":"cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml && rustfmt --edition 2021 --check apps/desktop/src-tauri/src/commands/sync.rs","exit":0},{"run":"node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/in-progress/0019-sincronizacao-local-first-automerge/spec.md --allow-draft","exit":0},{"run":"node .agents/skills/specsfy-05-tasks/scripts/validate_interface_tasks.mjs specs/in-progress/0019-sincronizacao-local-first-automerge/spec.md","exit":0},{"run":"node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/in-progress/0019-sincronizacao-local-first-automerge/spec.md apps/web/src/lib/features/sync --kinds US,FR,NFR,AC","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
 ### 15. Ordem de execução
 
@@ -1395,7 +1420,7 @@ As tarefas T041–T044 mantêm projeções derivadas sem criar fonte normativa p
 ### 18. Definition of Done
 
 - [ ] `Definition Gate` está `Passed` após revisão do agente principal.
-- [ ] `Plan Gate` está `Passed` após decomposição da fase 5.
+- [x] `Plan Gate` está `Passed` após decomposição da fase 5.
 - [ ] `Delivery Gate` está `Passed` após implementação posterior.
 - [ ] Todos os ACs aplicáveis passam após as fases 6 e 7.
 - [ ] Todos os requisitos possuem evidência de verificação.

@@ -16,8 +16,12 @@ describe('note editor viewport', () => {
 					scale: 1,
 					pageLeft: 0,
 					pageTop: 0,
+					offsetLeft: 0,
+					onresize: null,
+					onscroll: null,
 					addEventListener: () => {},
-					removeEventListener: () => {}
+					removeEventListener: () => {},
+					dispatchEvent: () => true
 				}
 			})
 		).toBe(344);

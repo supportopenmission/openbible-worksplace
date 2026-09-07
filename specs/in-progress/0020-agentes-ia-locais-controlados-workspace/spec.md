@@ -5,7 +5,7 @@
 | Formato | Specsfy/2.0 |
 | ID | SPEC-0020 |
 | Slug | 0020-agentes-ia-locais-controlados-workspace |
-| Status | Planned |
+| Status | Implementing |
 | Effort | 8 |
 | Effort updated at | 2026-09-05 |
 | Effort rationale | Integração de alto risco entre Tauri, cofre seguro do SO, PWA/gateway, isolamento por workspace, autoria canônica e revisão humana. Estimativa preliminar sujeita à revisão arquitetural. |
@@ -629,7 +629,7 @@ tests/                                        # somente fase TDD posterior
 - **Unidade**: validação de escopo, redaction, máquina de estados, seleção de contexto, prompt como dado e aplicação atômica.
 - **Integração/contrato**: bridge Tauri↔Rust/cofre, adapter gateway↔sessão, `WorkspaceStorage`↔repositórios canônicos e service worker fora do fluxo.
 - **BDD/aceite**: AC-001–AC-015 nesta seção 6 são a referência; cada AC possui um RED explícito com marcador SPECSFY.
-- **Runner TDD**: Vitest focal no web foi executado; `cargo test` permanece predecessor de implementação da boundary Rust, sem código de produto criado nesta fase.
+- **Runner TDD**: Vitest focal no web foi executado com os 15 REDs convertidos em GREEN; `cargo test` permanece predecessor de implementação da boundary Rust/cofre.
 - **E2E**: configuração Tauri, dois workspaces, PWA sem/com gateway e revisão/aplicação, após escolha de cofre/gateway.
 - **Verificação manual**: inspeção de bundle, IPC, cofre, logs e storage somente após implementação; necessária para confirmar ausência de segredo onde testes não observam o SO.
 
@@ -637,19 +637,19 @@ tests/                                        # somente fase TDD posterior
 
 | IDs | BDD de referência | Teste TDD informado pelo BDD | RED observado | GREEN observado | Refactor/regressão |
 | --- | --- | --- | --- | --- | --- |
-| US-001, FR-001/002/003, NFR-001/007, AC-001/002/003/015 | AC-001/002/003/015 | `agent-profile-red.test.ts`, `agent-run-red.test.ts`, `agent-observability-red.test.ts` | RED: 4 casos falharam porque a exportação de domínio `executeAgent`/`runAgentCommand` ainda não existe; perfil usa fixture real e binding permanece não persistido | GREEN Pending | Refactor Pending |
-| US-002, FR-004/005/006/012, NFR-002/003/006, AC-004/005/006 | AC-004/005/006 | `context-red.test.ts` | RED: 3 casos falharam na asserção da seam de domínio ausente; fixture prepara workspace real, generation e paths relativos | GREEN Pending | Refactor Pending |
-| US-003, FR-007/008/011/012, NFR-002/004/008, AC-007/008/009/014 | AC-007/008/009/014 | `proposal-red.test.ts`, `agent-failure-red.test.ts` | RED: 4 casos falharam na seam de domínio ausente; asserts preservam arquivo antes da proposta e aplicação explícita após confirmação | GREEN Pending | Refactor Pending |
-| US-004, FR-009/010/011, NFR-003/005/007/009, AC-010/011/012/013 | AC-010/011/012/013 | `gateway-red.test.ts`, `service-worker-boundary-red.test.ts` | RED: 4 casos falharam na seam de domínio ausente; gateway usa fixture WorkspaceStorage e service worker não é invocado | GREEN Pending | Refactor Pending |
+| US-001, FR-001/002/003, NFR-001/007, AC-001/002/003/015 | AC-001/002/003/015 | `agent-profile-red.test.ts`, `agent-run-red.test.ts`, `agent-observability-red.test.ts` | RED histórico: 4 casos falharam por seam ausente; perfil usa fixture real e binding permanece não persistido | GREEN: perfil, execução redigida e observabilidade passaram na suíte focal e geral | Refactor: seam centralizada em `agent-command.ts`; cofre Tauri segue separado |
+| US-002, FR-004/005/006/012, NFR-002/003/006, AC-004/005/006 | AC-004/005/006 | `context-red.test.ts` | RED histórico: 3 casos falharam na asserção da seam ausente | GREEN: workspace/generation, paths relativos e ausência de tools passaram | Refactor: contexto mínimo e rejeição de generation obsoleta |
+| US-003, FR-007/008/011/012, NFR-002/004/008, AC-007/008/009/014 | AC-007/008/009/014 | `proposal-red.test.ts`, `agent-failure-red.test.ts` | RED histórico: 4 casos falharam na seam ausente | GREEN: preview, rejeição, aplicação revalidada e cancelamento passaram | Refactor: aplicação usa temporário e confirmação explícita |
+| US-004, FR-009/010/011, NFR-003/005/007/009, AC-010/011/012/013 | AC-010/011/012/013 | `gateway-red.test.ts`, `service-worker-boundary-red.test.ts` | RED histórico: 4 casos falharam na seam ausente | GREEN: preflight, sessão, revogação, falha e capability fora do service worker passaram | Refactor: token somente em memória e gateway sem envio implícito |
 
 ### 12. Plano de testes e rastreabilidade
 
 | Requisito | Cenários BDD | Nível futuro | Arquivo/comando esperado | Evidência |
 | --- | --- | --- | --- | --- |
-| FR-001/002/003, NFR-001/007 | AC-001/002/003/015 | Unidade + domínio | `apps/web/src/lib/features/ai/workspace-agent-fixture.ts`, `agent-profile-red.test.ts`, `agent-run-red.test.ts`, `agent-observability-red.test.ts` | RED de exportação de domínio ausente; sem import/sintaxe quebrado |
-| FR-004/005/006/012, NFR-002/003/006 | AC-004/005/006/014 | Unidade + contrato | `apps/web/src/lib/features/ai/context-red.test.ts`, `agent-failure-red.test.ts` | RED de seam ausente; fixture prepara WorkspaceStorage real |
-| FR-007/008/011/012, NFR-002/004/008 | AC-007/008/009/014 | Unidade + aplicação canônica | `apps/web/src/lib/features/ai/proposal-red.test.ts`, `agent-failure-red.test.ts` | RED de seam ausente; arquivo autoral é observado antes/depois |
-| FR-009/010/011, NFR-003/005/007/009 | AC-010/011/012/013 | Contrato + PWA | `apps/web/src/lib/features/ai/gateway-red.test.ts`, `service-worker-boundary-red.test.ts` | RED de seam de domínio ausente; SW não é backend |
+| FR-001/002/003, NFR-001/007 | AC-001/002/003/015 | Unidade + domínio | `apps/web/src/lib/features/ai/workspace-agent-fixture.ts`, `agent-profile-red.test.ts`, `agent-run-red.test.ts`, `agent-observability-red.test.ts` | GREEN focal e geral; JSON redigido sem segredo |
+| FR-004/005/006/012, NFR-002/003/006 | AC-004/005/006/014 | Unidade + contrato | `apps/web/src/lib/features/ai/context-red.test.ts`, `agent-failure-red.test.ts` | GREEN focal e geral; fixture prepara WorkspaceStorage real |
+| FR-007/008/011/012, NFR-002/004/008 | AC-007/008/009/014 | Unidade + aplicação canônica | `apps/web/src/lib/features/ai/proposal-red.test.ts`, `agent-failure-red.test.ts` | GREEN focal e geral; arquivo autoral preservado antes/depois |
+| FR-009/010/011, NFR-003/005/007/009 | AC-010/011/012/013 | Contrato + PWA | `apps/web/src/lib/features/ai/gateway-red.test.ts`, `service-worker-boundary-red.test.ts` | GREEN focal e geral; SW não é backend |
 | NFR-008 | AC-007/008/010/012 | Interface futura | `AgentCapabilityPanel.svelte`, `AgentContextPicker.svelte`, `AgentProposalReview.svelte`, `ai-interface.test.ts` | Pending: fase 7 |
 
 <!-- specsfy:evidence {"task":"T027","refs":["US-001","US-002","US-003","US-004","FR-001","FR-002","FR-003","FR-004","FR-005","FR-006","FR-007","FR-008","FR-009","FR-010","FR-011","FR-012","NFR-001","NFR-002","NFR-003","NFR-004","NFR-005","NFR-006","NFR-007","NFR-008","NFR-009","AC-001","AC-002","AC-003","AC-004","AC-005","AC-006","AC-007","AC-008","AC-009","AC-010","AC-011","AC-012","AC-013","AC-014","AC-015"]} -->
@@ -659,7 +659,7 @@ tests/                                        # somente fase TDD posterior
 #### Gate do Ato I — Definição
 
 - **Resultado**: Passed em 2026-09-05 — READY; formato válido, cobertura mínima confirmada e fronteiras de segredo, gateway, retenção e autoria revisadas.
-- **Comando**: `node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/planned/0020-agentes-ia-locais-controlados-workspace/spec.md`.
+  - **Comando histórico**: `node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/planned/0020-agentes-ia-locais-controlados-workspace/spec.md`.
 - **FIND-SEC-001** [P1] [Resolved] cofre, sessão PWA e retenção estavam genéricos — Refs: FR-001, FR-002, FR-009, NFR-001, NFR-009 — Evidence: specs/planned/0020-agentes-ia-locais-controlados-workspace/spec.md:75 — Effect: uma implementação poderia persistir segredo/token ou conteúdo transitório em superfícies portáteis — Suggestion: resolvido com credential store nativo sem fallback, preflight, token em memória por até 60 minutos e conteúdo transitório em memória.
 - **FIND-ARCH-001** [P1] [Resolved] perfil autoral e binding do aparelho estavam misturados — Refs: FR-012, FR-001 — Evidence: specs/planned/0020-agentes-ia-locais-controlados-workspace/spec.md:116 — Effect: endpoint e `secretRef` poderiam entrar em workspace, backup ou sync — Suggestion: resolvido separando `PortableAgentProfile` JSON de `DeviceAgentBinding` local.
 - **FIND-PROD-001** [P2] [Resolved] primeira capability permitia interpretar “agente” como ferramentas autônomas — Refs: FR-012, FR-006 — Evidence: specs/planned/0020-agentes-ia-locais-controlados-workspace/spec.md:108 — Effect: superfície de prompt injection e escrita seria maior que o necessário — Suggestion: resolvido limitando a fatia a geração textual sem ferramentas e uma proposta por documento com confirmação.
@@ -667,14 +667,14 @@ tests/                                        # somente fase TDD posterior
 #### Gate do Ato II — Plano
 
 - **Resultado**: Passed em 2026-09-05 — tarefas, interface, focal RED e rastreabilidade válidos; pronto para implementação posterior.
-- **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/planned/0020-agentes-ia-locais-controlados-workspace/spec.md`; `node .agents/skills/specsfy-05-tasks/scripts/validate_interface_tasks.mjs specs/planned/0020-agentes-ia-locais-controlados-workspace/spec.md`; `node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/planned/0020-agentes-ia-locais-controlados-workspace/spec.md apps/web/src/lib/features/ai --full-chain`; `node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/planned/0020-agentes-ia-locais-controlados-workspace/spec.md`.
+  - **Comando histórico**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/planned/0020-agentes-ia-locais-controlados-workspace/spec.md`; `node .agents/skills/specsfy-05-tasks/scripts/validate_interface_tasks.mjs specs/planned/0020-agentes-ia-locais-controlados-workspace/spec.md`; `node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/planned/0020-agentes-ia-locais-controlados-workspace/spec.md apps/web/src/lib/features/ai --full-chain`; `node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/planned/0020-agentes-ia-locais-controlados-workspace/spec.md`.
 - **Achados**: 29 tarefas/174 itens canônicos, 40/40 IDs cobertos, 15 REDs executados em 8 arquivos; todos falham pela ausência da exportação de domínio `executeAgent`/`runAgentCommand`, sem importação/sintaxe quebrada.
 
 #### Gate do Ato III — Entrega
 
-- **Resultado**: In Progress em 2026-09-05; somente testes RED foram criados, sem implementação de produção.
-- **Comando**: `bun run --cwd apps/web test:tdd -- src/lib/features/ai` (executado junto às fatias de backup e sync para a verificação focal).
-- **Achados**: 15 casos em 8 arquivos falharam pela ausência da exportação de domínio `executeAgent`/`runAgentCommand`, sem falha de importação, sintaxe, fixture ou ambiente. GREEN, refactor, interface e regressão final permanecem pendentes para a fase 7.
+  - **Resultado**: In Progress em 2026-09-07; implementação web de domínio e regressão concluídas, mas cofre Rust/Tauri e interface permanecem pendentes.
+  - **Comandos**: `bun run --cwd apps/web test:tdd -- src/lib/features/ai`; `bun run --cwd apps/web test:tdd`; `bun run --cwd apps/web check-types`; `bunx eslint ...`; `node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check`; `node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check`.
+  - **Achados**: os 15 casos de AI e os 2 casos históricos de backup agora passam; a suíte geral passou com 168 arquivos/560 testes e TypeScript sem erros. Permanecem T017, T025, T026, T027, T028 e T029.
 
 ### 14. Tarefas
 
@@ -802,13 +802,15 @@ tests/                                        # somente fase TDD posterior
 
 #### Fase de produção e dados
 
-- [ ] T016 [P1] [CODE] [US-001] Separar PortableAgentProfile e DeviceAgentBinding em `apps/web/src/lib/features/ai/agent-profile.ts` — Refs: US-001, FR-001, FR-003, FR-012, NFR-001, NFR-003, AC-001, AC-003, AC-015 — Depends: T001, T003, T015
-  - [ ] **PREP**: Confirmar o contrato portátil/local e os REDs T001/T003/T015.
-  - [ ] **EXECUTE**: Implementar tipos e serialização sem endpoint, provider ou segredo no perfil portátil.
-  - [ ] **VERIFY**: Executar testes de perfil e inspeção de JSON, incluindo ausência de segredo.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; inspecionar a representação de perfil em claro/escuro.
-  - [ ] **EVIDENCE**: Registrar arquivos, comandos, diffs e IDs AC-001/003/015.
-  - [ ] **IMPROVE**: Ajustar boundary se qualquer binding escapar para backup/sync/export.
+- [x] T016 [P1] [CODE] [US-001] Separar PortableAgentProfile e DeviceAgentBinding em `apps/web/src/lib/features/ai/agent-profile.ts` — Refs: US-001, FR-001, FR-003, FR-012, NFR-001, NFR-003, AC-001, AC-003, AC-015 — Depends: T001, T003, T015
+  - [x] **PREP**: Contrato portátil/local e REDs T001/T003/T015 confirmados.
+  - [x] **EXECUTE**: Tipos e serialização implementados sem endpoint, provider ou segredo no perfil portátil.
+  - [x] **VERIFY**: Testes de perfil e inspeção de JSON passaram sem segredo.
+  - [x] **VISUAL**: Não aplicável: tarefa de boundary de domínio sem tela alterada.
+  - [x] **EVIDENCE**: Evidência registrada no bloco `specsfy:evidence` desta tarefa.
+  - [x] **IMPROVE**: Binding permanece separado e não entra em backup/sync/export.
+
+  <!-- specsfy:evidence {"task":"T016","refs":["US-001","FR-001","FR-003","FR-012","NFR-001","NFR-003","AC-001","AC-003","AC-015"],"files":["apps/web/src/lib/features/ai/agent-profile.ts","apps/web/src/lib/features/ai/agent-profile-red.test.ts","apps/web/src/lib/features/ai/workspace-agent-fixture.ts"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/ai","exit":0},{"run":"bun run --cwd apps/web test:tdd","exit":0},{"run":"bun run --cwd apps/web check-types","exit":0}]} -->
 
 - [ ] T017 [P1] [CODE] [US-001] Implementar credential store Rust/Tauri nativo sem fallback e comandos redigidos em `apps/desktop/src-tauri/src/commands/ai.rs` — Refs: US-001, FR-001, FR-002, FR-003, NFR-001, NFR-007, AC-001, AC-002, AC-003, AC-015 — Depends: T001, T002, T003, T015
   - [ ] **PREP**: Confirmar API de cofre do SO, ausência de fallback e predecessor RED.
@@ -818,61 +820,75 @@ tests/                                        # somente fase TDD posterior
   - [ ] **EVIDENCE**: Registrar comandos cargo/Vitest, saída e cobertura AC-001/002/003/015.
   - [ ] **IMPROVE**: Remover qualquer fallback ou campo sensível detectado.
 
-- [ ] T018 [P1] [CODE] [US-002] Implementar seleção por workspace/generation, paths relativos e primeira fatia sem tools em `apps/web/src/lib/features/ai/agent-context.ts` — Refs: US-002, FR-004, FR-005, FR-006, FR-012, NFR-002, NFR-003, NFR-006, AC-004, AC-005, AC-006 — Depends: T004, T005, T006
-  - [ ] **PREP**: Confirmar contrato WorkspaceStorage, geração, allowlist e fixture autoral.
-  - [ ] **EXECUTE**: Implementar seleção determinística com paths relativos e sem chamadas de ferramenta.
-  - [ ] **VERIFY**: Executar REDs T004/T005/T006 convertidos em GREEN e casos de workspace trocado.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; verificar seleção, contagem e erro responsivo.
-  - [ ] **EVIDENCE**: Registrar fixture, comando e rastreabilidade AC-004/005/006.
-  - [ ] **IMPROVE**: Reduzir contexto ao mínimo permitido e eliminar caminhos absolutos.
+- [x] T018 [P1] [CODE] [US-002] Implementar seleção por workspace/generation, paths relativos e primeira fatia sem tools em `apps/web/src/lib/features/ai/agent-context.ts` — Refs: US-002, FR-004, FR-005, FR-006, FR-012, NFR-002, NFR-003, NFR-006, AC-004, AC-005, AC-006 — Depends: T004, T005, T006
+  - [x] **PREP**: Contrato WorkspaceStorage, geração, allowlist e fixture autoral confirmados.
+  - [x] **EXECUTE**: Seleção determinística implementada com paths relativos e sem chamadas de ferramenta.
+  - [x] **VERIFY**: REDs T004/T005/T006 convertidos em GREEN, incluindo workspace/generation divergente.
+  - [x] **VISUAL**: Não aplicável: tarefa de boundary de contexto sem tela alterada.
+  - [x] **EVIDENCE**: Evidência registrada no bloco `specsfy:evidence` desta tarefa.
+  - [x] **IMPROVE**: Contexto reduzido ao selecionado e caminhos absolutos rejeitados.
 
-- [ ] T019 [P1] [CODE] [US-002] Implementar AgentRun textual cancelável com orçamento, timeout e erro redigido em `apps/web/src/lib/features/ai/agent-run.ts` — Refs: US-002, FR-004, FR-006, FR-012, NFR-001, NFR-005, NFR-006, AC-002, AC-006, AC-014 — Depends: T002, T006, T014
-  - [ ] **PREP**: Confirmar orçamento, cancelamento, timeout e política de erro redigido.
-  - [ ] **EXECUTE**: Implementar máquina de estados textual, sem tools, shell ou escrita autônoma.
-  - [ ] **VERIFY**: Executar casos de cancelamento, timeout, erro e descarte de contexto.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; verificar estados idle/running/cancelled/failed/succeeded e foco.
-  - [ ] **EVIDENCE**: Registrar comandos e cobertura AC-002/006/014.
-  - [ ] **IMPROVE**: Ajustar limites e garantir que erro nunca contenha segredo ou prompt integral.
+  <!-- specsfy:evidence {"task":"T018","refs":["US-002","FR-004","FR-005","FR-006","FR-012","NFR-002","NFR-003","NFR-006","AC-004","AC-005","AC-006"],"files":["apps/web/src/lib/features/ai/agent-context.ts","apps/web/src/lib/features/ai/context-red.test.ts"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/ai","exit":0},{"run":"bun run --cwd apps/web check-types","exit":0}]} -->
 
-- [ ] T020 [P1] [CODE] [US-003] Implementar AIProposal e aplicação atômica/revalidação para um documento em `apps/web/src/lib/features/ai/ai-proposal.ts` — Refs: US-003, FR-007, FR-008, FR-012, NFR-002, NFR-004, NFR-008, AC-007, AC-008, AC-009 — Depends: T007, T008, T009
-  - [ ] **PREP**: Confirmar hash/generation, diff, uma proposta por documento e formato canônico.
-  - [ ] **EXECUTE**: Implementar proposta somente em memória e aplicação explícita/revalidada.
-  - [ ] **VERIFY**: Executar casos preview, rejeição, conflito e aplicação atômica.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; verificar diff legível, conflito e confirmação por teclado.
-  - [ ] **EVIDENCE**: Registrar fixture autoral, comandos e AC-007/008/009.
-  - [ ] **IMPROVE**: Remover qualquer mutação implícita ou perda de conteúdo.
+- [x] T019 [P1] [CODE] [US-002] Implementar AgentRun textual cancelável com orçamento, timeout e erro redigido em `apps/web/src/lib/features/ai/agent-run.ts` — Refs: US-002, FR-004, FR-006, FR-012, NFR-001, NFR-005, NFR-006, AC-002, AC-006, AC-014 — Depends: T002, T006, T014
+  - [x] **PREP**: Orçamento, cancelamento, timeout e política de erro redigido confirmados.
+  - [x] **EXECUTE**: Máquina textual implementada sem tools, shell ou escrita autônoma.
+  - [x] **VERIFY**: Casos de execução, cancelamento e erro redigido passaram.
+  - [x] **VISUAL**: Não aplicável: tarefa de máquina de domínio sem tela alterada.
+  - [x] **EVIDENCE**: Evidência registrada no bloco `specsfy:evidence` desta tarefa.
+  - [x] **IMPROVE**: Resultado e erros não incluem segredo nem prompt integral.
 
-- [ ] T021 [P1] [CODE] [US-004] Implementar preflight HTTPS sem conteúdo e token PWA em memória por 60 minutos em `apps/web/src/lib/features/ai/pwa-gateway-session.ts` — Refs: US-004, FR-009, FR-010, NFR-003, NFR-005, NFR-009, AC-010, AC-011, AC-012 — Depends: T010, T011, T012
-  - [ ] **PREP**: Confirmar HTTPS, preflight sem conteúdo, expiração e revogação.
-  - [ ] **EXECUTE**: Implementar sessão opaca somente em memória, sem persistência de chave.
-  - [ ] **VERIFY**: Executar preflight, expiry, reload e revocation sem vazamento de payload.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; verificar capability unavailable/ready/expired e mensagens acionáveis.
-  - [ ] **EVIDENCE**: Registrar trace HTTP sanitizado e AC-010/011/012.
-  - [ ] **IMPROVE**: Encurtar retenção se houver qualquer dado além do token opaco.
+  <!-- specsfy:evidence {"task":"T019","refs":["US-002","FR-004","FR-006","FR-012","NFR-001","NFR-005","NFR-006","AC-002","AC-006","AC-014"],"files":["apps/web/src/lib/features/ai/agent-run.ts","apps/web/src/lib/features/ai/agent-run-red.test.ts","apps/web/src/lib/features/ai/agent-failure-red.test.ts"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/ai","exit":0},{"run":"bun run --cwd apps/web test:tdd","exit":0}]} -->
 
-- [ ] T022 [P1] [CODE] [US-004] Implementar gateway PWA e falhas sem envio, mantendo service worker fora em `apps/web/src/lib/features/ai/ai-gateway.ts` — Refs: US-004, FR-009, FR-010, FR-011, NFR-005, NFR-007, NFR-009, AC-010, AC-011, AC-012, AC-013 — Depends: T010, T011, T012, T013
-  - [ ] **PREP**: Confirmar gateway confiável, ausência de cloud OpenBible obrigatória e limite do SW.
-  - [ ] **EXECUTE**: Implementar cliente gateway com falhas explícitas e nenhuma lógica de backend no SW.
-  - [ ] **VERIFY**: Executar bloqueio sem preflight, erro de gateway e ausência de chamadas no service worker.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; verificar indisponibilidade e recuperação sem perder autoria.
-  - [ ] **EVIDENCE**: Registrar chamadas sanitizadas, comandos e AC-010–013.
-  - [ ] **IMPROVE**: Remover retry silencioso, conteúdo em preflight e dependência implícita.
+- [x] T020 [P1] [CODE] [US-003] Implementar AIProposal e aplicação atômica/revalidação para um documento em `apps/web/src/lib/features/ai/ai-proposal.ts` — Refs: US-003, FR-007, FR-008, FR-012, NFR-002, NFR-004, NFR-008, AC-007, AC-008, AC-009 — Depends: T007, T008, T009
+  - [x] **PREP**: Hash/generation, diff, uma proposta por documento e formato canônico confirmados.
+  - [x] **EXECUTE**: Proposta em memória e aplicação explícita/revalidada implementadas.
+  - [x] **VERIFY**: Preview, rejeição, conflito e aplicação atômica passaram.
+  - [x] **VISUAL**: Não aplicável: revisão visual ficará na tarefa T029.
+  - [x] **EVIDENCE**: Evidência registrada no bloco `specsfy:evidence` desta tarefa.
+  - [x] **IMPROVE**: Não há mutação implícita; aplicação usa confirmação e temporário.
 
-- [ ] T023 [P1] [CODE] [US-003] Implementar redaction, retenção transitória e anel sanitizado de 200 eventos/sete dias em `apps/web/src/lib/features/ai/ai-observability.ts` — Refs: US-001, US-003, US-004, FR-003, FR-008, FR-012, NFR-001, NFR-007, NFR-009, AC-003, AC-014, AC-015 — Depends: T003, T014, T015
-  - [ ] **PREP**: Confirmar campos proibidos, expiração de 30 minutos e anel sanitizado.
-  - [ ] **EXECUTE**: Implementar redaction antes do diagnóstico e descarte por reload/TTL.
-  - [ ] **VERIFY**: Executar inspeção de logs, retenção e limite de 200 eventos.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia; verificar diagnóstico útil sem prompt, resposta ou segredo.
-  - [ ] **EVIDENCE**: Registrar amostras redigidas e AC-003/014/015.
-  - [ ] **IMPROVE**: Tighten campos e TTL quando a evidência indicar exposição.
+  <!-- specsfy:evidence {"task":"T020","refs":["US-003","FR-007","FR-008","FR-012","NFR-002","NFR-004","NFR-008","AC-007","AC-008","AC-009"],"files":["apps/web/src/lib/features/ai/ai-proposal.ts","apps/web/src/lib/features/ai/proposal-red.test.ts"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/ai","exit":0},{"run":"bun run --cwd apps/web check-types","exit":0}]} -->
 
-- [ ] T024 [P1] [DOC] Atualizar `INTERFACE.md`, `PROJECT.md`, `.specsfy/RULES.md`, `.specsfy/DATABASE.md` e reconstruir `docs/` — Refs: FR-001, FR-004, FR-007, FR-009, NFR-008, AC-007, AC-010 — Depends: T016, T018, T020, T021
-  - [ ] **PREP**: Auditar decisões, entidades e superfícies introduzidas pelas tarefas anteriores.
-  - [ ] **EXECUTE**: Atualizar documentação canônica e inventários sem criar fonte normativa paralela.
-  - [ ] **VERIFY**: Executar documentator/monitores e conferir consistência dos caminhos.
-  - [ ] **VISUAL**: Não aplicável: documentação técnica; revisar exemplos de interface quando presentes.
-  - [ ] **EVIDENCE**: Registrar arquivos reconstruídos e validações executadas.
-  - [ ] **IMPROVE**: Eliminar duplicação e manter somente decisões confirmadas.
+- [x] T021 [P1] [CODE] [US-004] Implementar preflight HTTPS sem conteúdo e token PWA em memória por 60 minutos em `apps/web/src/lib/features/ai/pwa-gateway-session.ts` — Refs: US-004, FR-009, FR-010, NFR-003, NFR-005, NFR-009, AC-010, AC-011, AC-012 — Depends: T010, T011, T012
+  - [x] **PREP**: HTTPS, preflight sem conteúdo, expiração e revogação confirmados.
+  - [x] **EXECUTE**: Sessão opaca implementada somente em memória, sem persistência de chave.
+  - [x] **VERIFY**: Preflight, expiry e revocation passaram sem vazamento de payload.
+  - [x] **VISUAL**: Não aplicável: capability visual ficará na tarefa T025.
+  - [x] **EVIDENCE**: Evidência registrada no bloco `specsfy:evidence` desta tarefa.
+  - [x] **IMPROVE**: Retenção limitada a no máximo 60 minutos e token opaco.
+
+  <!-- specsfy:evidence {"task":"T021","refs":["US-004","FR-009","FR-010","NFR-003","NFR-005","NFR-009","AC-010","AC-011","AC-012"],"files":["apps/web/src/lib/features/ai/pwa-gateway-session.ts","apps/web/src/lib/features/ai/gateway-red.test.ts"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/ai","exit":0},{"run":"bun run --cwd apps/web check-types","exit":0}]} -->
+
+- [x] T022 [P1] [CODE] [US-004] Implementar gateway PWA e falhas sem envio, mantendo service worker fora em `apps/web/src/lib/features/ai/ai-gateway.ts` — Refs: US-004, FR-009, FR-010, FR-011, NFR-005, NFR-007, NFR-009, AC-010, AC-011, AC-012, AC-013 — Depends: T010, T011, T012, T013
+  - [x] **PREP**: Gateway confiável, ausência de cloud obrigatória e limite do SW confirmados.
+  - [x] **EXECUTE**: Cliente gateway implementado com falhas explícitas e sem lógica de backend no SW.
+  - [x] **VERIFY**: Bloqueio sem preflight, erro de gateway e boundary do SW passaram.
+  - [x] **VISUAL**: Não aplicável: capability visual ficará na tarefa T025.
+  - [x] **EVIDENCE**: Evidência registrada no bloco `specsfy:evidence` desta tarefa.
+  - [x] **IMPROVE**: Sem retry silencioso, conteúdo em preflight ou dependência implícita.
+
+  <!-- specsfy:evidence {"task":"T022","refs":["US-004","FR-009","FR-010","FR-011","NFR-005","NFR-007","NFR-009","AC-010","AC-011","AC-012","AC-013"],"files":["apps/web/src/lib/features/ai/ai-gateway.ts","apps/web/src/lib/features/ai/service-worker-boundary-red.test.ts","apps/web/src/lib/features/ai/gateway-red.test.ts"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/ai","exit":0},{"run":"bunx eslint apps/web/src/lib/features/ai","exit":0}]} -->
+
+- [x] T023 [P1] [CODE] [US-003] Implementar redaction, retenção transitória e anel sanitizado de 200 eventos/sete dias em `apps/web/src/lib/features/ai/ai-observability.ts` — Refs: US-001, US-003, US-004, FR-003, FR-008, FR-012, NFR-001, NFR-007, NFR-009, AC-003, AC-014, AC-015 — Depends: T003, T014, T015
+  - [x] **PREP**: Campos proibidos, expiração e anel sanitizado confirmados.
+  - [x] **EXECUTE**: Redaction implementada antes do diagnóstico, com retenção transitória limitada.
+  - [x] **VERIFY**: Inspeção de logs e snapshot redigido passaram; limite de 200 eventos aplicado.
+  - [x] **VISUAL**: Não aplicável: diagnóstico visual ficará na tarefa T025/T029.
+  - [x] **EVIDENCE**: Evidência registrada no bloco `specsfy:evidence` desta tarefa.
+  - [x] **IMPROVE**: Campos de conteúdo, token e chave não são expostos no snapshot.
+
+  <!-- specsfy:evidence {"task":"T023","refs":["US-001","US-003","US-004","FR-003","FR-008","FR-012","NFR-001","NFR-007","NFR-009","AC-003","AC-014","AC-015"],"files":["apps/web/src/lib/features/ai/ai-observability.ts","apps/web/src/lib/features/ai/agent-observability-red.test.ts"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/ai","exit":0},{"run":"bun run --cwd apps/web test:tdd","exit":0}]} -->
+
+- [x] T024 [P1] [DOC] Atualizar `INTERFACE.md`, `PROJECT.md`, `.specsfy/RULES.md`, `.specsfy/DATABASE.md` e reconstruir `docs/` — Refs: FR-001, FR-004, FR-007, FR-009, NFR-008, AC-007, AC-010 — Depends: T016, T018, T020, T021
+  - [x] **PREP**: Decisões, entidades e superfícies introduzidas foram auditadas.
+  - [x] **EXECUTE**: Documentação canônica e inventários atualizados sem fonte paralela.
+  - [x] **VERIFY**: Documentator e monitores passaram com caminhos consistentes.
+  - [x] **VISUAL**: Não aplicável: documentação técnica; exemplos de interface continuam nas tarefas T025/T028/T029.
+  - [x] **EVIDENCE**: Arquivos reconstruídos e validações registrados abaixo.
+  - [x] **IMPROVE**: Duplicações removidas; somente decisões sustentadas foram preservadas.
+
+  <!-- specsfy:evidence {"task":"T024","refs":["FR-001","FR-004","FR-007","FR-009","NFR-008","AC-007","AC-010"],"files":["INTERFACE.md","PROJECT.md",".specsfy/RULES.md",".specsfy/DATABASE.md","docs/",".specsfy/PACKAGES.md"],"commands":[{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project .","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 #### Fase de interface
 
 Atualizar `INTERFACE.md` com os blocos e componentes usados nesta fase.

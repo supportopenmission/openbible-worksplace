@@ -6,6 +6,31 @@ export type WorkspaceCommand =
 	| { name: 'database.deleteWorkspace'; workspaceId: string }
 	| { name: 'database.listContent'; workspaceId: string }
 	| { name: 'database.writeContent'; record: WorkspaceContentRecord }
+	| {
+			name: 'sync.writeNote';
+			workspaceId: string;
+			noteId: string;
+			schemaVersion: number;
+			payload: Record<string, unknown>;
+			createdAt?: string;
+			updatedAt?: string;
+	  }
+	| {
+			name: 'sync.writeSnapshot';
+			workspaceId: string;
+			noteId: string;
+			snapshotVersion: number;
+			stateJson: Record<string, unknown>;
+			heads: string[];
+	  }
+	| {
+			name: 'sync.appendChange';
+			workspaceId: string;
+			noteId: string;
+			changeId: string;
+			changeBlob: Uint8Array;
+	  }
+	| { name: 'sync.readState'; workspaceId: string; noteId: string }
 	| { name: 'workspace.initialize'; preferredPath?: string }
 	| { name: 'workspace.readFile'; relativePath: string }
 	| { name: 'workspace.listFiles'; relativePath: string }
@@ -64,6 +89,14 @@ function validatePath(path: string): void {
 	}
 }
 
+function validateSyncKey(value: string, code = 'sync_key_required'): string {
+	const normalized = value.trim();
+	if (!normalized || normalized.includes('/') || normalized.includes('\\') || normalized.includes('..')) {
+		throw new TauriCommandError({ code, recoverable: false });
+	}
+	return normalized;
+}
+
 function payload(command: WorkspaceCommand | UnknownWorkspaceCommand): Record<string, unknown> {
 	switch (command.name) {
 		case 'database.initialize':
@@ -84,6 +117,35 @@ function payload(command: WorkspaceCommand | UnknownWorkspaceCommand): Record<st
 		}
 		case 'database.writeContent':
 			return { record: command.record };
+		case 'sync.writeNote':
+			return {
+				workspaceId: validateSyncKey(String(command.workspaceId ?? ''), 'workspace_id_required'),
+				noteId: validateSyncKey(String(command.noteId ?? ''), 'sync_note_id_required'),
+				schemaVersion: command.schemaVersion,
+				payload: command.payload,
+				createdAt: command.createdAt,
+				updatedAt: command.updatedAt
+			};
+		case 'sync.writeSnapshot':
+			return {
+				workspaceId: validateSyncKey(String(command.workspaceId ?? ''), 'workspace_id_required'),
+				noteId: validateSyncKey(String(command.noteId ?? ''), 'sync_note_id_required'),
+				snapshotVersion: command.snapshotVersion,
+				stateJson: command.stateJson,
+				heads: command.heads
+			};
+		case 'sync.appendChange':
+			return {
+				workspaceId: validateSyncKey(String(command.workspaceId ?? ''), 'workspace_id_required'),
+				noteId: validateSyncKey(String(command.noteId ?? ''), 'sync_note_id_required'),
+				changeId: validateSyncKey(String(command.changeId ?? ''), 'sync_change_id_required'),
+				changeBlob: Array.from(command.changeBlob as ArrayLike<number>)
+			};
+		case 'sync.readState':
+			return {
+				workspaceId: validateSyncKey(String(command.workspaceId ?? ''), 'workspace_id_required'),
+				noteId: validateSyncKey(String(command.noteId ?? ''), 'sync_note_id_required')
+			};
 		case 'workspace.initialize':
 			return { preferredPath: command.preferredPath };
 		case 'workspace.readFile':
@@ -159,6 +221,10 @@ function tauriCommandName(command: WorkspaceCommand): string {
 		'database.deleteWorkspace': 'delete_workspace_record',
 		'database.listContent': 'list_workspace_content',
 		'database.writeContent': 'write_workspace_content',
+		'sync.writeNote': 'sync_write_note',
+		'sync.writeSnapshot': 'sync_write_snapshot',
+		'sync.appendChange': 'sync_append_change',
+		'sync.readState': 'sync_read_state',
 		'workspace.initialize': 'initialize_workspace',
 		'workspace.readFile': 'read_workspace_file',
 		'workspace.listFiles': 'list_workspace_files',

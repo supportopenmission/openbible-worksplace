@@ -3,7 +3,7 @@
 <!-- specsfy:documentator:start -->
 ## Resumo
 
-- Arquivos de teste: 105.
+- Arquivos de teste: 113.
 - Runner: não identificado.
 - Scripts: build: turbo run build; check-types: turbo run check-types; dev: turbo run dev; lint: turbo run lint; format: prettier --write .; format:check: prettier --check ..
 
@@ -86,11 +86,19 @@
 | apps/web/src/lib/features/onboarding/onboarding-errors.test.ts |
 | apps/web/src/lib/features/onboarding/storage-choice.svelte.spec.ts |
 | apps/web/src/lib/features/sync/external-edit-bridge.test.ts |
+| apps/web/src/lib/features/sync/peer-conflict-panel.svelte.spec.ts |
+| apps/web/src/lib/features/sync/peer-conflict-panel.test.ts |
 | apps/web/src/lib/features/sync/peer-policy.test.ts |
+| apps/web/src/lib/features/sync/sync-database-inventory.test.ts |
 | apps/web/src/lib/features/sync/sync-document-registry.test.ts |
 | apps/web/src/lib/features/sync/sync-envelope-guard.test.ts |
+| apps/web/src/lib/features/sync/sync-governance-inventory.test.ts |
+| apps/web/src/lib/features/sync/sync-interface-inventory.test.ts |
 | apps/web/src/lib/features/sync/sync-network-adapters.test.ts |
 | apps/web/src/lib/features/sync/sync-repository.test.ts |
+| apps/web/src/lib/features/sync/sync-settings.test.ts |
+| apps/web/src/lib/features/sync/sync-status.test.ts |
+| apps/web/src/lib/features/sync/sync-storage-adapters.test.ts |
 | apps/web/src/lib/features/workspace/native-workspace-states.test.ts |
 | apps/web/src/lib/features/workspace/permission-recovery.spec.ts |
 | apps/web/src/lib/features/workspace/t023-backup.svelte.spec.ts |

@@ -1,5 +1,5 @@
 use crate::commands::workspace::CommandError;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 use serde_json::json;
 use std::fs;
@@ -8,8 +8,9 @@ use tauri::{AppHandle, Manager};
 
 const MIGRATION_001: &str = include_str!("../migrations/001_create_workspaces.sql");
 const MIGRATION_002: &str = include_str!("../migrations/002_create_workspace_content.sql");
+const MIGRATION_003: &str = include_str!("../migrations/003_create_sync_operational.sql");
 pub const APP_DATABASE_FILE: &str = "app.sqlite";
-pub const CURRENT_SCHEMA_VERSION: i64 = 2;
+pub const CURRENT_SCHEMA_VERSION: i64 = 3;
 
 #[derive(Debug, thiserror::Error)]
 pub enum DatabaseError {
@@ -81,6 +82,9 @@ impl WorkspaceDatabase {
         }
         if version < 2 {
             transaction.execute_batch(MIGRATION_002)?;
+        }
+        if version < 3 {
+            transaction.execute_batch(MIGRATION_003)?;
         }
         transaction.pragma_update(None, "user_version", CURRENT_SCHEMA_VERSION)?;
         transaction.commit()?;
@@ -284,6 +288,250 @@ impl WorkspaceDatabase {
         Ok(())
     }
 
+    pub fn sync_write_note(
+        &mut self,
+        workspace_id: &str,
+        note_id: &str,
+        schema_version: i64,
+        payload: &serde_json::Value,
+        created_at: Option<&str>,
+        updated_at: Option<&str>,
+    ) -> Result<serde_json::Value, DatabaseError> {
+        validate_sync_key(workspace_id)?;
+        validate_sync_key(note_id)?;
+        if schema_version < 1 {
+            return Err(DatabaseError::Path);
+        }
+
+        let payload_json = serde_json::to_string(payload).map_err(|_| DatabaseError::Path)?;
+        let transaction = self.connection.transaction()?;
+        transaction.execute(
+            "INSERT OR IGNORE INTO workspaces
+               (workspace_id, name, status, schema_version, created_at, updated_at)
+             VALUES (?1, ?1, 'ready', 1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+            params![workspace_id],
+        )?;
+        transaction.execute(
+            "INSERT INTO workspace_notes
+               (workspace_id, note_id, note_type, schema_version, payload_json, created_at, updated_at)
+             VALUES (?1, ?2, 'note', ?3, ?4, COALESCE(?5, strftime('%Y-%m-%dT%H:%M:%fZ', 'now')), COALESCE(?6, strftime('%Y-%m-%dT%H:%M:%fZ', 'now')))
+             ON CONFLICT(workspace_id, note_id) DO UPDATE SET
+               schema_version = excluded.schema_version,
+               payload_json = excluded.payload_json,
+               updated_at = excluded.updated_at",
+            params![workspace_id, note_id, schema_version, payload_json, created_at, updated_at],
+        )?;
+        transaction.execute(
+            "INSERT INTO sync_documents
+               (workspace_id, document_id, kind, backend_record_id, schema_version, status, created_at, updated_at)
+             VALUES (?1, ?2, 'note', ?2, ?3, 'clean', COALESCE(?4, strftime('%Y-%m-%dT%H:%M:%fZ', 'now')), COALESCE(?5, strftime('%Y-%m-%dT%H:%M:%fZ', 'now')))
+             ON CONFLICT(workspace_id, document_id) DO UPDATE SET
+               backend_record_id = excluded.backend_record_id,
+               schema_version = excluded.schema_version,
+               updated_at = excluded.updated_at",
+            params![workspace_id, note_id, schema_version, created_at, updated_at],
+        )?;
+        transaction.commit()?;
+
+        Ok(json!({
+            "backend": "sqlite",
+            "databaseName": APP_DATABASE_FILE,
+            "workspaceId": workspace_id,
+            "documentId": note_id,
+            "persisted": true
+        }))
+    }
+
+    pub fn sync_write_snapshot(
+        &mut self,
+        workspace_id: &str,
+        note_id: &str,
+        snapshot_version: i64,
+        state: &serde_json::Value,
+        heads: &[String],
+    ) -> Result<serde_json::Value, DatabaseError> {
+        validate_sync_key(workspace_id)?;
+        validate_sync_key(note_id)?;
+        if snapshot_version < 1 {
+            return Err(DatabaseError::Path);
+        }
+
+        let state_json = serde_json::to_string(state).map_err(|_| DatabaseError::Path)?;
+        let heads_json = serde_json::to_string(heads).map_err(|_| DatabaseError::Path)?;
+        let transaction = self.connection.transaction()?;
+        transaction.execute(
+            "INSERT OR IGNORE INTO workspaces
+               (workspace_id, name, status, schema_version, created_at, updated_at)
+             VALUES (?1, ?1, 'ready', 1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+            params![workspace_id],
+        )?;
+        transaction.execute(
+            "INSERT INTO sync_documents
+               (workspace_id, document_id, kind, backend_record_id, schema_version, status, created_at, updated_at)
+             VALUES (?1, ?2, 'note', ?2, 1, 'clean', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+             ON CONFLICT(workspace_id, document_id) DO NOTHING",
+            params![workspace_id, note_id],
+        )?;
+        transaction.execute(
+            "INSERT INTO sync_snapshots
+               (workspace_id, document_id, snapshot_version, state_json, heads_json, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+             ON CONFLICT(workspace_id, document_id, snapshot_version) DO UPDATE SET
+               state_json = excluded.state_json,
+               heads_json = excluded.heads_json",
+            params![workspace_id, note_id, snapshot_version, state_json, heads_json],
+        )?;
+        transaction.commit()?;
+
+        Ok(json!({
+            "backend": "sqlite",
+            "databaseName": APP_DATABASE_FILE,
+            "workspaceId": workspace_id,
+            "documentId": note_id,
+            "snapshotVersion": snapshot_version,
+            "persisted": true
+        }))
+    }
+
+    pub fn sync_append_change(
+        &mut self,
+        workspace_id: &str,
+        note_id: &str,
+        change_id: &str,
+        change_blob: &[u8],
+    ) -> Result<serde_json::Value, DatabaseError> {
+        validate_sync_key(workspace_id)?;
+        validate_sync_key(note_id)?;
+        validate_sync_key(change_id)?;
+
+        let transaction = self.connection.transaction()?;
+        transaction.execute(
+            "INSERT OR IGNORE INTO workspaces
+               (workspace_id, name, status, schema_version, created_at, updated_at)
+             VALUES (?1, ?1, 'ready', 1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+            params![workspace_id],
+        )?;
+        transaction.execute(
+            "INSERT INTO sync_documents
+               (workspace_id, document_id, kind, backend_record_id, schema_version, status, created_at, updated_at)
+             VALUES (?1, ?2, 'note', ?2, 1, 'pending', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+             ON CONFLICT(workspace_id, document_id) DO UPDATE SET
+               status = 'pending',
+               updated_at = excluded.updated_at",
+            params![workspace_id, note_id],
+        )?;
+        let inserted = transaction.execute(
+            "INSERT OR IGNORE INTO sync_changes
+               (workspace_id, document_id, change_id, change_blob, byte_size, applied, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+            params![workspace_id, note_id, change_id, change_blob, change_blob.len() as i64],
+        )?;
+        if inserted > 0 {
+            transaction.execute(
+                "INSERT INTO sync_queue
+                   (workspace_id, document_id, pending_count, bytes, updated_at)
+                 VALUES (?1, ?2, 1, ?3, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+                 ON CONFLICT(workspace_id, document_id) DO UPDATE SET
+                   pending_count = sync_queue.pending_count + 1,
+                   bytes = sync_queue.bytes + excluded.bytes,
+                   updated_at = excluded.updated_at",
+                params![workspace_id, note_id, change_blob.len() as i64],
+            )?;
+        }
+        let queue = transaction
+            .query_row(
+                "SELECT pending_count, bytes FROM sync_queue WHERE workspace_id = ?1 AND document_id = ?2",
+                params![workspace_id, note_id],
+                |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?)),
+            )?;
+        transaction.commit()?;
+
+        Ok(json!({
+            "backend": "sqlite",
+            "databaseName": APP_DATABASE_FILE,
+            "workspaceId": workspace_id,
+            "documentId": note_id,
+            "queue": { "pendingCount": queue.0, "bytes": queue.1 },
+            "persisted": true
+        }))
+    }
+
+    pub fn sync_read_state(
+        &mut self,
+        workspace_id: &str,
+        note_id: &str,
+    ) -> Result<serde_json::Value, DatabaseError> {
+        validate_sync_key(workspace_id)?;
+        validate_sync_key(note_id)?;
+
+        let note = self
+            .connection
+            .query_row(
+                "SELECT schema_version, payload_json, created_at, updated_at
+                 FROM workspace_notes WHERE workspace_id = ?1 AND note_id = ?2",
+                params![workspace_id, note_id],
+                |row| {
+                    let payload_json: String = row.get(1)?;
+                    let payload = serde_json::from_str::<serde_json::Value>(&payload_json)
+                        .unwrap_or_else(|_| json!({}));
+                    Ok(json!({
+                        "kind": "note",
+                        "id": note_id,
+                        "workspaceId": workspace_id,
+                        "schemaVersion": row.get::<_, i64>(0)?,
+                        "payload": payload,
+                        "createdAt": row.get::<_, String>(2)?,
+                        "updatedAt": row.get::<_, String>(3)?
+                    }))
+                },
+            )
+            .optional()?;
+        let snapshot = self
+            .connection
+            .query_row(
+                "SELECT snapshot_version, state_json, heads_json
+                 FROM sync_snapshots
+                 WHERE workspace_id = ?1 AND document_id = ?2
+                 ORDER BY snapshot_version DESC LIMIT 1",
+                params![workspace_id, note_id],
+                |row| {
+                    let state_json: String = row.get(1)?;
+                    let heads_json: String = row.get(2)?;
+                    Ok(json!({
+                        "snapshotVersion": row.get::<_, i64>(0)?,
+                        "state": serde_json::from_str::<serde_json::Value>(&state_json).unwrap_or_else(|_| json!({})),
+                        "heads": serde_json::from_str::<serde_json::Value>(&heads_json).unwrap_or_else(|_| json!([]))
+                    }))
+                },
+            )
+            .optional()?;
+        let queue = self
+            .connection
+            .query_row(
+                "SELECT pending_count, bytes, last_error_code
+                 FROM sync_queue WHERE workspace_id = ?1 AND document_id = ?2",
+                params![workspace_id, note_id],
+                |row| {
+                    Ok(json!({
+                        "pendingCount": row.get::<_, i64>(0)?,
+                        "bytes": row.get::<_, i64>(1)?,
+                        "lastErrorCode": row.get::<_, Option<String>>(2)?
+                    }))
+                },
+            )
+            .optional()?;
+
+        Ok(json!({
+            "backend": "sqlite",
+            "databaseName": APP_DATABASE_FILE,
+            "workspaceId": workspace_id,
+            "documentId": note_id,
+            "note": note,
+            "snapshot": snapshot,
+            "queue": queue
+        }))
+    }
+
     pub fn query_reader_highlights(
         &mut self,
         workspace_id: &str,
@@ -444,6 +692,13 @@ fn highlight_json_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<serde_json::V
     }))
 }
 
+fn validate_sync_key(value: &str) -> Result<(), DatabaseError> {
+    if value.trim().is_empty() || value.contains('/') || value.contains('\\') || value.contains("..") {
+        return Err(DatabaseError::Path);
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub fn initialize_workspace_database(
     app: AppHandle,
@@ -550,6 +805,13 @@ mod tests {
             "workspace_index_state",
             "note_verse_ref",
             "reader_highlight",
+            "sync_documents",
+            "sync_snapshots",
+            "sync_changes",
+            "sync_queue",
+            "sync_peers",
+            "sync_endpoints",
+            "sync_conflicts",
         ] {
             assert!(
                 database
@@ -628,6 +890,14 @@ mod tests {
             .connection
             .query_row(
                 "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'workspace_notes'",
+                [],
+                |row| row.get::<_, String>(0)
+            )
+            .is_ok());
+        assert!(database
+            .connection
+            .query_row(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'sync_queue'",
                 [],
                 |row| row.get::<_, String>(0)
             )
@@ -723,6 +993,67 @@ mod tests {
             .expect("records array")
             .iter()
             .all(|record| record["workspaceId"] == "workspace-api"));
+        drop(database);
+        let _ = fs::remove_dir_all(path.parent().expect("test database has a parent"));
+    }
+
+    #[test]
+    fn sync_operational_api_persists_note_snapshot_and_queue_by_workspace() {
+        let path = test_path();
+        let mut database = WorkspaceDatabase::open(&path).expect("database opens");
+
+        database
+            .sync_write_note(
+                "workspace-sync-a",
+                "note-1",
+                1,
+                &json!({ "title": "Nota local" }),
+                None,
+                None,
+            )
+            .expect("note is persisted in app.sqlite");
+        database
+            .sync_write_snapshot(
+                "workspace-sync-a",
+                "note-1",
+                1,
+                &json!({ "title": "Nota local" }),
+                &["head-1".to_string()],
+            )
+            .expect("snapshot is persisted");
+        database
+            .sync_append_change("workspace-sync-a", "note-1", "change-1", b"delta")
+            .expect("change is queued");
+        database
+            .sync_append_change("workspace-sync-a", "note-1", "change-1", b"delta")
+            .expect("duplicate change is idempotent");
+
+        let state = database
+            .sync_read_state("workspace-sync-a", "note-1")
+            .expect("sync state is readable");
+        assert_eq!(state["backend"], "sqlite");
+        assert_eq!(state["databaseName"], APP_DATABASE_FILE);
+        assert_eq!(state["note"]["workspaceId"], "workspace-sync-a");
+        assert_eq!(state["snapshot"]["snapshotVersion"], 1);
+        assert_eq!(state["snapshot"]["heads"][0], "head-1");
+        assert_eq!(state["queue"]["pendingCount"], 1);
+        assert_eq!(state["queue"]["bytes"], 5);
+
+        let other_workspace = database
+            .sync_read_state("workspace-sync-b", "note-1")
+            .expect("other workspace remains readable");
+        assert!(other_workspace["note"].is_null());
+        assert!(database
+            .sync_write_note(
+                "workspace-sync-a/other",
+                "note-2",
+                1,
+                &json!({}),
+                None,
+                None,
+            )
+            .is_err());
+
         drop(database);
         let _ = fs::remove_dir_all(path.parent().expect("test database has a parent"));
     }

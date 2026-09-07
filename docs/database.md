@@ -7,6 +7,7 @@
 | --- |
 | apps/desktop/src-tauri/migrations/001_create_workspaces.sql |
 | apps/desktop/src-tauri/migrations/002_create_workspace_content.sql |
+| apps/desktop/src-tauri/migrations/003_create_sync_operational.sql |
 | apps/desktop/src-tauri/src/commands/migration.rs |
 | apps/web/.svelte-kit/output/server/chunks/workspace-migration.js |
 | apps/web/src/lib/features/notes/legacy-migration.test.ts |

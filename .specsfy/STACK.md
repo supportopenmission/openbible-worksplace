@@ -32,6 +32,7 @@ uma. Preserve decisões humanas nas seções livres deste arquivo.
 | Seletor de pasta nativo | @tauri-apps/plugin-dialog 2.7.3 | `apps/web/package.json` e `apps/web/src/lib/storage/storage-registry.ts` |
 | Atualização nativa | tauri-plugin-updater 2.11.0 + @tauri-apps/plugin-updater 2.11.0 | `apps/desktop/src-tauri/Cargo.toml`, `apps/desktop/src-tauri/src/lib.rs`, `apps/web/package.json` e `apps/web/src/lib/updates/app-updates.svelte.ts` |
 | Reinício pós-atualização | tauri-plugin-process 2.3.1 + @tauri-apps/plugin-process 2.3.1 | `apps/desktop/src-tauri/Cargo.toml`, `apps/desktop/src-tauri/src/lib.rs` e `apps/web/src/lib/updates/app-updates.svelte.ts` |
+| Replicação CRDT | `@automerge/automerge` 3.4.1 + `@automerge/automerge-repo` 2.5.6 | `apps/web/package.json`, `bun.lock` e `apps/web/src/lib/features/sync/` (adapters próprios sobre os backends operacionais) |
 <!-- specsfy:stack:end -->
 
 ## Decisões e observações do projeto
@@ -83,3 +84,8 @@ manifests.
   `app.sqlite` e facade IPC tipada. File System Access/OPFS e o manifesto são
   fontes legadas de migração/recovery, não o backend normativo do registro.
   `package.json`, `bun.lock` e `Cargo.toml` seguem inalterados.
+- A SPEC-0019 selecionou `@automerge/automerge` 3.4.1 e
+  `@automerge/automerge-repo` 2.5.6 para estado CRDT e ciclo de vida de Repo;
+  os adapters de storage/rede permanecem próprios para manter
+  `app.sqlite`/IndexedDB como backends das notas. Os adapters oficiais de
+  storage do Automerge não são usados como fonte paralela.

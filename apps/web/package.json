@@ -19,6 +19,8 @@
     "test:tdd": "vitest run"
   },
   "dependencies": {
+    "@automerge/automerge": "3.4.1",
+    "@automerge/automerge-repo": "2.5.6",
     "@friendofsvelte/tipex": "0.2.0",
     "@milkdown/kit": "7.22.1",
     "@tauri-apps/api": "^2.11.1",

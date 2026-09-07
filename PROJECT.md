@@ -30,6 +30,8 @@ As capacidades principais planejadas são:
 - acesso a bancos SQLite por URL de distribuição, como uma URL do Cloudflare R2;
 - índices, destaques e dados auxiliares mantidos no backend operacional local:
   SQLite `app.sqlite` no Tauri e IndexedDB versionado no PWA.
+- sincronização entre dispositivos disponível somente por opt-in explícito por
+  workspace e dispositivo; o uso local continua válido sem relay obrigatório.
 - notas exportáveis em Markdown e PDF; ambos são artefatos derivados do snapshot
   e não substituem o registro primário.
 - app shell instalável como PWA standalone, com cache das rotas locais já carregadas para uso sem rede.
@@ -42,8 +44,10 @@ O MVP não terá autenticação, colaboração entre pessoas ou uma conta centra
 O registro operacional de workspaces usa SQLite no desktop Tauri e IndexedDB no
 PWA, com `workspaceId` como escopo. A fonte legada de pasta/manifesto é mantida
 para migração e recovery. Sermões e notas terão Markdown com YAML frontmatter
-como fonte portátil; PDF é exportação, não o banco de origem. Retenção, backup e
-sincronização entre dispositivos ainda não foram definidos.
+como fonte portátil; PDF é exportação, não o banco de origem. A sincronização
+entre dispositivos é opt-in, mantém notas e estado operacional nos backends
+locais e pode usar um endpoint WebSocket seguro configurado pela pessoa, sem
+exigir relay obrigatório.
 
 ## Contexto técnico
 
@@ -57,8 +61,10 @@ tokens claros/escuros em `apps/web/src/app.css`; conteúdo de domínio continua
 dependente do armazenamento local já configurado. A versão nativa para macOS é
 empacotada em `apps/desktop` com Tauri 2, backend Rust e SQLite via `rusqlite`,
 usando o target universal da Apple. O registro de workspaces vive em
-`app.sqlite`; a pasta escolhida permanece como fonte legada/autoral durante a
-migração e recovery.
+`app.sqlite`, assim como as notas e o estado operacional de sincronização no
+Tauri; no PWA, essa persistência equivalente vive no IndexedDB versionado. A
+pasta escolhida permanece como fonte legada/autoral durante a migração e
+recovery.
 Detalhes verificáveis ficam em `.specsfy/STACK.md` e `.specsfy/DATABASE.md`.
 
 O código mantém a importação local de bancos SQLite e o leitor bíblico em `/bible`.

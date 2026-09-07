@@ -1,5 +1,9 @@
+import initSqlJs from 'sql.js';
 import { getSql } from '$lib/features/bible/bible-reader';
 import type { WorkspaceStorageScope } from '$lib/storage/types';
+
+type SqlJs = Awaited<ReturnType<typeof initSqlJs>>;
+type SqlDatabase = InstanceType<SqlJs['Database']>;
 
 export interface LibraryEntry {
 	workspaceId: string;
@@ -46,12 +50,12 @@ async function describeFile(
 		diagnostic: 'Arquivo SQLite incompatível'
 	};
 	const sql = await getSql();
-	let database = null as Awaited<ReturnType<typeof getSql>>['Database'] | null;
+	let database: SqlDatabase | null = null;
 	try {
 		database = new sql.Database(bytes);
 		const tables = new Set(
 			(database.exec("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('book', 'verse')")[0]?.values ?? []).map(
-				(row) => String(row[0]).toLowerCase()
+				(row: unknown[]) => String(row[0]).toLowerCase()
 			)
 		);
 		if (!tables.has('book') || !tables.has('verse')) {

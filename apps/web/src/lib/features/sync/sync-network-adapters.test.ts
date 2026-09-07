@@ -24,10 +24,20 @@ it('AC-007 records retry backoff when the relay times out', async () => {
 
 // SPECSFY: US-002 FR-003 NFR-003 AC-022
 it('AC-022 declares a bounded queue policy for transport backpressure', async () => {
-  const manifest = await executeSync(await createSyncFixture(), { type: 'backpressure' });
+  const manifest = await executeSync(await createSyncFixture(), {
+    type: 'backpressure',
+    workspaceId: 'workspace-browser-001',
+    storageKind: 'browser'
+  });
   expect(manifest.queuePolicy).toBeDefined();
   expect(manifest.queuePolicy?.maxBytes).toBeGreaterThan(0);
   expect(manifest.queuePolicy?.backpressure).toBe('pause-network-only');
+  expect(manifest).toMatchObject({
+    backend: 'indexeddb',
+    workspaceId: 'workspace-browser-001',
+    persistedRecordIntact: true,
+    noteStillReadable: true
+  });
 });
 
 // SPECSFY: US-004 FR-003 NFR-002 AC-025

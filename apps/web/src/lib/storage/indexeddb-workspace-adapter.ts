@@ -1,5 +1,5 @@
 export const INDEXEDDB_WORKSPACE_DATABASE = 'openbible-workspace';
-export const INDEXEDDB_WORKSPACE_SCHEMA_VERSION = 2;
+export const INDEXEDDB_WORKSPACE_SCHEMA_VERSION = 3;
 
 export const INDEXEDDB_WORKSPACE_STORES = {
 	workspaces: 'workspaces',
@@ -10,7 +10,14 @@ export const INDEXEDDB_WORKSPACE_STORES = {
 	highlights: 'workspace_highlights',
 	indexState: 'workspace_index_state',
 	noteVerseRefs: 'note_verse_ref',
-	readerHighlights: 'reader_highlight'
+	readerHighlights: 'reader_highlight',
+	syncDocuments: 'sync_documents',
+	syncSnapshots: 'sync_snapshots',
+	syncChanges: 'sync_changes',
+	syncQueue: 'sync_queue',
+	syncPeers: 'sync_peers',
+	syncEndpoints: 'sync_endpoints',
+	syncConflicts: 'sync_conflicts'
 } as const;
 
 export type IndexedDbWorkspaceStore =
@@ -64,6 +71,78 @@ export interface IndexedDbWorkspaceBlob {
 export interface IndexedDbSchemaStatus {
 	backend: 'indexeddb';
 	schemaVersion: number;
+}
+
+export interface IndexedDbSyncDocument {
+	workspaceId: string;
+	documentId: string;
+	kind: 'note' | 'highlight';
+	backendRecordId: string;
+	exportRelativePath?: string;
+	schemaVersion: number;
+	status: 'clean' | 'pending' | 'converged' | 'conflict';
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface IndexedDbSyncSnapshot {
+	workspaceId: string;
+	documentId: string;
+	snapshotVersion: number;
+	stateJson: string;
+	headsJson: string;
+	createdAt: string;
+}
+
+export interface IndexedDbSyncChange {
+	workspaceId: string;
+	documentId: string;
+	changeId: string;
+	changeBlob: Uint8Array;
+	byteSize: number;
+	applied: boolean;
+	createdAt: string;
+}
+
+export interface IndexedDbSyncQueue {
+	workspaceId: string;
+	documentId: string;
+	pendingCount: number;
+	bytes: number;
+	retryAt: string | null;
+	lastErrorCode: string | null;
+	updatedAt: string;
+}
+
+export interface IndexedDbSyncPeer {
+	workspaceId: string;
+	peerId: string;
+	scopeJson: string;
+	status: 'active' | 'revoked';
+	createdAt: string;
+	revokedAt: string | null;
+}
+
+export interface IndexedDbSyncEndpoint {
+	workspaceId: string;
+	endpointId: string;
+	transport: 'local' | 'websocket';
+	url: string;
+	status: 'disabled' | 'connecting' | 'online' | 'retrying';
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface IndexedDbSyncConflict {
+	workspaceId: string;
+	conflictId: string;
+	documentId: string;
+	localGeneration: number;
+	externalGeneration: number;
+	status: 'needs-review' | 'resolved' | 'recovered';
+	recoveryRef: string | null;
+	createdAt: string;
+	updatedAt: string;
 }
 
 export type IndexedDbPersistenceErrorCode =
@@ -477,6 +556,52 @@ export class IndexedDbWorkspaceAdapter {
 				['workspaceId', 'versionId', 'bookId', 'chapter', 'verseStart', 'verseEnd'],
 				{ unique: false }
 			);
+		}
+		if (!database.objectStoreNames.contains(INDEXEDDB_WORKSPACE_STORES.syncDocuments)) {
+			const store = database.createObjectStore(INDEXEDDB_WORKSPACE_STORES.syncDocuments, {
+				keyPath: ['workspaceId', 'documentId']
+			});
+			store.createIndex('workspaceId', 'workspaceId', { unique: false });
+			store.createIndex('status', ['workspaceId', 'status'], { unique: false });
+		}
+		if (!database.objectStoreNames.contains(INDEXEDDB_WORKSPACE_STORES.syncSnapshots)) {
+			const store = database.createObjectStore(INDEXEDDB_WORKSPACE_STORES.syncSnapshots, {
+				keyPath: ['workspaceId', 'documentId', 'snapshotVersion']
+			});
+			store.createIndex('document', ['workspaceId', 'documentId'], { unique: false });
+		}
+		if (!database.objectStoreNames.contains(INDEXEDDB_WORKSPACE_STORES.syncChanges)) {
+			const store = database.createObjectStore(INDEXEDDB_WORKSPACE_STORES.syncChanges, {
+				keyPath: ['workspaceId', 'documentId', 'changeId']
+			});
+			store.createIndex('document', ['workspaceId', 'documentId'], { unique: false });
+			store.createIndex('pending', ['workspaceId', 'documentId', 'applied'], { unique: false });
+		}
+		if (!database.objectStoreNames.contains(INDEXEDDB_WORKSPACE_STORES.syncQueue)) {
+			const store = database.createObjectStore(INDEXEDDB_WORKSPACE_STORES.syncQueue, {
+				keyPath: ['workspaceId', 'documentId']
+			});
+			store.createIndex('workspaceId', 'workspaceId', { unique: false });
+		}
+		if (!database.objectStoreNames.contains(INDEXEDDB_WORKSPACE_STORES.syncPeers)) {
+			const store = database.createObjectStore(INDEXEDDB_WORKSPACE_STORES.syncPeers, {
+				keyPath: ['workspaceId', 'peerId']
+			});
+			store.createIndex('workspaceId', 'workspaceId', { unique: false });
+			store.createIndex('status', ['workspaceId', 'status'], { unique: false });
+		}
+		if (!database.objectStoreNames.contains(INDEXEDDB_WORKSPACE_STORES.syncEndpoints)) {
+			const store = database.createObjectStore(INDEXEDDB_WORKSPACE_STORES.syncEndpoints, {
+				keyPath: ['workspaceId', 'endpointId']
+			});
+			store.createIndex('workspaceId', 'workspaceId', { unique: false });
+		}
+		if (!database.objectStoreNames.contains(INDEXEDDB_WORKSPACE_STORES.syncConflicts)) {
+			const store = database.createObjectStore(INDEXEDDB_WORKSPACE_STORES.syncConflicts, {
+				keyPath: ['workspaceId', 'conflictId']
+			});
+			store.createIndex('workspaceId', 'workspaceId', { unique: false });
+			store.createIndex('status', ['workspaceId', 'status'], { unique: false });
 		}
 	}
 }

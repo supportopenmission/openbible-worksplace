@@ -183,6 +183,9 @@ describe('notesState pinned and management operations', () => {
 		const body = fields.body ?? '';
 		const content = fields.content ?? body;
 		const pinned = fields.pinned;
+		const overrides: Partial<import('./note-types').Note> = { ...fields };
+		delete overrides.id;
+		delete overrides.title;
 		return {
 			id,
 			title,
@@ -199,9 +202,9 @@ describe('notesState pinned and management operations', () => {
 				createdAt,
 				updatedAt,
 				pinned,
-				type: 'note' as const
+				 type: 'note' as const
 			},
-			...fields
+			...overrides
 		};
 	}
 

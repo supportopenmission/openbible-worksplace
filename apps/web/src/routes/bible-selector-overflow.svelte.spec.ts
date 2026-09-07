@@ -157,8 +157,9 @@ async function assertNoHorizontalOverflow(label: string, query?: string) {
 	const dialog = await page.getByRole('dialog').element();
 	const root = dialog as unknown as HTMLElement;
 	const target = (query ? root.querySelector(query) : root) as HTMLElement | null;
-	expect(`${label}: elemento não encontrado`, target).not.toBeNull();
-	const result = { scrollWidth: target!.scrollWidth, clientWidth: target!.clientWidth };
+	expect(target, `${label}: elemento não encontrado`).not.toBeNull();
+	if (!target) throw new Error(`${label}: elemento não encontrado`);
+	const result = { scrollWidth: target.scrollWidth, clientWidth: target.clientWidth };
 	expect(
 		result.scrollWidth,
 		`${label}: scrollWidth=${result.scrollWidth} clientWidth=${result.clientWidth}`

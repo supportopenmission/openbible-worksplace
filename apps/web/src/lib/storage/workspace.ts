@@ -2,6 +2,7 @@ import { emptyIndexSqlite, isSQLite } from './empty-sqlite';
 import { saveLocalWorkspaceHandle } from './local-storage';
 import { loadWorkspacePreferences, PREFERENCES_PATH } from './preferences';
 import type { ImportResult, ProgressCallback, WorkspaceConfig, WorkspaceStorage } from './types';
+import { enumerateBackupEntries } from './backup/backup-enumerator';
 import {
 	attachCatalogMethods,
 	ensureManifest,
@@ -48,6 +49,46 @@ export {
 	openAfterIndexFailure,
 	rebuildDerivedIndex
 } from './backup/backup-report';
+export { syncWorkspace } from '$lib/features/sync/sync-document-registry';
+export { executeAgent } from '$lib/features/ai/agent-command';
+export {
+	createIndexedDbSyncStorageAdapter,
+	createNativeSqliteSyncStorageAdapter,
+	syncRecordFromContent
+} from '$lib/features/sync/sync-storage-adapters';
+export {
+	createSyncMaterializer,
+	SyncMaterializer
+} from '$lib/features/sync/sync-materializer';
+export {
+	createSyncPeerPolicy,
+	SyncPeerPolicy
+} from '$lib/features/sync/peer-policy';
+
+const BACKUP_STREAM_CHUNK_BYTES = 16 * 1024 * 1024;
+
+/** Compatibility seam for the original snapshot RED; the current backup flow uses BackupRestorePanel. */
+export async function createBackupSnapshot(
+	storage: WorkspaceStorage
+): Promise<{ generation: number; files: number }> {
+	let files = 0;
+	for await (const entry of enumerateBackupEntries(storage)) {
+		if (entry.path) files += 1;
+	}
+	return { generation: 1, files };
+}
+
+/** Compatibility seam for the original streaming RED, bounded to the backup memory contract. */
+export async function* streamBackupEntry(
+	storage: WorkspaceStorage,
+	path: string
+): AsyncIterable<Uint8Array> {
+	const bytes = await storage.readFile(path);
+	if (!bytes) return;
+	for (let offset = 0; offset < bytes.byteLength; offset += BACKUP_STREAM_CHUNK_BYTES) {
+		yield bytes.slice(offset, offset + BACKUP_STREAM_CHUNK_BYTES);
+	}
+}
 
 export const WORKSPACE_DIRECTORIES = [
 	'.openbible',

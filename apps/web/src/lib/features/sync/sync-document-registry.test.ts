@@ -16,20 +16,36 @@ it('AC-001 persists an offline note in the runtime backend', async () => {
     workspaceId: 'workspace-sync-001',
     localSaveConfirmed: true
   });
-  expect(manifest.documents).toContainEqual({
+  expect(manifest.documents).toContainEqual(expect.objectContaining({
     documentId: 'note-offline-001',
     workspaceId: 'workspace-sync-001',
     pending: true
-  });
+  }));
 });
 
 // SPECSFY: US-001 FR-001 NFR-004 AC-002
 it('AC-002 records the portable source independently from CRDT state', async () => {
   const storage = await createSyncFixture();
-  const manifest = await executeSync(storage, { type: 'snapshot', path: 'notes/studies/offline.md' });
-  expect(manifest.documents).toBeDefined();
-  expect(manifest.documents).toContainEqual({ documentId: 'note-offline-001', source: 'markdown' });
-  expect(manifest.sources).toContainEqual({ documentId: 'note-offline-001', source: 'markdown' });
+  const manifest = await executeSync(storage, {
+    type: 'open-without-crdt',
+    path: 'notes/studies/offline.md',
+    workspaceId: 'workspace-sync-001',
+    storageKind: 'browser'
+  });
+  expect(manifest).toMatchObject({
+    backend: 'indexeddb',
+    workspaceId: 'workspace-sync-001',
+    crdtAvailable: false,
+    noteReadable: true,
+    editable: true,
+    exportableWithoutCrdt: true
+  });
+  expect(manifest.exports).toEqual(expect.arrayContaining(['markdown', 'json']));
+  expect(manifest.documents).toContainEqual(expect.objectContaining({
+    documentId: 'note-offline-001',
+    workspaceId: 'workspace-sync-001',
+    backendRecordId: 'note-offline-001'
+  }));
 });
 
 // SPECSFY: US-001 FR-002 NFR-001 AC-003
@@ -60,16 +76,34 @@ it('AC-019 reopens the latest local generation without a relay', async () => {
 // SPECSFY: US-001 FR-002 NFR-004 AC-020
 it('AC-020 keeps native adapter state under the workspace boundary', async () => {
   const storage = await createSyncFixture();
-  const manifest = await executeSync(storage, { type: 'open', storageKind: 'native' });
-  expect(manifest.storageAdapter).toBe('workspace-local');
+  const manifest = await executeSync(storage, {
+    type: 'open',
+    storageKind: 'native',
+    workspaceId: 'workspace-native-001'
+  });
+  expect(manifest).toMatchObject({
+    backend: 'sqlite',
+    databaseName: 'app.sqlite',
+    workspaceId: 'workspace-native-001',
+    storageAdapter: 'workspace-local'
+  });
   expect(manifest.absolutePath).toBeUndefined();
 });
 
 // SPECSFY: US-001 FR-002 NFR-004 AC-021
 it('AC-021 identifies browser-local persistence without a device path', async () => {
   const storage = await createSyncFixture();
-  const manifest = await executeSync(storage, { type: 'open', storageKind: 'browser' });
-  expect(manifest.storageAdapter).toBe('browser-local');
+  const manifest = await executeSync(storage, {
+    type: 'open',
+    storageKind: 'browser',
+    workspaceId: 'workspace-browser-001'
+  });
+  expect(manifest).toMatchObject({
+    backend: 'indexeddb',
+    databaseName: 'openbible-workspace',
+    workspaceId: 'workspace-browser-001',
+    storageAdapter: 'browser-local'
+  });
   expect(manifest.handle).toBeUndefined();
 });
 

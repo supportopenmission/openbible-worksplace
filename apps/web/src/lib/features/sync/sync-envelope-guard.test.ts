@@ -14,7 +14,7 @@ it('AC-014 excludes absolute paths, handles and catalogs from envelopes', async 
 it('AC-015 binds every sync document to one workspace scope', async () => {
   const manifest = await executeSync(await createSyncFixture(), { type: 'scope', workspaceId: 'workspace-fixture-001' });
   expect(manifest.workspaceId).toBe('workspace-fixture-001');
-  expect(manifest.documents?.every((document) => document.workspaceId === manifest.workspaceId)).toBe(true);
+  expect(manifest.documents?.every((document: { workspaceId?: string }) => document.workspaceId === manifest.workspaceId)).toBe(true);
 });
 
 // SPECSFY: US-004 FR-006 NFR-002 AC-018
@@ -33,8 +33,20 @@ it('AC-024 rejects unknown executable fields in an incoming envelope', async () 
 
 // SPECSFY: US-003 FR-006 NFR-004 AC-028
 it('AC-028 excludes the disposable SQLite index from synchronization', async () => {
-  const manifest = await executeSync(await createSyncFixture(), { type: 'portable-payload' });
+  const manifest = await executeSync(await createSyncFixture(), {
+    type: 'portable-payload',
+    workspaceId: 'workspace-browser-001',
+    storageKind: 'browser'
+  });
   expect(manifest.excludedPaths).toBeDefined();
   expect(manifest.excludedPaths).toContain('.openbible/index.sqlite');
   expect(manifest.sourceFiles).not.toContain('.openbible/index.sqlite');
+  expect(manifest.payload).toMatchObject({
+    workspaceId: 'workspace-browser-001',
+    documents: expect.any(Array),
+    deltas: expect.any(Array)
+  });
+  expect(manifest.payload).not.toHaveProperty('rawDatabase');
+  expect(manifest.payload).not.toHaveProperty('projection');
+  expect(JSON.stringify(manifest.payload)).not.toContain('.openbible/index.sqlite');
 });

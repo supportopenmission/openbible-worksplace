@@ -11,6 +11,7 @@ do conteúdo autoral e do índice reconstruível.
 | --- | --- | --- |
 | Estrutura | Schema/migration | `apps/desktop/src-tauri/migrations/001_create_workspaces.sql` |
 | Estrutura | Schema/migration | `apps/desktop/src-tauri/migrations/002_create_workspace_content.sql` |
+| Estrutura | Schema/migration | `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` |
 
 ## Estruturas detectadas
 
@@ -24,6 +25,13 @@ do conteúdo autoral e do índice reconstruível.
 | workspace_index_state | Tabela SQL | workspace_id:TEXT, projection_version:INTEGER, status:TEXT, record_count:INTEGER, error_code:TEXT, updated_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/002_create_workspace_content.sql` |
 | note_verse_ref | Tabela SQL | workspace_id:TEXT, note_id:TEXT, block_id:TEXT, version_id:TEXT, book_id:INTEGER, chapter:INTEGER, verse_start:INTEGER, verse_end:INTEGER, updated_at:TEXT, CHECK:(chapter, CHECK:(verse_start, CHECK:(verse_end | Não detectadas | `apps/desktop/src-tauri/migrations/002_create_workspace_content.sql` |
 | reader_highlight | Tabela SQL | workspace_id:TEXT, highlight_id:TEXT, version_id:TEXT, book_id:INTEGER, chapter:INTEGER, verse_start:INTEGER, verse_end:INTEGER, style_id:TEXT, updated_at:TEXT, CHECK:(chapter, CHECK:(verse_start, CHECK:(verse_end | Não detectadas | `apps/desktop/src-tauri/migrations/002_create_workspace_content.sql` |
+| sync_documents | Tabela SQL | workspace_id:TEXT, document_id:TEXT, kind:TEXT, backend_record_id:TEXT, export_relative_path:TEXT, schema_version:INTEGER, status:TEXT, created_at:TEXT, updated_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` |
+| sync_snapshots | Tabela SQL | workspace_id:TEXT, document_id:TEXT, snapshot_version:INTEGER, state_json:TEXT, heads_json:TEXT, created_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` |
+| sync_changes | Tabela SQL | workspace_id:TEXT, document_id:TEXT, change_id:TEXT, change_blob:BLOB, byte_size:INTEGER, applied:INTEGER, created_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` |
+| sync_queue | Tabela SQL | workspace_id:TEXT, document_id:TEXT, pending_count:INTEGER, bytes:INTEGER, retry_at:TEXT, last_error_code:TEXT, updated_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` |
+| sync_peers | Tabela SQL | workspace_id:TEXT, peer_id:TEXT, scope_json:TEXT, status:TEXT, created_at:TEXT, revoked_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` |
+| sync_endpoints | Tabela SQL | workspace_id:TEXT, endpoint_id:TEXT, transport:TEXT, url:TEXT, status:TEXT, created_at:TEXT, updated_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` |
+| sync_conflicts | Tabela SQL | workspace_id:TEXT, conflict_id:TEXT, document_id:TEXT, local_generation:INTEGER, external_generation:INTEGER, status:TEXT, recovery_ref:TEXT, created_at:TEXT, updated_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` |
 <!-- specsfy:database:end -->
 
 ## Persistência operacional de workspaces (SPEC-0016 revisada)
@@ -36,18 +44,36 @@ importado relacionalmente para o IndexedDB nesta fatia.
 
 | Banco/estrutura | Onde vive | Campos/escopo | Relações e regras |
 | --- | --- | --- | --- |
-| `app.sqlite` | diretório de dados da instalação Tauri | `workspaces`, `active_workspace_pointer`, `legacy_workspace_migrations`, `workspace_notes`, `workspace_highlights`, `workspace_index_state`, `note_verse_ref`, `reader_highlight`; schema v2 | abertura e migrations transacionais; conteúdo autoral operacional e projeções são escopados por `workspace_id` |
+| `app.sqlite` | diretório de dados da instalação Tauri | `workspaces`, `active_workspace_pointer`, `legacy_workspace_migrations`, `workspace_notes`, `workspace_highlights`, `workspace_index_state`, `note_verse_ref`, `reader_highlight`, `sync_documents`, `sync_snapshots`, `sync_changes`, `sync_queue`, `sync_peers`, `sync_endpoints`, `sync_conflicts`; schema v3 | abertura e migrations transacionais; conteúdo autoral operacional, estado CRDT, fila e projeções são escopados por `workspace_id` |
 | `workspaces` | `app.sqlite` | `workspace_id`, `name`, `status`, `schema_version`, timestamps, `metadata_json` | `workspace_id` é a identidade única e a chave de escopo das operações |
 | `active_workspace_pointer` | `app.sqlite` | ponteiro único, `workspace_id`, `generation`, `updated_at` | aponta para `workspaces`; geração invalida resultados assíncronos antigos |
 | `legacy_workspace_migrations` | `app.sqlite` | origem, cursor, estado, erro e workspace associado | somente progresso/recovery; não transforma a fonte legada em backend ativo |
-| IndexedDB operacional | origem PWA, banco `openbible-workspace` | stores `workspaces`, `active_workspace_pointer`, `legacy_workspace_migrations`, `workspace_blobs`, `workspace_notes`, `workspace_highlights`, `workspace_index_state`, `note_verse_ref`, `reader_highlight`; schema v2 | adapter versionado implementado na T030; uma origem, vários `workspaceId`, transações e exclusão por escopo |
+| IndexedDB operacional | origem PWA, banco `openbible-workspace` | stores `workspaces`, `active_workspace_pointer`, `legacy_workspace_migrations`, `workspace_blobs`, `workspace_notes`, `workspace_highlights`, `workspace_index_state`, `note_verse_ref`, `reader_highlight`, `sync_documents`, `sync_snapshots`, `sync_changes`, `sync_queue`, `sync_peers`, `sync_endpoints`, `sync_conflicts`; schema v3 | adapter versionado implementado na T032; uma origem, vários `workspaceId`, chaves compostas, transações e exclusão por escopo |
+
+### Persistência operacional de sincronização (SPEC-0019)
+
+`workspace_notes`/`workspace_highlights` são os registros primários das notas e
+destaques. As estruturas `sync_*` guardam somente o estado operacional de
+replicação e suas projeções; não substituem o conteúdo nem autorizam o banco
+bruto/projeção local no payload. O desenho é equivalente nos dois backends:
+SQLite usa tabelas na migration 003; IndexedDB usa object stores na versão 3.
+
+| Estrutura | `app.sqlite` | IndexedDB `openbible-workspace` | Relações, chaves e ownership |
+| --- | --- | --- | --- |
+| Registro de documento | `sync_documents(workspace_id, document_id, kind, backend_record_id, export_relative_path, schema_version, status, timestamps)` | `sync_documents` com keyPath `[workspaceId, documentId]`, índices `workspaceId` e `[workspaceId,status]` | 1 registro por documento/workspace; liga o documento CRDT ao registro primário; status `clean/pending/converged/conflict` |
+| Snapshot e heads | `sync_snapshots(workspace_id, document_id, snapshot_version, state_json, heads_json, created_at)` | `sync_snapshots` com keyPath `[workspaceId, documentId, snapshotVersion]`, índice `document` | FK para `sync_documents`; histórico versionado, fonte local recuperável para compactação/rebuild |
+| Changes | `sync_changes(workspace_id, document_id, change_id, change_blob, byte_size, applied, created_at)` | `sync_changes` com keyPath `[workspaceId, documentId, changeId]`, índices `document` e `pending` | Deltas por documento; `applied` e `byte_size` sustentam retry/backpressure; nunca contém path absoluto |
+| Fila | `sync_queue(workspace_id, document_id, pending_count, bytes, retry_at, last_error_code, updated_at)` | `sync_queue` com keyPath `[workspaceId, documentId]`, índice `workspaceId` | 1 estado de fila por documento; rede pode pausar sem apagar nota/changes |
+| Peers | `sync_peers(workspace_id, peer_id, scope_json, status, created_at, revoked_at)` | `sync_peers` com keyPath `[workspaceId, peerId]`, índices `workspaceId` e `[workspaceId,status]` | Pairing e revogação por workspace; não contém segredo exportável |
+| Endpoints | `sync_endpoints(workspace_id, endpoint_id, transport, url, status, timestamps)` | `sync_endpoints` com keyPath `[workspaceId, endpointId]`, índice `workspaceId` | Política de transporte; tokens/credenciais não entram nessa estrutura |
+| Conflitos | `sync_conflicts(workspace_id, conflict_id, document_id, local_generation, external_generation, status, recovery_ref, timestamps)` | `sync_conflicts` com keyPath `[workspaceId, conflictId]`, índices `workspaceId` e `[workspaceId,status]` | FK para documento; `needs-review/resolved/recovered`; recovery externo é referência, não autoridade autoral |
 
 ### Implementação da fonte e das projeções de conteúdo
 
 - `apps/web/src/lib/storage/workspace-content-repository.ts` define o contrato
   único de registro por `workspaceId`, backend (`sqlite` ou `indexeddb`), tipo,
   ID e `schemaVersion`; drivers persistentes devem implementar esse contrato
-  sobre as tabelas/stores v2, sem misturar workspaces.
+  sobre as tabelas/stores versionados atuais, sem misturar workspaces.
 - `apps/web/src/lib/features/notes/index-rebuilder.ts` produz a projeção
   reconstruível e nunca lê ou escreve `bibles/*.sqlite`. Durante migração, ele
   pode ler `highlights/*.json`; esse sidecar é fonte legada/recovery, não a
@@ -148,7 +174,7 @@ em fonte portátil, nem introduzem servidor central obrigatório.
 
 | Estrutura | Onde vive | Campos/forma | Relações e exclusões | Ownership e retenção |
 | --- | --- | --- | --- | --- |
-| Estado operacional CRDT por documento | Área reservada do workspace, separada dos arquivos autorais | Estado CRDT versionado por documento; o formato exato permanece sob o contrato da SPEC-0019 | Excluído do backup e do `.openbible/index.sqlite`; nunca é a única fonte de conteúdo, que continua nos arquivos autorais | Mantido localmente pelo workspace e pela sincronização; pode ser reconstruído ou descartado conforme o protocolo do documento |
+| Estado operacional CRDT por documento | `sync_documents`, `sync_snapshots` e `sync_changes` em `app.sqlite`/IndexedDB | Estado CRDT versionado por documento, snapshots, heads e changes; o formato do documento permanece sob o contrato da SPEC-0019 | Escopado por `workspaceId`/`workspace_id`, excluído do `.openbible/index.sqlite` e sem substituir `workspace_notes`; não é a única fonte do conteúdo | Mantido localmente pelo workspace e pela sincronização; snapshots/changes podem ser compactados ou reconstruídos conforme o protocolo do documento |
 | Política de endpoint/peer | Metadado operacional local da sincronização | Endpoint e política de peer sem segredo embutido | Pode ser sincronizado somente como política pública; não contém token, senha, chave ou segredo | Pessoa usuária do dispositivo; substituível ao reconfigurar a sincronização |
 | Token de acesso PWA | Apenas memória do processo web | Token efêmero, não persistido em arquivo, IndexedDB, localStorage, workspace ou backup | Não se relaciona a arquivos portáteis nem ao estado CRDT persistente | Vive somente durante a sessão; sai ao recarregar/encerrar o PWA |
 | Credencial Tauri | Credential store seguro do sistema operacional | Referência/credencial gerenciada pelo shell nativo; nenhum valor secreto no workspace | Não entra em Markdown, JSON portátil, sync ou backup | Controlada pelo sistema operacional e removida pelo fluxo de credenciais do dispositivo |

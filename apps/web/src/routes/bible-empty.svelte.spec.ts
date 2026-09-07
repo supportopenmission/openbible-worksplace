@@ -107,7 +107,7 @@ describe('/bible empty state', () => {
 			'fetch',
 			vi.fn(async (url: string) => {
 				if (typeof url === 'string' && url.endsWith('.sqlite')) {
-					return new Response(bytes, { status: 200 });
+					return new Response(bytes as unknown as BodyInit, { status: 200 });
 				}
 				return new Response(
 					JSON.stringify({

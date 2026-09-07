@@ -4,10 +4,10 @@ import { createSyncFixture, executeSync } from './sync-test-fixtures';
 // SPECSFY: US-002 FR-004 NFR-001 AC-008
 it('AC-008 records both independent changes in the same document', async () => {
   const manifest = await executeSync(await createSyncFixture(), { type: 'merge', fields: ['title', 'body'] });
-  const document = manifest.documents?.find((item) => item.documentId === 'note-concurrent-001');
+  const document = manifest.documents?.find((item: { documentId?: string }) => item.documentId === 'note-concurrent-001');
   expect(document).toBeDefined();
   expect(document?.heads).toBeDefined();
-  expect(document?.heads.length).toBeGreaterThanOrEqual(2);
+  expect(document?.heads?.length ?? 0).toBeGreaterThanOrEqual(2);
   expect(document?.mergedFields).toEqual(expect.arrayContaining(['title', 'body']));
 });
 
@@ -26,8 +26,17 @@ it('AC-010 marks incompatible concurrent edits instead of dropping one', async (
 
 // SPECSFY: US-002 FR-004 NFR-003 AC-023
 it('AC-023 declares a recoverable compacted snapshot', async () => {
-  const manifest = await executeSync(await createSyncFixture(), { type: 'compact' });
-  expect(manifest.compaction).toMatchObject({ sourceRetained: true });
+  const manifest = await executeSync(await createSyncFixture(), {
+    type: 'compact',
+    workspaceId: 'workspace-browser-001',
+    storageKind: 'browser'
+  });
+  expect(manifest).toMatchObject({
+    backend: 'indexeddb',
+    workspaceId: 'workspace-browser-001',
+    notePersisted: true
+  });
+  expect(manifest.compaction).toMatchObject({ sourceRetained: true, snapshotRecoverable: true });
   expect(manifest.compaction?.snapshotVersion).toBeGreaterThan(0);
   expect(manifest.compaction?.maxBytes).toBeGreaterThan(0);
 });

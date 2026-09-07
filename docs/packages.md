@@ -10,6 +10,8 @@
 | Terceiro | desenvolvimento | turbo | ^2.10.12 | Turborepo is the build system for coding agents. | https://github.com/vercel/turborepo | https://github.com/vercel/turborepo |
 | Terceiro | produção | @opencode-ai/plugin | 1.18.26 | Finalidade não descrita nos metadados locais. |  | — |
 | Terceiro | desenvolvimento | @tauri-apps/cli | ^2.11.4 | Command line interface for building Tauri apps | https://github.com/tauri-apps/tauri | https://github.com/tauri-apps/tauri |
+| Terceiro | produção | @automerge/automerge | 3.4.1 | Javascript implementation of automerge, backed by @automerge/automerge-wasm | github:automerge/automerge | — |
+| Terceiro | produção | @automerge/automerge-repo | 2.5.6 | A repository object to manage a collection of automerge documents | https://github.com/automerge/automerge-repo/tree/master/packages/automerge-repo | https://github.com/automerge/automerge-repo/tree/master/packages/automerge-repo |
 | Terceiro | produção | @friendofsvelte/tipex | 0.2.0 | Finalidade não descrita nos metadados locais. | https://github.com/friendofsvelte/tipex | https://github.com/friendofsvelte/tipex |
 | Terceiro | produção | @milkdown/kit | 7.22.1 | Finalidade não descrita nos metadados locais. | https://github.com/Milkdown/milkdown | https://github.com/Milkdown/milkdown |
 | Terceiro | produção | @tauri-apps/api | ^2.11.1 | Tauri API definitions | https://github.com/tauri-apps/tauri | https://github.com/tauri-apps/tauri |
@@ -86,7 +88,7 @@
 | Terceiro | transitiva | shebang-command | 2.0.0 | Get the command from a shebang | kevva/shebang-command | — |
 | Terceiro | transitiva | shebang-regex | 3.0.0 | Regular expression for matching a shebang line | sindresorhus/shebang-regex | — |
 | Terceiro | transitiva | toml | 4.3.0 | TOML parser for Node.js (TOML v1.1.0 compliant) | git://github.com/BinaryMuse/toml-node | git://github.com/BinaryMuse/toml-node |
-| Terceiro | transitiva | uuid | 14.0.2 | RFC9562 UUIDs | https://github.com/uuidjs/uuid | https://github.com/uuidjs/uuid |
+| Terceiro | transitiva | uuid | 14.0.2 | RFC4122 (v1, v4, and v5) UUIDs | https://github.com/uuidjs/uuid | https://github.com/uuidjs/uuid |
 | Terceiro | transitiva | which | 2.0.2 | Like which(1) unix command. Find the first instance of an executable in the PATH. | git://github.com/isaacs/node-which | git://github.com/isaacs/node-which |
 | Terceiro | transitiva | yaml | 2.9.0 | JavaScript parser and stringifier for YAML | github:eemeli/yaml | — |
 | Terceiro | transitiva | zod | 4.1.8 | TypeScript-first schema declaration and validation library with static type inference | https://github.com/colinhacks/zod | https://github.com/colinhacks/zod |

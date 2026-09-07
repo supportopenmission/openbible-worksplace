@@ -111,12 +111,10 @@ describe('reader verse notes', () => {
 	it('reads display title from note summary frontmatter', () => {
 		// SPECSFY: FR-007 NFR-002 AC-015
 		expect(verseNotes.resolveNoteDisplayTitle).toEqual(expect.any(Function));
-		expect(
+		 expect(
 			verseNotes.resolveNoteDisplayTitle({
-				notePath: 'notes/study.md',
 				id: 'study',
-				title: 'Estudo Gênesis',
-				updatedAt: '2026-09-03T00:00:00.000Z'
+				title: 'Estudo Gênesis'
 			})
 		).toBe('Estudo Gênesis');
 	});
@@ -124,12 +122,10 @@ describe('reader verse notes', () => {
 	it('falls back to Sem título when summary title is empty', () => {
 		// SPECSFY: FR-007 AC-016
 		expect(verseNotes.resolveNoteDisplayTitle).toEqual(expect.any(Function));
-		expect(
+		 expect(
 			verseNotes.resolveNoteDisplayTitle({
-				notePath: 'notes/empty.md',
 				id: 'empty',
-				title: '',
-				updatedAt: ''
+				title: ''
 			})
 		).toBe('Sem título');
 	});

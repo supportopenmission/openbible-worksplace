@@ -28,6 +28,7 @@
 	import WorkspaceStats from '$lib/features/workspace/WorkspaceStats.svelte';
 	import WorkspaceSettings from '$lib/features/workspace/WorkspaceSettings.svelte';
 	import WorkspaceBackups from '$lib/features/workspace/WorkspaceBackups.svelte';
+	import SyncSettings from '$lib/features/sync/SyncSettings.svelte';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 
 	const isMobile = new IsMobile();
@@ -194,6 +195,7 @@
 					>
 						{#if mobileSection === 'storage'}
 							<WorkspaceSettings embedded view="storage" />
+							<SyncSettings />
 						{:else if mobileSection === 'workspaces'}
 							<WorkspaceSettings embedded view="workspaces" />
 						{:else if mobileSection === 'backups'}
@@ -255,6 +257,7 @@
 						aria-labelledby="config-tab-storage"
 					>
 						<WorkspaceSettings embedded view="storage" />
+						<SyncSettings />
 					</div>
 				{:else if activeSection === 'workspaces'}
 					<div

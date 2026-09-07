@@ -35,4 +35,29 @@ describe('typed Tauri bridge', () => {
 			invokeWorkspaceCommand({ name: 'database.deleteWorkspace', workspaceId: '  ' })
 		).rejects.toMatchObject({ code: 'workspace_id_required' });
 	});
+
+	// SPECSFY: US-001 US-002 FR-002 FR-003 NFR-001 NFR-004 AC-005 AC-020 AC-030
+	it('expõe somente comandos de persistência sync allowlisted e escopados', async () => {
+		const result = await invokeWorkspaceCommand({
+			name: 'sync.writeNote',
+			workspaceId: 'workspace-native-001',
+			noteId: 'note-001',
+			schemaVersion: 1,
+			payload: { title: 'Nota local' }
+		});
+
+		expect(result.ok).toBe(true);
+		await expect(
+			invokeWorkspaceCommand({
+				name: 'sync.writeNote',
+				workspaceId: 'workspace-native-001',
+				noteId: '../outside',
+				schemaVersion: 1,
+				payload: {}
+			})
+		).rejects.toMatchObject({ code: 'sync_note_id_required' });
+		await expect(
+			invokeWorkspaceCommand({ name: 'sync.readState', workspaceId: 'workspace-native-001', noteId: 'note-001' })
+		).resolves.toMatchObject({ ok: true });
+	});
 });

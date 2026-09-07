@@ -1,5 +1,6 @@
 import { prepareWorkspace } from '../../storage/workspace';
 import type { StorageKind, WorkspaceStorage } from '../../storage/types';
+import type { AgentCommandResult } from './agent-command';
 import { expect } from 'vitest';
 
 class MemoryWorkspaceStorage implements WorkspaceStorage {
@@ -53,11 +54,11 @@ export async function readFixtureText(storage: WorkspaceStorage, path: string) {
 export async function executeAgent(storage: WorkspaceStorage, command: Record<string, unknown>) {
 	const workspaceDomain = await import('../../storage/workspace');
 	const domain = workspaceDomain as typeof workspaceDomain & {
-		executeAgent?: (storage: WorkspaceStorage, command: Record<string, unknown>) => Promise<unknown>;
-		runAgentCommand?: (storage: WorkspaceStorage, command: Record<string, unknown>) => Promise<unknown>;
+		executeAgent?: (storage: WorkspaceStorage, command: Record<string, unknown>) => Promise<AgentCommandResult>;
+		runAgentCommand?: (storage: WorkspaceStorage, command: Record<string, unknown>) => Promise<AgentCommandResult>;
 	};
 	const executor = domain.executeAgent ?? domain.runAgentCommand;
 	expect(executor).toEqual(expect.any(Function));
-	if (typeof executor !== 'function') return undefined;
-	return executor(storage, command) as Promise<{ ok: boolean; value?: unknown; error?: unknown }>;
+	if (typeof executor !== 'function') throw new Error('agent_executor_unavailable');
+	return executor(storage, command);
 }

@@ -28,7 +28,11 @@ pub fn run() {
             commands::workspace::read_bible_verses,
             commands::workspace::inspect_bible,
             commands::workspace::release_workspace_lock,
-            commands::migration::migrate_workspace
+            commands::migration::migrate_workspace,
+            commands::sync::sync_write_note,
+            commands::sync::sync_write_snapshot,
+            commands::sync::sync_append_change,
+            commands::sync::sync_read_state
         ])
         .run(tauri::generate_context!())
         .expect("error while running OpenBible desktop application");

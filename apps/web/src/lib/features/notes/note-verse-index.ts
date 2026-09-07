@@ -1,6 +1,7 @@
 import { isSQLite } from '$lib/storage/empty-sqlite';
 import type { WorkspaceStorage } from '$lib/storage/types';
 import { getSql } from '$lib/features/bible/bible-reader';
+import type { BindParams } from 'sql.js';
 
 export interface NoteVerseRef {
 	id?: number;
@@ -26,8 +27,8 @@ export interface VerseReferenceInput {
 }
 
 interface SqlDatabase {
-	run(sql: string, params?: unknown[]): void;
-	exec(sql: string, params?: unknown[]): { values: unknown[][] }[];
+	run(sql: string, params?: BindParams): unknown;
+	exec(sql: string, params?: BindParams): { values: unknown[][] }[];
 }
 
 const memoryIndex = new Map<string, NoteVerseRef[]>();
