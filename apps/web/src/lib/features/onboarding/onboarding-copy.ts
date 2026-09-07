@@ -4,11 +4,6 @@ export const onboardingCopy = {
 		title: 'Prepare seu espaço de estudo',
 		body: 'O OpenBible salva suas notas e destaques no armazenamento local do workspace. Markdown fica reservado para exportação.'
 	},
-	storage: {
-		eyebrow: 'Armazenamento do workspace',
-		title: 'Escolha onde os arquivos do workspace ficam',
-		body: 'A escolha vale para arquivos importados, como Bíblias. As notas novas continuam no banco local do app, não em arquivos Markdown.'
-	},
 	installing: {
 		eyebrow: 'Preparando o workspace',
 		title: 'Configurando seu espaço de estudo',

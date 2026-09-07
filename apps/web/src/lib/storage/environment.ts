@@ -39,13 +39,13 @@ export function detectStorageKind(
 ): StorageKind {
 	if (!location) return 'opfs';
 	if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) return 'native';
-	return isLocalhost(location.hostname) ? 'local' : 'opfs';
+	// A fresh web workspace uses browser-managed storage. Existing local-folder
+	// workspaces remain addressable through an explicit saved preference.
+	return 'opfs';
 }
 
 export function supportsFileSystemAccess(): boolean {
-	return (
-		typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function'
-	);
+	return typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function';
 }
 
 export function isStandaloneDisplay(): boolean {
@@ -63,18 +63,6 @@ export function isStandaloneDisplay(): boolean {
  * Tipo efetivo: preferência salva vence o padrão por hostname. É o que
  * permite ao PWA no desktop usar pasta do computador após escolha explícita.
  */
-export function resolveStorageKind(
-	location?: Pick<Location, 'hostname'>
-): StorageKind {
+export function resolveStorageKind(location?: Pick<Location, 'hostname'>): StorageKind {
 	return readStoragePreference() ?? detectStorageKind(location);
-}
-
-/**
- * O PWA instalado no desktop oferece escolha explícita entre pasta e OPFS
- * quando o navegador suporta File System Access e nada foi escolhido ainda.
- */
-export function shouldOfferStorageChoice(): boolean {
-	return (
-		isStandaloneDisplay() && supportsFileSystemAccess() && readStoragePreference() === null
-	);
 }

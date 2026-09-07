@@ -1,10 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-	isStandaloneDisplay,
-	resolveStorageKind,
-	shouldOfferStorageChoice,
-	supportsFileSystemAccess
-} from './environment';
+import { isStandaloneDisplay, resolveStorageKind, supportsFileSystemAccess } from './environment';
 
 function stubLocalStorage(value: string | null) {
 	const store = new Map<string, string>();
@@ -41,14 +36,13 @@ describe('storage kind resolution', () => {
 	});
 
 	// SPECSFY: STORAGE-001
-	it('usa pasta no localhost sem preferência', () => {
-		expect(resolveStorageKind({ hostname: 'localhost' })).toBe('local');
+	it('usa armazenamento gerenciado pelo navegador no localhost sem preferência', () => {
+		expect(resolveStorageKind({ hostname: 'localhost' })).toBe('opfs');
 	});
 
 	// SPECSFY: STORAGE-001
 	it('não detecta File System Access fora do navegador', () => {
 		expect(supportsFileSystemAccess()).toBe(false);
 		expect(isStandaloneDisplay()).toBe(false);
-		expect(shouldOfferStorageChoice()).toBe(false);
 	});
 });

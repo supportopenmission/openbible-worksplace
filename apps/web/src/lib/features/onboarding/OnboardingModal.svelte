@@ -1,20 +1,10 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
-	import {
-		CheckCircle2,
-		Clock3,
-		Database,
-		FileText,
-		FolderOpen,
-		LoaderCircle,
-		Upload
-	} from '@lucide/svelte';
+	import { CheckCircle2, Clock3, Database, FileText, LoaderCircle, Upload } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import RemoteBibleImport from '$lib/features/bible-remote/RemoteBibleImport.svelte';
-	import { getDirectoryPickerError } from './onboarding-errors';
 	import { importBibleFiles, prepareWorkspace } from '$lib/storage/workspace';
-	import { shouldOfferStorageChoice, supportsFileSystemAccess } from '$lib/storage/environment';
 	import type {
 		ImportResult,
 		ProgressCallback,
@@ -28,8 +18,6 @@
 		storage = null,
 		initialError = '',
 		initialStep = 'intro',
-		onChooseStorage = async () => null,
-		onChooseBrowserStorage = async () => null,
 		onComplete = () => undefined,
 		onDeferred = () => undefined
 	}: {
@@ -37,8 +25,6 @@
 		storage?: WorkspaceStorage | null;
 		initialError?: string;
 		initialStep?: OnboardingStep;
-		onChooseStorage?: () => Promise<WorkspaceStorage | null>;
-		onChooseBrowserStorage?: () => Promise<WorkspaceStorage | null>;
 		onComplete?: (results: ImportResult[]) => void;
 		onDeferred?: () => void;
 	} = $props();
@@ -57,7 +43,6 @@
 	let statusMessage = $state('');
 	let fileInput = $state<HTMLInputElement | undefined>();
 	let displayedInitialError = $state('');
-	let localPickerFailed = $state(false);
 
 	$effect.pre(() => {
 		step = initialStep;
@@ -76,11 +61,6 @@
 
 	const copy = $derived(onboardingCopy[step]);
 	const stepNumber = $derived(steps.indexOf(step) + 1);
-	const offersStorageChoice = $derived(storageMode === 'opfs' && shouldOfferStorageChoice());
-	const showBrowserStorageChoice = $derived(
-		step === 'storage' &&
-			(storageMode === 'opfs' ? offersStorageChoice : supportsFileSystemAccess())
-	);
 	const hasImported = $derived(results.some((result) => result.status === 'imported'));
 	const hasRejected = $derived(results.some((result) => result.status === 'rejected'));
 	const showProgress = $derived(
@@ -102,61 +82,15 @@
 
 	async function start() {
 		errorMessage = '';
-		if (storageMode === 'native') {
-			if (selectedStorage) {
-				await install(selectedStorage);
-			} else {
-				await chooseFolder();
-			}
-			return;
-		}
-		if (storageMode === 'opfs' && !offersStorageChoice) {
-			if (!selectedStorage) {
-				errorMessage = 'Não foi possível acessar o armazenamento deste navegador.';
-				return;
-			}
-			await install(selectedStorage);
-			return;
-		}
-
-		step = 'storage';
-		progress = 0;
-		await moveFocus();
-	}
-
-	async function chooseFolder() {
-		errorMessage = '';
-		localPickerFailed = false;
-		try {
-			selectedStorage = await onChooseStorage();
-			if (!selectedStorage) {
-				errorMessage = 'Não foi possível acessar a pasta escolhida.';
-				localPickerFailed = true;
-				return;
-			}
-			await install(selectedStorage);
-		} catch (error) {
-			errorMessage = getDirectoryPickerError(error);
-			localPickerFailed = true;
-			await moveFocus();
-		}
-	}
-
-	async function chooseBrowserStorage() {
-		errorMessage = '';
-		localPickerFailed = false;
-		try {
-			selectedStorage = await onChooseBrowserStorage();
-			if (!selectedStorage) {
-				errorMessage = 'Não foi possível acessar o armazenamento deste navegador.';
-				return;
-			}
-			await install(selectedStorage);
-		} catch (error) {
+		if (!selectedStorage) {
 			errorMessage =
-				error instanceof Error ? error.message : 'Não foi possível configurar o armazenamento.';
+				storageMode === 'native'
+					? 'O workspace local ainda não está disponível.'
+					: 'Não foi possível acessar o armazenamento local do app.';
 			await moveFocus();
+			return;
 		}
+		await install(selectedStorage);
 	}
 
 	async function install(nextStorage: WorkspaceStorage) {
@@ -312,13 +246,11 @@
 
 				{#if step === 'intro'}
 					<p class="storage-note">
-						{offersStorageChoice
-							? 'Neste app instalado, você escolherá onde os arquivos do workspace ficam. As notas são salvas no armazenamento local do app.'
-							: storageMode === 'native'
-								? 'Neste app, os arquivos importados ficam na raiz escolhida e as notas são salvas no app.sqlite.'
-								: storageMode === 'opfs'
-									? 'Neste ambiente, os arquivos ficam no armazenamento privado do navegador e as notas no IndexedDB.'
-									: 'Neste ambiente, os arquivos importados ficam na raiz escolhida e as notas no armazenamento local do app.'}
+						{storageMode === 'native'
+							? 'Neste app, as notas são salvas no app.sqlite e os arquivos importados ficam no workspace local.'
+							: storageMode === 'opfs'
+								? 'Neste ambiente, as notas ficam no IndexedDB e os arquivos importados no armazenamento privado do navegador.'
+								: 'Neste ambiente, as notas ficam no armazenamento local do app.'}
 					</p>
 
 					<ul class="feature-list" aria-label="Como funciona">
@@ -350,23 +282,6 @@
 							</div>
 						</li>
 					</ul>
-				{:else if step === 'storage'}
-					<div class="panel storage-choice">
-						<span class="panel-icon" aria-hidden="true"
-							><FolderOpen size={18} strokeWidth={1.75} /></span
-						>
-						<div>
-							<strong>Escolha o armazenamento dos arquivos</strong>
-							<span
-								>Arquivos importados serão preservados; notas novas não serão criadas como Markdown.</span
-							>
-						</div>
-					</div>
-					{#if showBrowserStorageChoice}
-						<p class="storage-alt">
-							Prefere não vincular uma pasta? Use o armazenamento privado do navegador.
-						</p>
-					{/if}
 				{:else if step === 'installing'}
 					<div class="panel operation-state" aria-live="polite">
 						<LoaderCircle class="spinner" size={22} strokeWidth={1.75} aria-hidden="true" />
@@ -510,26 +425,6 @@
 			<footer class="onboarding-actions">
 				{#if step === 'intro'}
 					<Button type="button" onclick={start} data-onboarding-focus>Começar</Button>
-				{:else if step === 'storage'}
-					<Button
-						variant="outline"
-						type="button"
-						onclick={() => (step = 'intro')}
-						disabled={processing}
-					>
-						Voltar
-					</Button>
-					{#if showBrowserStorageChoice}
-						<Button
-							variant="outline"
-							type="button"
-							onclick={chooseBrowserStorage}
-							disabled={processing}
-						>
-							Usar armazenamento do navegador
-						</Button>
-					{/if}
-					<Button type="button" onclick={chooseFolder} data-onboarding-focus>Escolher pasta</Button>
 				{:else if step === 'installing'}
 					<Button type="button" disabled>Configurando...</Button>
 				{:else if step === 'import'}
@@ -718,13 +613,6 @@
 		margin-top: 8px !important;
 		color: var(--foreground) !important;
 		font-size: 0.82rem !important;
-	}
-
-	.storage-alt {
-		margin: 12px 0 0;
-		color: var(--muted-foreground);
-		font-size: 0.8rem;
-		line-height: 1.5;
 	}
 
 	.feature-list {

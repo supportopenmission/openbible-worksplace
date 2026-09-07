@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import OnboardingModal from '$lib/features/onboarding/OnboardingModal.svelte';
@@ -31,22 +31,9 @@ function createStorage(): WorkspaceStorage {
 	};
 }
 
-describe('escolha de armazenamento no PWA', () => {
-	beforeEach(() => {
-		localStorage.clear();
-		vi.stubGlobal(
-			'matchMedia',
-			(query: string) => ({
-				matches: query.includes('standalone'),
-				media: query,
-				addEventListener: () => undefined,
-				removeEventListener: () => undefined
-			})
-		);
-	});
-
+describe('armazenamento automático no onboarding', () => {
 	// SPECSFY: STORAGE-002
-	it('oferece pasta ou navegador no PWA instalado em modo OPFS', async () => {
+	it('prepara o workspace diretamente no armazenamento local configurado', async () => {
 		await render(OnboardingModal, {
 			props: { storageMode: 'opfs', storage: createStorage() }
 		});
@@ -54,10 +41,13 @@ describe('escolha de armazenamento no PWA', () => {
 		await page.getByRole('button', { name: /começar/i }).click();
 
 		await expect
-			.element(page.getByRole('button', { name: /escolher pasta/i }))
+			.element(page.getByRole('heading', { name: /você já tem bíblias sqlite/i }))
 			.toBeInTheDocument();
 		await expect
+			.element(page.getByRole('button', { name: /escolher pasta/i }))
+			.not.toBeInTheDocument();
+		await expect
 			.element(page.getByRole('button', { name: /usar armazenamento do navegador/i }))
-			.toBeInTheDocument();
+			.not.toBeInTheDocument();
 	});
 });

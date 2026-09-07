@@ -45,58 +45,34 @@ describe('OpenBible onboarding', () => {
 		await expect.element(page.getByText(/pastas separadas para estudos/i)).not.toBeInTheDocument();
 	});
 
-	it('keeps the dialog available when local folder access fails', async () => {
+	it('keeps the dialog available when local storage is unavailable', async () => {
 		// SPECSFY: US-001 FR-001 FR-005 NFR-001 NFR-002 AC-003
 		await render(OnboardingModal, {
-			props: { storageMode: 'local', initialError: 'Não foi possível acessar a pasta.' }
+			props: { storageMode: 'local', initialError: 'Não foi possível acessar o armazenamento.' }
 		});
 
 		expect(page.getByRole('dialog')).toBeInTheDocument();
 		expect(page.getByText(/não foi possível/i)).toBeInTheDocument();
 	});
 
-	it('explains integrated-browser permission failures without closing onboarding', async () => {
-		// SPECSFY: US-001 FR-001 FR-005 NFR-001 NFR-002 AC-003
-		const chooseStorage = vi.fn(async () => {
-			throw new DOMException('The user aborted a request.', 'AbortError');
-		});
-
+	it('prepara o armazenamento configurado sem mostrar escolha de pasta', async () => {
+		// SPECSFY: US-001 FR-001 FR-003 FR-005 NFR-001 NFR-002 AC-002
 		await render(OnboardingModal, {
-			props: { storageMode: 'local', onChooseStorage: chooseStorage }
+			props: { storageMode: 'opfs', storage: createStorage() }
 		});
 
+		await expect.element(page.getByText(/etapa 1 de 4/i)).toBeInTheDocument();
+		await expect
+			.element(page.getByRole('heading', { name: /escolha onde os arquivos/i }))
+			.not.toBeInTheDocument();
 		await page.getByRole('button', { name: /começar/i }).click();
-		await page.getByRole('button', { name: /escolher pasta/i }).click();
 
-		expect(chooseStorage).toHaveBeenCalledOnce();
-		expect(page.getByRole('dialog')).toBeInTheDocument();
-		await expect.element(page.getByText(/seleção da pasta foi cancelada/i)).toBeInTheDocument();
-	});
-
-	it('offers explicit OPFS fallback after the integrated picker fails', async () => {
-		// SPECSFY: US-001 FR-001 FR-003 FR-005 NFR-001 NFR-002 AC-010
-		const chooseStorage = vi.fn(async () => {
-			throw new DOMException('The user aborted a request.', 'AbortError');
-		});
-		const browserStorage = createStorage();
-		const chooseBrowserStorage = vi.fn(async () => browserStorage);
-
-		await render(OnboardingModal, {
-			props: {
-				storageMode: 'local',
-				onChooseStorage: chooseStorage,
-				onChooseBrowserStorage: chooseBrowserStorage
-			}
-		});
-
-		await page.getByRole('button', { name: /começar/i }).click();
-		await page.getByRole('button', { name: /escolher pasta/i }).click();
-		await page.getByRole('button', { name: /usar armazenamento do navegador/i }).click();
-
-		expect(chooseBrowserStorage).toHaveBeenCalledOnce();
 		await expect
 			.element(page.getByRole('heading', { name: /você já tem bíblias sqlite/i }))
 			.toBeInTheDocument();
+		await expect
+			.element(page.getByRole('button', { name: /escolher pasta/i }))
+			.not.toBeInTheDocument();
 	});
 
 	it('allows postponing Bible import and opens the project', async () => {

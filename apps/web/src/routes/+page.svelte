@@ -5,11 +5,7 @@
 	import HomePage from '$lib/features/home/HomePage.svelte';
 	import { getWorkspaceState } from '$lib/features/workspace/workspace-state.svelte';
 	import { detectStorageKind } from '$lib/storage/environment';
-	import {
-		chooseBrowserWorkspaceStorage,
-		chooseWorkspaceStorage,
-		createConfiguredStorage
-	} from '$lib/storage/storage-registry';
+	import { createConfiguredStorage } from '$lib/storage/storage-registry';
 	import { loadWorkspaceConfig } from '$lib/storage/workspace';
 	import type { StorageKind, WorkspaceStorage } from '$lib/storage/types';
 	import type { OnboardingStep } from '$lib/features/onboarding/onboarding-copy';
@@ -79,16 +75,6 @@
 		}
 	});
 
-	async function chooseStorage() {
-		selectedStorage = await chooseWorkspaceStorage();
-		return selectedStorage;
-	}
-
-	async function chooseBrowserStorage() {
-		selectedStorage = await chooseBrowserWorkspaceStorage();
-		return selectedStorage;
-	}
-
 	async function closeOnboarding() {
 		importRequested = false;
 		onboardingClosed = true;
@@ -116,8 +102,6 @@
 			{storage}
 			{initialError}
 			initialStep={onboardingStep}
-			onChooseStorage={chooseStorage}
-			onChooseBrowserStorage={chooseBrowserStorage}
 			onDeferred={deferImport}
 			onComplete={finishOnboarding}
 		/>
