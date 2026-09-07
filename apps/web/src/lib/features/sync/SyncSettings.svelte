@@ -4,12 +4,19 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import SyncStatus from './SyncStatus.svelte';
 	import type { SyncStatusKind } from './SyncStatus.svelte';
-	import { connectSyncWorkspace, disconnectSyncWorkspace } from './sync-automerge';
+	import {
+		configureHttpSync,
+		getHttpSyncDeviceId,
+		syncWorkspaceHttp,
+		validateHttpSyncEndpoint
+	} from './sync-http-client';
 
 	const workspace = getWorkspaceState();
 
 	let syncEnabled = $state(false);
 	let endpoint = $state('');
+	let token = $state('');
+	let deviceId = $state('');
 	let scope = $state('Notas e destaques deste workspace');
 	let peerId = $state('');
 	let pairedPeer = $state('');
@@ -61,7 +68,7 @@
 			endpoint = typeof value.endpoint === 'string' ? value.endpoint : '';
 			scope = typeof value.scope === 'string' ? value.scope : scope;
 			pairedPeer = typeof value.pairedPeer === 'string' ? value.pairedPeer : '';
-			if (syncEnabled && endpoint) void saveSettings();
+			deviceId = getHttpSyncDeviceId();
 		} catch {
 			// Invalid local settings are ignored and can be replaced by a new save.
 		}
@@ -70,11 +77,15 @@
 	function validateEndpoint(): boolean {
 		if (!syncEnabled) return true;
 		if (!endpoint.trim()) {
-			error = 'Informe o endpoint WebSocket seguro do workspace.';
+			error = 'Informe o endpoint HTTPS seguro do workspace.';
 			return false;
 		}
-		if (!endpoint.trim().startsWith('wss://')) {
-			error = 'Use um endpoint WebSocket seguro começando com wss://.';
+		if (!validateHttpSyncEndpoint(endpoint.trim())) {
+			error = 'Use um endpoint HTTPS; HTTP só é aceito em localhost para desenvolvimento.';
+			return false;
+		}
+		if (!token.trim()) {
+			error = 'Informe o token de acesso. Ele fica somente nesta sessão.';
 			return false;
 		}
 		return true;
@@ -87,7 +98,7 @@
 		saving = true;
 		try {
 			if (!syncEnabled) {
-				if (workspace?.storage) await disconnectSyncWorkspace(workspace.storage);
+				if (workspace?.workspaceId) configureHttpSync(workspace.workspaceId, null);
 				persistSettings();
 				syncStatus = 'local';
 				lastErrorCode = null;
@@ -95,21 +106,27 @@
 				return;
 			}
 			if (!workspace?.storage) throw new Error('workspace_storage_unavailable');
+			if (!workspace.workspaceId) throw new Error('workspace_id_required');
 			syncStatus = 'connecting';
-			const diagnostics = await connectSyncWorkspace(
-				workspace.storage,
-				endpoint,
-				pairedPeer || undefined
-			);
-			lastSuccessAt = diagnostics.lastSuccessAt;
-			lastErrorCode = diagnostics.lastErrorCode;
-			if (diagnostics.status === 'blocked' || diagnostics.status === 'retrying') {
+			deviceId ||= getHttpSyncDeviceId();
+			configureHttpSync(workspace.workspaceId, {
+				endpoint: endpoint.trim(),
+				token: token.trim(),
+				deviceId
+			});
+			const result = await syncWorkspaceHttp(workspace.storage, {
+				endpoint: endpoint.trim(),
+				token: token.trim(),
+				deviceId
+			});
+			lastSuccessAt = new Date().toISOString();
+			lastErrorCode = result.conflicts > 0 ? 'sync_conflict' : null;
+			if (result.conflicts > 0) {
 				syncStatus = 'error';
-				message =
-					'A conexão remota não foi estabelecida; as alterações locais continuam disponíveis.';
+				message = `${result.conflicts} conflito(s) foram preservados para revisão; as notas locais continuam disponíveis.`;
 			} else {
-				syncStatus = diagnostics.status === 'online' ? 'synced' : 'connecting';
-				message = 'Sincronização habilitada para este workspace. O uso local continua disponível.';
+				syncStatus = 'synced';
+				message = 'Sincronização concluída. As notas continuam disponíveis localmente.';
 			}
 			persistSettings();
 		} catch (caught) {
@@ -202,27 +219,40 @@
 		<div class="sync-section-heading">
 			<h3>Transporte</h3>
 			<p>
-				O primeiro transporte remoto usa WebSocket seguro. O relay pode observar ou reter o estado;
-				esta versão não oferece E2EE.
+				O primeiro transporte remoto usa uma API HTTPS incremental. O serviço pode observar ou reter
+				o estado sincronizado; esta versão não oferece E2EE.
 			</p>
 		</div>
 		<label class="toggle-row">
 			<input type="checkbox" bind:checked={syncEnabled} />
 			<span>
 				<strong>Permitir sincronização remota</strong>
-				<small>Desative para continuar em modo local sem qualquer relay.</small>
+				<small>Desative para continuar em modo local sem chamadas de rede.</small>
 			</span>
 		</label>
 		<label class="field">
-			<span>Endpoint WebSocket seguro</span>
+			<span>Endpoint HTTPS da API</span>
 			<input
 				bind:value={endpoint}
 				type="url"
-				placeholder="wss://relay.exemplo"
+				placeholder="https://sync.exemplo.workers.dev"
 				disabled={!syncEnabled}
 				aria-describedby="sync-endpoint-help"
 			/>
-			<small id="sync-endpoint-help">Tokens não são digitados nem salvos nesta tela.</small>
+			<small id="sync-endpoint-help">Use HTTPS em produção; HTTP só funciona em localhost.</small>
+		</label>
+		<label class="field">
+			<span>Token da API</span>
+			<input
+				bind:value={token}
+				type="password"
+				placeholder="Token do workspace"
+				disabled={!syncEnabled}
+				aria-describedby="sync-token-help"
+			/>
+			<small id="sync-token-help"
+				>O token não é salvo no localStorage, IndexedDB, SQLite ou exportações.</small
+			>
 		</label>
 	</div>
 

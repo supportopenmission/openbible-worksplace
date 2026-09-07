@@ -11,7 +11,7 @@
 | --- |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/0.BkfsOC6k.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/2.SrOwNqhZ.css |
-| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/3.Btp-QOwP.css |
+| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/3.uKK-3Ivt.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/4.DVZkycCw.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/5.e4FGILj6.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/6.DEycNB_8.css |
@@ -26,7 +26,7 @@
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/note-editor-layout.DYFWr0Jd.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/0.BkfsOC6k.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/2.SrOwNqhZ.css |
-| apps/web/.svelte-kit/output/client/_app/immutable/assets/3.Btp-QOwP.css |
+| apps/web/.svelte-kit/output/client/_app/immutable/assets/3.uKK-3Ivt.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/4.DVZkycCw.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/5.e4FGILj6.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/6.DEycNB_8.css |
@@ -46,12 +46,12 @@
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/RemoteBibleImport.CJit26Yt.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_layout.BDzbcCNN.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_layout.CDtCSbxb.css |
-| apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.Btp-QOwP.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.Bwvga3ZR.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.CV9ypCvY.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.CsG63tbc.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.DEycNB_8.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.Df66ovmK.css |
+| apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.uKK-3Ivt.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/drawer.Dfn3BCaV.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/note-editor-layout.C5Sr506b.css |
 | apps/web/.svelte-kit/tauri/_app/immutable/assets/0.CFccrdlg.css |

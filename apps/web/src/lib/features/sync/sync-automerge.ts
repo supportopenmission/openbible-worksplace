@@ -14,7 +14,6 @@ import {
 	type SyncStoredState
 } from './sync-storage-adapters';
 import { syncRecordFromContent } from './sync-storage-adapters';
-import type { SyncDocumentRef } from './sync-document-registry';
 import type {
 	WorkspaceContentContext,
 	WorkspaceContentRecord
@@ -631,7 +630,7 @@ function createNativeOperationalPort() {
 			}>({ name: 'database.initialize' });
 			return result.value;
 		},
-		writeDocument: async (_document: SyncDocumentRef) => undefined,
+		writeDocument: async () => undefined,
 		readState: async (workspaceId: string, documentId: string): Promise<SyncStoredState> => {
 			const result = await invokeWorkspaceCommand<{
 				note?: WorkspaceContentRecord | null;

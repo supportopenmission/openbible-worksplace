@@ -1,0 +1,20 @@
+{
+  "name": "sync-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "test": "vitest run",
+    "check-types": "tsc --noEmit",
+    "deploy": "wrangler deploy",
+    "db:migrate:local": "wrangler d1 migrations apply openbible-sync --local",
+    "db:migrate:remote": "wrangler d1 migrations apply openbible-sync --remote"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260907.1",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10",
+    "wrangler": "^4.127.1"
+  }
+}

@@ -6,34 +6,38 @@ uma. Preserve decisões humanas nas seções livres deste arquivo.
 ## Inventário detectado
 
 <!-- specsfy:stack:start -->
-| Camada | Tecnologia | Evidência |
-| --- | --- | --- |
-| Runtime | Node.js | `package.json` |
-| Gerenciador | Bun 1.4.0 | `package.json` (`devEngines.packageManager`) e `bun.lock` (`lockfileVersion`) |
-| Monorepo | Turborepo ^2.10.12 | `package.json` |
-| Framework | SvelteKit 2.70.2 | `apps/web/package.json` e `svelte.config.js` |
-| Biblioteca de interface | Svelte 5.56.9 | `package.json` (catalogo `sveltejs`) e `apps/web/package.json` |
-| Linguagem | TypeScript 7.0.2 | `apps/web/package.json` |
-| Bundler | Vite 8.2.1 | `apps/web/package.json` e `apps/web/vite.config.ts` |
-| Testes | Vitest 4.1.10 | `apps/web/package.json` e `apps/web/vitest.config.ts` |
-| Testes de navegador | Playwright 1.62.1 | `apps/web/package.json` e `playwright.config.ts` |
-| CSS | Tailwind CSS 4.3.3 | `apps/web/package.json`, `apps/web/vite.config.ts` e `apps/web/src/app.css` |
-| Primitives de interface | shadcn-svelte local, estilo Nova | `apps/web/components.json` e `apps/web/src/lib/components/ui/` |
-| Editor Markdown principal | @milkdown/kit 7.22.1 | `apps/web/package.json`, `bun.lock` e `apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte` |
-| Parser de diretivas Markdown | remark-directive 4.0.0 | `apps/web/package.json`, `bun.lock` e `apps/web/src/lib/features/notes/milkdown-verse-node.ts` |
-| Editor legado (compatibilidade transitória) | @friendofsvelte/tipex 0.2.0 | `apps/web/package.json` e testes de caracterização legados |
-| Extensão legada do editor | @tiptap/extension-highlight 2.27.2 | `apps/web/package.json`, `bun.lock` e utilitário legado `verse-block-extension.ts` |
-| Desktop | Tauri 2.11.5 | `apps/desktop/src-tauri/Cargo.toml` e `apps/desktop/package.json` |
-| Diálogo nativo | tauri-plugin-dialog 2.7.3 | `apps/desktop/src-tauri/Cargo.toml`, `src-tauri/src/lib.rs` e `capabilities/default.json` |
-| Backend desktop | Rust 2021 + rusqlite 0.40.2 | `apps/desktop/src-tauri/Cargo.toml` |
-| Cofre de credenciais | keyring 4.2.0 com armazenamento nativo do SO | `apps/desktop/src-tauri/Cargo.toml`, `Cargo.lock` e `src/commands/ai.rs` |
-| Build macOS | Tauri universal-apple-darwin com app e DMG | `apps/desktop/package.json`, `apps/desktop/src-tauri/tauri.conf.json` (`targets`: `app`, `dmg`) |
-| Adapter desktop | @sveltejs/adapter-static 3.0.8 | `apps/web/package.json` e `apps/web/svelte.config.js` |
-| Ponte web→desktop | @tauri-apps/api 2.11.1 | `apps/web/package.json` |
-| Seletor de pasta nativo | @tauri-apps/plugin-dialog 2.7.3 | `apps/web/package.json` e `apps/web/src/lib/storage/storage-registry.ts` |
-| Atualização nativa | tauri-plugin-updater 2.11.0 + @tauri-apps/plugin-updater 2.11.0 | `apps/desktop/src-tauri/Cargo.toml`, `apps/desktop/src-tauri/src/lib.rs`, `apps/web/package.json` e `apps/web/src/lib/updates/app-updates.svelte.ts` |
-| Reinício pós-atualização | tauri-plugin-process 2.3.1 + @tauri-apps/plugin-process 2.3.1 | `apps/desktop/src-tauri/Cargo.toml`, `apps/desktop/src-tauri/src/lib.rs` e `apps/web/src/lib/updates/app-updates.svelte.ts` |
-| Replicação CRDT | `@automerge/automerge` 3.4.1 + `@automerge/automerge-repo` 2.5.6 | `apps/web/package.json`, `bun.lock` e `apps/web/src/lib/features/sync/` (adapters próprios sobre os backends operacionais) |
+
+| Camada                                      | Tecnologia                                                       | Evidência                                                                                                                                            |
+| ------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime                                     | Node.js                                                          | `package.json`                                                                                                                                       |
+| Gerenciador                                 | Bun 1.4.0                                                        | `package.json` (`devEngines.packageManager`) e `bun.lock` (`lockfileVersion`)                                                                        |
+| Monorepo                                    | Turborepo ^2.10.12                                               | `package.json`                                                                                                                                       |
+| Framework                                   | SvelteKit 2.70.2                                                 | `apps/web/package.json` e `svelte.config.js`                                                                                                         |
+| Biblioteca de interface                     | Svelte 5.56.9                                                    | `package.json` (catalogo `sveltejs`) e `apps/web/package.json`                                                                                       |
+| Linguagem                                   | TypeScript 7.0.2                                                 | `apps/web/package.json`                                                                                                                              |
+| Bundler                                     | Vite 8.2.1                                                       | `apps/web/package.json` e `apps/web/vite.config.ts`                                                                                                  |
+| Testes                                      | Vitest 4.1.10                                                    | `apps/web/package.json` e `apps/web/vitest.config.ts`                                                                                                |
+| Runtime de sincronização                    | Cloudflare Workers + Wrangler ^4.127.1                           | `apps/sync-api/package.json` e `apps/sync-api/wrangler.jsonc`                                                                                        |
+| Persistência remota                         | Cloudflare D1 (SQLite)                                           | `apps/sync-api/migrations/0001_sync.sql` e `apps/sync-api/wrangler.jsonc`                                                                            |
+| Testes de navegador                         | Playwright 1.62.1                                                | `apps/web/package.json` e `playwright.config.ts`                                                                                                     |
+| CSS                                         | Tailwind CSS 4.3.3                                               | `apps/web/package.json`, `apps/web/vite.config.ts` e `apps/web/src/app.css`                                                                          |
+| Primitives de interface                     | shadcn-svelte local, estilo Nova                                 | `apps/web/components.json` e `apps/web/src/lib/components/ui/`                                                                                       |
+| Editor Markdown principal                   | @milkdown/kit 7.22.1                                             | `apps/web/package.json`, `bun.lock` e `apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte`                                                    |
+| Parser de diretivas Markdown                | remark-directive 4.0.0                                           | `apps/web/package.json`, `bun.lock` e `apps/web/src/lib/features/notes/milkdown-verse-node.ts`                                                       |
+| Editor legado (compatibilidade transitória) | @friendofsvelte/tipex 0.2.0                                      | `apps/web/package.json` e testes de caracterização legados                                                                                           |
+| Extensão legada do editor                   | @tiptap/extension-highlight 2.27.2                               | `apps/web/package.json`, `bun.lock` e utilitário legado `verse-block-extension.ts`                                                                   |
+| Desktop                                     | Tauri 2.11.5                                                     | `apps/desktop/src-tauri/Cargo.toml` e `apps/desktop/package.json`                                                                                    |
+| Diálogo nativo                              | tauri-plugin-dialog 2.7.3                                        | `apps/desktop/src-tauri/Cargo.toml`, `src-tauri/src/lib.rs` e `capabilities/default.json`                                                            |
+| Backend desktop                             | Rust 2021 + rusqlite 0.40.2                                      | `apps/desktop/src-tauri/Cargo.toml`                                                                                                                  |
+| Cofre de credenciais                        | keyring 4.2.0 com armazenamento nativo do SO                     | `apps/desktop/src-tauri/Cargo.toml`, `Cargo.lock` e `src/commands/ai.rs`                                                                             |
+| Build macOS                                 | Tauri universal-apple-darwin com app e DMG                       | `apps/desktop/package.json`, `apps/desktop/src-tauri/tauri.conf.json` (`targets`: `app`, `dmg`)                                                      |
+| Adapter desktop                             | @sveltejs/adapter-static 3.0.8                                   | `apps/web/package.json` e `apps/web/svelte.config.js`                                                                                                |
+| Ponte web→desktop                           | @tauri-apps/api 2.11.1                                           | `apps/web/package.json`                                                                                                                              |
+| Seletor de pasta nativo                     | @tauri-apps/plugin-dialog 2.7.3                                  | `apps/web/package.json` e `apps/web/src/lib/storage/storage-registry.ts`                                                                             |
+| Atualização nativa                          | tauri-plugin-updater 2.11.0 + @tauri-apps/plugin-updater 2.11.0  | `apps/desktop/src-tauri/Cargo.toml`, `apps/desktop/src-tauri/src/lib.rs`, `apps/web/package.json` e `apps/web/src/lib/updates/app-updates.svelte.ts` |
+| Reinício pós-atualização                    | tauri-plugin-process 2.3.1 + @tauri-apps/plugin-process 2.3.1    | `apps/desktop/src-tauri/Cargo.toml`, `apps/desktop/src-tauri/src/lib.rs` e `apps/web/src/lib/updates/app-updates.svelte.ts`                          |
+| Replicação CRDT                             | `@automerge/automerge` 3.4.1 + `@automerge/automerge-repo` 2.5.6 | `apps/web/package.json`, `bun.lock` e `apps/web/src/lib/features/sync/` (adapters próprios sobre os backends operacionais)                           |
+
 <!-- specsfy:stack:end -->
 
 ## Decisões e observações do projeto
@@ -67,7 +71,7 @@ manifests.
 - Favicon, `icon-192.png`, `icon-512.png` e `apple-touch-icon.png` derivam de
   `apps/web/static/logo-minimal.png` (marca branca em fundo preto com área de
   segurança para maskable); o manifesto segue `standalone` com `purpose any
-  maskable`.
+maskable`.
 - Versão visível do app em `0.6.0`: canônico em `apps/web/package.json`
   (`version`), espelhado em `apps/web/src/lib/app-version.ts` (`APP_VERSION`)
   via `bun run version:sync [X.Y.Z]` (`apps/web/scripts/sync_app_version.mjs`).

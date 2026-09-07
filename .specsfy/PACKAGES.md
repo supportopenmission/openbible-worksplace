@@ -10,6 +10,10 @@
 | npm | desenvolvimento | turbo | ^2.10.12 | Turborepo is the build system for coding agents. | https://github.com/vercel/turborepo |
 | npm | produção | @opencode-ai/plugin | 1.18.26 | Finalidade não descrita nos metadados locais. |  |
 | npm | desenvolvimento | @tauri-apps/cli | ^2.11.4 | Command line interface for building Tauri apps | https://github.com/tauri-apps/tauri |
+| npm | desenvolvimento | @cloudflare/workers-types | 5.20260907.1 | TypeScript typings for Cloudflare Workers | https://github.com/cloudflare/workerd |
+| npm | desenvolvimento | typescript | 7.0.2 | TypeScript is a language for application scale JavaScript development | https://github.com/microsoft/TypeScript |
+| npm | desenvolvimento | vitest | 4.1.10 | Next generation testing framework powered by Vite | https://github.com/vitest-dev/vitest |
+| npm | desenvolvimento | wrangler | ^4.127.1 | Command-line interface for all things Cloudflare Workers | https://github.com/cloudflare/workers-sdk |
 | npm | produção | @automerge/automerge | 3.4.1 | Javascript implementation of automerge, backed by @automerge/automerge-wasm | github:automerge/automerge |
 | npm | produção | @automerge/automerge-repo | 2.5.6 | A repository object to manage a collection of automerge documents | https://github.com/automerge/automerge-repo/tree/master/packages/automerge-repo |
 | npm | produção | @automerge/automerge-repo-network-websocket | 2.5.6 | isomorphic node/browser Websocket network adapter for Automerge Repo | https://github.com/automerge/automerge-repo/tree/master/packages/automerge-repo-network-websocket |
@@ -46,12 +50,9 @@
 | npm | desenvolvimento | tailwindcss | ^4.3.3 | A utility-first CSS framework for rapidly building custom user interfaces. | https://github.com/tailwindlabs/tailwindcss |
 | npm | desenvolvimento | tslib | 2.8.1 | Runtime library for TypeScript helper functions | https://github.com/Microsoft/tslib |
 | npm | desenvolvimento | tw-animate-css | ^1.4.0 | TailwindCSS v4.0 compatible replacement for `tailwindcss-animate`. | Wombosvideo/tw-animate-css |
-| npm | desenvolvimento | typescript | 7.0.2 | TypeScript is a language for application scale JavaScript development | https://github.com/microsoft/TypeScript |
 | npm | desenvolvimento | vaul-svelte | ^1.0.0-next.7 | Finalidade não descrita nos metadados locais. | github:huntabyte/vaul-svelte |
 | npm | desenvolvimento | vite | 8.2.1 | Native-ESM powered web dev build tool | https://github.com/vitejs/vite |
-| npm | desenvolvimento | vitest | 4.1.10 | Next generation testing framework powered by Vite | https://github.com/vitest-dev/vitest |
 | npm | desenvolvimento | vitest-browser-svelte | 3.0.0 | Render Svelte components in Vitest Browser Mode | https://github.com/vitest-community/vitest-browser-svelte |
-| npm | desenvolvimento | wrangler | ^4.127.1 | Command-line interface for all things Cloudflare Workers | https://github.com/cloudflare/workers-sdk |
 | npm | desenvolvimento | @eslint/compat | 2.1.0 | Compatibility utilities for ESLint | https://github.com/eslint/rewrite |
 | npm | desenvolvimento | @eslint/eslintrc | 3.3.6 | The legacy ESLintRC config file format for ESLint | eslint/eslintrc |
 | npm | desenvolvimento | @eslint/js | 10.0.1 | ESLint JavaScript language implementation | https://github.com/eslint/eslint |

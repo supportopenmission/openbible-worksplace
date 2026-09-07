@@ -23,5 +23,10 @@ Valores de ambiente e integrações são documentados apenas pelos nomes declara
   fonte legada/autoral de migração e recovery.
 - No PWA, o registro operacional usa o IndexedDB `openbible-workspace` por
   origem; o SQLite bíblico WASM permanece uma fonte somente leitura separada.
-- Nenhuma credencial, variável de ambiente ou integração de backend foi
-  identificada no código atual.
+- A sincronização opcional usa `apps/sync-api`, um Worker Cloudflare com D1.
+  `SYNC_TOKEN` é secret de ambiente; `MAX_BATCH_SIZE` e `MAX_PAYLOAD_BYTES` são
+  variáveis públicas do Worker. O endpoint expõe health, push idempotente e
+  pull incremental por cursor.
+- O token do PWA fica somente em memória durante a sessão e não é salvo no
+  workspace, exportação ou banco local. O Worker recebe documentos e tombstones,
+  nunca o banco SQLite, paths, handles ou catálogo local.

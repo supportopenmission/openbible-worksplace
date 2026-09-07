@@ -1,6 +1,6 @@
 # Evidência oficial do Automerge
 
-Consulta realizada em 2026-09-05. Estas são notas próprias; não reproduzem
+Consultas realizadas em 2026-09-05 e 2026-09-07. Estas são notas próprias; não reproduzem
 trechos extensos das fontes.
 
 ## Repositories e adapters
@@ -62,3 +62,18 @@ repositório oficial consultado em 2026-09-05.
 O servidor de exemplo é um Express sem segurança embutida. Impacto: a spec não
 deve prometer autenticação pronta; exige TLS, autenticação/política de acesso e
 operação própria antes de uso produtivo.
+
+## Adapter oficial e API HTTP própria
+
+Fonte: [Automerge Networking](https://automerge.org/docs/reference/repositories/networking/)
+e [Network Sync](https://automerge.org/docs/tutorial/network-sync/), documentação
+oficial consultada em 2026-09-07.
+
+O adapter remoto documentado para o `automerge-repo` é o
+`WebSocketClientAdapter`, pareado com `WebSocketServerAdapter`; o servidor de
+referência usa Express, WebSocket e `DATA_DIR`. A API HTTPS incremental do
+OpenBible, por outro lado, é um transporte próprio de registros, revisões,
+cursores e conflitos: ela não implementa o protocolo de mensagens do
+Automerge. Impacto: HTTP é a opção operacional simples para sync em foreground;
+WebSocket permanece o caminho separado para aproveitar a convergência CRDT
+oficial em uma etapa futura.

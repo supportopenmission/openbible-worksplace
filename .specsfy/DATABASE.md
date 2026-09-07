@@ -12,6 +12,7 @@ do conteúdo autoral e do índice reconstruível.
 | Estrutura | Schema/migration | `apps/desktop/src-tauri/migrations/001_create_workspaces.sql` |
 | Estrutura | Schema/migration | `apps/desktop/src-tauri/migrations/002_create_workspace_content.sql` |
 | Estrutura | Schema/migration | `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` |
+| Estrutura | Schema/migration | `apps/sync-api/migrations/0001_sync.sql` |
 
 ## Estruturas detectadas
 
@@ -32,7 +33,27 @@ do conteúdo autoral e do índice reconstruível.
 | sync_peers | Tabela SQL | workspace_id:TEXT, peer_id:TEXT, scope_json:TEXT, status:TEXT, created_at:TEXT, revoked_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` |
 | sync_endpoints | Tabela SQL | workspace_id:TEXT, endpoint_id:TEXT, transport:TEXT, url:TEXT, status:TEXT, created_at:TEXT, updated_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` |
 | sync_conflicts | Tabela SQL | workspace_id:TEXT, conflict_id:TEXT, document_id:TEXT, local_generation:INTEGER, external_generation:INTEGER, status:TEXT, recovery_ref:TEXT, created_at:TEXT, updated_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` |
+| sync_documents | Tabela SQL | workspace_id:TEXT, document_id:TEXT, kind:TEXT, revision:INTEGER, payload_json:TEXT, deleted_at:TEXT, updated_at:TEXT, updated_by:TEXT | Não detectadas | `apps/sync-api/migrations/0001_sync.sql` |
+| sync_changes | Tabela SQL | id:INTEGER, workspace_id:TEXT, document_id:TEXT, kind:TEXT, revision:INTEGER, operation_id:TEXT, payload_json:TEXT, deleted_at:TEXT, updated_by:TEXT, created_at:TEXT, UNIQUE:(workspace_id | Não detectadas | `apps/sync-api/migrations/0001_sync.sql` |
+| sync_conflicts | Tabela SQL | id:INTEGER, workspace_id:TEXT, document_id:TEXT, operation_id:TEXT, base_revision:INTEGER, current_revision:INTEGER, payload_json:TEXT, deleted_at:TEXT, device_id:TEXT, created_at:TEXT, UNIQUE:(workspace_id | Não detectadas | `apps/sync-api/migrations/0001_sync.sql` |
 <!-- specsfy:database:end -->
+
+### D1 remoto da API de sincronização
+
+`apps/sync-api/migrations/0001_sync.sql` define o banco D1 remoto do Worker
+`openbible-sync`. Ele é uma réplica de transporte, não substitui as notas no
+`app.sqlite` ou no IndexedDB local.
+
+| Estrutura | Onde vive | Campos/forma | Relações, chaves e ownership |
+| --- | --- | --- | --- |
+| `sync_documents` | Cloudflare D1 | `workspace_id`, `document_id`, `kind`, `revision`, `payload_json`, `deleted_at`, `updated_at`, `updated_by` | chave primária `(workspace_id, document_id)`; estado atual por documento |
+| `sync_changes` | Cloudflare D1 | cursor `id`, documento, revisão, `operation_id`, payload/tombstone e timestamps | `UNIQUE(workspace_id, operation_id)`; índice `(workspace_id, id)` sustenta pull incremental |
+| `sync_conflicts` | Cloudflare D1 | operação divergente, revisão base/atual, payload/tombstone, dispositivo e timestamp | `UNIQUE(workspace_id, operation_id)`; índice por workspace/documento; conflito é preservado para decisão explícita |
+
+O D1 remoto recebe somente documentos escopados ao `workspaceId`; paths,
+handles, catálogo, credenciais e o banco bruto local ficam fora do contrato.
+Retenção, compactação e resolução automática de conflitos ainda não foram
+definidas para esta primeira fatia.
 
 ## Persistência operacional de workspaces (SPEC-0016 revisada)
 

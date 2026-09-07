@@ -7,6 +7,7 @@ import type { WorkspaceContentRecord } from '$lib/storage/workspace-content-repo
 import type { Note, NoteMeta } from './note-types';
 import { parseNoteFile } from './note-markdown';
 import { persistSyncRecord, removeSyncRecord } from '$lib/features/sync/sync-automerge';
+import { queueHttpSyncTombstone, scheduleHttpSync } from '$lib/features/sync/sync-http-client';
 
 const defaultStorage: WorkspaceStorage = {
 	kind: 'opfs',
@@ -195,6 +196,7 @@ export async function createNote(storage?: WorkspaceStorage): Promise<Note> {
 	const record = noteRecord(resolved, note);
 	await getWorkspaceContentRepository(resolved).write(record);
 	await persistSyncRecord(resolved, record);
+	scheduleHttpSync(resolved);
 	return note;
 }
 
@@ -238,6 +240,7 @@ export async function saveNote(
 	const record = noteRecord(storage, saved);
 	await getWorkspaceContentRepository(storage).write(record);
 	await persistSyncRecord(storage, record);
+	scheduleHttpSync(storage);
 	return saved;
 }
 
@@ -278,7 +281,9 @@ export async function trashNote(
 	const noteId = typeof storageOrId === 'string' ? storageOrId : (id ?? '');
 	if (!noteId) throw new Error('Nota não encontrada.');
 	const context = workspaceContentContext(storage);
+	await queueHttpSyncTombstone(storage, 'note', noteId);
 	const current = await findNote(storage, noteId);
 	if (current) await removeSyncRecord(storage, noteRecord(storage, current));
 	await getWorkspaceContentRepository(storage, context).remove(context, 'note', noteId);
+	scheduleHttpSync(storage);
 }

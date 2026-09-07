@@ -3,12 +3,13 @@
 <!-- specsfy:documentator:start -->
 ## Resumo
 
-- Arquivos de teste: 118.
+- Arquivos de teste: 120.
 - Runner: não identificado.
 - Scripts: build: turbo run build; check-types: turbo run check-types; dev: turbo run dev; lint: turbo run lint; format: prettier --write .; format:check: prettier --check ..
 
 | Arquivo |
 | --- |
+| apps/sync-api/src/sync-api.test.ts |
 | apps/web/src/lib/app-version.test.ts |
 | apps/web/src/lib/bible/editor/bibleReferenceDecorations.test.ts |
 | apps/web/src/lib/bible/parser/BibleReferenceParser.test.ts |
@@ -98,6 +99,7 @@
 | apps/web/src/lib/features/sync/sync-document-registry.test.ts |
 | apps/web/src/lib/features/sync/sync-envelope-guard.test.ts |
 | apps/web/src/lib/features/sync/sync-governance-inventory.test.ts |
+| apps/web/src/lib/features/sync/sync-http-integration.test.ts |
 | apps/web/src/lib/features/sync/sync-interface-inventory.test.ts |
 | apps/web/src/lib/features/sync/sync-network-adapters.test.ts |
 | apps/web/src/lib/features/sync/sync-repository.test.ts |

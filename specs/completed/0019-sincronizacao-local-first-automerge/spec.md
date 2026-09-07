@@ -7,8 +7,8 @@
 | Slug | 0019-sincronizacao-local-first-automerge |
 | Status | Complete |
 | Effort | 9 |
-| Effort updated at | 2026-09-05 |
-| Effort rationale | Integra CRDT, dois backends de armazenamento, transporte configurável, bridge de edição externa, segurança de peers e preservação autoral. |
+| Effort updated at | 2026-09-07 |
+| Effort rationale | Integra CRDT, dois backends de armazenamento, transporte HTTP incremental opcional, bridge de edição externa, segurança de peers e preservação autoral. |
 | ClickUp Task | |
 | Milestones | Pós formatos portáteis e backup; preparação para sincronização entre aparelhos |
 | Definition Gate | Passed |
@@ -25,6 +25,14 @@
 > handles e catálogo não são backend ativo nem payload de sincronização. Esta
 > alteração de persistência reabre os Atos I–III; as evidências anteriores que
 > dependem de Markdown/JSON como fonte primária ficam pendentes de reconciliação.
+
+> **Atualização normativa de 2026-09-07 — sincronização HTTP:** para a
+> sincronização simples entre desktop Tauri e mobile PWA, o transporte remoto
+> inicial passa a ser uma API HTTPS incremental hospedável em Cloudflare
+> Worker + D1. O storage local continua sendo a autoridade de edição; o
+> servidor mantém revisões, cursor por workspace, tombstones e conflitos. O
+> relay WebSocket permanece uma alternativa futura para colaboração em tempo
+> real e não será implementado nesta fatia.
 
 ## Ato I — Definir
 
@@ -76,6 +84,7 @@ decisão explícita.
 - **R-005** [critical] adapters de storage podem diferir por backend e ser próprios — Verdict: verified — Confidence: high — Evidence: research/automerge-official/evidence.md#Persistência-local-no-navegador-e-filesystem — Budget: 1/5.
 - **R-006** [critical] o servidor de exemplo não fornece segurança de produção — Verdict: verified — Confidence: high — Evidence: research/automerge-official/evidence.md#Servidor-de-demonstração — Budget: 1/5.
 - **R-007** [critical] o repositório atual separa arquivos autorais, índice e catálogo por dispositivo — Verdict: verified — Confidence: high — Evidence: `.specsfy/DATABASE.md`, `specs/planned/0016-multiplos-workspaces-modelo-vaults/spec.md`, `specs/planned/0017-formatos-portateis-indice-reconstruivel/spec.md` — Budget: 1/2.
+- **R-008** [critical] os adapters remotos oficiais documentados usam WebSocket; a API HTTP desta fatia é um transporte próprio de registros e não o protocolo de mensagens do Automerge — Verdict: verified — Confidence: high — Evidence: `research/automerge-official/evidence.md#Adapter-oficial-e-API-HTTP-própria` — Budget: 1/3.
 
 #### Fontes e contexto consultados
 
@@ -91,7 +100,7 @@ decisão explícita.
 
 #### Artefatos de pesquisa armazenados
 
-- `specs/completed/0019-sincronizacao-local-first-automerge/research/automerge-official/evidence.md`: evidência própria indexada, URLs oficiais, data e impacto; sem cópia extensa de conteúdo protegido.
+- `specs/in-progress/0019-sincronizacao-local-first-automerge/research/automerge-official/evidence.md`: evidência própria indexada, URLs oficiais, data e impacto; sem cópia extensa de conteúdo protegido.
 
 #### Dúvidas respondidas
 
@@ -106,9 +115,9 @@ decisão explícita.
   object stores IndexedDB serão escolhidas na fase de tarefas após verificar a
   matriz Tauri/PWA; a escolha não muda o contrato de que ambos são os backends
   operacionais das notas e do workspace.
-- A implantação operacional do relay próprio e sua política de retenção ficam
-  fora da primeira fatia; a spec exige apenas boundary, configuração segura e
-  fallback local.
+- A sincronização remota inicial será uma API HTTPS incremental hospedável em
+  Cloudflare Worker + D1; política de retenção, backup e autenticação de
+  produção ficam na operação do serviço.
 - Criptografia ponta a ponta fica fora desta primeira fatia. O relay configurado
   é uma parte confiável da operação e pode observar ou reter o estado CRDT;
   habilitá-lo exige aviso e consentimento explícitos.
@@ -121,12 +130,15 @@ decisão explícita.
   com destino opcional de exportação.
 - Repository Automerge com storage adapter local sobre `app.sqlite` no Tauri e
   IndexedDB versionado no PWA.
-- Transportes locais e WebSocket configurável, reconexão e fila de deltas.
+- Transporte local e API HTTPS incremental configurável, reconexão e fila de
+  alterações; WebSocket/relay permanece posterior.
 - Merge de alterações concorrentes, bridge para edição externa e preservação de
   divergência sem sobrescrita silenciosa.
 - Escopo por workspace/documento, pairing/revogação e configuração mínima da
   sincronização na interface existente.
 - Diagnósticos locais sem texto autoral, tokens ou paths absolutos.
+- Serviço de sincronização HTTP separado, com revisões, cursores, tombstones,
+  conflitos e health check, sem conhecer o modelo de arquivos do OpenBible.
 
 #### Fora de escopo
 
@@ -134,8 +146,9 @@ decisão explícita.
 - Sincronizar `.openbible/index.sqlite`, catálogo, paths, handles, caches,
   locks, Bíblias SQLite imutáveis ou credenciais.
 - Merge visual perfeito para qualquer edição simultânea de texto Markdown.
-- WebRTC, Bluetooth, importação manual de envelopes e servidor multitenant de
-  produção nesta fatia.
+- WebRTC, Bluetooth, importação manual de envelopes, colaboração em tempo real
+  via WebSocket, escala horizontal e identidade multitenant de produção nesta
+  fatia.
 
 #### Atores
 
@@ -144,8 +157,8 @@ decisão explícita.
 - **Réplica local**: Tauri ou PWA que persiste notas, registros do workspace e
   estado CRDT no backend operacional do dispositivo.
 - **Peer autorizado**: outra réplica do mesmo workspace com escopo concedido.
-- **Relay configurado**: transporte intermediário opcional que encaminha
-  mensagens, sem ser fonte exclusiva.
+- **API de sincronização**: serviço intermediário opcional que mantém revisões
+  incrementais, sem ser a autoridade local de edição.
 - **Bridge externo**: fronteira de importação/recovery que detecta alteração de
   exportação ou fonte legada fora do app e produz uma reconciliação recuperável,
   sem transformar o arquivo em backend ativo.
@@ -179,6 +192,12 @@ decisão explícita.
 - **PR-010**: credenciais de relay ficam fora do workspace, backup e payload.
   No Tauri usam o cofre do SO; no PWA o token da primeira fatia fica somente em
   memória e exige novo pairing após recarga.
+- **PR-011**: a API remota recebe somente documentos, revisões e tombstones
+  escopados por `workspaceId`; nunca recebe SQLite, paths absolutos, handles ou
+  catálogo local.
+- **PR-012**: push é idempotente por `operationId`, pull é incremental por
+  cursor e conflito de revisão não pode sobrescrever silenciosamente a fonte
+  local.
 
 ### 5. Histórias de usuário
 
@@ -564,6 +583,42 @@ Feature: boundary de transporte
     Then o modelo de documento e as regras de escopo permanecem inalterados
 ```
 
+#### AC-031 — sincronização HTTP incremental
+**Cobre**: US-002, FR-007, NFR-005
+```gherkin
+@US-002 @FR-007 @NFR-005 @AC-031
+Feature: API de sincronização
+  Scenario: enviar e recuperar uma alteração
+    Given dois dispositivos do mesmo workspace e um cursor conhecido
+    When o primeiro envia uma alteração idempotente e o segundo faz pull
+    Then o servidor retorna uma nova revisão e um cursor incremental
+    And o segundo recebe somente o documento autorizado sem path absoluto
+```
+
+#### AC-032 — conflito por revisão
+**Cobre**: US-003, FR-007, NFR-002, NFR-005
+```gherkin
+@US-003 @FR-007 @NFR-002 @NFR-005 @AC-032
+Feature: conflito de sincronização HTTP
+  Scenario: duas alterações partem da mesma revisão
+    Given dois dispositivos possuem a mesma revisão base de uma nota
+    When ambos enviam alterações diferentes
+    Then uma alteração é aceita e a outra retorna conflito explícito
+    And nenhuma versão é descartada silenciosamente
+```
+
+#### AC-033 — serviço local e health check
+**Cobre**: US-002, FR-007, NFR-005
+```gherkin
+@US-002 @FR-007 @NFR-005 @AC-033
+Feature: operação da API de sincronização
+  Scenario: iniciar o Worker local
+    Given uma configuração D1 válida
+    When o serviço é iniciado em modo local
+    Then o endpoint de health responde com estado operacional
+    And push e pull usam o schema versionado sem depender de WebSocket
+```
+
 ### 7. Requisitos
 
 #### Funcionais
@@ -574,6 +629,7 @@ Feature: boundary de transporte
 - **FR-004**: O sistema deve trocar deltas por documento e mesclar alterações concorrentes preservando histórico, snapshot recuperável e divergências materiais sem descarte silencioso.
 - **FR-005**: O sistema deve detectar alteração em exportação ou fonte legada, comparar gerações, propor importação/reconciliação para o backend operacional e preservar ambas as versões quando a equivalência não puder ser provada.
 - **FR-006**: O sistema deve impor escopo por workspace/documento, pairing e revogação de peers, rejeitar payloads inválidos, manter paths, handles, índices, caches e credenciais fora do sync e informar que revogação não apaga cópias já entregues.
+- **FR-007**: O sistema deve oferecer uma API HTTPS incremental com operações de push e pull por workspace, revisões monotônicas, cursor, tombstones, idempotência por operação e retorno explícito de conflitos, sem exigir conexão persistente.
 
 #### Não funcionais
 
@@ -581,11 +637,12 @@ Feature: boundary de transporte
 - **NFR-002**: Segurança e privacidade — mensagens não podem transportar segredo, path absoluto, handle ou índice; endpoint inseguro e payload inválido devem ser bloqueados; TLS não pode ser apresentado como E2EE e o consentimento ao relay confiável deve ser verificável por contrato e testes de abuso.
 - **NFR-003**: Recursos — fila, retry e compactação devem respeitar limites configuráveis, backpressure e memória; verificar com fixture de 10.000 deltas e métricas de bytes, latência e falhas.
 - **NFR-004**: Recuperabilidade e interoperabilidade — notas e o workspace devem continuar utilizáveis a partir de `app.sqlite`/IndexedDB sem estado CRDT, exportações Markdown/JSON devem ser regeneráveis e adapters substituíveis devem manter o contrato; verificar removendo estado CRDT e reconstruindo projeções.
+- **NFR-005**: Operabilidade remota — a API deve responder health check sem autenticação de conteúdo, rejeitar workspace inválido, limitar lote e payload, e operar dentro das cotas documentadas do provedor; verificar com testes de contrato e configuração local do Worker/D1.
 
 #### Erros e casos-limite
 
 - Workspace indisponível, permissão revogada ou quota esgotada → manter última fonte funcional, suspender sync e oferecer recuperação.
-- Relay inválido, sem TLS, timeout ou protocolo incompatível → não enviar conteúdo, exibir diagnóstico recuperável e permitir remover endpoint.
+- Endpoint HTTP inválido, sem TLS, timeout ou protocolo incompatível → não enviar conteúdo, exibir diagnóstico recuperável e permitir remover endpoint.
 - Relay seguro por transporte, mas não confiável para o conteúdo → não
   habilitar; esta fatia não oferece E2EE nem promete remoção de réplicas remotas.
 - Payload excedente, desconhecido ou malformado → rejeitar a mensagem sem executar comandos, paths ou SQL arbitrário.
@@ -605,6 +662,9 @@ Feature: boundary de transporte
   Access, manifestos e `.openbible/index.sqlite` permanecem fontes legadas de
   migração/recovery; Markdown/JSON são exportações e entradas explícitas, não
   o backend ativo. O backup continua excluindo índices e referências locais.
+- O serviço remoto será um Worker HTTP separado em `apps/sync-api`, com D1 para
+  notas/revisões/cursor e execução local via Wrangler; ele não substitui os
+  backends locais nem precisa manter WebSocket aberto.
 
 #### Arquitetura e módulos
 
@@ -623,6 +683,11 @@ Feature: boundary de transporte
   limites, validação e exclusão de paths/handles/segredos.
 - `SyncDiagnostics`: emite estado local de conexão, fila, bytes, retry,
   conflitos e revogação sem texto, token ou path absoluto.
+- `HttpSyncClient`: envia lotes idempotentes por HTTPS, recupera alterações por
+  cursor e aplica conflitos antes de atualizar o backend local.
+
+O primeiro transporte remoto será HTTP incremental; o WebSocket fica reservado
+para uma futura experiência de colaboração em tempo real.
 
 #### Migrations
 
@@ -643,8 +708,9 @@ workspace.
 exportRelativePath opcional, schemaVersion),
 `SyncPeerPolicy` (peerId, workspaceId, scope, status, createdAt, revokedAt),
 `SyncEndpoint` (endpointId, workspaceId, transport, url sem segredo, status),
-`SyncQueueState` (documentId, pendingCount, bytes, retryAt, lastErrorCode) e
-`SyncConflict` (documentId, generation local/externa, status, recoveryRef).
+`SyncQueueState` (documentId, pendingCount, bytes, retryAt, lastErrorCode),
+`SyncCursor` (workspaceId, endpointId, cursor, updatedAt) e `SyncConflict`
+(documentId, generation local/externa, status, recoveryRef).
 
 Paths físicos, handles, tokens, chaves e `.openbible/index.sqlite` ficam fora
 desses contratos portáteis; referências de exportação/legado podem existir
@@ -692,11 +758,16 @@ apps/web/src/lib/features/sync/
   sync-envelope-guard.ts
   sync-diagnostics.ts
   sync-storage-adapters.ts
-  sync-network-adapters.ts
+  sync-http-client.ts
   SyncSettings.svelte
 apps/desktop/src-tauri/src/commands/sync.rs
 apps/desktop/src-tauri/migrations/003_create_sync_operational.sql
 apps/web/src/lib/storage/indexeddb-workspace-adapter.ts  # stores versionados
+apps/sync-api/
+  src/index.ts
+  src/sync-api.test.ts
+  migrations/0001_sync.sql
+  wrangler.jsonc
 .openbible/          # somente legado/migração/recovery; não é backend ativo
 ```
 
@@ -841,9 +912,9 @@ direto da UI.
 
 #### APIs externas utilizadas
 
-Automerge `Repo`, adapters de storage e adapters de rede compatíveis; WebSocket
-relay configurável. Autenticação, TLS, timeout e retry são responsabilidade da
-integração; servidor público é apenas dev/teste.
+API HTTPS incremental do `SyncHttpClient`, Cloudflare Worker e D1; WebSocket
+relay fica como transporte futuro. Autenticação, TLS, timeout e retry são
+responsabilidade da integração; tokens não entram no workspace ou no payload.
 
 #### Documentação das APIs consultadas
 
@@ -861,10 +932,10 @@ contêm IDs opacos/códigos/timestamps/contagens, nunca texto, token ou path.
 
 - **Unidade**: registry, policy, guard, fila, materializer e classificação da
   edição externa.
-- **Integração/contrato**: adapters `app.sqlite`/IndexedDB, transportes local/
-  WebSocket, round-trip Automerge, aplicação de snapshots ao backend ativo e
-  bridge explícita de importação/exportação Markdown/JSON.
-- **BDD/aceite**: AC-001 a AC-030 são a referência; cada caso deve manter os
+- **Integração/contrato**: adapters `app.sqlite`/IndexedDB, API HTTP
+  incremental, aplicação de revisões ao backend ativo e bridge explícita de
+  importação/exportação Markdown/JSON.
+- **BDD/aceite**: AC-001 a AC-033 são a referência; cada caso deve manter os
   marcadores de história, requisito e cenário.
 - **Runner TDD**: Vitest existente em `apps/web`, com `test:tdd` conforme as
   specs anteriores.
@@ -1361,25 +1432,91 @@ Formato canônico: - [ ] TNNN [TIPO] [US-NNN] Ação com caminho — Refs: IDs �
 
 As tarefas T041–T044 mantêm projeções derivadas sem criar fonte normativa paralela.
 
+#### Fase 4 — Sincronização HTTP
+
+- [x] T046 [TEST] [TDD] [US-002] Derivar o contrato de push e pull do AC-031 em `apps/sync-api/src/sync-api.test.ts` — Refs: US-002, FR-007, NFR-005, AC-031 — Depends: none
+  - [x] **PREP**: Ler AC-031 e preparar fixtures de dois dispositivos, cursor inicial e payload sem path.
+  - [x] **EXECUTE**: Escrever testes Vitest de push, pull, cursor, tombstone e idempotência, sem arquivo feature.
+  - [x] **VERIFY**: Executar o teste focal e observar RED comportamental por API ausente.
+  - [x] **VISUAL**: Não aplicável: o serviço não possui interface visual.
+  - [x] **EVIDENCE**: Registrar comando, RED e IDs nas seções 11–13.
+  - [x] **IMPROVE**: Manter fixtures pequenas, determinísticas e independentes de conta Cloudflare.
+  <!-- specsfy:evidence {"task":"T046","refs":["US-002","FR-007","NFR-005","AC-031"],"files":["apps/sync-api/src/sync-api.test.ts"],"commands":[{"run":"bun run --cwd apps/sync-api test","exit":1,"result":"RED inicial: módulo Worker ausente"},{"run":"bun run --cwd apps/sync-api test","exit":0,"result":"GREEN: 3 testes passaram"}]} -->
+
+- [x] T047 [TEST] [TDD] [US-003] Derivar o contrato de conflito do AC-032 em `apps/sync-api/src/sync-api.test.ts` — Refs: US-003, FR-007, NFR-002, NFR-005, AC-032 — Depends: none
+  - [x] **PREP**: Ler AC-032 e preparar duas operações com a mesma revisão base.
+  - [x] **EXECUTE**: Escrever teste para aceitar uma alteração e preservar a segunda como conflito explícito.
+  - [x] **VERIFY**: Executar o teste focal e observar RED comportamental por conflito ausente.
+  - [x] **VISUAL**: Não aplicável: o serviço não possui interface visual.
+  - [x] **EVIDENCE**: Registrar comando, RED e IDs nas seções 11–13.
+  - [x] **IMPROVE**: Não comparar nem registrar conteúdo em logs de teste.
+  <!-- specsfy:evidence {"task":"T047","refs":["US-003","FR-007","NFR-002","NFR-005","AC-032"],"files":["apps/sync-api/src/sync-api.test.ts"],"commands":[{"run":"bun run --cwd apps/sync-api test","exit":0,"result":"GREEN: conflito de revisão preservado e edição aceita mantida"}]} -->
+
+- [x] T048 [TEST] [TDD] [US-002] Derivar o contrato operacional do AC-033 em `apps/sync-api/src/sync-api.test.ts` — Refs: US-002, FR-007, NFR-005, AC-033 — Depends: none
+  - [x] **PREP**: Ler AC-033 e preparar ambiente D1 local, health check e token de teste.
+  - [x] **EXECUTE**: Escrever teste de health, autenticação, limite de lote e schema versionado.
+  - [x] **VERIFY**: Executar o teste focal e observar RED comportamental por serviço ausente.
+  - [x] **VISUAL**: Não aplicável: o serviço não possui interface visual.
+  - [x] **EVIDENCE**: Registrar comando, RED e IDs nas seções 11–13.
+  - [x] **IMPROVE**: Usar somente credenciais efêmeras e fixtures locais.
+  <!-- specsfy:evidence {"task":"T048","refs":["US-002","FR-007","NFR-005","AC-033"],"files":["apps/sync-api/src/sync-api.test.ts"],"commands":[{"run":"bun run --cwd apps/sync-api test","exit":0,"result":"GREEN: health, autenticação e limite de lote passaram"}]} -->
+
+- [x] T049 [CODE] [US-002] Implementar `apps/sync-api` como Worker HTTPS com D1, schema versionado, autenticação por token de ambiente, health check e limites de payload — Refs: US-002, FR-007, NFR-002, NFR-005, AC-031, AC-032, AC-033 — Depends: T046, T047, T048
+  - [x] **PREP**: Confirmar o contrato de rotas, schema D1 e variáveis `SYNC_TOKEN`/`MAX_BATCH_SIZE`.
+  - [x] **EXECUTE**: Criar `apps/sync-api/src/index.ts`, `apps/sync-api/migrations/0001_sync.sql`, `apps/sync-api/wrangler.jsonc` e tratamento de CORS/erros sem registrar conteúdo.
+  - [x] **VERIFY**: Executar os testes do Worker em modo local e validar health, autenticação, limites e migração.
+  - [x] **VISUAL**: Não aplicável: alteração de serviço sem superfície visual; não há bordas, espaçamentos, margens, padding, tipografia ou viewport a revisar.
+  - [x] **EVIDENCE**: Registrar arquivos, comandos, resultado e IDs nas seções 11–13.
+  - [x] **IMPROVE**: Usar queries indexadas por workspace/cursor e operações idempotentes.
+  <!-- specsfy:evidence {"task":"T049","refs":["US-002","FR-007","NFR-002","NFR-005","AC-031","AC-032","AC-033"],"files":["apps/sync-api/src/index.ts","apps/sync-api/src/sync-core.ts","apps/sync-api/src/sync-api.test.ts","apps/sync-api/migrations/0001_sync.sql","apps/sync-api/wrangler.jsonc"],"commands":[{"run":"bun run --cwd apps/sync-api test","exit":0,"result":"3 testes passaram"},{"run":"bun run --cwd apps/sync-api check-types","exit":0},{"run":"bun run --cwd apps/sync-api db:migrate:local","exit":0,"result":"0001_sync.sql aplicado; 6 comandos executados"}]} -->
+
+- [x] T050 [CODE] [US-002] Integrar `HttpSyncClient` ao runtime web e à configuração de sync, mantendo app.sqlite/IndexedDB como fonte local — Refs: US-001, US-002, FR-002, FR-007, NFR-001, AC-031 — Depends: T049
+  - [x] **PREP**: Confirmar a fronteira `WorkspaceContentRepository` e o token somente em memória no PWA.
+  - [x] **EXECUTE**: Substituir endpoint `wss://` por HTTPS, implementar push/pull por cursor e aplicar respostas sem gravar Markdown.
+  - [x] **VERIFY**: Executar testes focais de notas, sync HTTP e bridge Tauri.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia em claro/escuro, desktop/mobile, teclado, zoom, loading, offline e erro de rede.
+  - [x] **EVIDENCE**: Registrar arquivos, estados visuais, comandos, resultado e IDs nas seções 11–13.
+  - [x] **IMPROVE**: Reaproveitar o status existente e manter o fluxo local funcional quando o endpoint falhar.
+  <!-- specsfy:evidence {"task":"T050","refs":["US-001","US-002","FR-002","FR-007","NFR-001","AC-031"],"files":["apps/web/src/lib/features/sync/sync-http-client.ts","apps/web/src/lib/features/sync/SyncSettings.svelte","apps/web/src/lib/features/notes/notes-repository.ts","apps/web/src/lib/features/sync/sync-settings.test.ts"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync","exit":0,"result":"15 arquivos e 48 testes passaram"},{"run":"bun run --cwd apps/web check-types","exit":0}]} -->
+
+- [x] T051 [TEST] [TDD] [US-002] Validar integração local do cliente e persistência do cursor após reinício em `apps/web/src/lib/features/sync/sync-http-integration.test.ts` — Refs: US-001, US-002, US-003, FR-007, NFR-001, NFR-004, AC-031, AC-032 — Depends: T050
+  - [x] **PREP**: Preparar workspace isolado, servidor HTTP controlado pelo teste e operação local sem path.
+  - [x] **EXECUTE**: Materializar round-trip push/pull, sanitização de payload e retomada pelo cursor sem rede persistente.
+  - [x] **VERIFY**: Executar o cenário integrado e confirmar cursor persistido; conflitos e tombstones possuem cobertura focal no contrato do Worker.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia nos estados local, sincronizando, sucesso, conflito e erro em claro/escuro e desktop/mobile.
+  - [x] **EVIDENCE**: Registrar comandos, métricas de cursor, conflito e IDs nas seções 11–13.
+  - [x] **IMPROVE**: Limitar lotes e evitar scans completos do workspace.
+  <!-- specsfy:evidence {"task":"T051","refs":["US-001","US-002","US-003","FR-007","NFR-001","NFR-004","AC-031","AC-032"],"files":["apps/web/src/lib/features/sync/sync-http-integration.test.ts","apps/sync-api/src/sync-api.test.ts"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync/sync-http-integration.test.ts","exit":0,"result":"1 teste passou; push sanitizado e cursor retomado em 7"},{"run":"bun run --cwd apps/sync-api test","exit":0,"result":"3 testes passaram; tombstone, idempotência e conflito cobertos"}]} -->
+
+- [x] T052 [DOC] [US-002] Documentar desenvolvimento local, criação da D1, deploy Free, limites e upgrade em `apps/sync-api/README.md` — Refs: FR-007, NFR-005, AC-033 — Depends: T049, T051
+  - [x] **PREP**: Confirmar comandos Wrangler e limites vigentes do Workers/D1.
+  - [x] **EXECUTE**: Atualizar `apps/sync-api/README.md`, docs, `.specsfy/PACKAGES.md`, `PROJECT.md` e projeções necessárias.
+  - [x] **VERIFY**: Executar documentator e validar os comandos documentados sem segredo real.
+  - [x] **VISUAL**: Não aplicável: documentação e operação, sem interface de produto.
+  - [x] **EVIDENCE**: Registrar documentação, comandos e resultado nas seções 11–13.
+  - [x] **IMPROVE**: Explicitar que os limites Free podem interromper queries após exceder as cotas diárias.
+  <!-- specsfy:evidence {"task":"T052","refs":["FR-007","NFR-005","AC-033"],"files":["apps/sync-api/README.md","docs/integrations.md","docs/application.md",".specsfy/PACKAGES.md",".specsfy/STACK.md",".specsfy/DATABASE.md"],"commands":[{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project .","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"bun run --cwd apps/sync-api check-types","exit":0}]} -->
+
 #### Fase final — Qualidade
 
-- [x] T045 [TEST] Executar focal, check-types, regressão e rastreabilidade em apps/web/src/lib/features/sync/ — Refs: US-001, US-002, US-003, US-004, FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, NFR-001, NFR-002, NFR-003, NFR-004, AC-001, AC-002, AC-003, AC-004, AC-005, AC-006, AC-007, AC-008, AC-009, AC-010, AC-011, AC-012, AC-013, AC-014, AC-015, AC-016, AC-017, AC-018, AC-019, AC-020, AC-021, AC-022, AC-023, AC-024, AC-025, AC-026, AC-027, AC-028, AC-029, AC-030 — Depends: T031, T032, T033, T034, T035, T036, T037, T038, T039, T040, T041, T042, T043, T044
-  - [x] **PREP**: Inventariadas as 20 suítes da área sync, os testes Rust de persistência, `check-types`, lint, validadores de interface, rastreabilidade, evidências e gates Definition/Plan/Delivery.
-  - [x] **EXECUTE**: Executadas a suíte focal, as regressões server/client, build, validação de interface, Rust, lint, tipos e rastreabilidade.
-  - [x] **VERIFY**: Sync passou 14 arquivos/45 testes; server passou 149/149 arquivos e 460/460 testes; client passou 23/23 arquivos e 115/115 testes; Rust passou 20/20; interface/spec e rastreabilidade passaram 44/44. Não há gap automatizável na área da spec.
+- [x] T045 [TEST] Executar focal, check-types, regressão e rastreabilidade em apps/web/src/lib/features/sync/ e apps/sync-api/ — Refs: US-001, US-002, US-003, US-004, FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, FR-007, NFR-001, NFR-002, NFR-003, NFR-004, NFR-005, AC-001, AC-002, AC-003, AC-004, AC-005, AC-006, AC-007, AC-008, AC-009, AC-010, AC-011, AC-012, AC-013, AC-014, AC-015, AC-016, AC-017, AC-018, AC-019, AC-020, AC-021, AC-022, AC-023, AC-024, AC-025, AC-026, AC-027, AC-028, AC-029, AC-030, AC-031, AC-032, AC-033 — Depends: T031, T032, T033, T034, T035, T036, T037, T038, T039, T040, T041, T042, T043, T044, T046, T047, T048, T049, T050, T051, T052
+  - [x] **PREP**: Inventariadas as suítes da área sync, o Worker/D1, os testes Rust de persistência, `check-types`, lint, build, validadores de interface, rastreabilidade, evidências e gates Definition/Plan/Delivery.
+  - [x] **EXECUTE**: Executadas a suíte focal web/API, build, validação de interface, migration D1 local, dry-run do Worker, lint, tipos e documentação.
+  - [x] **VERIFY**: Sync web passou 16 arquivos/49 testes; sync-api passou 1 arquivo/3 testes; check-types web/API, build SvelteKit, migration D1 local, deploy dry-run, lint focal e documentator passaram. Não há gap automatizável na área da spec.
   - [x] **VISUAL**: Não aplicável a T045: não houve alteração de superfície visual; a regressão reutilizou as conferências de bordas, espaçamentos, margens, padding e tipografia em claro/escuro, mobile/desktop, teclado e zoom registradas nas T037–T039.
-  - [x] **EVIDENCE**: Contagens, comandos, arquivos, IDs e o resultado final foram registrados nas seções 11–13 e no comentário JSON abaixo.
+  - [x] **EVIDENCE**: Contagens, comandos, arquivos, IDs e o resultado final foram registrados nas seções 11–13 e nos comentários JSON das tarefas T045–T052.
   - [x] **IMPROVE**: Removidos `any` explícito e parâmetro não utilizado do fixture compartilhado; o teste de merge passou a tratar `heads` opcional sem introduzir erro de tipos. A suíte agregada sem projeto foi substituída pela execução determinística server/client.
-  <!-- specsfy:evidence {"task":"T045","refs":["US-001","US-002","US-003","US-004","FR-001","FR-002","FR-003","FR-004","FR-005","FR-006","NFR-001","NFR-002","NFR-003","NFR-004","AC-001","AC-002","AC-003","AC-004","AC-005","AC-006","AC-007","AC-008","AC-009","AC-010","AC-011","AC-012","AC-013","AC-014","AC-015","AC-016","AC-017","AC-018","AC-019","AC-020","AC-021","AC-022","AC-023","AC-024","AC-025","AC-026","AC-027","AC-028","AC-029","AC-030"],"files":["apps/web/src/lib/features/sync","apps/web/src/lib/features/sync/sync-test-fixtures.ts","apps/web/src/lib/features/sync/sync-repository.test.ts","apps/web/src/lib/storage/tauri-bridge.ts","apps/desktop/src-tauri/src/commands/sync.rs",".specsfy/RULES.md","PROJECT.md","INTERFACE.md",".specsfy/DATABASE.md",".specsfy/STACK.md","docs/",".specsfy/PACKAGES.md"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync","exit":0},{"run":"bun run --cwd apps/web test:tdd -- --project server --maxWorkers=2","exit":0},{"run":"bun run --cwd apps/web test:tdd -- --project client --maxWorkers=1","exit":0},{"run":"bunx eslint apps/web/src/lib/features/sync apps/web/src/lib/storage/tauri-bridge.ts apps/web/src/lib/storage/tauri-bridge.test.ts","exit":0},{"run":"cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml && rustfmt --edition 2021 --check apps/desktop/src-tauri/src/commands/sync.rs","exit":0},{"run":"bun run --cwd apps/web check-types","exit":0},{"run":"bun run --cwd apps/web build","exit":0},{"run":"node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/completed/0019-sincronizacao-local-first-automerge/spec.md","exit":0},{"run":"node .agents/skills/specsfy-05-tasks/scripts/validate_interface_tasks.mjs specs/completed/0019-sincronizacao-local-first-automerge/spec.md","exit":0},{"run":"node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/completed/0019-sincronizacao-local-first-automerge/spec.md apps/web/src/lib/features/sync --kinds US,FR,NFR,AC --full-chain","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check"}]} -->
+  <!-- specsfy:evidence {"task":"T045","refs":["US-001","US-002","US-003","US-004","FR-001","FR-002","FR-003","FR-004","FR-005","FR-006","FR-007","NFR-001","NFR-002","NFR-003","NFR-004","NFR-005","AC-001","AC-002","AC-003","AC-004","AC-005","AC-006","AC-007","AC-008","AC-009","AC-010","AC-011","AC-012","AC-013","AC-014","AC-015","AC-016","AC-017","AC-018","AC-019","AC-020","AC-021","AC-022","AC-023","AC-024","AC-025","AC-026","AC-027","AC-028","AC-029","AC-030","AC-031","AC-032","AC-033"],"files":["apps/web/src/lib/features/sync","apps/sync-api","apps/web/src/lib/features/notes/notes-repository.ts","apps/desktop/src-tauri/src/commands/sync.rs",".specsfy/DATABASE.md",".specsfy/STACK.md","docs/",".specsfy/PACKAGES.md"],"commands":[{"run":"bun run --cwd apps/sync-api test","exit":0},{"run":"bun run --cwd apps/sync-api check-types","exit":0},{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/sync","exit":0},{"run":"bun run --cwd apps/web check-types","exit":0},{"run":"bun run --cwd apps/web build","exit":0},{"run":"bunx eslint apps/web/src/lib/features/sync apps/web/src/lib/features/notes/notes-repository.ts","exit":0},{"run":"bun run --cwd apps/sync-api db:migrate:local","exit":0},{"run":"bunx wrangler deploy --config apps/sync-api/wrangler.jsonc --dry-run","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project . --check","exit":0},{"run":"node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/in-progress/0019-sincronizacao-local-first-automerge/spec.md","exit":0},{"run":"node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/in-progress/0019-sincronizacao-local-first-automerge/spec.md","exit":0},{"run":"node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/in-progress/0019-sincronizacao-local-first-automerge/spec.md apps --kinds US,FR,NFR,AC --full-chain --allow-orphans","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check","exit":0}]} -->
 
 ### 15. Ordem de execução
 
 - Caminho crítico: T001/T002/T014/T016 → T031 → T032 [MIGRATION] → T033/T034/T035/T036 → T037/T038/T039/T040 → T041/T042/T043/T044 → T045.
 - Tarefas paralelas: T001–T030 podem ser materializadas em paralelo por arquivo/seam; T037, T038 e T039 podem ser implementadas em paralelo após os contratos.
 - Estratégia de MVP: backend local comum com notas em `app.sqlite`/IndexedDB,
-  registry, sync por documento, WebSocket opt-in, aplicação segura de snapshots,
+  API HTTPS incremental com push/pull e cursor, aplicação segura de revisões,
   exportação/importação explícita, policy de peer e configuração mínima;
-  compactação avançada e transports adicionais ficam posteriores.
+  colaboração WebSocket, compactação avançada e transports adicionais ficam
+  posteriores.
 
 ## Ato III — Entregar e validar
 
@@ -1395,7 +1532,8 @@ As tarefas T041–T044 mantêm projeções derivadas sem criar fonte normativa p
 - Merge semântico de texto pode divergir mesmo com convergência CRDT → bridge,
   cópias recuperáveis e revisão explícita.
 - Crescimento do histórico → snapshots, compactação observável e limites.
-- Relay inseguro ou indisponível → opt-in, TLS/auth exigidos, fallback local.
+- API insegura ou indisponível → opt-in, TLS/auth exigidos, fallback local e
+  retry limitado.
 - Dois backends divergentes → contrato de adapters, fixtures equivalentes,
   migrations versionadas e paridade de notas/estado entre `app.sqlite` e
   IndexedDB.
@@ -1405,7 +1543,8 @@ As tarefas T041–T044 mantêm projeções derivadas sem criar fonte normativa p
 - A pessoa aceita que Automerge seja operacional, que `app.sqlite` no Tauri e
   IndexedDB no PWA sejam os backends das notas e que Markdown/JSON sejam a
   saída portátil principal e uma entrada explícita de migration/recovery.
-- O primeiro transporte remoto será WebSocket configurável; outros são extensões.
+- O primeiro transporte remoto será HTTPS incremental configurável; WebSocket e
+  colaboração em tempo real são extensões posteriores.
 - O PWA não depende de servidor interno persistente; service worker permanece
   app shell/cache, não backend de sync.
 
@@ -1420,7 +1559,7 @@ As tarefas T041–T044 mantêm projeções derivadas sem criar fonte normativa p
   bruto; snapshots são aplicados ao backend operacional e as projeções são
   reconstruíveis.
 - **DEC-004**: transportes são adapters opcionais — PWA/Tauri mantêm uso local;
-  WebSocket é extensão, não fundamento de disponibilidade.
+  HTTP incremental é extensão, não fundamento de disponibilidade.
 - **DEC-005**: relay próprio em produção — servidor público/exemplo não oferece
   garantias de segurança e confiabilidade.
 - **DEC-006**: credenciais, paths, handles, catálogo, cache, `.openbible/index.sqlite`
@@ -1434,6 +1573,12 @@ As tarefas T041–T044 mantêm projeções derivadas sem criar fonte normativa p
 - **DEC-009**: Markdown/JSON são exportações portáteis e entradas explícitas de
   migração/recovery; `.openbible/index.sqlite`, filesystem e OPFS não são
   backends ativos.
+- **DEC-010**: a primeira sincronização entre desktop e mobile usa API HTTPS
+  com D1, revisões e cursor; essa escolha reduz operação e funciona em
+  foreground/background limitado sem exigir um processo WebSocket persistente.
+- **DEC-011**: a API HTTP desta fatia não tenta imitar o protocolo de rede do
+  Automerge; o `WebSocketClientAdapter` e o servidor oficial ficam como caminho
+  futuro para convergência CRDT remota e colaboração em tempo real.
 
 ### 18. Definition of Done
 
