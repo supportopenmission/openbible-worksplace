@@ -11,6 +11,8 @@ manifests dos workspaces.
 - Gravar tema, tela inicial e última leitura em `.openbible/preferences.json` no workspace; o `localStorage` é cache de primeiro paint, não a fonte File Over Apps.
 - No desktop Tauri, a pasta escolhida pela pessoa é a raiz única de dados Files Over App; `localStorage` pode guardar somente o ponteiro do caminho para reabrir o workspace, nunca notas, configurações ou bancos fora dessa pasta.
 
+- Na SPEC-0016, o registro operacional de workspaces vive em um único `app.sqlite` por instalação Tauri e em um IndexedDB versionado por origem no PWA; toda operação é escopada por `workspaceId`. O SQLite bíblico WASM continua somente leitura, e a fonte legada só é usada para migração/recovery.
+
 - Revalidar a permissão da pasta local após reload e pedir `navigator.storage.persist()` no origin para reduzir eviction do OPFS e do IndexedDB.
 
 - Manter a aplicação executável via `localhost` e hospedável na Cloudflare como PWA mobile, usando APIs web para importação de arquivos SQLite e acesso a URLs de bancos bíblicos.
@@ -43,3 +45,13 @@ manifests dos workspaces.
 ## Regras específicas do projeto
 
 - Aceitar bancos bíblicos SQLite importados por arrastar e soltar quando compatíveis com o padrão do OpenLP, ou acessados por URL de distribuição como Cloudflare R2.
+
+## Workspaces
+
+- O backend normativo é SQLite no Tauri e IndexedDB no PWA; o catálogo local é apenas uma projeção de reencontro e não pode substituir os registros do banco.
+
+- Markdown e PDF são formatos de exportação das notas; o parser/exportador é uma fatia posterior e não deve ser confundido com a persistência do registro de workspace.
+
+- Manter no máximo uma referência local por workspaceId no catálogo; colisão de ID se resolve atualizando a localização existente ou criando cópia independente com novo ID.
+
+- Remover da lista nunca apaga arquivos; excluir workspace exige raiz dedicada com marcador gerenciado comprovado e bloqueia sem opção de forçar em qualquer dúvida.

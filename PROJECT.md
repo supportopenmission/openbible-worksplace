@@ -23,11 +23,15 @@ As capacidades principais planejadas são:
 
 - biblioteca de estudos e sermões;
 - construtor estruturado de sermões, inspirado em Sermonary e Logos Sermon Builder;
+- múltiplos workspaces no modelo de vaults: vários registros escopados por `workspaceId`, exatamente um workspace ativo por janela, seletor no shell desktop e mobile, SQLite `app.sqlite` no Tauri, IndexedDB por origem no PWA e catálogo local de reencontro;
 - leitor da Bíblia, com seleção de versículos, destaques persistidos, consulta workspace-wide em sheet e em `/highlights`, ícone de nota no versículo, cópia e criação de nota ao lado da leitura;
 - notas simples;
 - importação de bancos SQLite compatíveis com o padrão do OpenLP por arrastar e soltar;
 - acesso a bancos SQLite por URL de distribuição, como uma URL do Cloudflare R2;
-- índices, destaques e dados auxiliares mantidos em SQLite local.
+- índices, destaques e dados auxiliares mantidos no backend operacional local:
+  SQLite `app.sqlite` no Tauri e IndexedDB versionado no PWA.
+- notas exportáveis em Markdown e PDF; ambos são artefatos derivados do snapshot
+  e não substituem o registro primário.
 - app shell instalável como PWA standalone, com cache das rotas locais já carregadas para uso sem rede.
 - tema claro/escuro persistido localmente e navegação por Sidebar no desktop ou barra inferior no mobile.
 - interfaces orientadas pelo guideline `https://vercel.com/design.md`, com Geist local, superfícies contidas e estados de interação explícitos.
@@ -35,9 +39,11 @@ As capacidades principais planejadas são:
 ## Limites
 
 O MVP não terá autenticação, colaboração entre pessoas ou uma conta centralizada.
-Sermões e notas terão Markdown com YAML frontmatter como fonte primária; SQLite
-local será auxiliar para índices e destaques. Retenção, backup e sincronização
-entre dispositivos ainda não foram definidos.
+O registro operacional de workspaces usa SQLite no desktop Tauri e IndexedDB no
+PWA, com `workspaceId` como escopo. A fonte legada de pasta/manifesto é mantida
+para migração e recovery. Sermões e notas terão Markdown com YAML frontmatter
+como fonte portátil; PDF é exportação, não o banco de origem. Retenção, backup e
+sincronização entre dispositivos ainda não foram definidos.
 
 ## Contexto técnico
 
@@ -50,15 +56,25 @@ do SvelteKit. O app shell usa manifesto, service worker versionado, safe area e
 tokens claros/escuros em `apps/web/src/app.css`; conteúdo de domínio continua
 dependente do armazenamento local já configurado. A versão nativa para macOS é
 empacotada em `apps/desktop` com Tauri 2, backend Rust e SQLite via `rusqlite`,
-usando o target universal da Apple e a pasta escolhida pela pessoa como raiz
-única dos dados nativos (modelo Files Over App).
+usando o target universal da Apple. O registro de workspaces vive em
+`app.sqlite`; a pasta escolhida permanece como fonte legada/autoral durante a
+migração e recovery.
 Detalhes verificáveis ficam em `.specsfy/STACK.md` e `.specsfy/DATABASE.md`.
 
 O código mantém a importação local de bancos SQLite e o leitor bíblico em `/bible`.
 A partir do capítulo aberto a pessoa seleciona um intervalo contínuo de versículos,
-aplica destaques no SQLite auxiliar, copia a referência ou o texto e cria uma nota
-com fence `:::verse` sem sair da rota. O workspace vive em pasta local (File System
-Access API) ou OPFS, com `.openbible/config.json`, `.openbible/preferences.json` e
-um `index.sqlite` auxiliar (`note_verse_ref` e `reader_highlight`).
-A aplicação web contém as rotas `/`, `/bible`, `/sermons`, `/study` e `/config`. A rota `/` é a home operacional com Continuar leitura, ações rápidas e recentes, sem redirecionamento por preferência. Tema e última leitura são gravados no
-workspace e cacheados no `localStorage` só para o primeiro paint.
+aplica destaques no backend operacional (SQLite no Tauri ou IndexedDB no PWA),
+consulta a projeção em `/highlights`, copia a referência ou o texto e cria uma nota
+com fence `:::verse` sem sair da rota. O workspace legado pode ser reencontrado por
+File System Access API ou OPFS, com `.openbible/config.json`,
+`.openbible/preferences.json` e um `index.sqlite` auxiliar (`note_verse_ref` e
+`reader_highlight`); essa fonte é preservada para migração/recovery enquanto o
+registro operacional usa o banco do runtime.
+A aplicação web contém as rotas `/`, `/bible`, `/notes`, `/highlights`, `/sermons`,
+`/study` e `/config`. A rota `/` é a home operacional com Continuar leitura,
+ações rápidas e recentes, sem redirecionamento por preferência. Notas usam editor
+Milkdown com blocos ricos portáteis e exportação derivada. Tema e última leitura
+são gravados no workspace e cacheados no `localStorage` só para o primeiro paint.
+Cada janela trabalha sobre exatamente um workspace ativo (barreira de autosave e
+token de geração na troca); o catálogo de vaults é local ao dispositivo e não
+sincronizável, enquanto o manifesto `.openbible/config.json` viaja com a raiz.

@@ -14,23 +14,26 @@ Relação: relaciona cada arquivo observado à sua superfície.
 | Outras fontes | apps/desktop/src-tauri/src/commands/lock_test.rs | — |
 | Outras fontes | apps/desktop/src-tauri/src/commands/migration.rs | — |
 | Outras fontes | apps/desktop/src-tauri/src/commands/mod.rs | — |
-| Outras fontes | apps/desktop/src-tauri/src/commands/workspace.rs | FORMAT_VERSION, MigrationState |
+| Outras fontes | apps/desktop/src-tauri/src/commands/workspace.rs | FORMAT_VERSION, MigrationState, MANAGED_TOP_LEVEL |
+| Outras fontes | apps/desktop/src-tauri/src/database.rs | MIGRATION_001, MIGRATION_002, APP_DATABASE_FILE, CURRENT_SCHEMA_VERSION, DatabaseError |
 | Outras fontes | apps/desktop/src-tauri/src/lib.rs | — |
 | Outras fontes | apps/desktop/src-tauri/src/main.rs | — |
-| Outras fontes | apps/web/.svelte-kit/ambient.d.ts | SHELL, COLORTERM, TERM_PROGRAM_VERSION, ORCA_AGENT_HOOK_ENDPOINT, NODE, VSSCRIPT_PATH, ORCA_AGENT_HOOK_TOKEN, FORCE_HYPERLINK |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/0.CXedAlmI.css | — |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/2.5HERA0vp.css | — |
+| Outras fontes | apps/web/.svelte-kit/ambient.d.ts | NODE_ENV, GUM_TABLE_CELL_FOREGROUND, GUM_SPIN_SPINNER_FOREGROUND, GUM_LOG_SEPARATOR_BACKGROUND, DEBUGINFOD_URLS, GUM_SPIN_SPINNER_BACKGROUND, GUM_PAGER_MATCH_HIGH_FOREGROUND, GUM_CHOOSE_SELECTED_FOREGROUND |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/0.BkfsOC6k.css | — |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/2.SrOwNqhZ.css | — |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/3.Btp-QOwP.css | — |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/4.BVlYTUl5.css | — |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/5.K4BhZbf6.css | — |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/6.BhpxEd8l.css | — |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/4.DVZkycCw.css | — |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/5.ClbGh5_t.css | — |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/6.DEycNB_8.css | — |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/7.D6DmNWEi.css | — |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/8.B63EnBSL.css | — |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/8.pkZRyyZQ.css | — |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/HighlightsList.Cm1TLr5U.css | — |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/MilkdownNoteEditor.0v91Hbhz.css | — |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/LocalBibleImport.XD-HZ-08.css | — |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/PageHeader.D4E2QHx-.css | — |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/ProductPage.Bt54Nk6E.css | — |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/RemoteBibleImport.CJit26Yt.css | — |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/drawer.gmmBdIMB.css | — |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/note-editor-layout.DYFWr0Jd.css | — |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/sql-asm-debug.DaWLdCIQ.js | that, might, before, and, humanReadableVersionToPacked, to, parameter, initSqlJs |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/sql-asm-memory-growth.DGFve7n6.js | that, might, before, and, a, b, c, d |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/sql-asm.0eXDphpc.js | that, might, before, and, a, b, c, d |
@@ -43,68 +46,75 @@ Relação: relaciona cada arquivo observado à sua superfície.
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/worker.sql-wasm-debug.DLKQiAMV.js | that, might, before, and, humanReadableVersionToPacked, to, parameter, initSqlJs |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/worker.sql-wasm.DYUeLTVh.js | that, might, before, and, a, b, c, d |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/1DBITjxg.js | ie, O, ae, oe, se, ce, ue, de |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/5NoQWNqO.js | i |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/BB2HjVbl.js | ge, _e, ve, be, M, Se, Ce, we |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/BFOJwu7o.js | w, D, k, M |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/BMke3hrD.js | _, v, fe, pe, me, he, y, _e |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/BQkZTV5y.js | i |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/Bjsluw7y.js | i, o, c, u |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/9KLOEPD1.js | i |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/B8zBbs5M.js | e, W, q, X, te, ie, oe, ce |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/BFqLT5rb.js | e, did, t, c, u |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/BWnvU8aU.js | — |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/BX3ZwZw-.js | i |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/BdwQTHhh.js | — |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/Bjy-W4x2.js | — |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/BlUo8n2h.js | Te, Ee, De, Oe, ke, Ae, je, Me |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/BmNJ5s-q.js | w, D, k, M |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/BmlnLS5T.js | — |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/BnG7QOZ3.js | i, o |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/BpsQVbhW.js | extends, d, f, p, m, h, ee, g |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/BteGJAVq.js | g |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/BqXT6vlV.js | i |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/BuwPWdmm.js | i |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/Bv3gPnBZ.js | M, P, R, B, U, G, q |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/Bv_krd4Y.js | ce, le, ue, fe, me, he, U, ge |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/Byvb8Z29.js | g, v, S, C, T, D, k, A |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/C6_ecF2M.js | extends, M, N, P, F, oe, s, I |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/C6kKWOVp.js | — |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CBDFUqyh.js | we, n, Te, Ee, De, v, Ne, Pe |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/C0BA9pyZ.js | g |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/C0y2zCMZ.js | — |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/C3ttdZN4.js | i |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CBOJ6VZd.js | x, ee, te, ne, re, extends, ke, Ae |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CLcp5e-j.js | — |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CPDQ971g.js | d |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CEEVWI2k.js | we, n, Te, Ee, De, v, Ne, Pe |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CK5t3NLj.js | i |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CP_RpNRK.js | d |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CWFtv7TX.js | — |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CYG96eR-.js | P, qr, Qr |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CezfeWz5.js | _e, ve, ye, be, S, xe, Se, C |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CcWQHMaN.js | s, c, l, u, d, f, p, m |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CcejXet7.js | _e, ve, ye, be, S, xe, Se, C |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CgBeXPNZ.js | i |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CpBBVKwe.js | n, a, o, s, c, l |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CpEpi5hM.js | i |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/Cr_2QIWY.js | Ce, Te, Ee, je, V, H, U, Me |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CwekSybm.js | z, e, K, Y, Q, re, ae, se |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DET9c5CK.js | i |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CvUK9g_d.js | s, l, d, h, g, _, v, y |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/CxK0ARrr.js | i |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/D1WYl6Jo.js | i |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/D5Mdq4X5.js | extends, a, o, s, c, l, u, d |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DDtsh7HD.js | r, i, a, o, s, c, l, ee |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DDy9zqwP.js | Ee, Oe, Y, X, ke, e, Re, Ve |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DFfMaMZh.js | e, t, n, r, i, s, c, extends |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DNmOs2We.js | i |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DcGGszRR.js | t |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DhY3RSBp.js | T, O |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/Dj_BZF8L.js | H, he, ge, _e, be, Se, Te, X |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DoA9E897.js | i |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DoytxWU0.js | extends, i, a |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DpaWrP4M.js | we, Oe, Ae, Y, X, je, e, Be |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DrZHz30Z.js | s, l, d, h, g, _, v, y |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DtZGErBP.js | — |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DyOLjaz1.js | f, p, m, h, g, _, v, b |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DFseWa3q.js | Ce, we, Te, Ee, De, Oe, D, ke |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DN3u_JEo.js | K, ge, ve, be, Se, Te, Oe, ke |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DU5DB_FQ.js | me, he, _e, N, ye, be, xe, Se |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DXFc9pL5.js | i |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/DYFjIceZ.js | un, extends, e, Mn, Fn, In, Bn, Un |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/D_GBueqY.js | M, z, B, V |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/D_IdH-dZ.js | Ce, Oe, V, H, U, ke, Ae, W |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/HCA8t2y4.js | Qe, Tt, Qr |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/HclGiUj8.js | c, l, o |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/IM5uO4A4.js | r, i, a, o |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/L7VJ1JKs.js | i |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/LgUlxJLI.js | i, o, c, u |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/PfXBdXub.js | extends, M, N, P, F, oe, s, I |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/SH4Btrna.js | e, t, n, r, i, must, in, C |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/TXDQb4w9.js | extends, d, f, p, m, h, ee, g |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/U0pFXVLc.js | a, o, s, c, l, u, d, f |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/UnclcBnC.js | p |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/V1WKwm-t.js | i |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/_4k1P8MH.js | mn, gn, vn, bn, Sn, wn, En, On |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/rV7tuKFi.js | n, r, i, a, o, s, c, l |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/vJfSGwW4.js | — |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/bE3pmSku.js | t |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/esxY9yZY.js | extends, i, a |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/jje4k_YL.js | Te, Ee, De, Oe, ke, Ae, je, Me |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/m5Ftb7rD.js | i |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/mN9Za5nj.js | extends, l, u, d, f, p, m, h |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/nadLiKWh.js | T, O |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/t70agLXX.js | u, d |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/xihTtKlq.js | — |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/chunks/z5L5hmsE.js | M, P, R, B, U, G, q |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/entry/app.C7LJUh7k.js | k |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/entry/start.D1Wmglm7.js | — |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/0.DV_XuGR4.js | Ee, Oe, Ae, Me, Pe, Ie, c, Ke |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/1.BAAR_1Bg.js | f |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/10.BkbR2xEP.js | t |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/2.BgL2PHoM.js | Ie, Re, ze, Be, He, M, P, F |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/3.CwoluXKk.js | ke, je, Ne, Fe, Ie, Le, it, Q |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/4.DIUPv-yr.js | It, Rt, J, Vt, Ht, Wt, Kt, qt |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/5.D5X-e6Xd.js | Ce, Te, De, ke, je, Ne, Fe, Le |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/6.CwzcjHmj.js | P, B, V, H |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/7.Dr0o3RlV.js | E, k, y |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/8.DrJh5G1H.js | Me, R, qe, q, Je, Ye, Xe, Ze |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/9.V93MlMsw.js | t |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/entry/app.De3kAVp_.js | k |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/entry/start.BMxYI1SA.js | — |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/0.B-AfovaB.js | ft, mt, gt, vt, bt, St, wt, Et |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/1.DcU7D3S8.js | f |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/10.CrIvhvEF.js | t |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/2.Cb5qik-Y.js | je, N, P, F, Ie, Re, Be, He |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/3.CQP_XjIc.js | ke, je, Ne, Fe, Ie, Le, it, xe |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/4.Drz9Wgv9.js | Rt, q, Vt, Ht, Y, Gt, Jt, X |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/5.Cw6eFTSf.js | st, lt, dt, pt, ht, _t, yt, xt |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/6.BIOdbeKF.js | M, U, X, se, ce, le |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/7.C3T0uUCB.js | E, k, y |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/8.BzOWvB6O.js | He, We, Ke, Ze, y, J, tt, nt |
+| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/9.DmH--fhm.js | t |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_worker.js | e, t, r, o |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/service-worker.js | c, l |
 | Outras fontes | apps/web/.svelte-kit/cloudflare-tmp/manifest.js | __memo |
@@ -139,19 +149,21 @@ Relação: relaciona cada arquivo observado à sua superfície.
 | Outras fontes | apps/web/.svelte-kit/generated/server/internal.js | get_hooks |
 | Outras fontes | apps/web/.svelte-kit/generated/shared/error-template.js | — |
 | Outras fontes | apps/web/.svelte-kit/non-ambient.d.ts | HTMLAttributes, AppTypes |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/0.CXedAlmI.css | — |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/2.5HERA0vp.css | — |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/0.BkfsOC6k.css | — |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/2.SrOwNqhZ.css | — |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/3.Btp-QOwP.css | — |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/4.BVlYTUl5.css | — |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/5.K4BhZbf6.css | — |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/6.BhpxEd8l.css | — |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/4.DVZkycCw.css | — |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/5.ClbGh5_t.css | — |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/6.DEycNB_8.css | — |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/7.D6DmNWEi.css | — |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/8.B63EnBSL.css | — |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/8.pkZRyyZQ.css | — |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/HighlightsList.Cm1TLr5U.css | — |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/MilkdownNoteEditor.0v91Hbhz.css | — |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/LocalBibleImport.XD-HZ-08.css | — |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/PageHeader.D4E2QHx-.css | — |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/ProductPage.Bt54Nk6E.css | — |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/RemoteBibleImport.CJit26Yt.css | — |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/drawer.gmmBdIMB.css | — |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/note-editor-layout.DYFWr0Jd.css | — |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/sql-asm-debug.DaWLdCIQ.js | that, might, before, and, humanReadableVersionToPacked, to, parameter, initSqlJs |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/sql-asm-memory-growth.DGFve7n6.js | that, might, before, and, a, b, c, d |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/sql-asm.0eXDphpc.js | that, might, before, and, a, b, c, d |
@@ -164,101 +176,89 @@ Relação: relaciona cada arquivo observado à sua superfície.
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/worker.sql-wasm-debug.DLKQiAMV.js | that, might, before, and, humanReadableVersionToPacked, to, parameter, initSqlJs |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/assets/worker.sql-wasm.DYUeLTVh.js | that, might, before, and, a, b, c, d |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/1DBITjxg.js | ie, O, ae, oe, se, ce, ue, de |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/5NoQWNqO.js | i |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/BB2HjVbl.js | ge, _e, ve, be, M, Se, Ce, we |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/BFOJwu7o.js | w, D, k, M |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/BMke3hrD.js | _, v, fe, pe, me, he, y, _e |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/BQkZTV5y.js | i |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/Bjsluw7y.js | i, o, c, u |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/9KLOEPD1.js | i |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/B8zBbs5M.js | e, W, q, X, te, ie, oe, ce |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/BFqLT5rb.js | e, did, t, c, u |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/BWnvU8aU.js | — |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/BX3ZwZw-.js | i |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/BdwQTHhh.js | — |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/Bjy-W4x2.js | — |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/BlUo8n2h.js | Te, Ee, De, Oe, ke, Ae, je, Me |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/BmNJ5s-q.js | w, D, k, M |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/BmlnLS5T.js | — |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/BnG7QOZ3.js | i, o |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/BpsQVbhW.js | extends, d, f, p, m, h, ee, g |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/BteGJAVq.js | g |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/BqXT6vlV.js | i |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/BuwPWdmm.js | i |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/Bv3gPnBZ.js | M, P, R, B, U, G, q |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/Bv_krd4Y.js | ce, le, ue, fe, me, he, U, ge |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/Byvb8Z29.js | g, v, S, C, T, D, k, A |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/C6_ecF2M.js | extends, M, N, P, F, oe, s, I |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/C6kKWOVp.js | — |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CBDFUqyh.js | we, n, Te, Ee, De, v, Ne, Pe |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/C0BA9pyZ.js | g |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/C0y2zCMZ.js | — |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/C3ttdZN4.js | i |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CBOJ6VZd.js | x, ee, te, ne, re, extends, ke, Ae |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CLcp5e-j.js | — |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CPDQ971g.js | d |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CEEVWI2k.js | we, n, Te, Ee, De, v, Ne, Pe |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CK5t3NLj.js | i |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CP_RpNRK.js | d |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CWFtv7TX.js | — |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CYG96eR-.js | P, qr, Qr |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CezfeWz5.js | _e, ve, ye, be, S, xe, Se, C |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CcWQHMaN.js | s, c, l, u, d, f, p, m |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CcejXet7.js | _e, ve, ye, be, S, xe, Se, C |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CgBeXPNZ.js | i |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CpBBVKwe.js | n, a, o, s, c, l |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CpEpi5hM.js | i |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/Cr_2QIWY.js | Ce, Te, Ee, je, V, H, U, Me |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CwekSybm.js | z, e, K, Y, Q, re, ae, se |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DET9c5CK.js | i |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CvUK9g_d.js | s, l, d, h, g, _, v, y |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/CxK0ARrr.js | i |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/D1WYl6Jo.js | i |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/D5Mdq4X5.js | extends, a, o, s, c, l, u, d |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DDtsh7HD.js | r, i, a, o, s, c, l, ee |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DDy9zqwP.js | Ee, Oe, Y, X, ke, e, Re, Ve |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DFfMaMZh.js | e, t, n, r, i, s, c, extends |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DNmOs2We.js | i |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DcGGszRR.js | t |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DhY3RSBp.js | T, O |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/Dj_BZF8L.js | H, he, ge, _e, be, Se, Te, X |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DoA9E897.js | i |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DoytxWU0.js | extends, i, a |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DpaWrP4M.js | we, Oe, Ae, Y, X, je, e, Be |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DrZHz30Z.js | s, l, d, h, g, _, v, y |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DtZGErBP.js | — |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DyOLjaz1.js | f, p, m, h, g, _, v, b |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DFseWa3q.js | Ce, we, Te, Ee, De, Oe, D, ke |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DN3u_JEo.js | K, ge, ve, be, Se, Te, Oe, ke |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DU5DB_FQ.js | me, he, _e, N, ye, be, xe, Se |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DXFc9pL5.js | i |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/DYFjIceZ.js | un, extends, e, Mn, Fn, In, Bn, Un |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/D_GBueqY.js | M, z, B, V |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/D_IdH-dZ.js | Ce, Oe, V, H, U, ke, Ae, W |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/HCA8t2y4.js | Qe, Tt, Qr |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/HclGiUj8.js | c, l, o |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/IM5uO4A4.js | r, i, a, o |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/L7VJ1JKs.js | i |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/LgUlxJLI.js | i, o, c, u |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/PfXBdXub.js | extends, M, N, P, F, oe, s, I |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/SH4Btrna.js | e, t, n, r, i, must, in, C |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/TXDQb4w9.js | extends, d, f, p, m, h, ee, g |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/U0pFXVLc.js | a, o, s, c, l, u, d, f |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/UnclcBnC.js | p |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/V1WKwm-t.js | i |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/_4k1P8MH.js | mn, gn, vn, bn, Sn, wn, En, On |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/rV7tuKFi.js | n, r, i, a, o, s, c, l |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/vJfSGwW4.js | — |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/bE3pmSku.js | t |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/esxY9yZY.js | extends, i, a |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/jje4k_YL.js | Te, Ee, De, Oe, ke, Ae, je, Me |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/m5Ftb7rD.js | i |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/mN9Za5nj.js | extends, l, u, d, f, p, m, h |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/nadLiKWh.js | T, O |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/t70agLXX.js | u, d |
 | Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/xihTtKlq.js | — |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/chunks/z5L5hmsE.js | M, P, R, B, U, G, q |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/entry/app.C7LJUh7k.js | k |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/entry/start.D1Wmglm7.js | — |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/0.DV_XuGR4.js | Ee, Oe, Ae, Me, Pe, Ie, c, Ke |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/1.BAAR_1Bg.js | f |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/10.BkbR2xEP.js | t |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/2.BgL2PHoM.js | Ie, Re, ze, Be, He, M, P, F |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/3.CwoluXKk.js | ke, je, Ne, Fe, Ie, Le, it, Q |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/4.DIUPv-yr.js | It, Rt, J, Vt, Ht, Wt, Kt, qt |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/5.D5X-e6Xd.js | Ce, Te, De, ke, je, Ne, Fe, Le |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/6.CwzcjHmj.js | P, B, V, H |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/7.Dr0o3RlV.js | E, k, y |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/8.DrJh5G1H.js | Me, R, qe, q, Je, Ye, Xe, Ze |
-| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/9.V93MlMsw.js | t |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/entry/app.De3kAVp_.js | k |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/entry/start.BMxYI1SA.js | — |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/0.B-AfovaB.js | ft, mt, gt, vt, bt, St, wt, Et |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/1.DcU7D3S8.js | f |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/10.CrIvhvEF.js | t |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/2.Cb5qik-Y.js | je, N, P, F, Ie, Re, Be, He |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/3.CQP_XjIc.js | ke, je, Ne, Fe, Ie, Le, it, xe |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/4.Drz9Wgv9.js | Rt, q, Vt, Ht, Y, Gt, Jt, X |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/5.Cw6eFTSf.js | st, lt, dt, pt, ht, _t, yt, xt |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/6.BIOdbeKF.js | M, U, X, se, ce, le |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/7.C3T0uUCB.js | E, k, y |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/8.BzOWvB6O.js | He, We, Ke, Ze, y, J, tt, nt |
+| Outras fontes | apps/web/.svelte-kit/output/client/_app/immutable/nodes/9.DmH--fhm.js | t |
 | Outras fontes | apps/web/.svelte-kit/output/client/service-worker.js | c, l |
 | Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/HighlightsList.Cm1TLr5U.css | — |
-| Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/MilkdownNoteEditor.BU2naCQM.css | — |
+| Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/LocalBibleImport.XD-HZ-08.css | — |
 | Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/PageHeader.D4E2QHx-.css | — |
 | Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/ProductPage.Bt54Nk6E.css | — |
 | Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/RemoteBibleImport.CJit26Yt.css | — |
-| Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_layout.BDbc639r.css | — |
-| Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_layout.CEuOky0z.css | — |
-| Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.BgJqF6wV.css | — |
-| Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.BhpxEd8l.css | — |
+| Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_layout.BDzbcCNN.css | — |
+| Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_layout.CDtCSbxb.css | — |
 | Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.Btp-QOwP.css | — |
-| Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.C1aAUW6k.css | — |
+| Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.CV9ypCvY.css | — |
 | Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.CsG63tbc.css | — |
-| Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.Dc4IMoxB.css | — |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/HighlightsList.js | Arrow_up_right, Empty_content, Empty_description, Empty_header, Empty_media, Empty_title, Empty, rangeCoversVerse |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/Icon.js | prefersDark, resolveTheme, watchSystemTheme, browserStorage, readTheme, saveTheme, applyTheme, isLocalhost |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/MilkdownNoteEditor.js | Bold, Chevron_down, Chevron_up, Heading_1, Italic, List_ordered, List, Panel_top |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/PageHeader.js | PageHeader |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/ProductPage.js | Sparkles, ProductPage |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/RemoteBibleImport.js | extends, isCorsLikeFailure, downloadWithProgress, assertOpenLpSchema, decodeConfig, installRemoteBibles, worker, RemoteBibleImport |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/arrow-left.js | Arrow_left |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/bible-reader.js | — |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/bible-reader2.js | locateWasm, getSql, resultRows, tableColumns, validateOpenLpSchema, readBooks, readVersionName, databaseFor |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/book-open.js | Book_open |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/button.js | cn, Button |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/client.js | notifiable_store, notify, set, subscribe, create_updated_store, Page, Navigating, Updated |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/daily-reminder.js | Download, getAppUpdateState, openAppUpdateDialog, markPwaUpdateAvailable, checkForAppUpdate, installAppUpdate, storageGet, isValidTime |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/dialog.js | X, isFunction, isObject, isClassValue, boxWith, isBox, isWritableBox, boxFrom |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/env.js | set_env |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/exports.js | compact, hash, validator, validate, hint_for_supported_files |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/highlighter.js | Highlighter |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/input-group.js | Input_group_addon, Input_group_button, Input_group_input, Input_group |
-| Outras fontes | apps/web/.svelte-kit/output/server/chunks/input.js | Input |
+| Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.DEycNB_8.css | — |
+| Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.DVoyJ9ww.css | — |
+| Outras fontes | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.Df66ovmK.css | — |
 <!-- specsfy:documentator:end -->
 
 ## Fontes de aplicação relevantes

@@ -46,8 +46,10 @@ manifests.
   isoladamente porque `typescript-eslint` 8.67.0 ainda não suporta a API do
   TypeScript 7. O lint de Svelte permanece sintaxe-aware até essa compatibilidade
   ser disponibilizada.
-- SQLite local e Markdown com YAML frontmatter são decisões de produto para a
-  próxima implementação, não tecnologias já presentes no repositório.
+- SQLite local e Markdown com YAML frontmatter são decisões de produto; a
+  fundação de workspaces da SPEC-0016 já materializa `app.sqlite` no Tauri e
+  `openbible-workspace` em IndexedDB no PWA. O Markdown continua a fonte
+  portátil das notas futuras e PDF é uma saída de exportação posterior.
 - A aplicação deve funcionar via `localhost` e ser hospedada na Cloudflare como
   PWA mobile usando `@sveltejs/adapter-cloudflare` como adapter oficial do
   SvelteKit; a aplicação web já está configurada para esse adapter em
@@ -75,3 +77,9 @@ manifests.
   testes legados até sua remoção segura após a regressão completa.
 - O seletor de versículos usa os primitives locais `Select` e `Drawer` do
   shadcn-svelte; o Drawer depende de `vaul-svelte` para a interação móvel.
+- A SPEC-0016 não adicionou dependências: reutiliza `vaul-svelte`/`Drawer` para
+  o seletor e os dialogs de workspaces no mobile, APIs de plataforma para
+  IndexedDB versionado no PWA e o backend Tauri/Rust existente com SQLite
+  `app.sqlite` e facade IPC tipada. File System Access/OPFS e o manifesto são
+  fontes legadas de migração/recovery, não o backend normativo do registro.
+  `package.json`, `bun.lock` e `Cargo.toml` seguem inalterados.

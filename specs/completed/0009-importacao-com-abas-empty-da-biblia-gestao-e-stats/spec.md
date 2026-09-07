@@ -7,8 +7,8 @@
 | Slug | 0009-importacao-com-abas-empty-da-biblia-gestao-e-stats |
 | Status | Complete |
 | Effort | 6 |
-| Effort updated at | 2026-09-03 |
-| Effort rationale | Quatro superfícies (onboarding, Bíblia vazia, duas abas de config) + novo primitive Empty + fluxo de exclusão com confirmação + agregação de stats; risco em acessibilidade das Tabs e irreversibilidade da exclusão. |
+| Effort updated at | 2026-09-06 |
+| Effort rationale | Quatro superfícies (onboarding, Bíblia vazia, duas abas de config) + novo primitive Empty + fluxo de exclusão com confirmação + agregação de stats; risco em acessibilidade das Tabs, irreversibilidade da exclusão e compatibilidade com a autoridade SQLite/IndexedDB definida na SPEC-0016. |
 | ClickUp Task | |
 | Milestones | |
 | Definition Gate | Passed |
@@ -16,9 +16,11 @@
 | Delivery Gate | Passed |
 | Evidence Contract | 1 |
 | Interface para pessoas | Sim |
-| Atualizada em | 2026-09-03 |
+| Atualizada em | 2026-09-06 |
 
 ## Ato I — Definir
+
+> **Reabertura de compatibilidade em 2026-09-06:** a finalidade funcional desta spec permanece a mesma, mas a autoridade de persistência de workspace mudou na SPEC-0016. As operações desta fatia continuam lendo Bíblias SQLite e conteúdo do workspace ativo por meio de `WorkspaceStorage`; o registro de identidade, ponteiro ativo e estado operacional do workspace é autoridade do SQLite nativo no Tauri ou do IndexedDB no PWA. `.openbible/config.json` e referências de pasta são fontes legadas de migração/recovery e compatibilidade, não o cadastro global de workspaces.
 
 ### 1. Problema e resultado
 
@@ -32,9 +34,9 @@ A pessoa escolhe o modo de importação por abas no onboarding, encontra um esta
 
 #### Métricas de sucesso
 
-- 100% das alternâncias entre abas de importação preservam o estado de cada modo e ambas instalam em `bibles/`.
-- 100% das exclusões confirmadas removem o arquivo e atualizam lista, catálogo e status; 0 exclusões ocorrem sem confirmação.
-- 100% das contagens de stats conferem com `storage.listFiles` e repositórios na mesma sessão.
+- 100% das alternâncias entre abas de importação preservam o estado de cada modo e ambas instalam a Bíblia no workspace ativo (`workspaceId`), em `bibles/` dentro da fonte de conteúdo compatível.
+- 100% das exclusões confirmadas removem o arquivo do workspace ativo e atualizam lista, catálogo derivado e status; 0 exclusões ocorrem sem confirmação.
+- 100% das contagens de stats conferem com o `WorkspaceStorage` escopado ao workspace ativo (`workspaceId`) na mesma sessão.
 
 ### 2. Research e esclarecimentos
 
@@ -54,6 +56,8 @@ A pessoa escolhe o modo de importação por abas no onboarding, encontra um esta
 - `apps/web/src/lib/features/config/ConfigPage.svelte` — Tabs `Armazenamento`/`Tela inicial`.
 - `apps/web/src/lib/features/notes/NotesList.svelte` — padrão AlertDialog de exclusão com confirmação.
 - `apps/web/src/lib/storage/local-storage.ts`, `opfs-storage.ts` — `deleteFile` existente.
+- `specs/completed/0016-multiplos-workspaces-modelo-vaults/spec.md` — autoridade SQLite/IndexedDB, escopo por `workspaceId` e migração/recovery legado.
+- `.specsfy/DATABASE.md`, `docs/architecture.md` e `docs/database.md` — separação entre registro operacional e conteúdo autoral legado.
 - `apps/web/src/lib/features/bible/bible-reader.ts` — `loadBibleCatalog` e diagnósticos.
 - `PROJECT.md`, `INTERFACE.md`, `DESIGNSYSTEM.MD`, `.specsfy/STACK.md`, `.specsfy/RULES.md`, `.specsfy/DATABASE.md`.
 
@@ -74,6 +78,7 @@ A pessoa escolhe o modo de importação por abas no onboarding, encontra um esta
 - **Q4: o que conta no stats?** → **A:** Bíblias (instaladas + bytes), notas ativas e lixeira, sermões `.md` nas três pastas, bytes = `bibles/` + notas ativas.
 - **Q5: excluir última versão?** → **A:** leitor volta ao vazio; `bibleImportStatus` volta a `pending`.
 - **Q6: onde gerenciar?** → **A:** nova aba `Bíblias` no `/config` (desktop e seção mobile); importação continua em `Armazenamento`.
+- **Q7: qual autoridade esta feature usa após a SPEC-0016?** → **A:** o registro/ponteiro do workspace vem do SQLite nativo ou IndexedDB; a biblioteca de Bíblias e os stats recebem o `WorkspaceStorage` do workspace ativo e continuam tratando `bibles/*.sqlite` como conteúdo SQLite somente leitura. Manifesto/config legado só sustenta migração, recovery e compatibilidade do status de importação.
 
 #### Dúvidas abertas
 
@@ -101,7 +106,7 @@ A pessoa escolhe o modo de importação por abas no onboarding, encontra um esta
 ### 4. Princípios e restrições do projeto
 
 - **PR-001**: manter SvelteKit/Svelte, shadcn-svelte e Vitest; não introduzir React ou outra UI.
-- **PR-002**: somente `bibles/` pode ser removido pela gestão; Markdown e índice auxiliar nunca são tocados por ela.
+- **PR-002**: somente `bibles/` do workspace ativo pode ser removido pela gestão; Markdown e índice auxiliar nunca são tocados por ela, e o registro global de workspaces nunca é manipulado diretamente pela gestão de Bíblias.
 - **PR-003**: exclusão exige confirmação com nome do arquivo; sem exclusão silenciosa ou em lote sem confirmar cada item.
 - **PR-004**: stats 100% locais, sem rede; nenhum conteúdo sai do dispositivo.
 - **PR-005**: interface segue o guideline vercel/design (Geist, superfícies contínuas, foco visível, teclado, `prefers-reduced-motion`).
@@ -141,6 +146,8 @@ Como pessoa usuária individual, quero ver quantidades de Bíblias, notas, serm�
 **Requisitos**: FR-004
 
 ### 6. Cenários BDD de aceite
+
+> Todos os cenários desta seção pressupõem que existe um workspace ativo identificado por `workspaceId`. O cenário usa o `WorkspaceStorage` resolvido para esse workspace; o SQLite/IndexedDB do registro operacional não é acessado diretamente pelos componentes de Bíblia, importação ou stats.
 
 #### AC-001 — Alternar modo de importação
 
@@ -287,10 +294,10 @@ Feature: Navegar configuração com abas e seções
 
 #### Funcionais
 
-- **FR-001**: O sistema deve exibir abas `Arquivos locais` e `Bucket R2` na etapa import do onboarding com o primitive Tabs, preservar seleção local e URL ao alternar e instalar pelos dois modos em `bibles/`.
-- **FR-002**: O sistema deve exibir o vazio da `/bible` com o componente Empty (ícone, título, descrição) e botões que levam a `/?import=bible`, revelam o importador R2 embutido e abrem `/config`; instalar pelo R2 deve sair do vazio sem navegação forçada.
-- **FR-003**: O sistema deve listar na aba `Bíblias` as versões instaladas (nome, arquivo, livros, tamanho) e inválidas (motivo), excluir via `deleteFile` somente após confirmação com nome visível, atualizar catálogo e `bibleImportStatus` (`pending` quando vazio) e anunciar o resultado.
-- **FR-004**: O sistema deve exibir na aba `Estatísticas` as contagens de Bíblias instaladas, notas ativas, notas na lixeira, sermões `.md` e bytes estimados (`bibles/` + notas ativas), calculados no cliente a cada abertura.
+- **FR-001**: O sistema deve exibir abas `Arquivos locais` e `Bucket R2` na etapa import do onboarding com o primitive Tabs, preservar seleção local e URL ao alternar e instalar pelos dois modos no `WorkspaceStorage` do workspace ativo (`workspaceId`), usando `bibles/` como diretório de conteúdo compatível.
+- **FR-002**: O sistema deve exibir o vazio da `/bible` com o componente Empty (ícone, título, descrição) e botões que levam a `/?import=bible`, revelam o importador R2 embutido e abrem `/config`; instalar pelo R2 deve sair do vazio sem navegação forçada e permanecer no contexto do workspace ativo.
+- **FR-003**: O sistema deve listar na aba `Bíblias` as versões instaladas (nome, arquivo, livros, tamanho) e inválidas (motivo), excluir via `deleteFile` somente após confirmação com nome visível, atualizar o catálogo derivado e o status de importação do workspace ativo (`pending` quando vazio) e anunciar o resultado.
+- **FR-004**: O sistema deve exibir na aba `Estatísticas` as contagens de Bíblias instaladas, notas ativas, notas na lixeira, sermões `.md` e bytes estimados (`bibles/` + notas ativas) do workspace ativo, calculados no cliente a cada abertura.
 
 #### Não funcionais
 
@@ -326,17 +333,17 @@ Feature: Navegar configuração com abas e seções
 
 #### Migrations
 
-- Não aplicável. Sem schema novo; `bibles/` e `.openbible/config.json` preservados.
+- Nenhuma migration específica desta feature. O schema do registro/ponteiro do workspace pertence à SPEC-0016; `bibles/` continua sendo conteúdo SQLite compatível lido pelo `WorkspaceStorage` ativo. `.openbible/config.json` é preservado para migração, recovery e compatibilidade do conteúdo legado, sem substituir a autoridade do SQLite/IndexedDB.
 
 #### Models
 
-- `LibraryEntry { fileName, name, books, size, status: installed|invalid, diagnostic? }`; invariante: `fileName` termina em `.sqlite`.
-- `WorkspaceStats { bibles: { count, bytes }, notes: { active, trash }, sermons: { count }, bytesTotal }`; invariante: contagens ≥ 0, bytes ≥ 0.
+- `LibraryEntry { workspaceId, fileName, name, books, size, status: installed|invalid, diagnostic? }`; invariante: `fileName` termina em `.sqlite` e a entrada pertence ao workspace ativo.
+- `WorkspaceStats { workspaceId, bibles: { count, bytes }, notes: { active, trash }, sermons: { count }, bytesTotal }`; invariante: contagens ≥ 0, bytes ≥ 0 e nenhuma leitura cruza workspace.
 - `bibleImportStatus` segue `pending` (0 versões), `complete`/`partial` conforme última importação.
 
 #### Controllers e casos de uso
 
-- `deleteBibleVersion(storage, fileName)`: verifica existência, chama `deleteFile`, atualiza config; erro `delete-unsupported` quando ausente.
+- `deleteBibleVersion(storage, fileName)`: recebe o `WorkspaceStorage` já resolvido para o workspace ativo, verifica existência, chama `deleteFile`, atualiza o status de conteúdo compatível; erro `delete-unsupported` quando ausente. Não altera diretamente o registro global SQLite/IndexedDB.
 - `collectWorkspaceStats(storage)`: `listFiles('bibles')` + tamanhos, `listNotes`/listFiles `notes` e `trash`, `listFiles` dos três `sermons/*`.
 - Sem controller HTTP; sem autenticação.
 
@@ -349,7 +356,7 @@ Feature: Navegar configuração com abas e seções
 
 #### Queries e repositórios
 
-- Leitura via `storage.listFiles`/`readFile`; catálogo via `loadBibleCatalog`; notas via `listNotes` quando disponível ou `listFiles('notes')`.
+- Leitura via `WorkspaceStorage.listFiles`/`readFile` já resolvido para o `workspaceId` ativo; catálogo da Bíblia via `loadBibleCatalog`; notas via `listNotes` quando disponível ou `listFiles('notes')`. A feature não consulta nem altera diretamente o registro global SQLite/IndexedDB.
 
 #### Jobs e processamento assíncrono
 
@@ -376,8 +383,8 @@ specs/draft/0009-importacao-com-abas-empty-da-biblia-gestao-e-stats/
 
 | Entidade | Identidade | Atributos e regras | Relações |
 | --- | --- | --- | --- |
-| LibraryEntry | `bibles/<fileName>` | `name`, `books`, `size`, `status`, `diagnostic?`; excluir remove o arquivo | N por WorkspaceConfig |
-| WorkspaceStats | workspace | contagens e bytes; somente leitura, recalculado a cada abertura | 1 por workspace |
+| LibraryEntry | `workspaceId + bibles/<fileName>` | `name`, `books`, `size`, `status`, `diagnostic?`; excluir remove o arquivo do workspace ativo | N por workspace |
+| WorkspaceStats | `workspaceId` ativo | contagens e bytes; somente leitura, recalculado a cada abertura | 1 por workspace |
 | ImportTab | `local \| remote` | seleção da aba; preserva estado interno de cada painel | pertence à etapa import |
 
 #### Estados e transições
@@ -386,12 +393,12 @@ specs/draft/0009-importacao-com-abas-empty-da-biblia-gestao-e-stats/
 | --- | --- | --- | --- | --- |
 | ImportTab | local | alternar | remote | seleção local preservada |
 | LibraryEntry | installed | excluir confirmado | removido | arquivo some de `bibles/` |
-| WorkspaceConfig | complete/partial | última exclusão | pending | leitor volta ao vazio |
+| WorkspaceContentConfig (compatibilidade) | complete/partial | última exclusão | pending | leitor volta ao vazio; não é o cadastro global do workspace |
 | WorkspaceStats | — | abrir aba | calculado | números conferem com storage |
 
 #### Migração e retenção
 
-- Sem migração. Exclusões são permanentes; stats não persistem.
+- Sem migration de conteúdo nesta fatia. A abertura/migração do workspace é responsabilidade da SPEC-0016; exclusões de Bíblias são permanentes dentro da fonte de conteúdo ativa e stats não persistem como registro operacional.
 
 ### 10. Interfaces e contratos
 
@@ -405,7 +412,7 @@ specs/draft/0009-importacao-com-abas-empty-da-biblia-gestao-e-stats/
 
 #### Telas e responsabilidades
 
-- **Onboarding import**: escolher modo por abas; entrada é seleção/URL, saída é `bibles/` + status.
+- **Onboarding import**: escolher modo por abas; entrada é seleção/URL e contexto ativo, saída é `bibles/` do workspace + status derivado/compatível.
 - **Bíblia vazia**: orientar primeira importação; entrada é ausência de versões, saída é instalação ou navegação.
 - **Bíblias (`/config`)**: listar, diagnosticar e excluir versões.
 - **Estatísticas (`/config`)**: ler contagens e bytes.
@@ -530,22 +537,27 @@ specs/draft/0009-importacao-com-abas-empty-da-biblia-gestao-e-stats/
 
 #### Gate do Ato I — Definição
 
-- **Resultado**: READY
+- **Resultado histórico**: READY — validado em 2026-09-03 antes da mudança de autoridade da SPEC-0016.
+- **Resultado da auditoria**: READY — a finalidade, atores e ACs permanecem os mesmos; a fronteira de persistência foi explicitada e revalidada em 2026-09-06.
 - **Comando**: `node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/completed/0009-importacao-com-abas-empty-da-biblia-gestao-e-stats/spec.md --allow-draft`
-- **Achados**: Nenhum BLOCKER; 4 US, 4 FR, 2 NFR, 10 AC com cobertura minima 3 AC por ID; interface Sim completa. Validado em 2026-09-03.
+- **Achados**: Nenhum BLOCKER funcional identificado. A revisão corrigiu a autoridade do workspace, adicionou o escopo `workspaceId` ao conteúdo da feature e preservou a Bíblia SQLite como fonte somente leitura.
+- **FIND-ARCH-001** [P2] [Resolved] a redação anterior tratava `.openbible/config.json`/`WorkspaceConfig` como autoridade do workspace — Refs: FR-001, FR-003, FR-004, NFR-002 — Evidence: apps/web/src/lib/storage/workspace-catalog.ts:300 — Effect: gestão de Bíblias e stats poderiam ser implementadas contra um cadastro legado em vez do registro SQLite/IndexedDB — Suggestion: corrigido ao declarar SQLite/IndexedDB como autoridade e manifesto/config como migração/recovery.
 - Findings especializados, quando aplicáveis, seguem `FIND-PROD|ARCH|SEC-NNN`, severidade `P1|P2|P3`, estado `Open|Resolved|Accepted`, refs e evidência.
 
 #### Gate do Ato II — Plano
 
-- **Resultado**: Passed
+- **Resultado**: Passed — a estratégia de testes cobre o contrato explícito de escopo por workspace.
 - **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/completed/0009-importacao-com-abas-empty-da-biblia-gestao-e-stats/spec.md --allow-draft`
-- **Achados**: 15 tarefas, 10 TDD, 20/20 IDs cobertos, CODE com 3+ predecessores. Aprovado em 2026-09-03.
+- **Achados**: 17 tarefas, 11 TDD, 20/20 IDs cobertos e CODE com predecessores TDD; T016–T017 adicionam a prova de isolamento entre workspaces.
 
 #### Gate do Ato III — Entrega
 
-- **Resultado**: Passed
-- **Comando**: `npm --prefix apps/web run test:tdd`, `npm --prefix apps/web run build`, `check_traceability` no escopo bible-remote+bíblia
-- **Achados**: 183/183 testes (42 arquivos), build Cloudflare OK, rastreabilidade 20/20 no escopo. Revisão visual 320px/1440px aplicada.
+- **Resultado**: Passed — a evidência histórica e a implementação atual estão GREEN no caminho escopado por workspace.
+- **Comando de compatibilidade executado**: protegido por `check_database_safety.mjs` → `SAFE`; `bun run --cwd apps/web test:tdd -- src/routes/onboarding.svelte.spec.ts src/routes/bible-empty.svelte.spec.ts src/routes/config.svelte.spec.ts src/lib/features/bible/bible-library.test.ts src/lib/features/workspace/workspace-stats.test.ts src/lib/features/bible/bible-reader.test.ts src/lib/features/bible-remote/remote-install.test.ts` → 7 arquivos e 34 testes passaram.
+- **Achados**: biblioteca e stats recebem `{ workspaceId, storage }`, falham fechado sem ID e não consultam o registro global SQLite/IndexedDB.
+- **Evidência T016**: RED observado com 8 testes falhando porque os serviços ainda esperavam `WorkspaceStorage`; após T017, a suíte focal passou com 2 arquivos e 8 testes.
+- **Evidência T017**: `bun run --cwd apps/web test:tdd -- src/lib/features/bible/bible-library.test.ts src/lib/features/workspace/workspace-stats.test.ts` → 2 arquivos e 8 testes passaram; regressão compatível → 7 arquivos e 36 testes passaram; `bun run --cwd apps/web build` → exit 0.
+- **Nota de baseline**: `bun run --cwd apps/web check-types` ainda reporta erros preexistentes fora desta mudança, incluindo declarações de componentes UI, testes RED de AI e tipagens existentes de sql.js; o build e os testes desta fatia passam sem erro introduzido pelo contrato de escopo.
 
 ### 14. Tarefas
 
@@ -631,7 +643,9 @@ specs/draft/0009-importacao-com-abas-empty-da-biblia-gestao-e-stats/
   - [x] **EVIDENCE**: Registrar arquivo, comando e causa do RED.
   - [x] **IMPROVE**: Reusar padrão tablist existente.
 
-#### Fase 2 — US-001 Escolher como importar (P1)
+#### Fase de interface
+
+**Fase 2 — US-001 Escolher como importar (P1)**
 
 **Objetivo**: abas local/R2 funcionais com estado preservado no onboarding.
 **Teste independente**: `npm --prefix apps/web run test:tdd -- src/routes/onboarding.svelte.spec.ts` passa.
@@ -645,7 +659,7 @@ specs/draft/0009-importacao-com-abas-empty-da-biblia-gestao-e-stats/
   - [x] **IMPROVE**: Preservar seleção e URL ao alternar.
 <!-- specsfy:evidence {"task":"T011","refs":["US-001","FR-001","NFR-001","AC-001","AC-002","AC-010"],"files":["apps/web/src/lib/features/onboarding/OnboardingModal.svelte","apps/web/src/routes/onboarding.svelte.spec.ts"],"commands":[{"run":"npm --prefix apps/web run test:tdd -- src/routes/onboarding.svelte.spec.ts","exit":0},{"run":"npm --prefix apps/web run build","exit":0}]} -->
 
-#### Fase 3 — US-002 Bíblia vazia orientada (P1)
+**Fase 3 — US-002 Bíblia vazia orientada (P1)**
 
 **Objetivo**: Empty shadcn com botões e instalação R2 sem sair da rota.
 **Teste independente**: `npm --prefix apps/web run test:tdd -- src/routes/bible-empty.svelte.spec.ts` passa.
@@ -659,7 +673,7 @@ specs/draft/0009-importacao-com-abas-empty-da-biblia-gestao-e-stats/
   - [x] **IMPROVE**: Manter saída do vazio sem navegação forçada.
 <!-- specsfy:evidence {"task":"T012","refs":["US-002","FR-002","NFR-001","NFR-002","AC-003","AC-004","AC-010"],"files":["apps/web/src/lib/components/ui/empty/","apps/web/src/lib/features/bible/BibleReader.svelte","apps/web/src/routes/bible-empty.svelte.spec.ts"],"commands":[{"run":"npm --prefix apps/web run test:tdd -- src/routes/bible-empty.svelte.spec.ts src/routes/bible-reader.svelte.spec.ts","exit":0},{"run":"npm --prefix apps/web run build","exit":0}]} -->
 
-#### Fase 4 — US-003 Gestão com exclusão (P1)
+**Fase 4 — US-003 Gestão com exclusão (P1)**
 
 **Objetivo**: listar, diagnosticar e excluir versões com confirmação.
 **Teste independente**: `npm --prefix apps/web run test:tdd -- src/lib/features/bible/bible-library.test.ts` passa.
@@ -673,7 +687,7 @@ specs/draft/0009-importacao-com-abas-empty-da-biblia-gestao-e-stats/
   - [x] **IMPROVE**: Fechar instâncias sql.js e nunca tocar Markdown.
 <!-- specsfy:evidence {"task":"T013","refs":["US-003","FR-003","NFR-002","AC-005","AC-006","AC-007"],"files":["apps/web/src/lib/features/bible/bible-library.ts","apps/web/src/lib/features/bible/bible-library.test.ts"],"commands":[{"run":"npm --prefix apps/web run test:tdd -- src/lib/features/bible/bible-library.test.ts","exit":0}]} -->
 
-#### Fase 5 — US-004 Stats + abas do config (P2)
+**Fase 5 — US-004 Stats + abas do config (P2)**
 
 **Objetivo**: Bíblias gerenciáveis e estatísticas visíveis no `/config`.
 **Teste independente**: `npm --prefix apps/web run test:tdd -- src/lib/features/workspace/workspace-stats.test.ts src/routes/config.svelte.spec.ts` passa.
@@ -698,9 +712,26 @@ specs/draft/0009-importacao-com-abas-empty-da-biblia-gestao-e-stats/
   - [x] **IMPROVE**: Registrar retrospectiva.
 <!-- specsfy:evidence {"task":"T015","refs":["US-001","US-002","US-003","US-004","FR-001","FR-002","FR-003","FR-004","NFR-001","NFR-002","AC-001","AC-002","AC-003","AC-004","AC-005","AC-006","AC-007","AC-008","AC-009","AC-010"],"files":["apps/web/src/lib/features/bible/","apps/web/src/lib/features/workspace/"],"commands":[{"run":"npm --prefix apps/web run test:tdd","exit":0},{"run":"npm --prefix apps/web run build","exit":0},{"run":"node .agents/skills/specsfy-setup/scripts/monitor_context.mjs --project /home/claudio/Projects/openbible-worksplace --check","exit":0}]} -->
 
+- [x] T016 [TEST] [TDD] [US-003] [US-004] Provar o contrato explícito de escopo por `workspaceId` em `apps/web/src/lib/features/bible/bible-library.test.ts` e `apps/web/src/lib/features/workspace/workspace-stats.test.ts` — Refs: US-003, US-004, FR-003, FR-004, NFR-002, AC-005, AC-006, AC-007, AC-008, AC-009 — Depends: T015
+  - [x] **PREP**: Confirmar que os serviços recebem somente `WorkspaceStorage` e que a troca de workspace já resolve outro storage ativo.
+  - [x] **EXECUTE**: Atualizar os testes para o contrato `{ workspaceId, storage }` e cobrir dois workspaces com arquivos distintos.
+  - [x] **VERIFY**: Executar a suíte focal e registrar RED antes da implementação do contrato.
+  - [x] **VISUAL**: Não aplicável; prova de isolamento de serviço.
+  - [x] **EVIDENCE**: Registrar arquivos, comando e causa do RED/GREEN nas seções 11–13.
+  - [x] **IMPROVE**: Manter fixtures pequenas e afirmar que identidade e dados não cruzam o limite.
+
+- [x] T017 [CODE] [US-003] [US-004] Implementar o escopo explícito `workspaceId + WorkspaceStorage` nos serviços e consumidores de biblioteca/stats — Refs: US-003, US-004, FR-003, FR-004, NFR-002, AC-005, AC-006, AC-007, AC-008, AC-009 — Depends: T016
+  - [x] **PREP**: Mapear chamadas de `listLibraryEntries`, `deleteBibleVersion` e `collectWorkspaceStats`.
+  - [x] **EXECUTE**: Adicionar o tipo de escopo, propagar o `workspaceId` ativo nos componentes e devolver a identidade nos resultados.
+  - [x] **VERIFY**: Rodar testes focais, tipos e regressão; confirmar que nenhum serviço acessa o registro global SQLite/IndexedDB diretamente.
+  - [x] **VISUAL**: Não aplicável; sem mudança visual.
+  - [x] **EVIDENCE**: Registrar GREEN, arquivos e comandos nas seções 11–13.
+  - [x] **IMPROVE**: Falhar fechado quando não houver workspace ativo e preservar o config legado apenas para compatibilidade de status.
+<!-- specsfy:evidence {"task":"T017","refs":["US-003","US-004","FR-003","FR-004","NFR-002","AC-005","AC-006","AC-007","AC-008","AC-009"],"files":["apps/web/src/lib/storage/types.ts","apps/web/src/lib/features/bible/bible-library.ts","apps/web/src/lib/features/bible/BibleLibraryManager.svelte","apps/web/src/lib/features/workspace/workspace-stats.ts","apps/web/src/lib/features/workspace/WorkspaceStats.svelte","apps/web/src/lib/features/bible/bible-library.test.ts","apps/web/src/lib/features/workspace/workspace-stats.test.ts"],"commands":[{"run":"bun run --cwd apps/web test:tdd -- src/lib/features/bible/bible-library.test.ts src/lib/features/workspace/workspace-stats.test.ts","exit":0},{"run":"bun run --cwd apps/web build","exit":0},{"run":"git diff --check","exit":0}]} -->
+
 ### 15. Ordem de execução
 
-- Caminho crítico: T001–T010 (RED) → T011 → T012 → T013 → T014 → T015.
+- Caminho crítico: T001–T010 (RED) → T011 → T012 → T013 → T014 → T015 → T016 (RED) → T017 (GREEN).
 - Tarefas paralelas: T001–T010 em qualquer ordem (arquivos distintos); T011–T014 em sequência por dependência de tela.
 - Estratégia de MVP: US-001 + US-002 primeiro (importação), US-003 depois (gestão), US-004 por último (stats).
 
@@ -729,12 +760,13 @@ specs/draft/0009-importacao-com-abas-empty-da-biblia-gestao-e-stats/
 - **DEC-002**: Empty do registry (CLI, fallback vendor) — segue o pedido e o design system.
 - **DEC-003**: Sem lixeira para Bíblias; exclusão direta com confirmação — escopo mínimo seguro.
 - **DEC-004**: Stats recalculados a cada abertura, sem persistência — evita schema e sincronização.
+- **DEC-005**: Após a SPEC-0016, o registro e ponteiro do workspace são resolvidos pelo SQLite nativo ou IndexedDB; esta feature opera somente no `WorkspaceStorage` do `workspaceId` ativo. Manifesto/config e referências de pasta permanecem compatibilidade de migração/recovery, e `bibles/*.sqlite` continua somente leitura para a aplicação.
 
 ### 18. Definition of Done
 
-- [x] `Definition Gate` está `Passed`.
-- [x] `Plan Gate` está `Passed`.
-- [x] `Delivery Gate` está `Passed`.
+- [x] `Definition Gate` está `Passed` após a auditoria de compatibilidade.
+- [x] `Plan Gate` está `Passed` após a revalidação da matriz e tarefas.
+- [x] `Delivery Gate` está `Passed` após confirmar a regressão no caminho final.
 - [x] Todos os cenários `AC` aplicáveis passam.
 - [x] Todos os requisitos possuem evidência de verificação.
 - [x] Todas as tarefas na seção 14 estão concluídas.

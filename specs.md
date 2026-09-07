@@ -16,13 +16,13 @@
 | 09 | 0010-melhorar-experiencia-do-pwa | Complete | — |
 | 10 | 0011-desativar-zoom-no-pwa-e-drawer-90 | Complete | — |
 | 11 | 0015-editor-de-notas-popover-hover-biblico-indice-embed-e-export | Complete | — |
-| 12 | 0001-onboarding-configuracao-armazenamento | Implementing | — |
-| 13 | 0012-pagina-inicial-operacional-do-openbible | Implementing | — |
-| 14 | 0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile | Implementing | — |
-| 15 | 0014-versao-nativa-macos-tauri | Complete | — |
-| 16 | 0016-multiplos-workspaces-modelo-vaults | Planned | — |
-| 17 | 0017-formatos-portateis-indice-reconstruivel | Planned | — |
-| 18 | 0018-backup-restauracao-workspace-pwa | Planned | — |
+| 12 | 0016-multiplos-workspaces-modelo-vaults | Complete | — |
+| 13 | 0017-formatos-portateis-indice-reconstruivel | Complete | — |
+| 14 | 0018-backup-restauracao-workspace-pwa | Complete | — |
+| 15 | 0001-onboarding-configuracao-armazenamento | Implementing | — |
+| 16 | 0012-pagina-inicial-operacional-do-openbible | Implementing | — |
+| 17 | 0013-motor-de-notas-com-milkdown-fence-de-versiculo-e-mobile | Implementing | — |
+| 18 | 0014-versao-nativa-macos-tauri | Complete | — |
 | 19 | 0019-sincronizacao-local-first-automerge | Planned | — |
 | 20 | 0020-agentes-ia-locais-controlados-workspace | Planned | — |
 

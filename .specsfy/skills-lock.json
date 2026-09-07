@@ -139,23 +139,21 @@
   },
   "framework": {
     "source": "base",
-    "spec_sha256": "eae20c71b1d56c36d7b4ca782bf1ea1bc9975c6d5f544d564cfb2c490a567a29",
-    "template_sha256": "da14fa40ce2a36bc6257cf19873b965505ea9c6b8467d4b6651ce80cd6f271b3",
+    "spec_sha256": "55573e83031cbc1db4946a63965f3d2060a7879a17b82df62d09e009e529d6c0",
+    "template_sha256": "bc98e1529a7433ebe35afed2bfc5fec9c296d18b8ba975ea24318c486456efe2",
     "templates_sha256": {
       "Inbox.md": "a598c5ac2fddc936bd5856df6548b989a62c939d3198c3eb887405c074d08a6f",
       "Backlog.md": "d3a354ce702cf29ae2900f77125710093bb6d8a12e3a68b01af139703ce3c92d",
-      "Spec.md": "da14fa40ce2a36bc6257cf19873b965505ea9c6b8467d4b6651ce80cd6f271b3",
-      "Tasks.md": "ca394f6fdd5fd7e23fe1364dccda440c625e939852ee5e596b169c50aa2b9440",
+      "Spec.md": "bc98e1529a7433ebe35afed2bfc5fec9c296d18b8ba975ea24318c486456efe2",
+      "Tasks.md": "422e405586ea0d079fb6efd0ec58c6ebea8d6da89dd7b19428f97c31e8b0f7d2",
       "Project.md": "13a1d10d8cac322ce2dc26931696e99b4586d6c7265f4beb7adf77d315aeda1c",
       "Stack.md": "15e716554aabd183a18dd1752fcb1b57e931ef285d398e1ac6ee9c33571e476d",
       "Rules.md": "c9bb19ebc5622b99891da62d02fb5237ff281f61b5f1e17879047a65e2e80304",
       "Database.md": "ad8099e88883d5f1af6519c4ca6b524505e8b9cba435958f5c2bab34e013ab23",
-      "UserProfile.md": "fcc1c75b90328cd81b1be930147d4c9b4c5f7c83594836557dae2b19f076ab5a",
-      "Interface.md": "7eca6bc750c7c0e0d84748b85729f38fda8bb4240120f7913b8990aa0110967d",
-      "DESIGNSYSTEM.MD": "37fcf303a5f15597c4d138358c2a3d72f3c95264202eddb84d9a5c81bf12b6de"
+      "Interface.md": "7eca6bc750c7c0e0d84748b85729f38fda8bb4240120f7913b8990aa0110967d"
     },
     "example_sha256": "8dfa2cf359b80e7ba37de7c75d45b16caca698cf80b02bd61f4225f7f764f525",
-    "agents_sha256": "bcc74bc713402e2eef23c973a106dfe84a930924597c7c088c6eacee834de29b",
+    "agents_sha256": "d7ccce131ce45d83d5512a0cca53d02fb7a6ab827a5a64cd3847870633c1071a",
     "claude_sha256": "ddd02f4166dbe49fce5e0444bd0ab9fac8dabbf47fd9d38c1539a56efc8bec28"
   }
 }

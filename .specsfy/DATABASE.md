@@ -1,28 +1,89 @@
 # Banco de dados
 
 Mapa de persistência do sistema. A leitura bíblica usa arquivos SQLite importados
-como fontes locais somente leitura; o índice do workspace permanece auxiliar.
+como fontes locais somente leitura; o banco operacional de workspaces é separado
+do conteúdo autoral e do índice reconstruível.
 
 ## Fontes de dados
 
 <!-- specsfy:database:start -->
 | Fonte | Tecnologia/forma | Evidência |
 | --- | --- | --- |
-| Workspace local | Markdown + YAML (`notes/<noteId>.md`, `trash/`) | `apps/web/src/lib/features/notes/notes-repository.ts` |
-| Workspace local | SQLite auxiliar (`.openbible/index.sqlite`) | `apps/web/src/lib/features/notes/note-verse-index.ts`, `apps/web/src/lib/features/bible/reader-highlights-repository.ts` |
-| Workspace local | SQLite somente leitura (`bibles/*.sqlite`) | `apps/web/src/lib/features/bible/bible-reader.ts` |
-| Navegador | IndexedDB (`openbible-workspace`) | `apps/web/src/lib/features/workspace/` |
-| Navegador | `localStorage` (cache de primeiro paint) | `.openbible/preferences.json` espelhado |
+| Estrutura | Schema/migration | `apps/desktop/src-tauri/migrations/001_create_workspaces.sql` |
+| Estrutura | Schema/migration | `apps/desktop/src-tauri/migrations/002_create_workspace_content.sql` |
 
 ## Estruturas detectadas
 
 | Estrutura | Tipo | Campos | Relações | Fonte |
 | --- | --- | --- | --- | --- |
-| `note_verse_ref` | Tabela SQLite auxiliar | `id`, `note_path`, `block_index`, `version_id`, `book_id`, `book_name`, `chapter`, `verse_start`, `verse_end` | N..1 nota (`note_path`); espelha fences `:::verse`; índices em `(note_path)` e `(version_id, book_id, chapter)` | `note-verse-index.ts` |
-| `reader_highlight` | Tabela SQLite auxiliar | `id`, `version_id`, `book_id`, `chapter`, `verse_start`, `verse_end`, `style_id` | Identidade natural = intervalo exato (`UNIQUE` em versão+livro+capítulo+início+fim); N anotações sobreponíveis por capítulo; não aponta para nota | `reader-highlights-repository.ts` |
-| `book` | Tabela SQLite OpenLP | `id`, `name`, `abbreviation`, `testament_id` | 1 arquivo `bibles/*.sqlite` contém N livros | `bible-reader.ts` |
-| `verse` | Tabela SQLite OpenLP | `book_id`, `chapter`, `verse`, `text` | `verse.book_id` → `book.id` | `bible-reader.ts` |
+| workspaces | Tabela SQL | workspace_id:TEXT, name:TEXT, status:TEXT, schema_version:INTEGER, created_at:TEXT, updated_at:TEXT, last_opened_at:TEXT, metadata_json:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/001_create_workspaces.sql` |
+| active_workspace_pointer | Tabela SQL | pointer_id:INTEGER, workspace_id:TEXT, generation:INTEGER, updated_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/001_create_workspaces.sql` |
+| legacy_workspace_migrations | Tabela SQL | migration_key:TEXT, source_type:TEXT, source_ref:TEXT, workspace_id:TEXT, state:TEXT, cursor:TEXT, error_code:TEXT, created_at:TEXT, updated_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/001_create_workspaces.sql` |
+| workspace_notes | Tabela SQL | workspace_id:TEXT, note_id:TEXT, note_type:TEXT, schema_version:INTEGER, payload_json:TEXT, created_at:TEXT, updated_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/002_create_workspace_content.sql` |
+| workspace_highlights | Tabela SQL | workspace_id:TEXT, highlight_id:TEXT, version_id:TEXT, book_id:INTEGER, chapter:INTEGER, verse_start:INTEGER, verse_end:INTEGER, style_id:TEXT, schema_version:INTEGER, payload_json:TEXT, created_at:TEXT, updated_at:TEXT, CHECK:(chapter, CHECK:(verse_start, CHECK:(verse_end | Não detectadas | `apps/desktop/src-tauri/migrations/002_create_workspace_content.sql` |
+| workspace_index_state | Tabela SQL | workspace_id:TEXT, projection_version:INTEGER, status:TEXT, record_count:INTEGER, error_code:TEXT, updated_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/002_create_workspace_content.sql` |
+| note_verse_ref | Tabela SQL | workspace_id:TEXT, note_id:TEXT, block_id:TEXT, version_id:TEXT, book_id:INTEGER, chapter:INTEGER, verse_start:INTEGER, verse_end:INTEGER, updated_at:TEXT, CHECK:(chapter, CHECK:(verse_start, CHECK:(verse_end | Não detectadas | `apps/desktop/src-tauri/migrations/002_create_workspace_content.sql` |
+| reader_highlight | Tabela SQL | workspace_id:TEXT, highlight_id:TEXT, version_id:TEXT, book_id:INTEGER, chapter:INTEGER, verse_start:INTEGER, verse_end:INTEGER, style_id:TEXT, updated_at:TEXT, CHECK:(chapter, CHECK:(verse_start, CHECK:(verse_end | Não detectadas | `apps/desktop/src-tauri/migrations/002_create_workspace_content.sql` |
 <!-- specsfy:database:end -->
+
+## Persistência operacional de workspaces (SPEC-0016 revisada)
+
+O Tauri mantém um único `app.sqlite` por instalação; o PWA mantém um banco
+IndexedDB por origem. O registro de cada workspace é escopado por
+`workspace_id`; não existe um banco operacional separado por workspace nesta
+fatia. O SQLite da Bíblia continua sendo um recurso somente leitura e não é
+importado relacionalmente para o IndexedDB nesta fatia.
+
+| Banco/estrutura | Onde vive | Campos/escopo | Relações e regras |
+| --- | --- | --- | --- |
+| `app.sqlite` | diretório de dados da instalação Tauri | `workspaces`, `active_workspace_pointer`, `legacy_workspace_migrations`, `workspace_notes`, `workspace_highlights`, `workspace_index_state`, `note_verse_ref`, `reader_highlight`; schema v2 | abertura e migrations transacionais; conteúdo autoral operacional e projeções são escopados por `workspace_id` |
+| `workspaces` | `app.sqlite` | `workspace_id`, `name`, `status`, `schema_version`, timestamps, `metadata_json` | `workspace_id` é a identidade única e a chave de escopo das operações |
+| `active_workspace_pointer` | `app.sqlite` | ponteiro único, `workspace_id`, `generation`, `updated_at` | aponta para `workspaces`; geração invalida resultados assíncronos antigos |
+| `legacy_workspace_migrations` | `app.sqlite` | origem, cursor, estado, erro e workspace associado | somente progresso/recovery; não transforma a fonte legada em backend ativo |
+| IndexedDB operacional | origem PWA, banco `openbible-workspace` | stores `workspaces`, `active_workspace_pointer`, `legacy_workspace_migrations`, `workspace_blobs`, `workspace_notes`, `workspace_highlights`, `workspace_index_state`, `note_verse_ref`, `reader_highlight`; schema v2 | adapter versionado implementado na T030; uma origem, vários `workspaceId`, transações e exclusão por escopo |
+
+### Implementação da fonte e das projeções de conteúdo
+
+- `apps/web/src/lib/storage/workspace-content-repository.ts` define o contrato
+  único de registro por `workspaceId`, backend (`sqlite` ou `indexeddb`), tipo,
+  ID e `schemaVersion`; drivers persistentes devem implementar esse contrato
+  sobre as tabelas/stores v2, sem misturar workspaces.
+- `apps/web/src/lib/features/notes/index-rebuilder.ts` produz a projeção
+  reconstruível e nunca lê ou escreve `bibles/*.sqlite`. Durante migração, ele
+  pode ler `highlights/*.json`; esse sidecar é fonte legada/recovery, não a
+  fonte primária do workspace novo.
+- `apps/web/src/lib/features/notes/highlight-repository.ts` registra o payload
+  de destaque no contrato de conteúdo. `reader_highlight` e
+  `workspace_index_state` permanecem derivados e podem ser refeitos sem perda
+  de registros primários.
+- A UI de `/highlights` e de `WorkspaceSettings` expõe progresso, erro, retry e
+  cancelamento antes do commit da projeção; uma falha não autoriza apagar ou
+  reescrever a fonte autoral.
+
+## Catálogo legado e manifesto de workspaces (histórico da arquitetura anterior)
+
+O conteúdo autoral legado continua nas raízes (Markdown/SQLite por workspace). O
+catálogo abaixo é uma projeção local de reencontro por dispositivo: pode ser
+reconstruído por recadastro, nunca entra em sync/backup de conteúdo e não é a
+fonte normativa do registro. Handles do File System Access vivem só na sessão;
+só referências em string (caminho nativo, ref OPFS) persistem. Nesta revisão,
+manifesto, catálogo e raízes servem para migração/recovery; o backend operacional
+é `app.sqlite` no Tauri ou IndexedDB no PWA.
+
+| Estrutura | Onde vive | Campos | Relações e regras |
+| --- | --- | --- | --- |
+| `WorkspaceManifest` | `.openbible/config.json` da raiz (portátil) | `workspaceId`, `formatVersion: 2`, `name`, `managedRoot`, compat legada (`version: 1`, `storage`, `configuredAt`, `bibleImportStatus`, `label`) | 1 raiz possui exatamente 1 manifesto válido; validação rejeita ID ausente, versão incompatível e marcador inconsistente; `managedRoot` só é `true` em raiz dedicada preparada pelo app |
+| `WorkspaceCatalogEntry` | `localStorage:openbible:workspace-catalog` + memória (projeção só dispositivo) | `workspaceId`, `nameCache`, `storageKind`, `backend`, `localRef` (só string persiste), `lastOpenedAt`, `status` | No máximo 1 referência local por ID; remoção vira `detached` e não toca arquivos; o registro do banco é a autoridade |
+| `ActiveWorkspacePointer` | memória da janela (+ espelho do ID em `localStorage`) | `workspaceId`, `generation` monotônica | 1 por janela; sem conteúdo; `generation` invalida operações assíncronas antigas |
+| `StorageCapabilities` | código por adapter (`capabilitiesForKind`) | `selectFolder`, `createLogicalRoot`, `reconnect`, `writeManifest`, `scan`, `deleteManagedRoot` | 1 entrada resolve 1 adapter; ausência vira erro explícito, sem fallback |
+
+Migração idempotente (`ensureManifest`/`migrateLegacyWorkspace` em
+`workspace-catalog.ts`): converte o registro singular sem mover conteúdo,
+chaveada pelo próprio ID; repetição é no-op; falha parcial restaura o ponteiro
+anterior e abre recovery. Exclusão integral só via `deleteManagedRootEntry` (cadeia
+manifesto→gerenciada→capability→varredura→apagamento pelo backend) ou comando
+nativo `delete_managed_workspace` (lock da sessão + guardas no Rust), seguida da
+remoção transacional do registro em `app.sqlite` ou IndexedDB.
 
 ## Estruturas de leitura bíblica
 
@@ -32,8 +93,8 @@ como fontes locais somente leitura; o índice do workspace permanece auxiliar.
 | `bibles/*.sqlite` | `verse`                      | `book_id`, `chapter`, `verse`, `text`                   | `verse.book_id` referencia `book.id`; consultas de capítulo e busca são parametrizadas |
 | `bibles/*.sqlite` | `metadata` (opcional)        | `key`, `value`                                          | `key = 'name'` fornece o nome da versão; o nome do arquivo é o fallback                |
 | Pasta/OPFS        | `.openbible/preferences.json` | `theme`, `readerSelection` | Fonte File Over Apps das preferências; `localStorage` é cache para o primeiro paint (`initialRoute` removida em SPEC-0012) |
-| Pasta/OPFS        | `.openbible/index.sqlite`     | `note_verse_ref`, `reader_highlight` e índices auxiliares | Espelha fences `:::verse` e guarda destaques do leitor; **não** substitui o Markdown nem o SQLite bíblico |
-| Pasta/OPFS        | `notes/<noteId>.md`           | frontmatter YAML + corpo Markdown                      | Fonte File Over Apps das notas; H1 sincronizado com `title`; fences `:::verse` com snapshot no corpo                               |
+| Pasta/OPFS        | `.openbible/index.sqlite`     | `note_verse_ref`, `reader_highlight` e índices auxiliares | Fonte legada de migração/recovery; não é o backend operacional novo nem substitui o SQLite bíblico |
+| Pasta/OPFS        | `notes/<noteId>.md`           | frontmatter YAML + corpo Markdown                      | Exportação/entrada legada; o backend operacional novo é SQLite nativo no Tauri ou IndexedDB no PWA |
 | Pasta/OPFS        | `trash/<noteId>.md`           | mesmo formato de `notes/`                              | Lixeira; arquivo original preservado até remoção manual futura                                                                      |
 | IndexedDB         | `openbible-workspace`         | handle da pasta                                        | Só no modo `local`; permissão `readwrite` é revalidada a cada visita                  |
 
@@ -41,30 +102,21 @@ como fontes locais somente leitura; o índice do workspace permanece auxiliar.
 
 ### Informações confirmadas do produto
 
-- Sermões e estudos estruturados terão Markdown com YAML frontmatter como fonte
-  primária.
-- Notas simples também usarão Markdown com YAML frontmatter.
-- SQLite local manterá índices, destaques e dados auxiliares, sem substituir os
-  arquivos Markdown.
+- Notas, sermões e estudos são persistidos no backend operacional do workspace:
+  SQLite nativo no Tauri e IndexedDB no PWA; Markdown/PDF são exportações
+  derivadas e Markdown legado é usado somente para migração/recovery.
+- O SQLite local mantém registros primários e projeções derivadas no `app.sqlite`;
+  a Bíblia SQLite/WASM permanece separada e somente leitura.
 - Bancos SQLite bíblicos poderão ser importados por arrastar e soltar quando
   seguirem o padrão do OpenLP, ou acessados por uma URL de distribuição como
   Cloudflare R2.
-- O `.openbible/index.sqlite` é um SQLite válido. Um arquivo de 0 bytes legado é
-  reparado na preparação. A tabela auxiliar `note_verse_ref` é criada
-  idempotentemente na primeira operação de notas (`CREATE TABLE IF NOT EXISTS`).
-  O índice espelha fences `:::verse` do Markdown e é reindexado após cada save;
-  refs são removidas ao mover a nota para `trash/`. A tabela auxiliar
-  `reader_highlight` é criada idempotentemente na primeira operação de destaque
-  do leitor; a identidade é o intervalo exato (`UNIQUE` em `version_id`,
-  `book_id`, `chapter`, `verse_start`, `verse_end`) e o `style_id` segue a
-  paleta Q6. Remover um destaque é `DELETE` só dessa identidade. A listagem
-  workspace-wide usa `SELECT` sem filtro de capítulo ou versão (`ORDER BY
-  version_id, book_id, chapter, verse_start, verse_end`) via
-  `listAllReaderHighlights` / `readAllReaderHighlights`; sheet do leitor e página
-  `/highlights` mostram o mesmo conjunto. O leitor bíblico
-  **não** abre `index.sqlite` para texto; usa `sql.js` nos SQLite importados em
-  `bibles/` (somente leitura, nunca alterados por notas ou destaques) e fecha
-  cada instância após a consulta.
+- O `.openbible/index.sqlite`, `notes/<noteId>.md` e `highlights/<id>.json`
+  existentes são fontes legadas de migração/recovery. Os registros primários
+  novos vivem em `workspace_notes` e `workspace_highlights` no backend ativo;
+  `note_verse_ref`, `reader_highlight` e `workspace_index_state` são projeções
+  reconstruíveis. A Bíblia **não** é copiada para essas estruturas: o leitor usa
+  SQLite/WASM nos arquivos importados de `bibles/`, somente leitura, e fecha cada
+  instância após a consulta.
 - A validação funcional do leitor exige as tabelas `book` e `verse` e as colunas
   mínimas listadas acima; arquivos incompatíveis são diagnosticados sem remover
   fontes válidas nem modificar qualquer SQLite.
@@ -121,8 +173,8 @@ agentes.
 | Identidade portátil do workspace | Reconhecer o mesmo workspace quando sua pasta for movida ou adicionada em outro dispositivo e preservar seu nome sem depender do caminho. | ID estável, nome exibido e versão do formato do workspace. | Informações textuais e versão numérica no arquivo .openbible/config.json da própria raiz. | O ID identifica a raiz e é referenciado pelo catálogo local, pelos índices e futuramente pelo estado de sincronização; o nome acompanha o workspace sem renomear a pasta. | A pessoa pode alterar o nome pelo OpenBible; o sistema cria e mantém ID e versão. | Criado ao preparar ou migrar o workspace, preservado ao mover ou recadastrar a pasta, atualizado ao renomear e removido somente com a exclusão confirmada do workspace. | specs/backlog/0017-multiplos-workspaces-modelo-vaults.md; conversa atual, resposta 1 à Pergunta 2 de dados |
 | Propriedade da raiz do workspace | Impedir que o OpenBible apague integralmente uma pasta adicionada ou que contenha arquivos fora do controle do aplicativo. | Indicador de que a raiz dedicada foi criada ou preparada pelo OpenBible como gerenciada. | Confirmação explícita no .openbible/config.json, criada somente durante a preparação de uma raiz dedicada; pastas apenas adicionadas permanecem não gerenciadas. | Pertence à identidade portátil do workspace e é consultada junto da varredura de arquivos desconhecidos antes de qualquer exclusão integral. | Somente o fluxo de criação/preparação do OpenBible define o indicador; a pessoa consulta sua consequência na gestão e confirma a exclusão. | Criado com a raiz dedicada, preservado durante seu uso e invalidado para exclusão automática quando faltar, for inconsistente ou houver arquivos desconhecidos. | specs/backlog/0017-multiplos-workspaces-modelo-vaults.md; conversa atual, resposta 1 à Pergunta 3 de dados |
 | Colisão de identidade de workspace | Evitar que duas raízes divergentes sejam tratadas simultaneamente como o mesmo workspace no dispositivo e na sincronização futura. | A decisão da pessoa entre atualizar a localização do cadastro existente ou criar uma cópia independente com novo ID. | Escolha explícita durante o cadastro quando o ID lido já existir; o catálogo final mantém no máximo uma referência local por ID. | Compara o ID portátil da pasta com o catálogo local; atualizar localização preserva a identidade, enquanto criar cópia altera o ID no novo workspace. | Somente a pessoa local confirma a intenção; o OpenBible detecta a colisão e aplica a alternativa escolhida. | Surge ao adicionar uma raiz com ID já conhecido e termina quando a referência é atualizada ou a cópia recebe novo ID; nenhuma duplicidade permanece pendente. | specs/backlog/0017-multiplos-workspaces-modelo-vaults.md; conversa atual, resposta 1 à Pergunta 4 de dados |
-| Identidade e metadados portáteis da nota | Reconhecer nota, sermão ou estudo fora do OpenBible e preservar metadados durante edições externas. | ID estável, versão do formato, tipo, título, descrição, datas e propriedades desconhecidas já presentes. | YAML frontmatter simples no próprio Markdown, com chaves desconhecidas preservadas. | O ID permanece ligado ao arquivo autoral mesmo após renome ou movimentação dentro do workspace. | A pessoa e qualquer editor de texto podem ler; o OpenBible altera somente os campos sob sua responsabilidade. | Criado com o documento, atualizado atomicamente e removido apenas com o arquivo. | specs/backlog/0018-formatos-portateis-indice-reconstruivel.md; conversa de 2026-09-05 sobre compatibilidade Obsidian/GitHub/PDF |
+| Identidade e metadados portáteis da nota | Reconhecer nota, sermão ou estudo no backend e ao exportar para fora do OpenBible. | ID estável, versão do formato, tipo, título, descrição, datas e propriedades desconhecidas já presentes. | Registro em SQLite/IndexedDB; Markdown mantém uma representação derivada e reimportável. | O ID permanece ligado ao `workspaceId` mesmo após exportação, reimportação ou recuperação. | A pessoa e editores externos leem a exportação; o OpenBible altera o registro primário no backend ativo. | Criado/atualizado atomicamente no backend; exportações e fontes legadas são regeneráveis ou preservadas. | SPEC-0017; conversa de 2026-09-06 sobre SQLite/IndexedDB e Markdown/PDF |
 | Bloco semântico portátil da nota | Manter versículos e vídeos legíveis em qualquer editor e ainda editáveis como bloco no OpenBible. | ID do bloco, tipo, referência ou URL, versão bíblica/provedor e snapshot textual visível. | Conteúdo CommonMark/GFM visível em blockquote ou link, envolvido por comentários HTML com JSON versionado de metadados. | O ID liga metadados invisíveis ao conteúdo visível; perder comentários preserva leitura, mas perde edição enriquecida. | A pessoa lê e edita o conteúdo; o OpenBible valida metadados e nunca sobrescreve divergência externa silenciosamente. | Criado pelo comando do editor, atualizado ao editar o bloco, migrado de fence válido ao salvar e removido com o bloco. | specs/backlog/0018-formatos-portateis-indice-reconstruivel.md; conversa de 2026-09-05; documentação CommonMark/GFM/Obsidian |
-| Destaque autoral do leitor bíblico | Preservar cada destaque fora do SQLite auxiliar e permitir cópia, Git e sincronização futura. | ID estável, versão e intervalo bíblico, estilo, datas e versão do schema. | Um arquivo JSON legível por destaque em highlights/<highlightId>.json. | Cada registro aponta para uma referência bíblica; o SQLite mantém apenas uma projeção consultável. | Somente a pessoa usuária e as ferramentas locais que ela escolher. | Criado ou atualizado ao destacar, removido ao apagar o destaque e reindexado sem perda quando o SQLite é recriado. | specs/backlog/0018-formatos-portateis-indice-reconstruivel.md; conversa de 2026-09-05 sobre JSON/XML/SQLite |
-| Índice reconstruível do workspace | Acelerar buscas e relações sem se tornar fonte exclusiva de informação da pessoa. | Projeções de referências, destaques e metadados derivados, versão do schema, estado e origem do rebuild. | SQLite local descartável em .openbible/index.sqlite, reconstruído deterministicamente a partir de Markdown e JSON. | Cada linha referencia IDs e caminhos autorais, mas nenhum dado existe exclusivamente no índice. | Somente os motores local/WASM e nativo do OpenBible no aparelho. | Pode ser apagado ou substituído; é recriado no boot ou sob demanda quando ausente, incompatível ou corrompido. | specs/backlog/0018-formatos-portateis-indice-reconstruivel.md; conversa de 2026-09-05 sobre SQLite e portabilidade |
+| Destaque autoral do leitor bíblico | Preservar cada destaque no backend ativo e permitir exportação/intercâmbio sem sidecar obrigatório. | `workspaceId`, `highlightId`, versão e intervalo bíblico, estilo, datas e versão do schema. | Registro em `workspace_highlights` no SQLite/IndexedDB; `reader_highlight` é projeção; JSON é opcional. | Cada registro aponta para uma referência bíblica e nunca cruza `workspaceId`. | Somente a pessoa usuária e as ferramentas locais que ela escolher. | Criado/atualizado atomicamente no backend, projetado novamente quando necessário e exportado sem mutar a fonte. | SPEC-0017; conversa de 2026-09-06 sobre SQLite/IndexedDB e Markdown/PDF |
+| Índice reconstruível do workspace | Acelerar buscas e relações sem se tornar fonte exclusiva de informação da pessoa. | Projeções de referências, destaques e metadados derivados, versão do schema, estado e origem do rebuild. | `workspace_index_state`, `note_verse_ref` e `reader_highlight` no SQLite/IndexedDB operacional. | Cada linha referencia registros primários por `workspaceId`; nenhuma projeção é autoridade e a Bíblia fica fora do rebuild. | Somente os motores do OpenBible no aparelho. | Pode ser apagado ou substituído; é recriado sob demanda quando ausente, incompatível ou corrompido. | SPEC-0017; conversa de 2026-09-06 sobre SQLite/IndexedDB e Markdown/PDF |
 <!-- specsfy:conversation-data:end -->

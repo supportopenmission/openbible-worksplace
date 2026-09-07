@@ -92,6 +92,10 @@ ou pendente.
 - Executar `$specsfy-aux-stack` após mudanças estruturais de tecnologia,
   `$specsfy-aux-rules` para regras confirmadas e `$specsfy-aux-database` sempre
   que banco, schema, tabela, campo, relação ou migration mudar.
+- Toda tarefa que cria ou altera a estrutura do banco inclui uma tarefa
+  `[MIGRATION]` com arquivo
+  versionado. A implementação aplica a migration no banco de teste e registra
+  uma consulta de estado antes de concluir a tarefa ou o Delivery Gate.
 - Executar
   `.agents/skills/specsfy-setup/scripts/monitor_context.mjs --project . --check`
   no início, após cada tarefa de implementação e antes do Delivery Gate.
@@ -143,6 +147,14 @@ input → inbox → backlog → spec → validate → tasks → TDD/BDD → impl
     ou spec indicar informações que o produto precisa guardar. A conversa usa
     linguagem cotidiana e registra respostas confirmadas em
     `.specsfy/DATABASE.md`.
+
+## Contrato de runtime Laravel
+
+Toda aplicação Laravel usa Laravel Octane como servidor de aplicação. O pacote
+`laravel/octane` é obrigatório com Open Swoole. O Octane usa o identificador
+`swoole` para esse servidor. Código executado por workers persistentes não pode manter
+estado de uma requisição para a seguinte. Build, healthcheck, reload e deploy
+devem exercitar o processo Octane que atende o tráfego real.
 
 ## Contrato de experiência de interface
 
