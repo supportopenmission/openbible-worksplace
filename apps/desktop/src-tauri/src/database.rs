@@ -414,7 +414,13 @@ impl WorkspaceDatabase {
              ON CONFLICT(workspace_id, document_id, snapshot_version) DO UPDATE SET
                state_json = excluded.state_json,
                heads_json = excluded.heads_json",
-            params![workspace_id, note_id, snapshot_version, state_json, heads_json],
+            params![
+                workspace_id,
+                note_id,
+                snapshot_version,
+                state_json,
+                heads_json
+            ],
         )?;
         transaction.commit()?;
 
@@ -459,7 +465,13 @@ impl WorkspaceDatabase {
             "INSERT OR IGNORE INTO sync_changes
                (workspace_id, document_id, change_id, change_blob, byte_size, applied, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
-            params![workspace_id, note_id, change_id, change_blob, change_blob.len() as i64],
+            params![
+                workspace_id,
+                note_id,
+                change_id,
+                change_blob,
+                change_blob.len() as i64
+            ],
         )?;
         if inserted > 0 {
             transaction.execute(
@@ -622,9 +634,8 @@ impl WorkspaceDatabase {
                 let verse_start = verse_start.ok_or(DatabaseError::Path)?;
                 let verse_end = verse_end.ok_or(DatabaseError::Path)?;
                 let style_id = style_id.unwrap_or("default");
-                let highlight_id = format!(
-                    "highlight-{version_id}-{book_id}-{chapter}-{verse_start}-{verse_end}"
-                );
+                let highlight_id =
+                    format!("highlight-{version_id}-{book_id}-{chapter}-{verse_start}-{verse_end}");
                 let payload_json = json!({
                     "highlightId": highlight_id,
                     "versionId": version_id,
@@ -702,9 +713,8 @@ impl WorkspaceDatabase {
                 let chapter = chapter.ok_or(DatabaseError::Path)?;
                 let verse_start = verse_start.ok_or(DatabaseError::Path)?;
                 let verse_end = verse_end.ok_or(DatabaseError::Path)?;
-                let highlight_id = format!(
-                    "highlight-{version_id}-{book_id}-{chapter}-{verse_start}-{verse_end}"
-                );
+                let highlight_id =
+                    format!("highlight-{version_id}-{book_id}-{chapter}-{verse_start}-{verse_end}");
                 self.connection.execute(
                     "DELETE FROM workspace_highlights WHERE workspace_id = ?1 AND highlight_id = ?2",
                     params![workspace_id, highlight_id],
@@ -728,7 +738,11 @@ fn highlight_json_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<serde_json::V
 }
 
 fn validate_sync_key(value: &str) -> Result<(), DatabaseError> {
-    if value.trim().is_empty() || value.contains('/') || value.contains('\\') || value.contains("..") {
+    if value.trim().is_empty()
+        || value.contains('/')
+        || value.contains('\\')
+        || value.contains("..")
+    {
         return Err(DatabaseError::Path);
     }
     Ok(())
@@ -1046,6 +1060,47 @@ mod tests {
             .expect("records array")
             .iter()
             .all(|record| record["workspaceId"] == "workspace-api"));
+        drop(database);
+        let _ = fs::remove_dir_all(path.parent().expect("test database has a parent"));
+    }
+
+    #[test]
+    fn logical_content_api_deletes_only_the_requested_note() {
+        let path = test_path();
+        let mut database = WorkspaceDatabase::open(&path).expect("database opens");
+        database
+            .write_workspace_content(&json!({
+                "kind": "note",
+                "id": "note-a",
+                "workspaceId": "workspace-delete",
+                "schemaVersion": 1,
+                "payload": { "title": "A" }
+            }))
+            .expect("first note writes");
+        database
+            .write_workspace_content(&json!({
+                "kind": "note",
+                "id": "note-b",
+                "workspaceId": "workspace-delete",
+                "schemaVersion": 1,
+                "payload": { "title": "B" }
+            }))
+            .expect("second note writes");
+
+        database
+            .delete_workspace_content("workspace-delete", "note", "note-a")
+            .expect("note delete is transactional");
+        let records = database
+            .list_workspace_content("workspace-delete")
+            .expect("remaining note lists");
+        let ids: Vec<&str> = records
+            .as_array()
+            .expect("records array")
+            .iter()
+            .filter_map(|record| record["id"].as_str())
+            .collect();
+        assert_eq!(ids, vec!["note-b"]);
+
         drop(database);
         let _ = fs::remove_dir_all(path.parent().expect("test database has a parent"));
     }
