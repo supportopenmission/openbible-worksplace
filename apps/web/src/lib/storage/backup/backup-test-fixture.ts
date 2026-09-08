@@ -42,8 +42,10 @@ export class BackupMemoryStorage implements WorkspaceStorage {
 		}
 		for (const file of this.files.keys()) {
 			if (!file.startsWith(prefix)) continue;
-			const name = file.slice(prefix.length).split('/')[0];
-			if (name && !entries.has(name)) entries.set(name, { name, kind: 'file' });
+			const remaining = file.slice(prefix.length);
+			const name = remaining.split('/')[0];
+			const isDir = remaining.includes('/');
+			if (name && !entries.has(name)) entries.set(name, { name, kind: isDir ? 'directory' : 'file' });
 		}
 		return [...entries.values()].sort((left, right) => left.name.localeCompare(right.name));
 	}

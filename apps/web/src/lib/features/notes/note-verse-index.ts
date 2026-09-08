@@ -1,5 +1,6 @@
 import { isSQLite } from '$lib/storage/empty-sqlite';
 import type { WorkspaceStorage } from '$lib/storage/types';
+import { TauriCommandError } from '$lib/storage/tauri-bridge';
 import { getSql } from '$lib/features/bible/bible-reader';
 import type { BindParams } from 'sql.js';
 
@@ -162,12 +163,28 @@ export function listChapterNoteVerseRefs(
 
 const NOTE_INDEX_PATH = '.openbible/index.sqlite';
 
+function isMissingWorkspaceFile(error: unknown): boolean {
+	return (
+		(error instanceof TauriCommandError && error.code === 'io_error') ||
+		(error instanceof DOMException && error.name === 'NotFoundError')
+	);
+}
+
+async function readOptionalIndex(storage: WorkspaceStorage): Promise<Uint8Array | null> {
+	try {
+		return await storage.readFile(NOTE_INDEX_PATH);
+	} catch (error) {
+		if (isMissingWorkspaceFile(error)) return null;
+		throw error;
+	}
+}
+
 export async function readChapterNoteVerseRefs(
 	storage: WorkspaceStorage,
 	query: { versionId: string; bookId: number; chapter: number }
 ): Promise<NoteVerseRef[]> {
 	const sql = await getSql();
-	const bytes = await storage.readFile(NOTE_INDEX_PATH);
+	const bytes = await readOptionalIndex(storage);
 	const database =
 		bytes && isSQLite(bytes) ? new sql.Database(bytes) : new sql.Database();
 	try {
@@ -192,7 +209,7 @@ export async function persistNoteVerseRefsToWorkspace(
 	refs: VerseReferenceInput[]
 ): Promise<NoteVerseRef[]> {
 	const sql = await getSql();
-	const bytes = await storage.readFile(NOTE_INDEX_PATH);
+	const bytes = await readOptionalIndex(storage);
 	const database =
 		bytes && isSQLite(bytes) ? new sql.Database(bytes) : new sql.Database();
 	try {

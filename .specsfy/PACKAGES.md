@@ -8,12 +8,20 @@
 | npm | desenvolvimento | prettier | 3.9.6 | Prettier is an opinionated code formatter | prettier/prettier |
 | npm | desenvolvimento | prettier-plugin-svelte | catalog:sveltejs | Svelte plugin for prettier | https://github.com/sveltejs/prettier-plugin-svelte |
 | npm | desenvolvimento | turbo | ^2.10.12 | Turborepo is the build system for coding agents. | https://github.com/vercel/turborepo |
-| npm | produção | @opencode-ai/plugin | 1.18.26 | Finalidade não descrita nos metadados locais. |  |
+| npm | produção | @opencode-ai/plugin | 1.18.25 | Finalidade não descrita nos metadados locais. |  |
 | npm | desenvolvimento | @tauri-apps/cli | ^2.11.4 | Command line interface for building Tauri apps | https://github.com/tauri-apps/tauri |
 | npm | desenvolvimento | @cloudflare/workers-types | 5.20260907.1 | TypeScript typings for Cloudflare Workers | https://github.com/cloudflare/workerd |
 | npm | desenvolvimento | typescript | 7.0.2 | TypeScript is a language for application scale JavaScript development | https://github.com/microsoft/TypeScript |
 | npm | desenvolvimento | vitest | 4.1.10 | Next generation testing framework powered by Vite | https://github.com/vitest-dev/vitest |
 | npm | desenvolvimento | wrangler | ^4.127.1 | Command-line interface for all things Cloudflare Workers | https://github.com/cloudflare/workers-sdk |
+| npm | produção | better-auth | ^1.1.21 | The most comprehensive authentication framework for TypeScript. | https://github.com/better-auth/better-auth |
+| npm | produção | drizzle-orm | ^0.40.0 | Drizzle ORM package for SQL databases | https://github.com/drizzle-team/drizzle-orm |
+| npm | desenvolvimento | @sveltejs/adapter-cloudflare | ^7.2.9 | Adapts SvelteKit applications for Cloudflare Workers or Cloudflare Pages | https://github.com/sveltejs/kit |
+| npm | desenvolvimento | @sveltejs/kit | catalog:sveltejs | SvelteKit is the fastest way to build Svelte apps | https://github.com/sveltejs/kit |
+| npm | desenvolvimento | @sveltejs/vite-plugin-svelte | catalog:sveltejs | Finalidade não descrita nos metadados locais. | https://github.com/sveltejs/vite-plugin-svelte |
+| npm | desenvolvimento | drizzle-kit | ^0.30.5 | Finalidade não descrita nos metadados locais. | https://github.com/drizzle-team/drizzle-orm |
+| npm | desenvolvimento | svelte | catalog:sveltejs | Cybernetically enhanced web apps | https://github.com/sveltejs/svelte |
+| npm | desenvolvimento | vite | 8.2.1 | Native-ESM powered web dev build tool | https://github.com/vitejs/vite |
 | npm | produção | @automerge/automerge | 3.4.1 | Javascript implementation of automerge, backed by @automerge/automerge-wasm | github:automerge/automerge |
 | npm | produção | @automerge/automerge-repo | 2.5.6 | A repository object to manage a collection of automerge documents | https://github.com/automerge/automerge-repo/tree/master/packages/automerge-repo |
 | npm | produção | @automerge/automerge-repo-network-websocket | 2.5.6 | isomorphic node/browser Websocket network adapter for Automerge Repo | https://github.com/automerge/automerge-repo/tree/master/packages/automerge-repo-network-websocket |
@@ -35,23 +43,18 @@
 | npm | desenvolvimento | @playwright/test | 1.62.1 | A high-level API to automate web browsers | https://github.com/microsoft/playwright |
 | npm | desenvolvimento | @repo/eslint-config | * | Finalidade não descrita nos metadados locais. |  |
 | npm | desenvolvimento | @repo/typescript-config | * | Finalidade não descrita nos metadados locais. |  |
-| npm | desenvolvimento | @sveltejs/adapter-cloudflare | ^7.2.9 | Adapts SvelteKit applications for Cloudflare Workers or Cloudflare Pages | https://github.com/sveltejs/kit |
 | npm | desenvolvimento | @sveltejs/adapter-static | ^3.0.8 | Adapter for SvelteKit apps that prerenders your entire site as a collection of static files | https://github.com/sveltejs/kit |
-| npm | desenvolvimento | @sveltejs/kit | catalog:sveltejs | SvelteKit is the fastest way to build Svelte apps | https://github.com/sveltejs/kit |
-| npm | desenvolvimento | @sveltejs/vite-plugin-svelte | catalog:sveltejs | Finalidade não descrita nos metadados locais. | https://github.com/sveltejs/vite-plugin-svelte |
 | npm | desenvolvimento | @tailwindcss/vite | ^4.3.3 | A utility-first CSS framework for rapidly building custom user interfaces. | https://github.com/tailwindlabs/tailwindcss |
 | npm | desenvolvimento | @types/node | 26.2.0 | TypeScript definitions for node | https://github.com/DefinitelyTyped/DefinitelyTyped |
 | npm | desenvolvimento | @types/sql.js | ^1.4.11 | TypeScript definitions for sql.js | https://github.com/DefinitelyTyped/DefinitelyTyped |
 | npm | desenvolvimento | @vitest/browser-playwright | 4.1.10 | Browser running for Vitest using playwright | https://github.com/vitest-dev/vitest |
 | npm | desenvolvimento | bits-ui | ^2.16.3 | The headless components for Svelte. | github:huntabyte/bits-ui |
 | npm | desenvolvimento | eslint | 10.8.1 | An AST-based pattern checker for JavaScript. | eslint/eslint |
-| npm | desenvolvimento | svelte | catalog:sveltejs | Cybernetically enhanced web apps | https://github.com/sveltejs/svelte |
 | npm | desenvolvimento | tailwind-variants | ^3.3.0 | 🦄 Tailwindcss first-class variant API | https://github.com/heroui-inc/tailwind-variants |
 | npm | desenvolvimento | tailwindcss | ^4.3.3 | A utility-first CSS framework for rapidly building custom user interfaces. | https://github.com/tailwindlabs/tailwindcss |
 | npm | desenvolvimento | tslib | 2.8.1 | Runtime library for TypeScript helper functions | https://github.com/Microsoft/tslib |
 | npm | desenvolvimento | tw-animate-css | ^1.4.0 | TailwindCSS v4.0 compatible replacement for `tailwindcss-animate`. | Wombosvideo/tw-animate-css |
 | npm | desenvolvimento | vaul-svelte | ^1.0.0-next.7 | Finalidade não descrita nos metadados locais. | github:huntabyte/vaul-svelte |
-| npm | desenvolvimento | vite | 8.2.1 | Native-ESM powered web dev build tool | https://github.com/vitejs/vite |
 | npm | desenvolvimento | vitest-browser-svelte | 3.0.0 | Render Svelte components in Vitest Browser Mode | https://github.com/vitest-community/vitest-browser-svelte |
 | npm | desenvolvimento | @eslint/compat | 2.1.0 | Compatibility utilities for ESLint | https://github.com/eslint/rewrite |
 | npm | desenvolvimento | @eslint/eslintrc | 3.3.6 | The legacy ESLintRC config file format for ESLint | eslint/eslintrc |
@@ -64,18 +67,18 @@
 | npm | desenvolvimento | typescript | 5.9.3 | TypeScript is a language for application scale JavaScript development | https://github.com/microsoft/TypeScript |
 | npm | desenvolvimento | typescript-eslint | 8.67.0 | Tooling which enables you to use TypeScript with ESLint | https://github.com/typescript-eslint/typescript-eslint |
 | npm | transitiva | @ai-sdk/provider | 3.0.8 | Finalidade não descrita nos metadados locais. | https://github.com/vercel/ai |
-| npm | transitiva | @msgpackr-extract/msgpackr-extract-darwin-arm64 | 3.0.4 | Finalidade não descrita nos metadados locais. |  |
+| npm | transitiva | @msgpackr-extract/msgpackr-extract-darwin-arm64 | 3.0.4 | Platform specific binary for msgpackr-extract on darwin OS with arm64 architecture | http://github.com/kriszyp/msgpackr-extract |
 | npm | transitiva | @msgpackr-extract/msgpackr-extract-darwin-x64 | 3.0.4 | Finalidade não descrita nos metadados locais. |  |
 | npm | transitiva | @msgpackr-extract/msgpackr-extract-linux-arm | 3.0.4 | Finalidade não descrita nos metadados locais. |  |
 | npm | transitiva | @msgpackr-extract/msgpackr-extract-linux-arm64 | 3.0.4 | Finalidade não descrita nos metadados locais. |  |
-| npm | transitiva | @msgpackr-extract/msgpackr-extract-linux-x64 | 3.0.4 | Platform specific binary for msgpackr-extract on linux OS with x64 architecture | http://github.com/kriszyp/msgpackr-extract |
+| npm | transitiva | @msgpackr-extract/msgpackr-extract-linux-x64 | 3.0.4 | Finalidade não descrita nos metadados locais. |  |
 | npm | transitiva | @msgpackr-extract/msgpackr-extract-win32-x64 | 3.0.4 | Finalidade não descrita nos metadados locais. |  |
-| npm | transitiva | @opencode-ai/plugin | 1.18.26 | Finalidade não descrita nos metadados locais. |  |
-| npm | transitiva | @opencode-ai/sdk | 1.18.26 | Finalidade não descrita nos metadados locais. |  |
+| npm | transitiva | @opencode-ai/plugin | 1.18.25 | Finalidade não descrita nos metadados locais. |  |
+| npm | transitiva | @opencode-ai/sdk | 1.18.25 | Finalidade não descrita nos metadados locais. |  |
 | npm | transitiva | @standard-schema/spec | 1.1.0 | A family of specs for interoperable TypeScript | https://github.com/standard-schema/standard-schema |
 | npm | transitiva | cross-spawn | 7.0.6 | Cross platform child_process#spawn and child_process#spawnSync | git@github.com:moxystudio/node-cross-spawn |
 | npm | transitiva | detect-libc | 2.1.2 | Node.js module to detect the C standard library (libc) implementation family and version | git://github.com/lovell/detect-libc |
-| npm | transitiva | effect | 4.0.0-beta.83 | The missing standard library for TypeScript, for writing production-grade software. | https://github.com/Effect-TS/effect |
+| npm | transitiva | effect | 4.0.0-beta.83 | The missing standard library for TypeScript, for writing production-grade software. | https://github.com/Effect-TS/effect-smol |
 | npm | transitiva | fast-check | 4.9.0 | Property based testing framework for JavaScript (like QuickCheck) | https://github.com/dubzzz/fast-check |
 | npm | transitiva | find-my-way-ts | 0.1.6 | Crazy fast http radix based router | https://github.com/tim-smart/find-my-way-ts |
 | npm | transitiva | ini | 7.0.0 | An ini encoder/decoder for node | https://github.com/npm/ini |

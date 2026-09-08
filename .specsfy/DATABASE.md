@@ -13,6 +13,7 @@ do conteúdo autoral e do índice reconstruível.
 | Estrutura | Schema/migration | `apps/desktop/src-tauri/migrations/002_create_workspace_content.sql` |
 | Estrutura | Schema/migration | `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` |
 | Estrutura | Schema/migration | `apps/sync-api/migrations/0001_sync.sql` |
+| Estrutura | Schema/migration | `apps/sync-server/drizzle/0000_skinny_puck.sql` |
 
 ## Estruturas detectadas
 
@@ -36,6 +37,14 @@ do conteúdo autoral e do índice reconstruível.
 | sync_documents | Tabela SQL | workspace_id:TEXT, document_id:TEXT, kind:TEXT, revision:INTEGER, payload_json:TEXT, deleted_at:TEXT, updated_at:TEXT, updated_by:TEXT | Não detectadas | `apps/sync-api/migrations/0001_sync.sql` |
 | sync_changes | Tabela SQL | id:INTEGER, workspace_id:TEXT, document_id:TEXT, kind:TEXT, revision:INTEGER, operation_id:TEXT, payload_json:TEXT, deleted_at:TEXT, updated_by:TEXT, created_at:TEXT, UNIQUE:(workspace_id | Não detectadas | `apps/sync-api/migrations/0001_sync.sql` |
 | sync_conflicts | Tabela SQL | id:INTEGER, workspace_id:TEXT, document_id:TEXT, operation_id:TEXT, base_revision:INTEGER, current_revision:INTEGER, payload_json:TEXT, deleted_at:TEXT, device_id:TEXT, created_at:TEXT, UNIQUE:(workspace_id | Não detectadas | `apps/sync-api/migrations/0001_sync.sql` |
+| account | Tabela SQL | id:text, account_id:text, provider_id:text, user_id:text, access_token:text, refresh_token:text, id_token:text, access_token_expires_at:integer, refresh_token_expires_at:integer, scope:text, password:text, created_at:integer, updated_at:integer | Não detectadas | `apps/sync-server/drizzle/0000_skinny_puck.sql` |
+| session | Tabela SQL | id:text, expires_at:integer, token:text, created_at:integer, updated_at:integer, ip_address:text, user_agent:text, user_id:text | Não detectadas | `apps/sync-server/drizzle/0000_skinny_puck.sql` |
+| sync_changes | Tabela SQL | id:integer, workspace_id:text, document_id:text, kind:text, revision:integer, operation_id:text, payload_json:text, deleted_at:text, updated_by:text, created_at:text | Não detectadas | `apps/sync-server/drizzle/0000_skinny_puck.sql` |
+| sync_conflicts | Tabela SQL | id:integer, workspace_id:text, document_id:text, operation_id:text, base_revision:integer, current_revision:integer, payload_json:text, deleted_at:text, device_id:text, created_at:text | Não detectadas | `apps/sync-server/drizzle/0000_skinny_puck.sql` |
+| sync_documents | Tabela SQL | workspace_id:text, document_id:text, kind:text, revision:integer, payload_json:text, deleted_at:text, updated_at:text, updated_by:text | Não detectadas | `apps/sync-server/drizzle/0000_skinny_puck.sql` |
+| sync_workspaces | Tabela SQL | workspace_id:text, owner_id:text, name:text, created_at:text, updated_at:text | Não detectadas | `apps/sync-server/drizzle/0000_skinny_puck.sql` |
+| user | Tabela SQL | id:text, name:text, email:text, email_verified:integer, image:text, created_at:integer, updated_at:integer | Não detectadas | `apps/sync-server/drizzle/0000_skinny_puck.sql` |
+| verification | Tabela SQL | id:text, identifier:text, value:text, expires_at:integer, created_at:integer, updated_at:integer | Não detectadas | `apps/sync-server/drizzle/0000_skinny_puck.sql` |
 <!-- specsfy:database:end -->
 
 ### D1 remoto da API de sincronização

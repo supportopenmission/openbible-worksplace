@@ -9,8 +9,14 @@ nenhum token é versionado neste repositório.
 
 ```bash
 bun install
+bun run --cwd apps/sync-api dev # aplica a migration local antes do Worker
+```
+
+Se o D1 local já estiver em uso por outro processo, aplique a migration
+separadamente antes de iniciá-lo:
+
+```bash
 bun run --cwd apps/sync-api db:migrate:local
-bun run --cwd apps/sync-api dev
 ```
 
 O placeholder `database_id` em `wrangler.jsonc` é suficiente para o D1 local.

@@ -1,0 +1,18 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "openbible-sync-server",
+	"compatibility_date": "2026-09-07",
+	"pages_build_output_dir": ".svelte-kit/cloudflare",
+	"d1_databases": [
+		{
+			"binding": "openbible_sync",
+			"database_name": "openbible-sync",
+			"database_id": "0ca52e95-b174-423c-af02-76a87be7c3b0",
+			"migrations_dir": "drizzle"
+		}
+	],
+	"vars": {
+		"MAX_BATCH_SIZE": "50",
+		"MAX_PAYLOAD_BYTES": "262144"
+	}
+}

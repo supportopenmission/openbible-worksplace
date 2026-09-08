@@ -1,0 +1,32 @@
+{
+  "name": "sync-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --host",
+    "build": "vite build",
+    "preview": "wrangler dev",
+    "check-types": "svelte-kit sync && tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply openbible-sync --local",
+    "db:migrate:remote": "wrangler d1 migrations apply openbible-sync --remote"
+  },
+  "dependencies": {
+    "better-auth": "^1.1.21",
+    "drizzle-orm": "^0.40.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260907.1",
+    "@sveltejs/adapter-cloudflare": "^7.2.9",
+    "@sveltejs/kit": "catalog:sveltejs",
+    "@sveltejs/vite-plugin-svelte": "catalog:sveltejs",
+    "drizzle-kit": "^0.30.5",
+    "svelte": "catalog:sveltejs",
+    "typescript": "7.0.2",
+    "vite": "8.2.1",
+    "vitest": "4.1.10",
+    "wrangler": "^4.127.1"
+  }
+}

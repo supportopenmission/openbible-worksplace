@@ -94,3 +94,6 @@ maskable`.
   os adapters de storage/rede permanecem próprios para manter
   `app.sqlite`/IndexedDB como backends das notas. Os adapters oficiais de
   storage do Automerge não são usados como fonte paralela.
+- O script `apps/sync-api` `dev` aplica as migrations D1 locais antes de iniciar
+  o Wrangler, evitando que o Worker de desenvolvimento atenda requests com o
+  banco local sem schema.

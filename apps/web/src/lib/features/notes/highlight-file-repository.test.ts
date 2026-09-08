@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { persistHighlight, readAllReaderHighlights } from '$lib/features/bible/reader-highlights-repository';
+import {
+	persistHighlight,
+	readAllReaderHighlights,
+	removeHighlight
+} from '$lib/features/bible/reader-highlights-repository';
 import type { StorageKind, WorkspaceStorage } from '$lib/storage/types';
 
 class MemoryStorage implements WorkspaceStorage {
@@ -36,6 +40,40 @@ describe('authorial highlight sidecars', () => {
 		expect(await readAllReaderHighlights(storage)).toEqual([
 			expect.objectContaining({ versionId: record.versionId, bookId: record.bookId, chapter: 3 })
 		]);
+	});
+});
+
+describe('canonical workspace highlight persistence', () => {
+	it('keeps a manifest-backed highlight in the workspace content repository', async () => {
+		const storage = new MemoryStorage();
+		await storage.writeFile(
+			'.openbible/config.json',
+			JSON.stringify({
+				workspaceId: 'workspace-indexeddb',
+				formatVersion: 2,
+				name: 'Workspace IndexedDB',
+				managedRoot: true,
+				storage: 'opfs',
+				configuredAt: '2026-09-08T00:00:00.000Z',
+				bibleImportStatus: 'complete',
+				version: 1
+			})
+		);
+
+		await persistHighlight(storage, record);
+
+		expect(storage.files.has('highlights/highlight-uuid.json')).toBe(false);
+		expect(await readAllReaderHighlights(storage)).toEqual([
+			expect.objectContaining({
+				versionId: record.versionId,
+				bookId: record.bookId,
+				chapter: record.chapter,
+				styleId: record.styleId
+			})
+		]);
+
+		await removeHighlight(storage, record);
+		expect(await readAllReaderHighlights(storage)).toEqual([]);
 	});
 });
 

@@ -24,16 +24,25 @@ async function persistForSync(
 	storage: WorkspaceStorage,
 	record: WorkspaceContentRecord
 ): Promise<void> {
-	const { persistSyncRecord } = await import('$lib/features/sync/sync-automerge');
-	await persistSyncRecord(storage, record);
+	try {
+		const { persistSyncRecord } = await import('$lib/features/sync/sync-automerge');
+		await persistSyncRecord(storage, record);
+	} catch {
+		// A sync runtime is auxiliary; the primary workspace record is already saved.
+		// A transient sync failure must not turn a successful note write into an error.
+	}
 }
 
 async function removeFromSync(
 	storage: WorkspaceStorage,
 	record: WorkspaceContentRecord
 ): Promise<void> {
-	const { removeSyncRecord } = await import('$lib/features/sync/sync-automerge');
-	await removeSyncRecord(storage, record);
+	try {
+		const { removeSyncRecord } = await import('$lib/features/sync/sync-automerge');
+		await removeSyncRecord(storage, record);
+	} catch {
+		// The primary delete remains authoritative when sync is unavailable.
+	}
 }
 
 function virtualNotePath(id: string): string {

@@ -3,13 +3,16 @@
 <!-- specsfy:documentator:start -->
 ## Resumo
 
-- Arquivos de teste: 121.
+- Arquivos de teste: 126.
 - Runner: não identificado.
 - Scripts: build: turbo run build; check-types: turbo run check-types; dev: turbo run dev; lint: turbo run lint; format: prettier --write .; format:check: prettier --check ..
 
 | Arquivo |
 | --- |
 | apps/sync-api/src/sync-api.test.ts |
+| apps/sync-server/src/test/auth.test.ts |
+| apps/sync-server/src/test/sync-auth.test.ts |
+| apps/sync-server/src/test/workspaces.test.ts |
 | apps/web/src/lib/app-version.test.ts |
 | apps/web/src/lib/bible/editor/bibleReferenceDecorations.test.ts |
 | apps/web/src/lib/bible/parser/BibleReferenceParser.test.ts |
@@ -76,6 +79,7 @@
 | apps/web/src/lib/features/notes/note-toolbar.test.ts |
 | apps/web/src/lib/features/notes/note-verse-index.test.ts |
 | apps/web/src/lib/features/notes/notes-delete-refresh.test.ts |
+| apps/web/src/lib/features/notes/notes-repository-sync.test.ts |
 | apps/web/src/lib/features/notes/notes-repository.test.ts |
 | apps/web/src/lib/features/notes/notes-state-switching.test.ts |
 | apps/web/src/lib/features/notes/notes-state.test.ts |
@@ -90,6 +94,7 @@
 | apps/web/src/lib/features/notes/youtube-embed.test.ts |
 | apps/web/src/lib/features/onboarding/onboarding-errors.test.ts |
 | apps/web/src/lib/features/onboarding/storage-choice.svelte.spec.ts |
+| apps/web/src/lib/features/sync/account-sync.test.ts |
 | apps/web/src/lib/features/sync/external-edit-bridge.test.ts |
 | apps/web/src/lib/features/sync/peer-conflict-panel.svelte.spec.ts |
 | apps/web/src/lib/features/sync/peer-conflict-panel.test.ts |

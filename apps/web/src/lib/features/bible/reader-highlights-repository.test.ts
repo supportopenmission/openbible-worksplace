@@ -78,6 +78,34 @@ describe('reader-highlights-repository', () => {
 		});
 	});
 
+	it('prefers the workspace ID bound to native storage', async () => {
+		const calls: unknown[] = [];
+		const storage: WorkspaceStorage = {
+			kind: 'native',
+			label: 'Workspace nativo',
+			workspaceId: 'workspace-native',
+			async ensureDirectory() {},
+			async writeFile() {},
+			async readFile() {
+				return null;
+			},
+			async fileExists() {
+				return false;
+			},
+			async listFiles() {
+				return [];
+			},
+			async queryIndex(_operation, record) {
+				calls.push(record);
+				return [];
+			}
+		};
+
+		await highlightRepo.persistHighlight(storage, record);
+
+		expect(calls[0]).toMatchObject({ workspaceId: 'workspace-native' });
+	});
+
 	it('treats a missing highlights directory as an empty chapter on first load', async () => {
 		// SPECSFY: US-003 FR-004 NFR-001 AC-009 AC-010
 		const storage: WorkspaceStorage = {

@@ -25,6 +25,7 @@
 | 18 | 0018-backup-restauracao-workspace-pwa | Complete | — |
 | 19 | 0019-sincronizacao-local-first-automerge | Complete | — |
 | 20 | 0020-agentes-ia-locais-controlados-workspace | Complete | — |
+| 21 | 0021-servidor-de-sincronizacao-com-autenticacao-better-auth | Complete | — |
 
 ## Marcos
 

@@ -4,13 +4,12 @@
 	"main": "src/index.ts",
 	"compatibility_date": "2026-09-07",
 	"d1_databases": [
-		{
-			"binding": "DB",
-			"database_name": "openbible-sync",
-			"database_id": "00000000-0000-0000-0000-000000000000",
-			"migrations_dir": "migrations"
-		}
-	],
+    {
+      "binding": "openbible_sync",
+      "database_name": "openbible-sync",
+      "database_id": "0ca52e95-b174-423c-af02-76a87be7c3b0"
+    }
+  ],
 	"vars": {
 		"MAX_BATCH_SIZE": "50",
 		"MAX_PAYLOAD_BYTES": "262144"

@@ -10,6 +10,7 @@
 | apps/desktop/src-tauri/migrations/003_create_sync_operational.sql |
 | apps/desktop/src-tauri/src/commands/migration.rs |
 | apps/sync-api/migrations/0001_sync.sql |
+| apps/sync-server/drizzle/0000_skinny_puck.sql |
 | apps/web/.svelte-kit/output/server/chunks/workspace-migration.js |
 | apps/web/src/lib/features/notes/legacy-migration.test.ts |
 | apps/web/src/lib/features/notes/legacy-migration.ts |

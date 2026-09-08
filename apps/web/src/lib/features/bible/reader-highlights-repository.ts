@@ -6,7 +6,7 @@ import {
 	rebuildWorkspaceIndex
 } from '$lib/features/notes/index-rebuilder';
 import { getActiveWorkspace, readManifest } from '$lib/storage/workspace-catalog';
-import { createWorkspaceContentRepository } from '$lib/storage/workspace-content-repository';
+import { getWorkspaceContentRepository } from '$lib/storage/workspace-content-storage';
 
 export type ReaderHighlightRecord = {
 	versionId: string;
@@ -130,6 +130,20 @@ export async function deleteHighlightByRange(
 
 export const READER_HIGHLIGHT_INDEX_PATH = '.openbible/index.sqlite';
 
+type ReaderHighlightIdentity = Pick<
+	ReaderHighlightRecord,
+	'versionId' | 'bookId' | 'chapter' | 'verseStart' | 'verseEnd'
+> & { highlightId?: string; recordId?: string };
+
+function highlightRecordId(record: ReaderHighlightIdentity): string {
+	const identity = record;
+	return typeof identity.highlightId === 'string'
+		? identity.highlightId
+		: typeof identity.recordId === 'string'
+			? identity.recordId
+			: `highlight-${record.versionId}-${record.bookId}-${record.chapter}-${record.verseStart}-${record.verseEnd}`;
+}
+
 type OpenIndex = { database: SqlDatabase; export(): Uint8Array; close(): void };
 
 /**
@@ -139,6 +153,7 @@ type OpenIndex = { database: SqlDatabase; export(): Uint8Array; close(): void };
  * portátil.
  */
 async function nativeWorkspaceId(storage: WorkspaceStorage): Promise<string | undefined> {
+	if (storage.workspaceId) return storage.workspaceId;
 	const activeId = getActiveWorkspace().workspaceId;
 	if (activeId) return activeId;
 	const manifest = await readManifest(storage);
@@ -284,20 +299,14 @@ export async function persistHighlight(
 		return;
 	}
 	const manifest = await readManifest(storage);
-	const identity = record as ReaderHighlightRecord & { highlightId?: string; recordId?: string };
-	const highlightId =
-		typeof identity.highlightId === 'string'
-			? identity.highlightId
-			: typeof identity.recordId === 'string'
-				? identity.recordId
-				: `highlight-${record.versionId}-${record.bookId}-${record.chapter}-${record.verseStart}-${record.verseEnd}`;
+	const highlightId = highlightRecordId(record);
 	if (manifest) {
 		const context = {
 			workspaceId: manifest.workspaceId,
 			generation: 0,
 			backend: storage.kind === 'native' ? ('sqlite' as const) : ('indexeddb' as const)
 		};
-		const repository = createWorkspaceContentRepository(context);
+		const repository = getWorkspaceContentRepository(storage, context);
 		await repository.write({
 			kind: 'highlight',
 			id: highlightId,
@@ -328,6 +337,18 @@ export async function removeHighlight(
 			...record,
 			workspaceId
 		});
+		return;
+	}
+	const manifest = await readManifest(storage);
+	if (manifest) {
+		const context = {
+			workspaceId: manifest.workspaceId,
+			generation: 0,
+			backend: storage.kind === 'native' ? ('sqlite' as const) : ('indexeddb' as const)
+		};
+		const repository = getWorkspaceContentRepository(storage, context);
+		await repository.remove(context, 'highlight', highlightRecordId(record));
+		await rebuildWorkspaceIndex(storage, { context });
 		return;
 	}
 	await withWorkspaceIndex(storage, (database) => deleteHighlightByRange(database, record), true);

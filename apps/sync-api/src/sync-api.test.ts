@@ -31,6 +31,26 @@ async function push(
 }
 
 describe('sync API HTTP contract', () => {
+	it('responde ao preflight CORS sem corpo em status 204', async () => {
+		const api = createSyncApi({ store: createMemorySyncStore(), token: 'test-token' });
+
+		const response = await api.fetch(
+			new Request(`https://sync.example/v1/workspaces/${workspaceId}/sync/push`, {
+				method: 'OPTIONS',
+				headers: {
+					origin: 'https://app.example',
+					'access-control-request-method': 'POST',
+					'access-control-request-headers': 'authorization, content-type'
+				}
+			})
+		);
+
+		expect(response.status).toBe(204);
+		expect(await response.text()).toBe('');
+		expect(response.headers.get('access-control-allow-origin')).toBe('*');
+		expect(response.headers.get('access-control-allow-methods')).toContain('POST');
+	});
+
 	// SPECSFY: US-002 FR-007 NFR-005 AC-031
 	it('faz push, pull incremental, tombstone e trata retry como idempotente', async () => {
 		const api = createSyncApi({ store: createMemorySyncStore(), token: 'test-token' });

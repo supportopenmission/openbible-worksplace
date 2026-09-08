@@ -1056,23 +1056,27 @@
 				title: reference,
 				body: `\n# ${reference}\n\n${fence}\n`
 			});
-			await persistNoteVerseRefsToWorkspace(currentStorage, saved.path, [
-				{
-					blockIndex: 0,
+			try {
+				await persistNoteVerseRefsToWorkspace(currentStorage, saved.path, [
+					{
+						blockIndex: 0,
+						versionId: selectedVersion.id,
+						bookId: selectedBook.id,
+						bookName: selectedBook.name,
+						chapter: selectedChapter,
+						verseStart: range.verseStart,
+						verseEnd: range.verseEnd
+					}
+				]);
+				chapterNoteRefs = await readChapterNoteVerseRefs(currentStorage, {
 					versionId: selectedVersion.id,
 					bookId: selectedBook.id,
-					bookName: selectedBook.name,
-					chapter: selectedChapter,
-					verseStart: range.verseStart,
-					verseEnd: range.verseEnd
-				}
-			]);
+					chapter: selectedChapter
+				});
+			} catch {
+				// The note body is authoritative; a derived verse index can rebuild later.
+			}
 			rememberReaderNote(saved);
-			chapterNoteRefs = await readChapterNoteVerseRefs(currentStorage, {
-				versionId: selectedVersion.id,
-				bookId: selectedBook.id,
-				chapter: selectedChapter
-			});
 			splitNote = saved;
 			closePopover();
 		} catch {

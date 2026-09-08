@@ -28,7 +28,8 @@ const DEFAULT_MAX_BATCH_SIZE = 50;
 const DEFAULT_MAX_PAYLOAD_BYTES = 256 * 1024;
 
 function json(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
-	return new Response(JSON.stringify(data), {
+	const body = status === 204 || status === 205 || status === 304 ? null : JSON.stringify(data);
+	return new Response(body, {
 		status,
 		headers: {
 			'content-type': 'application/json; charset=utf-8',

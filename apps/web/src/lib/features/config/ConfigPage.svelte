@@ -15,12 +15,14 @@
 		Archive,
 		Info,
 		Sparkles,
-		SunMoon
+		SunMoon,
+		User
 	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import AppearanceSettings from './AppearanceSettings.svelte';
 	import UpdateSettings from './UpdateSettings.svelte';
 	import BibleSettings from '$lib/features/bible/BibleSettings.svelte';
+	import AccountSyncSection from '$lib/features/auth/AccountSyncSection.svelte';
 	import {
 		getReminderConfig,
 		requestReminderPermission,
@@ -35,6 +37,7 @@
 
 	const isMobile = new IsMobile();
 	type ConfigSectionId =
+		| 'account'
 		| 'storage'
 		| 'assistance'
 		| 'workspaces'
@@ -49,6 +52,7 @@
 
 	const configSections: Array<{ id: ConfigSectionId; label: string; icon: Component }> = [
 		{ id: 'appearance', label: 'Aparência', icon: SunMoon },
+		{ id: 'account', label: 'Conta e sincronização', icon: User },
 		{ id: 'storage', label: 'Armazenamento', icon: Database },
 		{ id: 'assistance', label: 'Assistência', icon: Sparkles },
 		{ id: 'workspaces', label: 'Workspaces', icon: FolderOpen },
@@ -197,7 +201,9 @@
 						role="region"
 						aria-labelledby={`config-mobile-heading-${mobileSection}`}
 					>
-						{#if mobileSection === 'storage'}
+						{#if mobileSection === 'account'}
+							<AccountSyncSection />
+						{:else if mobileSection === 'storage'}
 							<WorkspaceSettings embedded view="storage" />
 							<SyncSettings />
 						{:else if mobileSection === 'assistance'}
@@ -255,7 +261,16 @@
 			</nav>
 
 			<div class="config-content">
-				{#if activeSection === 'storage'}
+				{#if activeSection === 'account'}
+					<div
+						id="config-panel-account"
+						class="config-panel"
+						role="region"
+						aria-labelledby="config-tab-account"
+					>
+						<AccountSyncSection />
+					</div>
+				{:else if activeSection === 'storage'}
 					<div
 						id="config-panel-storage"
 						class="config-panel"
