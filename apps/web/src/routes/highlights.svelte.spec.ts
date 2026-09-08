@@ -66,31 +66,31 @@ function createStorage(options: { failListing?: () => boolean; withHighlight?: b
 }
 
 // SPECSFY: US-003 FR-004 NFR-001 NFR-003 AC-009 AC-010 AC-011
-describe('/highlights recovery', () => {
+describe('/highlights view', () => {
 	beforeEach(async () => {
 		await page.viewport(1440, 900);
 	});
 
-	it('exposes empty state and an explicit rebuild action', async () => {
+	it('exposes empty state without technical recovery clutter', async () => {
 		await render(HighlightsPage, { props: { storageOverride: createStorage() } });
 
-		await expect.element(page.getByRole('heading', { name: 'Destaques' })).toBeInTheDocument();
+		await expect.element(page.getByRole('region', { name: 'Destaques' })).toBeInTheDocument();
 		await expect
 			.element(page.getByRole('heading', { name: 'Reconstruir índice de destaques' }))
-			.toBeInTheDocument();
-		await page.getByRole('button', { name: 'Reconstruir índice' }).click();
-		await expect.element(page.getByText(/0 registro\(s\) disponível/i)).toBeInTheDocument();
+			.not.toBeInTheDocument();
+		await expect
+			.element(page.getByRole('button', { name: 'Reconstruir índice' }))
+			.not.toBeInTheDocument();
 		await expect.element(page.getByTestId('highlights-empty')).toBeInTheDocument();
+		await expect.element(page.getByText('Nenhum destaque ainda.')).toBeInTheDocument();
 	});
 
-	it('rebuilds from primary records without hiding the highlight projection', async () => {
+	it('renders highlight cards directly from storage records', async () => {
 		await render(HighlightsPage, {
 			props: { storageOverride: createStorage({ withHighlight: true }) }
 		});
 
 		await expect.element(page.getByTestId('highlights-card-list')).toBeInTheDocument();
-		await page.getByRole('button', { name: 'Reconstruir índice' }).click();
-		await expect.element(page.getByText(/1 registro\(s\) disponível/i)).toBeInTheDocument();
 		await expect.element(page.getByText('nvi.sqlite')).toBeInTheDocument();
 	});
 
@@ -103,9 +103,6 @@ describe('/highlights recovery', () => {
 		await expect.element(page.getByText('storage indisponível')).toBeInTheDocument();
 		shouldFail = false;
 		await page.getByRole('button', { name: 'Tentar novamente' }).click();
-		await expect
-			.element(page.getByRole('button', { name: 'Reconstruir índice' }))
-			.toBeInTheDocument();
 		await expect.element(page.getByTestId('highlights-empty')).toBeInTheDocument();
 	});
 });
