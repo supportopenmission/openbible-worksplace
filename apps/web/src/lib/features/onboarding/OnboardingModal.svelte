@@ -82,15 +82,13 @@
 
 	async function start() {
 		errorMessage = '';
-		if (!selectedStorage) {
-			errorMessage =
-				storageMode === 'native'
-					? 'O workspace local ainda não está disponível.'
-					: 'Não foi possível acessar o armazenamento local do app.';
+		const nextStorage = selectedStorage;
+		if (!nextStorage) {
+			errorMessage = 'Não foi possível acessar o armazenamento local do app.';
 			await moveFocus();
 			return;
 		}
-		await install(selectedStorage);
+		await install(nextStorage);
 	}
 
 	async function install(nextStorage: WorkspaceStorage) {
@@ -247,7 +245,7 @@
 				{#if step === 'intro'}
 					<p class="storage-note">
 						{storageMode === 'native'
-							? 'Neste app, as notas são salvas no app.sqlite e os arquivos importados ficam no workspace local.'
+							? 'Neste app, o app.sqlite é a fonte de verdade; arquivos SQLite importados ficam na área local do app.'
 							: storageMode === 'opfs'
 								? 'Neste ambiente, as notas ficam no IndexedDB e os arquivos importados no armazenamento privado do navegador.'
 								: 'Neste ambiente, as notas ficam no armazenamento local do app.'}

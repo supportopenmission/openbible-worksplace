@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::sync::Mutex;
+use tauri::{AppHandle, Manager};
 
 const FORMAT_VERSION: u32 = 1;
 
@@ -469,13 +470,25 @@ fn table_columns(connection: &Connection, table: &str) -> Result<Vec<String>, Co
 
 #[tauri::command]
 pub fn initialize_workspace(
+    app: AppHandle,
     state: tauri::State<'_, Mutex<WorkspaceContext>>,
     preferred_path: Option<String>,
 ) -> Result<WorkspaceConfig, CommandError> {
     let mut context = state
         .lock()
         .map_err(|_| CommandError::new("state_error", true))?;
-    initialize(&mut context, preferred_path)
+    let path = match preferred_path {
+        Some(path) => Some(path),
+        None => Some(
+            app.path()
+                .app_data_dir()
+                .map_err(|_| CommandError::new("app_data_dir_unavailable", true))?
+                .join("workspace")
+                .to_string_lossy()
+                .into_owned(),
+        ),
+    };
+    initialize(&mut context, path)
 }
 
 #[tauri::command]

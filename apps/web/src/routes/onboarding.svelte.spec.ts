@@ -55,6 +55,20 @@ describe('OpenBible onboarding', () => {
 		expect(page.getByText(/não foi possível/i)).toBeInTheDocument();
 	});
 
+	it('does not expose a folder picker for the Tauri storage', async () => {
+		await render(OnboardingModal, {
+			props: {
+				storageMode: 'native',
+				storage: { ...createStorage(), kind: 'native', label: 'Meu workspace' }
+			}
+		});
+
+		await expect.element(page.getByRole('button', { name: /começar/i })).toBeInTheDocument();
+		await expect
+			.element(page.getByRole('button', { name: /escolher pasta/i }))
+			.not.toBeInTheDocument();
+	});
+
 	it('prepara o armazenamento configurado sem mostrar escolha de pasta', async () => {
 		// SPECSFY: US-001 FR-001 FR-003 FR-005 NFR-001 NFR-002 AC-002
 		await render(OnboardingModal, {

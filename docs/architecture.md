@@ -5,7 +5,7 @@
 
 | Tipo | Quantidade |
 | --- | --- |
-| Código | 771 |
+| Código | 791 |
 | Testes | 121 |
 
 ## Diagramas

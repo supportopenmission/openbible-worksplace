@@ -1,10 +1,15 @@
 import {
 	invokeWorkspaceCommand,
 	TauriCommandError,
-	type NativeDatabaseStatus
+	type NativeDatabaseStatus,
+	type NativeWorkspaceRecord
 } from './tauri-bridge';
 import type { FileContent, WorkspaceStorage, WorkspaceStorageEntry } from './types';
-import { capabilitiesForKind, type StorageCapabilities } from './workspace-catalog';
+import {
+	capabilitiesForKind,
+	generateWorkspaceId,
+	type StorageCapabilities
+} from './workspace-catalog';
 
 export const tauriCapabilities: StorageCapabilities = capabilitiesForKind('native');
 
@@ -34,10 +39,13 @@ function toBytes(value: unknown): Uint8Array | null {
 	return null;
 }
 
-export function createTauriStorage(): WorkspaceStorage {
+export function createTauriStorage(
+	options: { workspaceId?: string; label?: string } = {}
+): WorkspaceStorage {
 	return {
 		kind: 'native',
-		label: 'Pasta do computador',
+		label: options.label ?? 'Meu workspace',
+		workspaceId: options.workspaceId,
 		ensureDirectory: async () => undefined,
 		writeFile: async (path, content) => {
 			await invokeWorkspaceCommand({
@@ -81,7 +89,8 @@ export function createTauriStorage(): WorkspaceStorage {
 			return result.value.flatMap((entry) => {
 				if (typeof entry !== 'object' || entry === null) return [];
 				const record = entry as { name?: unknown; kind?: unknown };
-				return typeof record.name === 'string' && (record.kind === 'file' || record.kind === 'directory')
+				return typeof record.name === 'string' &&
+					(record.kind === 'file' || record.kind === 'directory')
 					? [{ name: record.name, kind: record.kind }]
 					: [];
 			});
@@ -146,7 +155,47 @@ export async function initializeNativeWorkspace(options: { path?: string } = {})
 }
 
 export async function initializeNativeDatabase(): Promise<NativeDatabaseStatus | undefined> {
-	const result = await invokeWorkspaceCommand<NativeDatabaseStatus>({ name: 'database.initialize' });
+	const result = await invokeWorkspaceCommand<NativeDatabaseStatus>({
+		name: 'database.initialize'
+	});
+	return result.value;
+}
+
+/**
+ * Abre o workspace operacional do Tauri sem consultar filesystem, manifesto
+ * ou caminho local. O registro e o ponteiro ativo vivem exclusivamente em
+ * app.sqlite; o catálogo do navegador é apenas uma projeção para a UI.
+ */
+export async function ensureNativeWorkspace(
+	options: {
+		workspaceId?: string;
+		name?: string;
+		status?: 'registered' | 'ready';
+		createIfMissing?: boolean;
+	} = {}
+): Promise<NativeWorkspaceRecord> {
+	await initializeNativeDatabase();
+	const active = await invokeWorkspaceCommand<NativeWorkspaceRecord | null>({
+		name: 'database.activeWorkspace'
+	});
+	if (active.value && (!options.workspaceId || active.value.workspaceId === options.workspaceId)) {
+		if (options.status !== 'ready' || active.value.status === 'ready') return active.value;
+	}
+	if (options.createIfMissing === false) {
+		throw new TauriCommandError({
+			code: 'workspace_record_missing',
+			message: 'O workspace nativo não foi encontrado no app.sqlite.',
+			recoverable: true
+		});
+	}
+
+	const result = await invokeWorkspaceCommand<NativeWorkspaceRecord>({
+		name: 'database.ensureWorkspace',
+		workspaceId: options.workspaceId ?? generateWorkspaceId(),
+		workspaceName: options.name?.trim() || 'Meu workspace',
+		status: options.status ?? 'registered'
+	});
+	if (!result.value) throw new TauriCommandError('database_unavailable');
 	return result.value;
 }
 

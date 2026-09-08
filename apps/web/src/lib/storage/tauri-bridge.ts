@@ -3,6 +3,13 @@ import type { WorkspaceContentRecord } from './workspace-content-repository';
 
 export type WorkspaceCommand =
 	| { name: 'database.initialize' }
+	| { name: 'database.activeWorkspace' }
+	| {
+			name: 'database.ensureWorkspace';
+			workspaceId: string;
+			workspaceName: string;
+			status: 'registered' | 'ready';
+	  }
 	| { name: 'database.resetLocalData' }
 	| { name: 'database.deleteWorkspace'; workspaceId: string }
 	| { name: 'database.listContent'; workspaceId: string }
@@ -82,6 +89,25 @@ export interface NativeDatabaseStatus {
 	schemaVersion: number;
 }
 
+export interface NativeWorkspaceRecord {
+	workspaceId: string;
+	name: string;
+	status:
+		| 'registered'
+		| 'opening'
+		| 'ready'
+		| 'unavailable'
+		| 'migrating'
+		| 'invalid'
+		| 'detached'
+		| 'deleted';
+	schemaVersion: number;
+	createdAt: string;
+	updatedAt: string;
+	lastOpenedAt: string | null;
+	metadataJson: string;
+}
+
 export class TauriCommandError extends Error implements NativeCommandError {
 	readonly code: string;
 	readonly recoverable: boolean;
@@ -103,7 +129,12 @@ function validatePath(path: string): void {
 
 function validateSyncKey(value: string, code = 'sync_key_required'): string {
 	const normalized = value.trim();
-	if (!normalized || normalized.includes('/') || normalized.includes('\\') || normalized.includes('..')) {
+	if (
+		!normalized ||
+		normalized.includes('/') ||
+		normalized.includes('\\') ||
+		normalized.includes('..')
+	) {
 		throw new TauriCommandError({ code, recoverable: false });
 	}
 	return normalized;
@@ -112,8 +143,22 @@ function validateSyncKey(value: string, code = 'sync_key_required'): string {
 function payload(command: WorkspaceCommand | UnknownWorkspaceCommand): Record<string, unknown> {
 	switch (command.name) {
 		case 'database.initialize':
+		case 'database.activeWorkspace':
 		case 'database.resetLocalData':
 			return {};
+		case 'database.ensureWorkspace': {
+			const workspaceId = validateSyncKey(
+				String(command.workspaceId ?? ''),
+				'workspace_id_required'
+			);
+			const name = String(command.workspaceName ?? '').trim();
+			if (!name)
+				throw new TauriCommandError({ code: 'workspace_name_required', recoverable: false });
+			if (command.status !== 'registered' && command.status !== 'ready') {
+				throw new TauriCommandError({ code: 'workspace_status_required', recoverable: false });
+			}
+			return { workspaceId, name, status: command.status };
+		}
 		case 'database.deleteWorkspace': {
 			const workspaceId = String(command.workspaceId ?? '').trim();
 			if (!workspaceId) {
@@ -140,7 +185,10 @@ function payload(command: WorkspaceCommand | UnknownWorkspaceCommand): Record<st
 				id: validateSyncKey(String(command.id ?? ''), 'content_id_required')
 			};
 		case 'agent.profile.save': {
-			const profileId = validateSyncKey(String(command.profileId ?? ''), 'agent_profile_id_required');
+			const profileId = validateSyncKey(
+				String(command.profileId ?? ''),
+				'agent_profile_id_required'
+			);
 			const provider = validateSyncKey(String(command.provider ?? ''), 'agent_provider_required');
 			const model = validateSyncKey(String(command.model ?? ''), 'agent_model_required');
 			const secret = String(command.secret ?? '');
@@ -257,6 +305,8 @@ export function toUserFacingStorageError(error: Partial<NativeCommandError>): Ta
 function tauriCommandName(command: WorkspaceCommand): string {
 	return {
 		'database.initialize': 'initialize_workspace_database',
+		'database.activeWorkspace': 'active_workspace_record',
+		'database.ensureWorkspace': 'ensure_workspace_record',
 		'database.resetLocalData': 'reset_local_database',
 		'database.deleteWorkspace': 'delete_workspace_record',
 		'database.listContent': 'list_workspace_content',

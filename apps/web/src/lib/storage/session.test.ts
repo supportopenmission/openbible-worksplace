@@ -1,12 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { bootstrapWorkspace } from './session';
 
-const detectStorageKind = vi.fn(() => 'local' as const);
+const detectStorageKind = vi.fn(() => 'local' as 'local' | 'opfs' | 'native');
 const loadLocalWorkspaceHandle = vi.fn();
 const queryLocalHandlePermission = vi.fn();
 const requestLocalHandlePermission = vi.fn();
 const createLocalStorageFromHandle = vi.fn();
 const createOpfsStorage = vi.fn();
+const createTauriStorage = vi.fn();
+const ensureNativeWorkspace = vi.fn();
+const initializeNativeWorkspace = vi.fn();
 const readStoragePreference = vi.fn();
 const resolveStorageKind = vi.fn(() => readStoragePreference() ?? detectStorageKind());
 const isStoragePersisted = vi.fn(async () => null);
@@ -33,6 +36,12 @@ vi.mock('./opfs-storage', () => ({
 	createOpfsStorage: () => createOpfsStorage()
 }));
 
+vi.mock('./tauri-storage', () => ({
+	createTauriStorage: () => createTauriStorage(),
+	ensureNativeWorkspace: (options: unknown) => ensureNativeWorkspace(options),
+	initializeNativeWorkspace: (options: unknown) => initializeNativeWorkspace(options)
+}));
+
 vi.mock('./workspace', () => ({
 	loadWorkspaceConfig: (storage: unknown) => loadWorkspaceConfig(storage)
 }));
@@ -49,6 +58,26 @@ describe('workspace bootstrap', () => {
 		isStoragePersisted.mockResolvedValue(null);
 		readStoragePreference.mockReturnValue(null);
 		loadWorkspaceConfig.mockResolvedValue(null);
+		createTauriStorage.mockReturnValue({
+			kind: 'native',
+			label: 'Meu workspace',
+			workspaceId: 'native-1',
+			ensureDirectory: async () => undefined,
+			writeFile: async () => undefined,
+			readFile: async () => null,
+			fileExists: async () => false,
+			listFiles: async () => []
+		});
+		ensureNativeWorkspace.mockResolvedValue({
+			workspaceId: 'native-1',
+			name: 'Meu workspace',
+			status: 'registered',
+			schemaVersion: 3,
+			createdAt: '2026-09-07T00:00:00.000Z',
+			updatedAt: '2026-09-07T00:00:00.000Z',
+			lastOpenedAt: null,
+			metadataJson: '{}'
+		});
 	});
 
 	it('stays unconfigured when no local folder handle exists', async () => {
@@ -95,5 +124,16 @@ describe('workspace bootstrap', () => {
 
 		expect(snapshot.status).toBe('ready');
 		expect(snapshot.storage).toBe(storage);
+	});
+
+	it('bootstraps Tauri from app.sqlite without requiring a native folder', async () => {
+		detectStorageKind.mockReturnValue('native');
+
+		const snapshot = await bootstrapWorkspace();
+
+		expect(snapshot.status).toBe('unconfigured');
+		expect(snapshot.storage).toMatchObject({ kind: 'native', workspaceId: 'native-1' });
+		expect(ensureNativeWorkspace).toHaveBeenCalledWith({ status: 'registered' });
+		expect(initializeNativeWorkspace).toHaveBeenCalledOnce();
 	});
 });

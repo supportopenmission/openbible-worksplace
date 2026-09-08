@@ -14,6 +14,7 @@ import {
 import { createOpfsStorage, openOpfsLogicalRoot } from './opfs-storage';
 import {
 	createTauriStorage,
+	ensureNativeWorkspace,
 	initializeNativeWorkspace,
 	readNativeWorkspacePath,
 	rememberNativeWorkspacePath
@@ -79,10 +80,12 @@ function withCatalog(storage: WorkspaceStorage, workspaceId?: string): Workspace
 
 export async function createConfiguredStorage(): Promise<WorkspaceStorage | null> {
 	if (resolveStorageKind() === 'native') {
-		const path = readNativeWorkspacePath();
-		if (!path) return null;
-		await initializeNativeWorkspace({ path });
-		return withCatalog(createTauriStorage());
+		const record = await ensureNativeWorkspace({ status: 'registered' });
+		await initializeNativeWorkspace();
+		return withCatalog(
+			createTauriStorage({ workspaceId: record.workspaceId, label: record.name }),
+			record.workspaceId
+		);
 	}
 	if (resolveStorageKind() === 'opfs') return withCatalog(await createOpfsStorage());
 
@@ -131,10 +134,16 @@ export async function reconnectWorkspaceStorage(
 ): Promise<WorkspaceStorage> {
 	requireCapability(storage.kind, 'reconnect');
 	if (storage.kind === 'native') {
-		const path = readNativeWorkspacePath();
-		if (!path) throw new StorageCapabilityError('native', 'reconnect');
-		await initializeNativeWorkspace({ path });
-		return withCatalog(createTauriStorage());
+		const record = await ensureNativeWorkspace({
+			workspaceId: storage.workspaceId,
+			name: storage.label,
+			status: 'ready'
+		});
+		await initializeNativeWorkspace();
+		return withCatalog(
+			createTauriStorage({ workspaceId: record.workspaceId, label: record.name }),
+			record.workspaceId
+		);
 	}
 	const handle = await loadLocalWorkspaceHandle();
 	if (!handle) throw new StorageCapabilityError('local', 'reconnect');
@@ -223,16 +232,24 @@ export async function openWorkspaceStorage(
 	const { workspaceId, storageKind } = entry;
 
 	if (storageKind === 'native') {
-		const path = typeof entry.localRef === 'string' ? entry.localRef : readNativeWorkspacePath();
-		if (!path) {
-			throw new WorkspaceOpenError(
-				workspaceId,
-				'needs-reconnect',
-				'Sem caminho local para reencontrar a pasta. Localize a raiz de novo.'
-			);
-		}
 		try {
-			await initializeNativeWorkspace({ path });
+			const record = await ensureNativeWorkspace({
+				workspaceId,
+				status: 'registered',
+				createIfMissing: false
+			});
+			if (record.workspaceId !== workspaceId) {
+				throw new WorkspaceOpenError(
+					workspaceId,
+					'invalid',
+					'O registro nativo ativo não corresponde ao workspace solicitado.'
+				);
+			}
+			await initializeNativeWorkspace();
+			return withCatalog(
+				createTauriStorage({ workspaceId: record.workspaceId, label: record.name }),
+				workspaceId
+			);
 		} catch (error) {
 			if (
 				error instanceof TauriCommandError &&
@@ -260,30 +277,13 @@ export async function openWorkspaceStorage(
 					'Sem permissão para abrir a pasta do workspace.'
 				);
 			}
+			if (error instanceof WorkspaceOpenError) throw error;
 			throw new WorkspaceOpenError(
 				workspaceId,
-				'missing',
-				'A pasta do workspace está ausente ou inacessível. O cadastro foi preservado.'
+				'persistence-unavailable',
+				'O banco local não está disponível. Tente novamente para recuperar o workspace.'
 			);
 		}
-		const storage = withCatalog(createTauriStorage(), entry.workspaceId);
-		const manifest = await readManifest(storage).catch(() => null);
-		if (!manifest) {
-			throw new WorkspaceOpenError(
-				workspaceId,
-				'invalid',
-				'A pasta não tem um manifesto válido (.openbible/config.json v2). Nada foi sobrescrito.'
-			);
-		}
-		if (manifest.workspaceId !== workspaceId) {
-			throw new WorkspaceOpenError(
-				workspaceId,
-				'invalid',
-				`A pasta contém outro workspace (“${manifest.name}”). Nada foi sobrescrito.`
-			);
-		}
-		rememberNativeWorkspacePath(path);
-		return storage;
 	}
 
 	if (storageKind === 'opfs') {

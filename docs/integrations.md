@@ -8,7 +8,7 @@ Valores de ambiente e integrações são documentados apenas pelos nomes declara
 
 ## Integrações de produto confirmadas
 
-- Release atual: `0.8.2`, espelhado no PWA e no shell Tauri.
+- Release atual: `0.8.3`, espelhado no PWA e no shell Tauri.
 
 - Bancos bíblicos SQLite importados pelo usuário devem seguir o padrão do OpenLP.
 - A aplicação também aceitará uma URL de distribuição, como Cloudflare R2, para

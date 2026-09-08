@@ -30,6 +30,19 @@ pub struct DatabaseStatus {
     pub schema_version: i64,
 }
 
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceRecord {
+    pub workspace_id: String,
+    pub name: String,
+    pub status: String,
+    pub schema_version: i64,
+    pub created_at: String,
+    pub updated_at: String,
+    pub last_opened_at: Option<String>,
+    pub metadata_json: String,
+}
+
 pub struct WorkspaceDatabase {
     connection: Connection,
 }
@@ -59,6 +72,68 @@ impl WorkspaceDatabase {
             database_name: APP_DATABASE_FILE.to_string(),
             schema_version: CURRENT_SCHEMA_VERSION,
         }
+    }
+
+    pub fn active_workspace(&self) -> Result<Option<WorkspaceRecord>, DatabaseError> {
+        self.connection
+            .query_row(
+                "SELECT w.workspace_id, w.name, w.status, w.schema_version,
+                        w.created_at, w.updated_at, w.last_opened_at, w.metadata_json
+                 FROM active_workspace_pointer p
+                 JOIN workspaces w ON w.workspace_id = p.workspace_id
+                 WHERE p.pointer_id = 1",
+                [],
+                workspace_record_from_row,
+            )
+            .optional()
+            .map_err(DatabaseError::from)
+    }
+
+    pub fn ensure_workspace(
+        &mut self,
+        workspace_id: &str,
+        name: &str,
+        status: &str,
+    ) -> Result<WorkspaceRecord, DatabaseError> {
+        validate_sync_key(workspace_id)?;
+        let name = name.trim();
+        if name.is_empty() || !matches!(status, "registered" | "ready") {
+            return Err(DatabaseError::Path);
+        }
+
+        let transaction = self.connection.transaction()?;
+        transaction.execute(
+            "INSERT OR IGNORE INTO workspaces
+               (workspace_id, name, status, schema_version, created_at, updated_at, last_opened_at, metadata_json)
+             VALUES (?1, ?2, ?3, 1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
+                     strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), NULL, '{}')",
+            params![workspace_id, name, status],
+        )?;
+        transaction.execute(
+            "UPDATE workspaces
+             SET name = ?2, status = ?3, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
+                 last_opened_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+             WHERE workspace_id = ?1",
+            params![workspace_id, name, status],
+        )?;
+        transaction.execute(
+            "UPDATE active_workspace_pointer
+             SET workspace_id = ?1, generation = generation + 1,
+                 updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+             WHERE pointer_id = 1",
+            params![workspace_id],
+        )?;
+        transaction.commit()?;
+
+        self.connection
+            .query_row(
+                "SELECT workspace_id, name, status, schema_version,
+                        created_at, updated_at, last_opened_at, metadata_json
+                 FROM workspaces WHERE workspace_id = ?1",
+                params![workspace_id],
+                workspace_record_from_row,
+            )
+            .map_err(DatabaseError::from)
     }
 
     fn configure(&self) -> Result<(), DatabaseError> {
@@ -757,6 +832,19 @@ impl WorkspaceDatabase {
     }
 }
 
+fn workspace_record_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<WorkspaceRecord> {
+    Ok(WorkspaceRecord {
+        workspace_id: row.get(0)?,
+        name: row.get(1)?,
+        status: row.get(2)?,
+        schema_version: row.get(3)?,
+        created_at: row.get(4)?,
+        updated_at: row.get(5)?,
+        last_opened_at: row.get(6)?,
+        metadata_json: row.get(7)?,
+    })
+}
+
 fn highlight_json_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<serde_json::Value> {
     Ok(json!({
         "versionId": row.get::<_, String>(0)?,
@@ -796,6 +884,39 @@ pub fn initialize_workspace_database(
         .as_ref()
         .expect("database state was initialized")
         .status())
+}
+
+#[tauri::command]
+pub fn active_workspace_record(
+    state: tauri::State<'_, std::sync::Mutex<Option<WorkspaceDatabase>>>,
+) -> Result<Option<WorkspaceRecord>, CommandError> {
+    let mut database_state = state
+        .lock()
+        .map_err(|_| CommandError::new("database_state_error", true))?;
+    let database = database_state
+        .as_mut()
+        .ok_or_else(|| CommandError::new("database_unavailable", true))?;
+    database
+        .active_workspace()
+        .map_err(|_| CommandError::new("persistence_conflict", true))
+}
+
+#[tauri::command]
+pub fn ensure_workspace_record(
+    workspace_id: String,
+    name: String,
+    status: String,
+    state: tauri::State<'_, std::sync::Mutex<Option<WorkspaceDatabase>>>,
+) -> Result<WorkspaceRecord, CommandError> {
+    let mut database_state = state
+        .lock()
+        .map_err(|_| CommandError::new("database_state_error", true))?;
+    let database = database_state
+        .as_mut()
+        .ok_or_else(|| CommandError::new("database_unavailable", true))?;
+    database
+        .ensure_workspace(&workspace_id, &name, &status)
+        .map_err(|_| CommandError::new("persistence_conflict", true))
 }
 
 #[tauri::command]
@@ -984,6 +1105,38 @@ mod tests {
                 |row| row.get(0),
             )
             .is_err());
+        drop(database);
+        let _ = fs::remove_dir_all(path.parent().expect("test database has a parent"));
+    }
+
+    #[test]
+    fn ensures_the_active_workspace_without_a_filesystem_root() {
+        let path = test_path();
+        let mut database = WorkspaceDatabase::open(&path).expect("database opens");
+
+        assert!(database
+            .active_workspace()
+            .expect("active pointer reads")
+            .is_none());
+        let record = database
+            .ensure_workspace("workspace-native", "Meu workspace", "registered")
+            .expect("workspace is created transactionally");
+        assert_eq!(record.workspace_id, "workspace-native");
+        assert_eq!(record.status, "registered");
+        assert_eq!(
+            database
+                .active_workspace()
+                .expect("active workspace reads")
+                .expect("active workspace exists")
+                .workspace_id,
+            "workspace-native"
+        );
+
+        let ready = database
+            .ensure_workspace("workspace-native", "Meu workspace", "ready")
+            .expect("workspace is promoted to ready");
+        assert_eq!(ready.status, "ready");
+
         drop(database);
         let _ = fs::remove_dir_all(path.parent().expect("test database has a parent"));
     }

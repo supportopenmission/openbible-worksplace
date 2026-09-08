@@ -17,7 +17,9 @@ import {
 	getActiveWorkspace,
 	getCatalogEntry,
 	migrateLegacyWorkspace,
-	touchLastOpened
+	setActiveWorkspace,
+	touchLastOpened,
+	upsertCatalogEntry
 } from '$lib/storage/workspace-catalog';
 import {
 	AutosaveFailedError,
@@ -37,6 +39,7 @@ import type { WorkspaceCatalogEntry } from '$lib/storage/workspace-catalog';
 import type { WorkspaceOpenFailureReason } from '$lib/storage/storage-registry';
 import { loadWorkspaceConfig, prepareWorkspace } from '$lib/storage/workspace';
 import { bindWorkspaceStorage } from '$lib/storage/workspace-content-storage';
+import { ensureNativeWorkspace } from '$lib/storage/tauri-storage';
 
 export type WorkspaceUiStatus = 'loading' | WorkspaceStatus;
 
@@ -263,6 +266,10 @@ export class WorkspaceState {
 			requestPersist: options.requestPersist ?? true
 		});
 		if (snapshot.status === 'ready' && snapshot.storage) {
+			if (snapshot.storage.kind === 'native') {
+				this.apply(snapshot);
+				return;
+			}
 			const previousId = getActiveWorkspace().workspaceId;
 			let migration: Awaited<ReturnType<typeof migrateLegacyWorkspace>>;
 			try {
@@ -310,6 +317,36 @@ export class WorkspaceState {
 	}
 
 	async markConfigured(storage: WorkspaceStorage) {
+		if (storage.kind === 'native') {
+			const record = await ensureNativeWorkspace({
+				workspaceId: storage.workspaceId,
+				name: storage.label,
+				status: 'ready'
+			});
+			storage.workspaceId = record.workspaceId;
+			storage.label = record.name;
+			bindWorkspaceStorage(storage, record.workspaceId);
+			upsertCatalogEntry({
+				workspaceId: record.workspaceId,
+				nameCache: record.name,
+				storageKind: 'native',
+				lastOpenedAt: record.lastOpenedAt,
+				status: 'ready'
+			});
+			setActiveWorkspace(record.workspaceId);
+			this.applyConfiguredStorage(storage, {
+				config: {
+					version: 1,
+					storage: 'native',
+					configuredAt: record.createdAt,
+					bibleImportStatus: 'pending',
+					label: record.name
+				},
+				preferences: DEFAULT_PREFERENCES,
+				persisted: await requestPersistentStorage()
+			});
+			return;
+		}
 		const previousId = getActiveWorkspace().workspaceId;
 		const migration = await migrateLegacyWorkspace(storage);
 		if (migration) bindWorkspaceStorage(storage, migration.manifest.workspaceId);
@@ -372,6 +409,36 @@ export class WorkspaceState {
 		preferences: WorkspacePreferences;
 		persisted: boolean;
 	}> {
+		if (storage.kind === 'native') {
+			const record = await ensureNativeWorkspace({
+				workspaceId: expectedWorkspaceId ?? storage.workspaceId,
+				name: storage.label,
+				status: 'registered',
+				createIfMissing: false
+			});
+			if (expectedWorkspaceId && record.workspaceId !== expectedWorkspaceId) {
+				throw new WorkspaceOpenError(
+					expectedWorkspaceId,
+					'invalid',
+					'O registro nativo ativo não corresponde ao workspace solicitado.'
+				);
+			}
+			bindWorkspaceStorage(storage, record.workspaceId);
+			return {
+				config:
+					record.status === 'ready'
+						? {
+								version: 1,
+								storage: 'native',
+								configuredAt: record.createdAt,
+								bibleImportStatus: 'pending',
+								label: record.name
+							}
+						: null,
+				preferences: DEFAULT_PREFERENCES,
+				persisted: await requestPersistentStorage()
+			};
+		}
 		const config = await loadWorkspaceConfig(storage);
 		if (expectedWorkspaceId && !config) {
 			throw new WorkspaceOpenError(

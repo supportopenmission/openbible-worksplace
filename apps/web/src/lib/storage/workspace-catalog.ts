@@ -116,7 +116,7 @@ export function storageBackendLabel(backend: StorageCapabilities['backend']): st
 /** Rótulo humano do backend; texto, nunca só cor ou ícone. */
 export function storageKindLabel(kind: StorageKind): string {
 	return kind === 'native'
-		? 'Pasta do computador'
+		? 'SQLite local'
 		: kind === 'local'
 			? 'Pasta autorizada'
 			: 'Raiz lógica (OPFS)';
@@ -320,15 +320,15 @@ function readCatalogStore(): CatalogStore {
 				for (const [id, entry] of Object.entries(parsed.entries)) {
 					if (entry && typeof entry === 'object' && !memoryCatalog.entries[id]) {
 						const persisted = entry as WorkspaceCatalogEntry;
-					memoryCatalog.entries[id] = {
-						...persisted,
-						backend: persisted.backend ?? capabilitiesForKind(persisted.storageKind).backend,
-						exportSource: persisted.exportSource ?? {
-							workspaceId: persisted.workspaceId,
-							snapshotVersion: 1,
-							readOnly: true
-						},
-						// Só referências em string sobrevivem no catálogo; handles
+						memoryCatalog.entries[id] = {
+							...persisted,
+							backend: persisted.backend ?? capabilitiesForKind(persisted.storageKind).backend,
+							exportSource: persisted.exportSource ?? {
+								workspaceId: persisted.workspaceId,
+								snapshotVersion: 1,
+								readOnly: true
+							},
+							// Só referências em string sobrevivem no catálogo; handles
 							// de pasta são reencontrados no IndexedDB local por workspaceId.
 							localRef: typeof persisted.localRef === 'string' ? persisted.localRef : undefined
 						};
@@ -357,11 +357,11 @@ function persistCatalogStore(): void {
 				Object.entries(memoryCatalog.entries).map(([id, entry]) => [
 					id,
 					{
-							workspaceId: entry.workspaceId,
-							nameCache: entry.nameCache,
-							storageKind: entry.storageKind,
-							backend: entry.backend,
-							exportSource: entry.exportSource,
+						workspaceId: entry.workspaceId,
+						nameCache: entry.nameCache,
+						storageKind: entry.storageKind,
+						backend: entry.backend,
+						exportSource: entry.exportSource,
 						localRef: typeof entry.localRef === 'string' ? entry.localRef : undefined,
 						lastOpenedAt: entry.lastOpenedAt,
 						status: entry.status

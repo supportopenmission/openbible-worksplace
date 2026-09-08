@@ -8,13 +8,14 @@ import {
 import { createOpfsStorage } from './opfs-storage';
 import {
 	createTauriStorage,
-	initializeNativeWorkspace,
-	readNativeWorkspacePath
+	ensureNativeWorkspace,
+	initializeNativeWorkspace
 } from './tauri-storage';
 import { isStoragePersisted, requestPersistentStorage } from './persistent-storage';
 import { DEFAULT_PREFERENCES, loadWorkspacePreferences } from './preferences';
 import type { WorkspaceSnapshot, WorkspaceStorage } from './types';
 import { loadWorkspaceConfig } from './workspace';
+import { setActiveWorkspace, upsertCatalogEntry } from './workspace-catalog';
 
 const emptySnapshot = (
 	partial: Partial<WorkspaceSnapshot> & Pick<WorkspaceSnapshot, 'status'>
@@ -54,6 +55,27 @@ async function snapshotFromStorage(
 	};
 }
 
+function nativeWorkspaceConfig(record: Awaited<ReturnType<typeof ensureNativeWorkspace>>) {
+	return {
+		version: 1 as const,
+		storage: 'native' as const,
+		configuredAt: record.createdAt,
+		bibleImportStatus: 'pending' as const,
+		label: record.name
+	};
+}
+
+function projectNativeWorkspace(record: Awaited<ReturnType<typeof ensureNativeWorkspace>>): void {
+	upsertCatalogEntry({
+		workspaceId: record.workspaceId,
+		nameCache: record.name,
+		storageKind: 'native',
+		lastOpenedAt: record.lastOpenedAt,
+		status: record.status === 'ready' ? 'ready' : 'registered'
+	});
+	setActiveWorkspace(record.workspaceId);
+}
+
 export async function bootstrapWorkspace(
 	options: { requestPermission?: boolean; requestPersist?: boolean } = {}
 ): Promise<WorkspaceSnapshot> {
@@ -63,10 +85,24 @@ export async function bootstrapWorkspace(
 
 	try {
 		if (resolveStorageKind() === 'native') {
-			const path = readNativeWorkspacePath();
-			if (!path) return emptySnapshot({ status: 'unconfigured', persisted });
-			await initializeNativeWorkspace({ path });
-			return await snapshotFromStorage(createTauriStorage(), persisted, 'granted');
+			const record = await ensureNativeWorkspace({ status: 'registered' });
+			projectNativeWorkspace(record);
+			const storage = createTauriStorage({
+				workspaceId: record.workspaceId,
+				label: record.name
+			});
+			// A área interna serve somente para recursos legados/arquivos SQLite de
+			// Bíblia. Ela nunca é escolhida pela pessoa nem identifica o workspace.
+			await initializeNativeWorkspace();
+			return {
+				status: record.status === 'ready' ? 'ready' : 'unconfigured',
+				storage,
+				config: record.status === 'ready' ? nativeWorkspaceConfig(record) : null,
+				preferences: DEFAULT_PREFERENCES,
+				persisted,
+				permission: 'granted',
+				error: ''
+			};
 		}
 		if (resolveStorageKind() === 'opfs') {
 			return await snapshotFromStorage(await createOpfsStorage(), persisted, null);

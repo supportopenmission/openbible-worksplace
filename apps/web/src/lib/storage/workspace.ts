@@ -7,9 +7,12 @@ import {
 	attachCatalogMethods,
 	ensureManifest,
 	getCatalogEntry,
+	setActiveWorkspace,
 	upsertCatalogEntry
 } from './workspace-catalog';
 import { bindWorkspaceStorage } from './workspace-content-storage';
+import { ensureNativeWorkspace, initializeNativeWorkspace } from './tauri-storage';
+import { isTauriRuntime } from './tauri-runtime';
 export { validateBackupManifest, validateRestoreEntry } from './backup/backup-contract';
 export {
 	enumerateBackupEntries,
@@ -18,11 +21,7 @@ export {
 	readWorkspaceContentExclusions,
 	resolveBibleBackupPolicy
 } from './backup/backup-enumerator';
-export {
-	readBackupArchive,
-	readBackupManifest,
-	writeBackupArchive
-} from './backup/backup-archive';
+export { readBackupArchive, readBackupManifest, writeBackupArchive } from './backup/backup-archive';
 export {
 	createRestoredWorkspace,
 	findRestoreConflicts,
@@ -50,8 +49,10 @@ export {
 	openAfterIndexFailure,
 	rebuildDerivedIndex
 } from './backup/backup-report';
-type SyncWorkspaceCommand = import('$lib/features/sync/sync-document-registry').SyncWorkspaceCommand;
-type SyncWorkspaceManifest = import('$lib/features/sync/sync-document-registry').SyncWorkspaceManifest;
+type SyncWorkspaceCommand =
+	import('$lib/features/sync/sync-document-registry').SyncWorkspaceCommand;
+type SyncWorkspaceManifest =
+	import('$lib/features/sync/sync-document-registry').SyncWorkspaceManifest;
 
 /**
  * Mantém o runtime de sincronização fora do bootstrap da aplicação. O módulo
@@ -62,9 +63,8 @@ export async function syncWorkspace(
 	storage: WorkspaceStorage,
 	command: SyncWorkspaceCommand
 ): Promise<SyncWorkspaceManifest> {
-	const { syncWorkspace: runSyncWorkspace } = await import(
-		'$lib/features/sync/sync-document-registry'
-	);
+	const { syncWorkspace: runSyncWorkspace } =
+		await import('$lib/features/sync/sync-document-registry');
 	return runSyncWorkspace(storage, command);
 }
 export { executeAgent } from '$lib/features/ai/agent-command';
@@ -73,14 +73,8 @@ export {
 	createNativeSqliteSyncStorageAdapter,
 	syncRecordFromContent
 } from '$lib/features/sync/sync-storage-adapters';
-export {
-	createSyncMaterializer,
-	SyncMaterializer
-} from '$lib/features/sync/sync-materializer';
-export {
-	createSyncPeerPolicy,
-	SyncPeerPolicy
-} from '$lib/features/sync/peer-policy';
+export { createSyncMaterializer, SyncMaterializer } from '$lib/features/sync/sync-materializer';
+export { createSyncPeerPolicy, SyncPeerPolicy } from '$lib/features/sync/peer-policy';
 
 const BACKUP_STREAM_CHUNK_BYTES = 16 * 1024 * 1024;
 
@@ -148,6 +142,31 @@ export async function prepareWorkspace(
 	storage: WorkspaceStorage,
 	onProgress: ProgressCallback = () => undefined
 ): Promise<void> {
+	if (storage.kind === 'native') {
+		const record = await ensureNativeWorkspace({
+			workspaceId: storage.workspaceId,
+			name: storage.label,
+			status: 'ready'
+		});
+		storage.workspaceId = record.workspaceId;
+		storage.label = record.name;
+		bindWorkspaceStorage(storage, record.workspaceId);
+		upsertCatalogEntry({
+			workspaceId: record.workspaceId,
+			nameCache: record.name,
+			storageKind: 'native',
+			lastOpenedAt: record.lastOpenedAt,
+			status: 'ready'
+		});
+		setActiveWorkspace(record.workspaceId);
+		attachCatalogMethods(storage);
+		// Bíblias SQLite são recursos compatíveis armazenados na área interna da
+		// instalação; a identidade e o conteúdo autoral continuam no app.sqlite.
+		if (isTauriRuntime()) await initializeNativeWorkspace();
+		onProgress(1);
+		return;
+	}
+
 	const steps = WORKSPACE_DIRECTORIES.length + WORKSPACE_FILES.length + 4;
 	let completed = 0;
 	const advance = () => {
@@ -184,12 +203,10 @@ export async function prepareWorkspace(
 	attachCatalogMethods(storage);
 	advance();
 
-	if (storage.kind !== 'native') {
-		const indexPath = '.openbible/index.sqlite';
-		const indexBytes = await storage.readFile(indexPath);
-		if (!indexBytes || !isSQLite(indexBytes)) {
-			await storage.writeFile(indexPath, emptyIndexSqlite());
-		}
+	const indexPath = '.openbible/index.sqlite';
+	const indexBytes = await storage.readFile(indexPath);
+	if (!indexBytes || !isSQLite(indexBytes)) {
+		await storage.writeFile(indexPath, emptyIndexSqlite());
 	}
 	advance();
 

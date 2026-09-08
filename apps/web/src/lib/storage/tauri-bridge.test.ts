@@ -36,6 +36,28 @@ describe('typed Tauri bridge', () => {
 		).rejects.toMatchObject({ code: 'workspace_id_required' });
 	});
 
+	it('expõe o bootstrap do workspace nativo sem caminho de pasta', async () => {
+		await expect(
+			invokeWorkspaceCommand({ name: 'database.activeWorkspace' })
+		).resolves.toMatchObject({ ok: true });
+		await expect(
+			invokeWorkspaceCommand({
+				name: 'database.ensureWorkspace',
+				workspaceId: 'workspace-native',
+				workspaceName: 'Meu workspace',
+				status: 'registered'
+			})
+		).resolves.toMatchObject({ ok: true });
+		await expect(
+			invokeWorkspaceCommand({
+				name: 'database.ensureWorkspace',
+				workspaceId: '  ',
+				workspaceName: 'Meu workspace',
+				status: 'registered'
+			})
+		).rejects.toMatchObject({ code: 'workspace_id_required' });
+	});
+
 	it('expõe exclusão de conteúdo autoral por workspace, tipo e id', async () => {
 		await expect(
 			invokeWorkspaceCommand({
@@ -76,7 +98,11 @@ describe('typed Tauri bridge', () => {
 			})
 		).rejects.toMatchObject({ code: 'sync_note_id_required' });
 		await expect(
-			invokeWorkspaceCommand({ name: 'sync.readState', workspaceId: 'workspace-native-001', noteId: 'note-001' })
+			invokeWorkspaceCommand({
+				name: 'sync.readState',
+				workspaceId: 'workspace-native-001',
+				noteId: 'note-001'
+			})
 		).resolves.toMatchObject({ ok: true });
 	});
 

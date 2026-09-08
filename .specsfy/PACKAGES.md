@@ -99,10 +99,10 @@
 
 ## Versão do app web (nota humana)
 
-- Workspace `web`: versão `0.8.2` (canônico em `apps/web/package.json`).
+- Workspace `web`: versão `0.8.3` (canônico em `apps/web/package.json`).
 - Troca em um comando: `bun run version:sync <X.Y.Z>` em `apps/web`
   (`scripts/sync_app_version.mjs` espelha em `src/lib/app-version.ts`).
-- A versão do aplicativo foi atualizada para `0.8.2`; nenhuma dependência foi
+- A versão do aplicativo foi atualizada para `0.8.3`; nenhuma dependência foi
   adicionada, removida ou teve sua versão alterada nesta fatia.
 - Os scripts de build do Tauri mantêm a assinatura condicional do workflow;
   `--no-sign` só é aplicado quando o secret de assinatura não está disponível.

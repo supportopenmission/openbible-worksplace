@@ -151,7 +151,7 @@ describe('workspace storage', () => {
 
 	// SPECSFY: US-001 FR-001 FR-004 NFR-002 NFR-003 AC-002
 	it('expõe manifesto e capability compatíveis com cada backend de criação', async () => {
-		for (const kind of ['native', 'local', 'opfs'] as const) {
+		for (const kind of ['local', 'opfs'] as const) {
 			const storage = new MemoryStorage(kind);
 			await prepareWorkspace(storage);
 			const config = JSON.parse(
@@ -169,7 +169,7 @@ describe('workspace storage', () => {
 
 	// SPECSFY: US-003 FR-003 FR-004 NFR-001 NFR-002 NFR-003 AC-009
 	it('só permite excluir uma raiz após provar ownership, scan e lock', async () => {
-		const storage = new MemoryStorage('native');
+		const storage = new MemoryStorage('opfs');
 		await prepareWorkspace(storage);
 		const manifest = JSON.parse(
 			new TextDecoder().decode(storage.files.get('.openbible/config.json'))
@@ -185,7 +185,7 @@ describe('workspace storage', () => {
 
 	// SPECSFY: US-003 FR-003 FR-004 NFR-001 NFR-002 NFR-003 AC-009
 	it('bloqueia exclusão quando o ID não corresponde ao manifesto', async () => {
-		const storage = new MemoryStorage('native');
+		const storage = new MemoryStorage('opfs');
 		await prepareWorkspace(storage);
 		const before = storage.files.size;
 
@@ -199,7 +199,7 @@ describe('workspace storage', () => {
 
 	// SPECSFY: US-003 FR-003 FR-004 NFR-001 NFR-002 NFR-003 AC-010
 	it('bloqueia exclusão quando há arquivo desconhecido na raiz', async () => {
-		const storage = new MemoryStorage('native');
+		const storage = new MemoryStorage('opfs');
 		await prepareWorkspace(storage);
 		await storage.writeFile('estranho.txt', 'fora do controle do app');
 		const manifest = JSON.parse(
@@ -209,9 +209,9 @@ describe('workspace storage', () => {
 		const guardedStorage = storage as MemoryStorage & {
 			deleteManagedRoot?: (workspaceId: string) => Promise<void>;
 		};
-		await expect(
-			guardedStorage.deleteManagedRoot?.(manifest.workspaceId)
-		).rejects.toThrow(/desconhecidos/);
+		await expect(guardedStorage.deleteManagedRoot?.(manifest.workspaceId)).rejects.toThrow(
+			/desconhecidos/
+		);
 		expect(await storage.fileExists('estranho.txt')).toBe(true);
 		expect((storage as MemoryStorage & { forceDelete?: unknown }).forceDelete).toBeUndefined();
 	});
