@@ -5,6 +5,8 @@
 		fetchUserCloudWorkspaces,
 		isWorkspaceInLocalCatalog,
 		linkAndDownloadCloudWorkspace,
+		renameCloudWorkspace,
+		deleteCloudWorkspace,
 		type CloudWorkspaceItem
 	} from './cloud-workspace-service';
 	import { syncWorkspaceWithAccount } from './sync-client';
@@ -15,7 +17,12 @@
 		Cloud,
 		AlertCircle,
 		CheckCircle2,
-		Link2
+		Link2,
+		Pencil,
+		Trash2,
+		Check,
+		X,
+		Sparkles
 	} from '@lucide/svelte';
 
 	const workspaceState = getWorkspaceState();
@@ -25,6 +32,13 @@
 	let error = $state('');
 	let successMessage = $state('');
 	let processingId = $state<string | null>(null);
+	let editingId = $state<string | null>(null);
+	let editName = $state('');
+
+	const hasUnlinkedCloudWorkspaces = $derived(
+		workspaces.length > 0 &&
+		!workspaces.some((w) => w.workspaceId === workspaceState?.workspaceId)
+	);
 
 	async function fetchWorkspaces() {
 		loading = true;
@@ -111,6 +125,55 @@
 		}
 	}
 
+	function handleStartRename(ws: CloudWorkspaceItem) {
+		editingId = ws.workspaceId;
+		editName = ws.name;
+	}
+
+	async function handleSaveRename(ws: CloudWorkspaceItem) {
+		const trimmed = editName.trim();
+		if (!trimmed || trimmed === ws.name) {
+			editingId = null;
+			return;
+		}
+
+		processingId = ws.workspaceId;
+		error = '';
+		successMessage = '';
+
+		try {
+			await renameCloudWorkspace(ws.workspaceId, trimmed);
+			successMessage = `Workspace renomeado para "${trimmed}".`;
+			editingId = null;
+			await fetchWorkspaces();
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Falha ao renomear workspace.';
+		} finally {
+			processingId = null;
+		}
+	}
+
+	async function handleDeleteWorkspace(ws: CloudWorkspaceItem) {
+		const confirmed = window.confirm(
+			`Deseja realmente remover o workspace "${ws.name}" da nuvem?\n\nAs notas salvas localmente neste aparelho NÃO serão excluídas, mas o workspace deixará de sincronizar na nuvem.`
+		);
+		if (!confirmed) return;
+
+		processingId = ws.workspaceId;
+		error = '';
+		successMessage = '';
+
+		try {
+			await deleteCloudWorkspace(ws.workspaceId);
+			successMessage = `Workspace "${ws.name}" removido da nuvem com sucesso.`;
+			await fetchWorkspaces();
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Falha ao remover workspace da nuvem.';
+		} finally {
+			processingId = null;
+		}
+	}
+
 	onMount(() => {
 		void fetchWorkspaces();
 
@@ -161,7 +224,42 @@
 			<AlertCircle size={15} aria-hidden="true" />
 			<span>{error}</span>
 		</div>
-	{:else if loading && workspaces.length === 0}
+	{/if}
+
+	{#if hasUnlinkedCloudWorkspaces}
+		<div class="unlinked-alert-banner" role="region" aria-label="Aviso de workspace na nuvem">
+			<div class="alert-banner-header">
+				<Sparkles size={16} class="sparkle-highlight" aria-hidden="true" />
+				<strong>Workspace na nuvem disponível</strong>
+			</div>
+			{#if workspaces.length === 1}
+				<p class="alert-banner-text">
+					Encontramos o workspace <strong>"{workspaces[0].name}"</strong> salvo na sua conta. Deseja vincular este aparelho a ele para carregar suas notas?
+				</p>
+				<div class="alert-banner-actions">
+					<Button
+						size="sm"
+						disabled={processingId !== null}
+						onclick={() => handleLinkWorkspace(workspaces[0])}
+					>
+						{#if processingId === workspaces[0].workspaceId}
+							<RefreshCw size={13} class="animate-spin mr-1" aria-hidden="true" />
+							<span>Baixando notas…</span>
+						{:else}
+							<Link2 size={13} class="mr-1" aria-hidden="true" />
+							<span>Vincular e carregar notas</span>
+						{/if}
+					</Button>
+				</div>
+			{:else}
+				<p class="alert-banner-text">
+					Sua conta possui {workspaces.length} workspaces na nuvem. Clique em "Vincular a este aparelho" em um deles na tabela abaixo para carregar suas notas.
+				</p>
+			{/if}
+		</div>
+	{/if}
+
+	{#if loading && workspaces.length === 0}
 		<div class="loading-state" role="status">
 			<span>Carregando workspaces remotos...</span>
 		</div>
@@ -191,7 +289,50 @@
 						<tr>
 							<td class="cell-primary">
 								<div class="ws-name-row">
-									<span class="ws-name">{ws.name}</span>
+									{#if editingId === ws.workspaceId}
+										<form
+											class="rename-inline-form"
+											onsubmit={(e) => {
+												e.preventDefault();
+												void handleSaveRename(ws);
+											}}
+										>
+											<input
+												type="text"
+												class="rename-input"
+												bind:value={editName}
+												disabled={isBusy}
+												required
+											/>
+											<button
+												type="submit"
+												class="icon-action-btn check-btn"
+												title="Salvar nome"
+												disabled={isBusy || !editName.trim()}
+											>
+												<Check size={13} aria-hidden="true" />
+											</button>
+											<button
+												type="button"
+												class="icon-action-btn cancel-btn"
+												title="Cancelar"
+												disabled={isBusy}
+												onclick={() => (editingId = null)}
+											>
+												<X size={13} aria-hidden="true" />
+											</button>
+										</form>
+									{:else}
+										<span class="ws-name">{ws.name}</span>
+										<button
+											type="button"
+											class="icon-action-btn rename-btn"
+											title="Renomear workspace"
+											onclick={() => handleStartRename(ws)}
+										>
+											<Pencil size={11} aria-hidden="true" />
+										</button>
+									{/if}
 									{#if isActive}
 										<span class="badge badge-active" title="Workspace atualmente ativo e em uso">Ativo</span>
 									{:else if isLocal}
@@ -204,51 +345,63 @@
 								{formatDate(ws.updatedAt)}
 							</td>
 							<td class="cell-action">
-								{#if isActive}
-									<Button
-										variant="outline"
-										size="sm"
+								<div class="actions-group">
+									{#if isActive}
+										<Button
+											variant="outline"
+											size="sm"
+											disabled={isBusy}
+											onclick={() => handleSyncActive(ws)}
+										>
+											{#if isBusy}
+												<RefreshCw size={13} class="animate-spin mr-1" aria-hidden="true" />
+												<span>Sincronizando…</span>
+											{:else}
+												<RefreshCw size={13} class="mr-1" aria-hidden="true" />
+												<span>Sincronizar</span>
+											{/if}
+										</Button>
+									{:else if isLocal}
+										<Button
+											variant="secondary"
+											size="sm"
+											disabled={isBusy}
+											onclick={() => handleOpenAndSync(ws)}
+										>
+											{#if isBusy}
+												<RefreshCw size={13} class="animate-spin mr-1" aria-hidden="true" />
+												<span>Abrindo…</span>
+											{:else}
+												<span>Abrir e sincronizar</span>
+											{/if}
+										</Button>
+									{:else}
+										<Button
+											variant="default"
+											size="sm"
+											disabled={isBusy}
+											onclick={() => handleLinkWorkspace(ws)}
+										>
+											{#if isBusy}
+												<RefreshCw size={13} class="animate-spin mr-1" aria-hidden="true" />
+												<span>Baixando…</span>
+											{:else}
+												<Link2 size={13} class="mr-1" aria-hidden="true" />
+												<span>Vincular a este aparelho</span>
+											{/if}
+										</Button>
+									{/if}
+
+									<button
+										type="button"
+										class="icon-action-btn delete-btn"
+										title="Remover workspace da nuvem"
 										disabled={isBusy}
-										onclick={() => handleSyncActive(ws)}
+										onclick={() => handleDeleteWorkspace(ws)}
 									>
-										{#if isBusy}
-											<RefreshCw size={13} class="animate-spin mr-1" aria-hidden="true" />
-											<span>Sincronizando…</span>
-										{:else}
-											<RefreshCw size={13} class="mr-1" aria-hidden="true" />
-											<span>Sincronizar</span>
-										{/if}
-									</Button>
-								{:else if isLocal}
-									<Button
-										variant="secondary"
-										size="sm"
-										disabled={isBusy}
-										onclick={() => handleOpenAndSync(ws)}
-									>
-										{#if isBusy}
-											<RefreshCw size={13} class="animate-spin mr-1" aria-hidden="true" />
-											<span>Abrindo…</span>
-										{:else}
-											<span>Abrir e sincronizar</span>
-										{/if}
-									</Button>
-								{:else}
-									<Button
-										variant="default"
-										size="sm"
-										disabled={isBusy}
-										onclick={() => handleLinkWorkspace(ws)}
-									>
-										{#if isBusy}
-											<RefreshCw size={13} class="animate-spin mr-1" aria-hidden="true" />
-											<span>Baixando…</span>
-										{:else}
-											<Link2 size={13} class="mr-1" aria-hidden="true" />
-											<span>Vincular a este aparelho</span>
-										{/if}
-									</Button>
-								{/if}
+										<Trash2 size={14} aria-hidden="true" />
+									</button>
+								</div>
 							</td>
 						</tr>
 					{/each}
@@ -444,9 +597,116 @@
 		text-align: right;
 	}
 
-	.cell-action {
-		text-align: right;
-		white-space: nowrap;
+	.actions-group {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 6px;
+	}
+
+	.unlinked-alert-banner {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		padding: 12px 14px;
+		border-radius: 8px;
+		background: color-mix(in oklch, var(--foreground) 4%, transparent);
+		border: 1px solid color-mix(in oklch, var(--foreground) 16%, transparent);
+	}
+
+	.alert-banner-header {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 0.875rem;
+		color: var(--foreground);
+	}
+
+	:global(.sparkle-highlight) {
+		color: #d97706;
+	}
+
+	.alert-banner-text {
+		font-size: 0.8125rem;
+		color: var(--muted-foreground);
+		margin: 0;
+		line-height: 1.45;
+	}
+
+	.alert-banner-text strong {
+		color: var(--foreground);
+	}
+
+	.alert-banner-actions {
+		display: flex;
+		gap: 8px;
+		margin-top: 4px;
+	}
+
+	.rename-inline-form {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.rename-input {
+		height: 26px;
+		padding: 0 6px;
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		font-size: 0.8125rem;
+		background: var(--background);
+		color: var(--foreground);
+		outline: none;
+	}
+
+	.rename-input:focus {
+		border-color: var(--foreground);
+	}
+
+	.icon-action-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 5px;
+		border: none;
+		border-radius: 4px;
+		background: transparent;
+		color: var(--muted-foreground);
+		cursor: pointer;
+		transition: color 0.15s ease, background-color 0.15s ease;
+	}
+
+	.icon-action-btn:hover:not(:disabled) {
+		color: var(--foreground);
+		background: color-mix(in oklch, var(--foreground) 8%, transparent);
+	}
+
+	.icon-action-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.check-btn {
+		color: #16a34a;
+	}
+
+	.check-btn:hover:not(:disabled) {
+		color: #15803d;
+		background: #f0fdf4;
+	}
+
+	.cancel-btn:hover:not(:disabled) {
+		color: var(--foreground);
+	}
+
+	.delete-btn {
+		color: var(--muted-foreground);
+	}
+
+	.delete-btn:hover:not(:disabled) {
+		color: var(--destructive);
+		background: var(--destructive-subtle);
 	}
 
 	@media (max-width: 640px) {

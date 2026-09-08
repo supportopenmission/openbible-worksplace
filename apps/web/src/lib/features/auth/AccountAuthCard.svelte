@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { authClient, setStoredAuthToken, setStoredAuthUser } from './auth-client';
+	import { normalizeEmail, detectEmailTypo } from './email-suggestion';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { LogIn, UserPlus, AlertCircle, CheckCircle2 } from '@lucide/svelte';
+	import { LogIn, UserPlus, AlertCircle, CheckCircle2, Sparkles } from '@lucide/svelte';
 
 	interface Props {
 		onsuccess?: () => void;
@@ -17,6 +18,8 @@
 	let errorMessage = $state('');
 	let successMessage = $state('');
 
+	const emailTypo = $derived(detectEmailTypo(email));
+
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
 		errorMessage = '';
@@ -26,6 +29,13 @@
 			errorMessage = 'Preencha todos os campos obrigatórios.';
 			return;
 		}
+
+		if (emailTypo.isKnownTypo && emailTypo.suggestedEmail) {
+			errorMessage = `O domínio do email parece conter um erro (${emailTypo.warning}). Corrija para continuar.`;
+			return;
+		}
+
+		const normalizedEmail = normalizeEmail(email);
 
 		if (mode === 'signup' && !name.trim()) {
 			errorMessage = 'Informe seu nome para o cadastro.';
@@ -43,7 +53,7 @@
 			if (mode === 'signup') {
 				const response = await authClient.signUp.email({
 					name: name.trim(),
-					email: email.trim(),
+					email: normalizedEmail,
 					password: password
 				});
 
@@ -67,7 +77,7 @@
 				}
 			} else {
 				const response = await authClient.signIn.email({
-					email: email.trim(),
+					email: normalizedEmail,
 					password: password
 				});
 
@@ -169,12 +179,25 @@
 				id="auth-email"
 				type="email"
 				class="form-input"
+				class:has-suggestion={Boolean(emailTypo.suggestedEmail)}
 				placeholder="seu@email.com"
 				bind:value={email}
 				required
 				autocomplete="email"
 				disabled={loading}
 			/>
+			{#if emailTypo.suggestedEmail}
+				<button
+					type="button"
+					class="email-suggestion-box"
+					onclick={() => {
+						if (emailTypo.suggestedEmail) email = emailTypo.suggestedEmail;
+					}}
+				>
+					<Sparkles size={13} class="sparkle-icon" aria-hidden="true" />
+					<span>Você quis dizer <strong>{emailTypo.suggestedEmail}</strong>? Clique para corrigir.</span>
+				</button>
+			{/if}
 		</div>
 
 		<div class="form-group">
@@ -326,6 +349,34 @@
 	.form-input:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
+	}
+
+	.form-input.has-suggestion {
+		border-color: #f59e0b;
+	}
+
+	.email-suggestion-box {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 10px;
+		background: #fffbeb;
+		border: 1px solid #fde68a;
+		border-radius: 6px;
+		color: #b45309;
+		font-size: 0.75rem;
+		text-align: left;
+		cursor: pointer;
+		transition: background-color 0.15s ease;
+	}
+
+	.email-suggestion-box:hover {
+		background: #fef3c7;
+	}
+
+	.email-suggestion-box strong {
+		color: #92400e;
+		text-decoration: underline;
 	}
 
 	.form-actions {

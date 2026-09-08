@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	fetchUserCloudWorkspaces,
 	isWorkspaceInLocalCatalog,
-	linkAndDownloadCloudWorkspace
+	linkAndDownloadCloudWorkspace,
+	renameCloudWorkspace,
+	deleteCloudWorkspace
 } from './cloud-workspace-service';
 import { setStoredAuthToken } from '../auth/auth-client';
 import { upsertCatalogEntry, getCatalogEntry } from '$lib/storage/workspace-catalog';
@@ -139,5 +141,47 @@ describe('cloud-workspace-service', () => {
 
 		// O workspace deve ter sido ativado
 		expect(workspaceState.workspaceId).toBe(targetId);
+	});
+
+	it('permite renomear um workspace na nuvem atualizando o catalog local', async () => {
+		setStoredAuthToken('mock-user-token');
+		upsertCatalogEntry({
+			workspaceId: 'ws-rename-test',
+			nameCache: 'Nome Original',
+			storageKind: 'opfs',
+			lastOpenedAt: new Date().toISOString(),
+			status: 'ready'
+		});
+
+		const mockFetcher = (async (input: RequestInfo | URL, init?: RequestInit) => {
+			expect(init?.method).toBe('PATCH');
+			expect(JSON.parse(String(init?.body))).toEqual({ name: 'Nome Atualizado' });
+			return new Response(JSON.stringify({ workspaceId: 'ws-rename-test', name: 'Nome Atualizado' }), {
+				status: 200,
+				headers: { 'content-type': 'application/json' }
+			});
+		}) as typeof fetch;
+
+		const res = await renameCloudWorkspace('ws-rename-test', 'Nome Atualizado', mockFetcher);
+		expect(res.success).toBe(true);
+		expect(res.name).toBe('Nome Atualizado');
+
+		const entry = getCatalogEntry('ws-rename-test');
+		expect(entry?.nameCache).toBe('Nome Atualizado');
+	});
+
+	it('permite excluir um workspace da nuvem', async () => {
+		setStoredAuthToken('mock-user-token');
+
+		const mockFetcher = (async (input: RequestInfo | URL, init?: RequestInit) => {
+			expect(init?.method).toBe('DELETE');
+			return new Response(JSON.stringify({ deleted: true }), {
+				status: 200,
+				headers: { 'content-type': 'application/json' }
+			});
+		}) as typeof fetch;
+
+		const res = await deleteCloudWorkspace('ws-delete-test', mockFetcher);
+		expect(res.success).toBe(true);
 	});
 });

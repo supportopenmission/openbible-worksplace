@@ -173,7 +173,9 @@ export class SyncCoreError extends Error {
 			| 'forbidden_payload_field'
 			| 'invalid_deleted_at'
 			| 'batch_limit_exceeded'
-			| 'payload_limit_exceeded',
+			| 'payload_limit_exceeded'
+			| 'invalid_name'
+			| 'workspace_not_found',
 		message: string
 	) {
 		super(message);
@@ -702,6 +704,11 @@ export async function bindWorkspace(
 		if (existing.ownerId !== userId) {
 			throw new SyncAuthError(403, 'Acesso negado: workspace pertence a outro usuário.');
 		}
+		if (name && name.trim() && name.trim() !== existing.name) {
+			existing.name = name.trim();
+			existing.updatedAt = now;
+			return { workspaceId, name: existing.name, bound: true };
+		}
 		return { workspaceId, name: existing.name, bound: true };
 	}
 
@@ -724,5 +731,105 @@ export async function bindWorkspace(
 		throw new SyncAuthError(403, 'Acesso negado: workspace pertence a outro usuário.');
 	}
 
+	if (name && name.trim() && name.trim() !== String(existing.name)) {
+		const newName = name.trim();
+		await d1
+			.prepare('UPDATE sync_workspaces SET name = ?, updated_at = ? WHERE workspace_id = ? AND owner_id = ?')
+			.bind(newName, now, workspaceId, userId)
+			.run();
+		return { workspaceId, name: newName, bound: true };
+	}
+
 	return { workspaceId, name: String(existing.name), bound: true };
+}
+
+export async function renameWorkspace(
+	d1: D1Database | undefined,
+	workspaceId: string,
+	userId: string,
+	name: string
+): Promise<{ workspaceId: string; name: string }> {
+	assertId(workspaceId, 'workspaceId');
+	if (!userId) {
+		throw new SyncAuthError(401, 'Usuário não autenticado.');
+	}
+	const trimmed = name.trim();
+	if (!trimmed) {
+		throw new SyncCoreError('invalid_name', 'Nome do workspace não pode ser vazio.');
+	}
+	const now = new Date().toISOString();
+
+	if (!d1) {
+		const existing = memoryWorkspaces.get(workspaceId);
+		if (!existing) {
+			throw new SyncCoreError('workspace_not_found', 'Workspace não encontrado.');
+		}
+		if (existing.ownerId !== userId) {
+			throw new SyncAuthError(403, 'Acesso negado: workspace pertence a outro usuário.');
+		}
+		existing.name = trimmed;
+		existing.updatedAt = now;
+		return { workspaceId, name: trimmed };
+	}
+
+	const existing = await d1
+		.prepare('SELECT * FROM sync_workspaces WHERE workspace_id = ? LIMIT 1')
+		.bind(workspaceId)
+		.first<Record<string, unknown>>();
+
+	if (!existing) {
+		throw new SyncCoreError('workspace_not_found', 'Workspace não encontrado.');
+	}
+	if (String(existing.owner_id) !== userId) {
+		throw new SyncAuthError(403, 'Acesso negado: workspace pertence a outro usuário.');
+	}
+
+	await d1
+		.prepare('UPDATE sync_workspaces SET name = ?, updated_at = ? WHERE workspace_id = ? AND owner_id = ?')
+		.bind(trimmed, now, workspaceId, userId)
+		.run();
+
+	return { workspaceId, name: trimmed };
+}
+
+export async function deleteWorkspace(
+	d1: D1Database | undefined,
+	workspaceId: string,
+	userId: string
+): Promise<{ deleted: boolean }> {
+	assertId(workspaceId, 'workspaceId');
+	if (!userId) {
+		throw new SyncAuthError(401, 'Usuário não autenticado.');
+	}
+
+	if (!d1) {
+		const existing = memoryWorkspaces.get(workspaceId);
+		if (!existing) {
+			return { deleted: false };
+		}
+		if (existing.ownerId !== userId) {
+			throw new SyncAuthError(403, 'Acesso negado: workspace pertence a outro usuário.');
+		}
+		memoryWorkspaces.delete(workspaceId);
+		return { deleted: true };
+	}
+
+	const existing = await d1
+		.prepare('SELECT * FROM sync_workspaces WHERE workspace_id = ? LIMIT 1')
+		.bind(workspaceId)
+		.first<Record<string, unknown>>();
+
+	if (!existing) {
+		return { deleted: false };
+	}
+	if (String(existing.owner_id) !== userId) {
+		throw new SyncAuthError(403, 'Acesso negado: workspace pertence a outro usuário.');
+	}
+
+	await d1.prepare('DELETE FROM sync_changes WHERE workspace_id = ?').bind(workspaceId).run();
+	await d1.prepare('DELETE FROM sync_conflicts WHERE workspace_id = ?').bind(workspaceId).run();
+	await d1.prepare('DELETE FROM sync_documents WHERE workspace_id = ?').bind(workspaceId).run();
+	await d1.prepare('DELETE FROM sync_workspaces WHERE workspace_id = ? AND owner_id = ?').bind(workspaceId, userId).run();
+
+	return { deleted: true };
 }

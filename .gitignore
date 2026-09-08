@@ -55,3 +55,7 @@ vite.config.ts.timestamp-*
 *.iml
 *.ipr
 *.iws
+
+# Orca screenshot drops
+.orca/
+

@@ -191,3 +191,95 @@ export async function linkAndDownloadCloudWorkspace(
 
 	return { success: true, workspaceId: targetId };
 }
+
+export async function renameCloudWorkspace(
+	workspaceId: string,
+	newName: string,
+	fetcher: typeof fetch = fetch
+): Promise<{ success: boolean; name: string }> {
+	const baseUrl = getSyncServerBaseUrl();
+	const token = getStoredAuthToken();
+	const trimmedName = newName.trim();
+
+	if (!trimmedName) {
+		throw new Error('O nome do workspace não pode estar vazio.');
+	}
+
+	let response = await fetcher(`${baseUrl}/v1/workspaces/${encodeURIComponent(workspaceId)}`, {
+		method: 'PATCH',
+		headers: {
+			'content-type': 'application/json',
+			...(token ? { authorization: `Bearer ${token}` } : {})
+		},
+		body: JSON.stringify({ name: trimmedName }),
+		credentials: 'include'
+	});
+
+	if (response.status === 404 || response.status === 405) {
+		response = await fetcher(`${baseUrl}/v1/workspaces`, {
+			method: 'POST',
+			headers: {
+				'content-type': 'application/json',
+				...(token ? { authorization: `Bearer ${token}` } : {})
+			},
+			body: JSON.stringify({ workspaceId, name: trimmedName }),
+			credentials: 'include'
+		});
+	}
+
+	if (!response.ok) {
+		const errData = (await response.json().catch(() => ({}))) as { message?: string };
+		throw new Error(errData.message || `Falha ao renomear workspace (status ${response.status}).`);
+	}
+
+	const localEntry = getCatalogEntry(workspaceId);
+	if (localEntry) {
+		upsertCatalogEntry({
+			...localEntry,
+			nameCache: trimmedName
+		});
+	}
+
+	if (typeof window !== 'undefined') {
+		window.dispatchEvent(
+			new CustomEvent('openbible:workspace-content-changed', {
+				detail: { workspaceId }
+			})
+		);
+	}
+
+	return { success: true, name: trimmedName };
+}
+
+export async function deleteCloudWorkspace(
+	workspaceId: string,
+	fetcher: typeof fetch = fetch
+): Promise<{ success: boolean }> {
+	const baseUrl = getSyncServerBaseUrl();
+	const token = getStoredAuthToken();
+
+	const response = await fetcher(`${baseUrl}/v1/workspaces/${encodeURIComponent(workspaceId)}`, {
+		method: 'DELETE',
+		headers: {
+			'content-type': 'application/json',
+			...(token ? { authorization: `Bearer ${token}` } : {})
+		},
+		credentials: 'include'
+	});
+
+	if (!response.ok) {
+		const errData = (await response.json().catch(() => ({}))) as { message?: string };
+		throw new Error(errData.message || `Falha ao remover workspace da nuvem (status ${response.status}).`);
+	}
+
+	if (typeof window !== 'undefined') {
+		window.dispatchEvent(
+			new CustomEvent('openbible:workspace-content-changed', {
+				detail: { workspaceId }
+			})
+		);
+	}
+
+	return { success: true };
+}
+
