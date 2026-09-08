@@ -130,7 +130,7 @@
 					id="sync-server-url"
 					type="url"
 					class="form-input"
-					placeholder="http://localhost:8787"
+					placeholder={defaultUrl || 'https://openbible-sync-server.contato-207.workers.dev'}
 					bind:value={serverUrl}
 					required
 				/>
