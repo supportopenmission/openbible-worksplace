@@ -8,7 +8,6 @@
 		ChartColumn,
 		ChevronLeft,
 		ChevronRight,
-		Database,
 		Download,
 		ExternalLink,
 		FolderOpen,
@@ -31,7 +30,6 @@
 	import WorkspaceStats from '$lib/features/workspace/WorkspaceStats.svelte';
 	import WorkspaceSettings from '$lib/features/workspace/WorkspaceSettings.svelte';
 	import WorkspaceBackups from '$lib/features/workspace/WorkspaceBackups.svelte';
-	import SyncSettings from '$lib/features/sync/SyncSettings.svelte';
 	import AgentCapabilityPanel from '$lib/features/ai/AgentCapabilityPanel.svelte';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 
@@ -48,16 +46,15 @@
 		| 'about'
 		| 'appearance'
 		| 'updates';
-	let activeSection = $state<ConfigSectionId>('storage');
+	let activeSection = $state<ConfigSectionId>('appearance');
 
 	const configSections: Array<{ id: ConfigSectionId; label: string; icon: Component }> = [
 		{ id: 'appearance', label: 'Aparência', icon: SunMoon },
 		{ id: 'account', label: 'Conta e sincronização', icon: User },
-		{ id: 'storage', label: 'Armazenamento', icon: Database },
+		{ id: 'stats', label: 'Estatísticas', icon: ChartColumn },
 		{ id: 'assistance', label: 'Assistência', icon: Sparkles },
 		{ id: 'workspaces', label: 'Workspaces', icon: FolderOpen },
 		{ id: 'bibles', label: 'Bíblias', icon: BookOpen },
-		{ id: 'stats', label: 'Estatísticas', icon: ChartColumn },
 		{ id: 'reminder', label: 'Lembrete diário', icon: Bell },
 		{ id: 'updates', label: 'Atualizações', icon: Download },
 		{ id: 'backups', label: 'Backup e restauração', icon: Archive },
@@ -203,9 +200,10 @@
 					>
 						{#if mobileSection === 'account'}
 							<AccountSyncSection />
-						{:else if mobileSection === 'storage'}
+						{:else if mobileSection === 'stats' || mobileSection === 'storage'}
+							<WorkspaceStats />
+							<div class="storage-section-divider"></div>
 							<WorkspaceSettings embedded view="storage" />
-							<SyncSettings />
 						{:else if mobileSection === 'assistance'}
 							<AgentCapabilityPanel />
 						{:else if mobileSection === 'workspaces'}
@@ -214,8 +212,6 @@
 							<WorkspaceBackups embedded />
 						{:else if mobileSection === 'bibles'}
 							<BibleSettings />
-						{:else if mobileSection === 'stats'}
-							<WorkspaceStats />
 						{:else if mobileSection === 'reminder'}
 							{@render reminderSettings()}
 						{:else if mobileSection === 'appearance'}
@@ -270,15 +266,16 @@
 					>
 						<AccountSyncSection />
 					</div>
-				{:else if activeSection === 'storage'}
+				{:else if activeSection === 'stats' || activeSection === 'storage'}
 					<div
-						id="config-panel-storage"
+						id="config-panel-stats"
 						class="config-panel"
 						role="region"
-						aria-labelledby="config-tab-storage"
+						aria-labelledby="config-tab-stats"
 					>
+						<WorkspaceStats />
+						<div class="storage-section-divider"></div>
 						<WorkspaceSettings embedded view="storage" />
-						<SyncSettings />
 					</div>
 				{:else if activeSection === 'assistance'}
 					<div
@@ -315,15 +312,6 @@
 						aria-labelledby="config-tab-bibles"
 					>
 						<BibleSettings />
-					</div>
-				{:else if activeSection === 'stats'}
-					<div
-						id="config-panel-stats"
-						class="config-panel"
-						role="region"
-						aria-labelledby="config-tab-stats"
-					>
-						<WorkspaceStats />
 					</div>
 				{:else if activeSection === 'reminder'}
 					<div
@@ -431,8 +419,7 @@
 			</a>
 		</div>
 		<p class="about-hint">
-			Seus dados ficam guardados neste dispositivo, no workspace que você configurou. Sem conta e
-			sem servidor.
+			Seus dados ficam guardados neste dispositivo, no workspace que você configurou. Conta e sincronização na nuvem são opcionais.
 		</p>
 	</div>
 {/snippet}
@@ -533,6 +520,11 @@
 	.config-panel {
 		min-width: 0;
 		outline: none;
+	}
+
+	.storage-section-divider {
+		margin: 28px 0 20px;
+		border-top: 1px solid var(--border);
 	}
 
 	.config-index-title {

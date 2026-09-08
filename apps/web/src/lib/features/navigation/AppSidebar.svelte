@@ -22,6 +22,7 @@
 	} from '$lib/updates/app-updates.svelte';
 	import ThemeToggle from './ThemeToggle.svelte';
 	import WorkspaceSelector from '$lib/features/workspace/WorkspaceSelector.svelte';
+	import MobileMoreDrawer from './MobileMoreDrawer.svelte';
 
 	let { currentPath = '/' }: { currentPath?: string } = $props();
 
@@ -42,7 +43,7 @@
 		return currentPath === href;
 	}
 
-	const mobileOrder = ['/', '/notes', '/bible', '/sermons', '/config'];
+	const mobileOrder = ['/', '/notes', '/bible', '/sermons'];
 	const mobileLinks = mobileOrder.flatMap((href) => {
 		const link = links.find((item) => item.href === href);
 		if (!link || ('hideOnMobile' in link && link.hideOnMobile)) return [];
@@ -197,6 +198,7 @@
 			<span class="mobile-nav-label">{link.label}</span>
 		</a>
 	{/each}
+	<MobileMoreDrawer {currentPath} />
 </nav>
 
 <style>
@@ -416,10 +418,12 @@
 			transform: translate3d(0, 0, 0.001px);
 		}
 
-		.mobile-nav-link {
+		.mobile-nav-link,
+		.mobile-bottom-nav :global(.mobile-nav-link) {
 			display: flex;
 			min-width: 0;
 			min-height: 48px;
+			height: 48px;
 			flex-direction: column;
 			align-items: center;
 			justify-content: center;
@@ -427,37 +431,49 @@
 			border-radius: 8px;
 			padding: 4px 2px;
 			color: var(--muted-foreground);
+			background: transparent;
+			border: none;
+			cursor: pointer;
+			font-family: inherit;
 			font-size: 0.65rem;
 			font-weight: 500;
 			line-height: 1.1;
 			text-align: center;
 			text-decoration: none;
+			box-sizing: border-box;
 		}
 
-		.mobile-nav-link:hover {
+		.mobile-nav-link:hover,
+		.mobile-bottom-nav :global(.mobile-nav-link:hover) {
 			background: color-mix(in oklch, var(--foreground) 6%, transparent);
 			color: var(--foreground);
 		}
 
-		.mobile-nav-link[aria-disabled='true'] {
+		.mobile-nav-link[aria-disabled='true'],
+		.mobile-bottom-nav :global(.mobile-nav-link[aria-disabled='true']) {
 			opacity: 0.45;
 		}
 
-		.mobile-nav-link[aria-disabled='true']:hover {
+		.mobile-nav-link[aria-disabled='true']:hover,
+		.mobile-bottom-nav :global(.mobile-nav-link[aria-disabled='true']:hover) {
 			background: transparent;
 		}
 
-		.mobile-nav-link.active {
+		.mobile-nav-link.active,
+		.mobile-bottom-nav :global(.mobile-nav-link.active) {
 			color: var(--foreground);
 			font-weight: 600;
 		}
 
-		.mobile-nav-link:focus-visible {
+		.mobile-nav-link:focus-visible,
+		.mobile-bottom-nav :global(.mobile-nav-link:focus-visible) {
 			outline: 2px solid var(--ring);
 			outline-offset: -2px;
 		}
 
-		.mobile-nav-link span {
+		.mobile-nav-link span,
+		.mobile-bottom-nav :global(.mobile-nav-link span),
+		.mobile-bottom-nav :global(.mobile-nav-label) {
 			overflow: hidden;
 			max-width: 100%;
 			text-overflow: ellipsis;

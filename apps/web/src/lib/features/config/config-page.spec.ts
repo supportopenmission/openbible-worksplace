@@ -20,13 +20,13 @@ describe('config sem tela inicial', () => {
 	it('ordena aparência primeiro e backup imediatamente antes de sobre', () => {
 		const source = readFileSync(new URL('./ConfigPage.svelte', import.meta.url), 'utf8');
 		const appearance = source.indexOf("id: 'appearance'");
-		const storage = source.indexOf("id: 'storage'");
+		const stats = source.indexOf("id: 'stats'");
 		const backups = source.indexOf("id: 'backups'");
 		const about = source.indexOf("id: 'about'");
 
 		expect(appearance).toBeGreaterThan(-1);
-		expect(appearance).toBeLessThan(storage);
-		expect(storage).toBeLessThan(backups);
+		expect(appearance).toBeLessThan(stats);
+		expect(stats).toBeLessThan(backups);
 		expect(backups).toBeLessThan(about);
 	});
 

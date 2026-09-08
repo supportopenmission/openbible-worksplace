@@ -37,7 +37,7 @@ describe('AppSidebar', () => {
 			.toBeInTheDocument();
 		await expect.element(primaryNavigation.getByText('Sermões')).toBeInTheDocument();
 		await expect
-			.element(primaryNavigation.getByRole('link', { name: 'Configurações' }))
+			.element(primaryNavigation.getByRole('button', { name: /mais/i }))
 			.toBeInTheDocument();
 	});
 
@@ -63,7 +63,7 @@ describe('AppSidebar', () => {
 			.element(mobileNavigation.getByRole('link', { name: 'Bíblia' }))
 			.toBeInTheDocument();
 		await expect
-			.element(mobileNavigation.getByRole('link', { name: 'Configurações' }))
+			.element(mobileNavigation.getByRole('button', { name: /mais/i }))
 			.toBeInTheDocument();
 		await expect.element(mobileNavigation).toHaveAttribute('data-safe-area', 'bottom');
 	});

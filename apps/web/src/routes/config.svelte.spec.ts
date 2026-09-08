@@ -14,7 +14,7 @@ describe('/config', () => {
 		await render(ConfigPage);
 
 		expect(page.getByRole('button', { name: 'Tela inicial' })).not.toBeInTheDocument();
-		expect(page.getByRole('button', { name: 'Armazenamento' })).toBeInTheDocument();
+		expect(page.getByRole('button', { name: 'Estatísticas' })).toBeInTheDocument();
 	});
 
 	// SPECSFY: US-003 FR-006 NFR-003 AC-011
@@ -24,7 +24,7 @@ describe('/config', () => {
 		await render(ConfigPage);
 
 		expect(page.getByRole('button', { name: 'Tela inicial' })).not.toBeInTheDocument();
-		await expect.element(page.getByRole('button', { name: 'Armazenamento' })).toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: 'Estatísticas' })).toBeInTheDocument();
 	});
 
 	it('shows a section index on mobile with drill-down subpages and back', async () => {
@@ -37,19 +37,19 @@ describe('/config', () => {
 		await expect
 			.element(page.getByRole('heading', { name: 'Configurações', level: 2 }))
 			.toBeInTheDocument();
-		const storageRow = page.getByRole('button', { name: 'Armazenamento' });
-		await expect.element(storageRow).toBeInTheDocument();
+		const statsRow = page.getByRole('button', { name: 'Estatísticas' });
+		await expect.element(statsRow).toBeInTheDocument();
 		expect(page.getByRole('button', { name: 'Tela inicial' })).not.toBeInTheDocument();
 		await expect.element(page.getByRole('button', { name: 'Sobre' })).toBeInTheDocument();
 		await expect.element(page.getByRole('button', { name: 'Aparência' })).toBeInTheDocument();
 
-		await storageRow.click();
+		await statsRow.click();
 		await expect
-			.element(page.getByRole('heading', { name: 'Armazenamento', level: 2 }))
+			.element(page.getByRole('heading', { name: 'Estatísticas', exact: true, level: 2 }))
 			.toBeInTheDocument();
 
 		await page.getByRole('button', { name: /voltar para configurações/i }).click();
-		await expect.element(page.getByRole('button', { name: 'Armazenamento' })).toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: 'Estatísticas' })).toBeInTheDocument();
 	});
 
 	it('uses vertical section navigation on desktop without an initial screen panel', async () => {
@@ -59,26 +59,27 @@ describe('/config', () => {
 		await expect
 			.element(page.getByRole('heading', { name: 'Configurações', level: 1 }))
 			.toBeInTheDocument();
-		const storageTab = page.getByRole('tab', { name: 'Armazenamento' });
-		await expect.element(storageTab).toBeInTheDocument();
+		const appearanceTab = page.getByRole('tab', { name: 'Aparência' });
+		await expect.element(appearanceTab).toBeInTheDocument();
 		await expect
 			.element(page.getByRole('tablist', { name: 'Seções de configuração' }))
 			.toHaveAttribute('aria-orientation', 'vertical');
 		expect(page.getByRole('tab', { name: 'Tela inicial' })).not.toBeInTheDocument();
-		await expect.element(storageTab).toHaveAttribute('aria-selected', 'true');
+		await expect.element(appearanceTab).toHaveAttribute('aria-selected', 'true');
 
-		await storageTab.click();
-		await expect.element(storageTab).toHaveAttribute('aria-selected', 'true');
+		const statsTab = page.getByRole('tab', { name: 'Estatísticas' });
+		await statsTab.click();
+		await expect.element(statsTab).toHaveAttribute('aria-selected', 'true');
 	});
 
-	it('separates storage, workspace management and backup operations', async () => {
+	it('separates stats, workspace management and backup operations', async () => {
 		await page.viewport(1440, 900);
 		await render(ConfigPage);
 
-		const storageTab = page.getByRole('tab', { name: 'Armazenamento' });
+		const statsTab = page.getByRole('tab', { name: 'Estatísticas' });
 		const workspacesTab = page.getByRole('tab', { name: 'Workspaces' });
 		const backupsTab = page.getByRole('tab', { name: 'Backup e restauração' });
-		await expect.element(storageTab).toBeInTheDocument();
+		await expect.element(statsTab).toBeInTheDocument();
 		await expect.element(workspacesTab).toBeInTheDocument();
 		await expect.element(backupsTab).toBeInTheDocument();
 
