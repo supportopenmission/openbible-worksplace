@@ -8,6 +8,7 @@
 		SERVICE_WORKER_UPDATE_EVENT
 	} from '$lib/pwa/service-worker-registration';
 	import { markPwaUpdateAvailable, openAppUpdateDialog } from '$lib/updates/app-updates.svelte';
+	import { ensureClientDataReset, reloadAfterClientReset } from '$lib/pwa/client-reset';
 	import { dev } from '$app/environment';
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
@@ -52,10 +53,16 @@
 			};
 		}
 
-		void configureOpenBibleServiceWorker({
-			development: dev,
-			serviceWorker: navigator.serviceWorker,
-			cacheStorage: 'caches' in globalThis ? globalThis.caches : undefined
+		void ensureClientDataReset().then((resetPerformed) => {
+			if (resetPerformed) {
+				reloadAfterClientReset();
+				return;
+			}
+			return configureOpenBibleServiceWorker({
+				development: dev,
+				serviceWorker: navigator.serviceWorker,
+				cacheStorage: 'caches' in globalThis ? globalThis.caches : undefined
+			});
 		}).catch((error: unknown) => {
 			console.warn('Não foi possível sincronizar o modo offline do OpenBible.', error);
 		});

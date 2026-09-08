@@ -112,6 +112,37 @@ impl WorkspaceDatabase {
         Ok(())
     }
 
+    pub fn reset_local_data(&mut self) -> Result<(), DatabaseError> {
+        let transaction = self.connection.transaction()?;
+        for table in [
+            "sync_queue",
+            "sync_changes",
+            "sync_snapshots",
+            "sync_conflicts",
+            "sync_peers",
+            "sync_endpoints",
+            "sync_documents",
+            "reader_highlight",
+            "note_verse_ref",
+            "workspace_index_state",
+            "workspace_highlights",
+            "workspace_notes",
+            "legacy_workspace_migrations",
+            "workspaces",
+        ] {
+            transaction.execute(&format!("DELETE FROM {table}"), [])?;
+        }
+        transaction.execute(
+            "UPDATE active_workspace_pointer
+             SET workspace_id = NULL, generation = generation + 1,
+                 updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+             WHERE pointer_id = 1",
+            [],
+        )?;
+        transaction.commit()?;
+        Ok(())
+    }
+
     pub fn list_workspace_content(
         &mut self,
         workspace_id: &str,
@@ -768,6 +799,26 @@ pub fn initialize_workspace_database(
 }
 
 #[tauri::command]
+pub fn reset_local_database(
+    app: AppHandle,
+    state: tauri::State<'_, std::sync::Mutex<Option<WorkspaceDatabase>>>,
+) -> Result<(), CommandError> {
+    let mut database_state = state
+        .lock()
+        .map_err(|_| CommandError::new("database_state_error", true))?;
+    if database_state.is_none() {
+        let database = WorkspaceDatabase::open_app(&app)
+            .map_err(|_| CommandError::new("database_unavailable", true))?;
+        *database_state = Some(database);
+    }
+    database_state
+        .as_mut()
+        .expect("database state was initialized")
+        .reset_local_data()
+        .map_err(|_| CommandError::new("persistence_conflict", true))
+}
+
+#[tauri::command]
 pub fn delete_workspace_record(
     workspace_id: String,
     state: tauri::State<'_, std::sync::Mutex<Option<WorkspaceDatabase>>>,
@@ -1100,6 +1151,58 @@ mod tests {
             .filter_map(|record| record["id"].as_str())
             .collect();
         assert_eq!(ids, vec!["note-b"]);
+
+        drop(database);
+        let _ = fs::remove_dir_all(path.parent().expect("test database has a parent"));
+    }
+
+    #[test]
+    fn reset_local_data_clears_content_and_sync_state() {
+        let path = test_path();
+        let mut database = WorkspaceDatabase::open(&path).expect("database opens");
+
+        database
+            .write_workspace_content(&json!({
+                "kind": "note",
+                "id": "note-reset",
+                "workspaceId": "workspace-reset",
+                "schemaVersion": 1,
+                "payload": { "title": "Será removida" }
+            }))
+            .expect("note writes");
+        database
+            .sync_write_snapshot(
+                "workspace-reset",
+                "note-reset",
+                1,
+                &json!({ "title": "Será removida" }),
+                &["head-reset".to_string()],
+            )
+            .expect("snapshot writes");
+
+        database.reset_local_data().expect("local reset commits");
+
+        let content = database
+            .list_workspace_content("workspace-reset")
+            .expect("content remains queryable after reset");
+        assert!(content.as_array().expect("content array").is_empty());
+        assert_eq!(
+            database
+                .connection
+                .query_row("SELECT COUNT(*) FROM workspaces", [], |row| row
+                    .get::<_, i64>(0))
+                .expect("workspace count is readable"),
+            0
+        );
+        assert!(database
+            .connection
+            .query_row(
+                "SELECT workspace_id FROM active_workspace_pointer WHERE pointer_id = 1",
+                [],
+                |row| row.get::<_, Option<String>>(0),
+            )
+            .expect("active pointer is readable")
+            .is_none());
 
         drop(database);
         let _ = fs::remove_dir_all(path.parent().expect("test database has a parent"));

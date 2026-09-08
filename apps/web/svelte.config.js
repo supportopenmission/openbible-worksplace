@@ -7,6 +7,9 @@ const config = {
 	// See https://svelte.dev/docs/kit/integrations#Preprocessors for more information about preprocessors.
 	preprocess: vitePreprocess(),
 	kit: {
+		// O registro é controlado por service-worker-registration.ts para que o
+		// Vite dev nunca instale o worker de produção.
+		serviceWorker: { register: false },
 		adapter: process.env.TAURI_BUILD
 			? adapterStatic({ pages: '.svelte-kit/tauri', assets: '.svelte-kit/tauri', fallback: 'index.html' })
 			: adapter()

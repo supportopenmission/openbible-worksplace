@@ -14,6 +14,7 @@ pub fn run() {
         .manage(Mutex::new(Option::<database::WorkspaceDatabase>::None))
         .invoke_handler(tauri::generate_handler![
             database::initialize_workspace_database,
+            database::reset_local_database,
             database::delete_workspace_record,
             database::list_workspace_content,
             database::write_workspace_content,

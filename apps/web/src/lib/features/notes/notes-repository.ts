@@ -6,7 +6,6 @@ import {
 import type { WorkspaceContentRecord } from '$lib/storage/workspace-content-repository';
 import type { Note, NoteMeta } from './note-types';
 import { parseNoteFile } from './note-markdown';
-import { persistSyncRecord, removeSyncRecord } from '$lib/features/sync/sync-automerge';
 import { queueHttpSyncTombstone, scheduleHttpSync } from '$lib/features/sync/sync-http-client';
 
 const defaultStorage: WorkspaceStorage = {
@@ -20,6 +19,22 @@ const defaultStorage: WorkspaceStorage = {
 };
 
 const TEMPLATE = '# Nova nota\n';
+
+async function persistForSync(
+	storage: WorkspaceStorage,
+	record: WorkspaceContentRecord
+): Promise<void> {
+	const { persistSyncRecord } = await import('$lib/features/sync/sync-automerge');
+	await persistSyncRecord(storage, record);
+}
+
+async function removeFromSync(
+	storage: WorkspaceStorage,
+	record: WorkspaceContentRecord
+): Promise<void> {
+	const { removeSyncRecord } = await import('$lib/features/sync/sync-automerge');
+	await removeSyncRecord(storage, record);
+}
 
 function virtualNotePath(id: string): string {
 	return `notes/${id}.md`;
@@ -195,7 +210,7 @@ export async function createNote(storage?: WorkspaceStorage): Promise<Note> {
 	};
 	const record = noteRecord(resolved, note);
 	await getWorkspaceContentRepository(resolved).write(record);
-	await persistSyncRecord(resolved, record);
+	await persistForSync(resolved, record);
 	scheduleHttpSync(resolved);
 	return note;
 }
@@ -239,7 +254,7 @@ export async function saveNote(
 	};
 	const record = noteRecord(storage, saved);
 	await getWorkspaceContentRepository(storage).write(record);
-	await persistSyncRecord(storage, record);
+	await persistForSync(storage, record);
 	scheduleHttpSync(storage);
 	return saved;
 }
@@ -283,7 +298,7 @@ export async function trashNote(
 	const context = workspaceContentContext(storage);
 	await queueHttpSyncTombstone(storage, 'note', noteId);
 	const current = await findNote(storage, noteId);
-	if (current) await removeSyncRecord(storage, noteRecord(storage, current));
+	if (current) await removeFromSync(storage, noteRecord(storage, current));
 	await getWorkspaceContentRepository(storage, context).remove(context, 'note', noteId);
 	scheduleHttpSync(storage);
 }

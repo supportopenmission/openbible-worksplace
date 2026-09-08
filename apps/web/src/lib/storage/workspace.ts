@@ -50,7 +50,23 @@ export {
 	openAfterIndexFailure,
 	rebuildDerivedIndex
 } from './backup/backup-report';
-export { syncWorkspace } from '$lib/features/sync/sync-document-registry';
+type SyncWorkspaceCommand = import('$lib/features/sync/sync-document-registry').SyncWorkspaceCommand;
+type SyncWorkspaceManifest = import('$lib/features/sync/sync-document-registry').SyncWorkspaceManifest;
+
+/**
+ * Mantém o runtime de sincronização fora do bootstrap da aplicação. O módulo
+ * de sincronização inicializa Automerge/WASM e só é necessário ao executar um
+ * comando de sync.
+ */
+export async function syncWorkspace(
+	storage: WorkspaceStorage,
+	command: SyncWorkspaceCommand
+): Promise<SyncWorkspaceManifest> {
+	const { syncWorkspace: runSyncWorkspace } = await import(
+		'$lib/features/sync/sync-document-registry'
+	);
+	return runSyncWorkspace(storage, command);
+}
 export { executeAgent } from '$lib/features/ai/agent-command';
 export {
 	createIndexedDbSyncStorageAdapter,

@@ -132,12 +132,15 @@ function databaseFor(version: BibleVersion, sql: SqlJs): SqlDatabase {
 }
 
 export async function loadBibleCatalog(storage: WorkspaceStorage): Promise<BibleCatalog> {
-	const sql = storage.kind === 'native' ? null : await getSql();
 	const versions: BibleVersion[] = [];
 	const diagnostics: BibleCatalogDiagnostic[] = [];
 	const files = (await storage.listFiles('bibles'))
 		.filter((fileName) => fileName.toLowerCase().endsWith('.sqlite'))
 		.sort();
+	// A home recém-configurada normalmente ainda não tem Bíblias. Não carregue
+	// o SQL.js/WASM nesse caminho: além de ser trabalho desnecessário, um WASM
+	// indisponível não deve impedir a tela inicial de renderizar seu onboarding.
+	const sql = storage.kind === 'native' || files.length === 0 ? null : await getSql();
 
 	for (const fileName of files) {
 		if (storage.kind === 'native' && storage.inspectBible) {

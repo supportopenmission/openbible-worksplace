@@ -134,6 +134,12 @@ function storageWith(...files: [string, Uint8Array][]): MemoryBibleStorage {
 }
 
 describe('Bible reader SQLite catalog', () => {
+	it('returns an empty catalog without initializing SQL.js', async () => {
+		const catalog = await loadBibleCatalog(new MemoryBibleStorage());
+
+		expect(catalog).toEqual({ versions: [], diagnostics: [] });
+	});
+
 	it('loads an OpenLP version and opens its first book and chapter', async () => {
 		// SPECSFY: US-001 FR-001 FR-002 NFR-001 NFR-002 AC-001
 		const catalog = await loadBibleCatalog(storageWith(['bibles/ara.sqlite', openLpBytes()]));

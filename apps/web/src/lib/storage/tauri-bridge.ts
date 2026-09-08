@@ -3,6 +3,7 @@ import type { WorkspaceContentRecord } from './workspace-content-repository';
 
 export type WorkspaceCommand =
 	| { name: 'database.initialize' }
+	| { name: 'database.resetLocalData' }
 	| { name: 'database.deleteWorkspace'; workspaceId: string }
 	| { name: 'database.listContent'; workspaceId: string }
 	| { name: 'database.writeContent'; record: WorkspaceContentRecord }
@@ -111,6 +112,7 @@ function validateSyncKey(value: string, code = 'sync_key_required'): string {
 function payload(command: WorkspaceCommand | UnknownWorkspaceCommand): Record<string, unknown> {
 	switch (command.name) {
 		case 'database.initialize':
+		case 'database.resetLocalData':
 			return {};
 		case 'database.deleteWorkspace': {
 			const workspaceId = String(command.workspaceId ?? '').trim();
@@ -255,6 +257,7 @@ export function toUserFacingStorageError(error: Partial<NativeCommandError>): Ta
 function tauriCommandName(command: WorkspaceCommand): string {
 	return {
 		'database.initialize': 'initialize_workspace_database',
+		'database.resetLocalData': 'reset_local_database',
 		'database.deleteWorkspace': 'delete_workspace_record',
 		'database.listContent': 'list_workspace_content',
 		'database.writeContent': 'write_workspace_content',
