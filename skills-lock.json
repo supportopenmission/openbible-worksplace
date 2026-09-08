@@ -102,6 +102,12 @@
       "sourceType": "local",
       "computedHash": "5603e268e6691827abfe09717009b3a6cbd1fa75cfb9f479121eb62c9057e71c"
     },
+    "specsfy-specialist-delivery-engineering": {
+      "source": "promovaweb/specsfy",
+      "sourceType": "github",
+      "skillPath": "specialists/specsfy-specialist-delivery-engineering/SKILL.md",
+      "computedHash": "26b8d53972bce9ba57f801b920e1fd09e07b97ba1d1c01ed081e54638a0209c1"
+    },
     "specsfy-specialist-design-system": {
       "source": "promovaweb/specsfy",
       "sourceType": "github",

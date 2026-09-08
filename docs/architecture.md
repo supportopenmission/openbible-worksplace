@@ -5,7 +5,7 @@
 
 | Tipo | Quantidade |
 | --- | --- |
-| Código | 793 |
+| Código | 880 |
 | Testes | 126 |
 
 ## Diagramas

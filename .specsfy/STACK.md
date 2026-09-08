@@ -12,13 +12,14 @@ uma. Preserve decisões humanas nas seções livres deste arquivo.
 | ------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Gerenciador | Bun 1.4.0 | `package.json` (`devEngines.packageManager`) e `bun.lock` (`lockfileVersion`) |
 | Monorepo | Turborepo ^2.10.12 | `package.json` |
-| Framework | SvelteKit 2.70.2 | `apps/web/package.json` e `svelte.config.js` |
+| Framework | SvelteKit 2.70.2 | `apps/web/package.json`, `apps/web/svelte.config.js` e `apps/sync-server/package.json` |
 | Biblioteca de interface | Svelte 5.56.9 | `package.json` (catalogo `sveltejs`) e `apps/web/package.json` |
 | Linguagem | TypeScript 7.0.2 | `apps/web/package.json` |
 | Bundler | Vite 8.2.1 | `apps/web/package.json` e `apps/web/vite.config.ts` |
 | Testes | Vitest 4.1.10 | `apps/web/package.json` e `apps/web/vitest.config.ts` |
-| Runtime de sincronização | Cloudflare Workers + Wrangler ^4.127.1 | `apps/sync-api/package.json` e `apps/sync-api/wrangler.jsonc` |
-| Persistência remota | Cloudflare D1 (SQLite) | `apps/sync-api/migrations/0001_sync.sql` e `apps/sync-api/wrangler.jsonc` |
+| Runtime de sincronização | Cloudflare Workers + Wrangler ^4.127.1 | `apps/sync-api/package.json`, `apps/sync-api/wrangler.jsonc`, `apps/sync-server/package.json` e `apps/sync-server/wrangler.jsonc` |
+| Servidor de autenticação | Better Auth + Drizzle ORM | `apps/sync-server/package.json`, `apps/sync-server/src/lib/server/auth.ts` e `apps/sync-server/src/lib/server/db/index.ts` |
+| Persistência remota | Cloudflare D1 (SQLite) | `apps/sync-api/migrations/0001_sync.sql`, `apps/sync-api/wrangler.jsonc` e `apps/sync-server/wrangler.jsonc` |
 | Testes de navegador | Playwright 1.62.1 | `apps/web/package.json` e `playwright.config.ts` |
 | CSS | Tailwind CSS 4.3.3 | `apps/web/package.json`, `apps/web/vite.config.ts` e `apps/web/src/app.css` |
 | Primitives de interface | shadcn-svelte local, estilo Nova | `apps/web/components.json` e `apps/web/src/lib/components/ui/` |
