@@ -77,7 +77,7 @@ describe('notes editor Milkdown canvas controls', () => {
 		render(NotesEditorPage, { props: { data: { noteId: 'export-menu-note' } } });
 		await getNoteEditor();
 
-		await page.getByRole('button', { name: 'Exportar nota' }).click();
+		await page.getByRole('button', { name: 'Opções da nota' }).click();
 		const menu = page.getByRole('menu');
 		await expect.element(menu).toBeInTheDocument();
 		await expect.element(menu.getByText('Markdown', { exact: true })).toBeInTheDocument();

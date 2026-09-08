@@ -8,7 +8,9 @@
 		BookOpen,
 		Check,
 		ChevronLeft,
+		Clock,
 		FileDown,
+		List,
 		Loader2,
 		MoreHorizontal,
 		Pencil,
@@ -18,9 +20,9 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import MilkdownNoteEditor from '$lib/features/notes/MilkdownNoteEditor.svelte';
 	import type { SaveStatus } from '$lib/features/notes/note-editor-service';
-	import NoteIndexMenu from '$lib/features/notes/NoteIndexMenu.svelte';
 	import { scrollToHeadingAnchor, type NoteHeading } from '$lib/features/notes/note-index';
 	import {
 		buildExportMarkdownAsync,
@@ -286,6 +288,44 @@
 		}).format(date);
 	}
 
+	let dateDisplayMode = $state<'updated' | 'created'>('updated');
+	let indexSheetOpen = $state(false);
+
+	function toggleDateMode() {
+		dateDisplayMode = dateDisplayMode === 'updated' ? 'created' : 'updated';
+	}
+
+	function formatSmartDate(dateStrOrDate: string | Date | null | undefined): string {
+		if (!dateStrOrDate) return '';
+		const date = typeof dateStrOrDate === 'string' ? new Date(dateStrOrDate) : dateStrOrDate;
+		if (isNaN(date.getTime())) return '';
+		const now = new Date();
+		const isToday = date.toDateString() === now.toDateString();
+		const time = new Intl.DateTimeFormat('pt-BR', {
+			hour: '2-digit',
+			minute: '2-digit'
+		}).format(date);
+		if (isToday) {
+			return `às ${time}`;
+		}
+		const dayMonth = new Intl.DateTimeFormat('pt-BR', {
+			day: 'numeric',
+			month: 'short'
+		}).format(date);
+		return `em ${dayMonth}, ${time}`;
+	}
+
+	const currentStatusTooltip = $derived.by(() => {
+		if (saveStatus === 'saving') return 'Salvando alterações…';
+		if (saveStatus === 'error') return 'Erro ao salvar alterações';
+		if (dateDisplayMode === 'created') {
+			const createdDate = note?.createdAt ? new Date(note.createdAt) : null;
+			return `Criada em ${formatSavedFull(createdDate)} · Clique para ver data de atualização`;
+		}
+		const updatedDate = lastSavedAt ?? (note?.updatedAt ? new Date(note.updatedAt) : null);
+		return `Atualizada em ${formatSavedFull(updatedDate)} · Clique para ver data de criação`;
+	});
+
 	async function confirmDelete() {
 		if (!activeStorage || !note || deleting) return;
 		deleting = true;
@@ -312,90 +352,9 @@
 				<ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />
 				<span>Todas as notas</span>
 			</a>
-			{#if note}
-				<div class="save-status-indicator" role="status" aria-live="polite">
-					{#if saveStatus === 'saving'}
-						<Loader2 size={12} class="animate-spin text-muted-foreground" aria-hidden="true" />
-						<span class="status-text saving">Salvando…</span>
-					{:else if saveStatus === 'error'}
-						<AlertCircle size={12} class="text-destructive" aria-hidden="true" />
-						<span class="status-text error">Erro ao salvar</span>
-					{:else if lastSavedAt}
-						<Check size={12} class="text-muted-foreground" aria-hidden="true" />
-						<span class="status-text saved" title={`Salvo em ${formatSavedFull(lastSavedAt)}`}>
-							Salvo às {formatSavedTime(lastSavedAt)}
-						</span>
-					{:else if saveStatus === 'saved'}
-						<Check size={12} class="text-muted-foreground" aria-hidden="true" />
-						<span class="status-text saved">Salvo</span>
-					{/if}
-				</div>
-			{/if}
 		</div>
 		<div class="header-right">
 			{#if note}
-				<Button
-					type="button"
-					variant="ghost"
-					size="icon-sm"
-					aria-label={readOnly ? 'Alternar para modo de edição' : 'Alternar para modo de leitura'}
-					title={readOnly
-						? 'Modo de leitura (clique para editar)'
-						: 'Modo de edição (clique para ler)'}
-					onclick={() => (readOnly = !readOnly)}
-				>
-					{#if readOnly}
-						<Pencil size={15} strokeWidth={1.8} aria-hidden="true" />
-					{:else}
-						<BookOpen size={15} strokeWidth={1.8} aria-hidden="true" />
-					{/if}
-				</Button>
-
-				<NoteIndexMenu
-					headings={indexHeadings}
-					onNavigate={(anchor) => scrollToHeadingAnchor(document, anchor)}
-				/>
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger disabled={exporting}>
-						{#snippet child({ props })}
-							<Button
-								{...props}
-								type="button"
-								variant="ghost"
-								size="icon-sm"
-								aria-label="Exportar nota"
-								title="Exportar nota"
-							>
-								<FileDown size={16} strokeWidth={1.8} aria-hidden="true" />
-							</Button>
-						{/snippet}
-					</DropdownMenu.Trigger>
-					<DropdownMenu.Content align="end" class="note-export-menu">
-						<DropdownMenu.Label>Exportar nota</DropdownMenu.Label>
-						<DropdownMenu.Item disabled={exporting} onclick={() => void exportMarkdownFile()}>
-							<FileDown size={14} strokeWidth={1.8} aria-hidden="true" />
-							<span class="export-menu-copy">
-								<span>Markdown</span>
-								<span class="export-menu-desc"
-									>Arquivo derivado para leitura e compartilhamento</span
-								>
-							</span>
-						</DropdownMenu.Item>
-						<DropdownMenu.Item disabled={exporting} onclick={() => void exportPdfFile()}>
-							<Printer size={14} strokeWidth={1.8} aria-hidden="true" />
-							<span class="export-menu-copy">
-								<span>PDF</span>
-								<span class="export-menu-desc">Abrir impressão offline para salvar em PDF</span>
-							</span>
-						</DropdownMenu.Item>
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
-				{#if exportError}
-					<span class="export-error" role="alert">{exportError}</span>
-				{:else if exportWarning}
-					<span class="export-warning" role="status">{exportWarning}</span>
-				{/if}
-
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}
@@ -411,7 +370,42 @@
 							</Button>
 						{/snippet}
 					</DropdownMenu.Trigger>
-					<DropdownMenu.Content align="end" class="note-options-menu">
+					<DropdownMenu.Content align="end" class="note-options-menu w-56">
+						<DropdownMenu.Item onclick={() => (readOnly = !readOnly)}>
+							{#if readOnly}
+								<Pencil size={14} strokeWidth={1.8} aria-hidden="true" class="mr-2" />
+								<span>Modo de edição</span>
+							{:else}
+								<BookOpen size={14} strokeWidth={1.8} aria-hidden="true" class="mr-2" />
+								<span>Modo de leitura</span>
+							{/if}
+						</DropdownMenu.Item>
+
+						<DropdownMenu.Item onclick={() => (indexSheetOpen = true)}>
+							<List size={14} strokeWidth={1.8} aria-hidden="true" class="mr-2" />
+							<span>Índices da nota</span>
+						</DropdownMenu.Item>
+
+						<DropdownMenu.Separator />
+
+						<DropdownMenu.Label>Exportar nota</DropdownMenu.Label>
+						<DropdownMenu.Item disabled={exporting} onclick={() => void exportMarkdownFile()}>
+							<FileDown size={14} strokeWidth={1.8} aria-hidden="true" class="mr-2" />
+							<div class="export-menu-copy">
+								<span>Markdown</span>
+								<span class="export-menu-desc">Arquivo derivado para leitura e compartilhamento</span>
+							</div>
+						</DropdownMenu.Item>
+						<DropdownMenu.Item disabled={exporting} onclick={() => void exportPdfFile()}>
+							<Printer size={14} strokeWidth={1.8} aria-hidden="true" class="mr-2" />
+							<div class="export-menu-copy">
+								<span>PDF</span>
+								<span class="export-menu-desc">Abrir impressão offline para salvar em PDF</span>
+							</div>
+						</DropdownMenu.Item>
+
+						<DropdownMenu.Separator />
+
 						<DropdownMenu.Label>Largura do editor</DropdownMenu.Label>
 						<DropdownMenu.RadioGroup
 							value={notePageChrome.width}
@@ -449,6 +443,11 @@
 						</DropdownMenu.Item>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
+				{#if exportError}
+					<span class="export-error" role="alert">{exportError}</span>
+				{:else if exportWarning}
+					<span class="export-warning" role="status">{exportWarning}</span>
+				{/if}
 			{/if}
 		</div>
 	</header>
@@ -469,7 +468,48 @@
 					onSaved={handleSaved}
 					onStatusChange={handleStatusChange}
 					onHeadings={(headings) => (indexHeadings = headings)}
-				/>
+				>
+					{#snippet aboveTitle()}
+						{#if note}
+							<div class="save-status-container" role="status" aria-live="polite">
+								<button
+									type="button"
+									class="save-status-indicator"
+									onclick={(e) => {
+										e.stopPropagation();
+										toggleDateMode();
+									}}
+									aria-label={dateDisplayMode === 'updated'
+										? 'Ver data de criação'
+										: 'Ver data de atualização'}
+									title={currentStatusTooltip}
+								>
+									{#if saveStatus === 'saving'}
+										<Loader2 size={12} class="animate-spin text-muted-foreground" aria-hidden="true" />
+										<span class="status-text saving">Salvando…</span>
+									{:else if saveStatus === 'error'}
+										<AlertCircle size={12} class="text-destructive" aria-hidden="true" />
+										<span class="status-text error">Erro ao salvar</span>
+									{:else if dateDisplayMode === 'created'}
+										<Clock size={12} class="text-muted-foreground" aria-hidden="true" />
+										<span class="status-text saved">
+											Criada {formatSmartDate(note.createdAt)}
+										</span>
+									{:else}
+										<Check size={12} class="text-muted-foreground" aria-hidden="true" />
+										<span class="status-text saved">
+											{#if lastSavedAt}
+												Salva às {formatSavedTime(lastSavedAt)}
+											{:else}
+												Atualizada {formatSmartDate(note.updatedAt)}
+											{/if}
+										</span>
+									{/if}
+								</button>
+							</div>
+						{/if}
+					{/snippet}
+				</MilkdownNoteEditor>
 			{/key}
 		{/if}
 	</div>
@@ -484,6 +524,36 @@
 		</footer>
 	{/if}
 </div>
+
+<Sheet.Root bind:open={indexSheetOpen}>
+	<Sheet.Content side="bottom" class="note-index-drawer">
+		<Sheet.Header>
+			<Sheet.Title>Índices da nota</Sheet.Title>
+			<Sheet.Description>Navegue até uma seção da nota.</Sheet.Description>
+		</Sheet.Header>
+		{#if indexHeadings.length === 0}
+			<p class="index-empty" role="status">Nenhum título nesta nota. Use # para criar seções.</p>
+		{:else}
+			<ul class="index-list">
+				{#each indexHeadings as heading (heading.anchor)}
+					<li>
+						<button
+							type="button"
+							class="index-item"
+							data-level={heading.level}
+							onclick={() => {
+								indexSheetOpen = false;
+								scrollToHeadingAnchor(document, heading.anchor);
+							}}
+						>
+							{heading.title}
+						</button>
+					</li>
+				{/each}
+			</ul>
+		{/if}
+	</Sheet.Content>
+</Sheet.Root>
 
 <Dialog.Root bind:open={deleteDialogOpen}>
 	<Dialog.Content showCloseButton={true}>
@@ -534,23 +604,97 @@
 		gap: 8px;
 	}
 
+	.save-status-container {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+	}
+
 	.save-status-indicator {
 		display: inline-flex;
 		align-items: center;
+		justify-content: center;
 		gap: 5px;
-		font-size: 0.75rem;
+		padding: 3px 10px;
+		border-radius: 9999px;
+		background: transparent;
+		border: 1px solid transparent;
 		color: var(--muted-foreground);
+		font-family: inherit;
+		font-size: 0.75rem;
+		font-weight: 500;
+		line-height: 1;
+		cursor: pointer;
 		user-select: none;
+		transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+	}
+
+	.save-status-indicator:hover {
+		background: color-mix(in oklch, var(--foreground) 5%, transparent);
+		border-color: color-mix(in oklch, var(--foreground) 10%, transparent);
+		color: var(--foreground);
+	}
+
+	.save-status-indicator:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 1px;
+	}
+
+	.save-status-indicator:active {
+		transform: scale(0.98);
 	}
 
 	.status-text {
-		color: var(--muted-foreground);
+		color: inherit;
 		font-size: 0.75rem;
 		line-height: 1;
 	}
 
 	.status-text.error {
 		color: var(--destructive);
+	}
+
+	.index-list {
+		list-style: none;
+		margin: 0;
+		padding: 8px 0 16px;
+		max-height: 60dvh;
+		overflow-y: auto;
+	}
+
+	.index-item {
+		display: block;
+		width: 100%;
+		text-align: start;
+		font-size: 0.875rem;
+		line-height: 1.5;
+		padding: 8px 12px;
+		border-radius: var(--radius-md);
+		color: var(--foreground);
+		background: transparent;
+		border: none;
+		cursor: pointer;
+	}
+
+	.index-item[data-level='2'] {
+		padding-inline-start: 24px;
+	}
+
+	.index-item[data-level='3'] {
+		padding-inline-start: 36px;
+		color: var(--muted-foreground);
+	}
+
+	.index-item:hover {
+		background-color: var(--muted);
+	}
+
+	.index-empty {
+		margin: 0;
+		padding: 12px;
+		font-size: 0.8125rem;
+		color: var(--muted-foreground);
 	}
 
 	.export-error {

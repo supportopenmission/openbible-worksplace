@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy, onMount, untrack } from 'svelte';
+	import { onDestroy, onMount, untrack, type Snippet } from 'svelte';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import type { WorkspaceStorage } from '$lib/storage/types';
@@ -62,6 +62,7 @@ import { resolveToolbarVisibility } from './note-toolbar';
 		readOnly = false,
 		toolbarEnabled = true,
 		toolbarPinned = false,
+		aboveTitle,
 		onSaved,
 		onStatusChange,
 		onHeadings
@@ -72,6 +73,7 @@ import { resolveToolbarVisibility } from './note-toolbar';
 		readOnly?: boolean;
 		toolbarEnabled?: boolean;
 		toolbarPinned?: boolean;
+		aboveTitle?: Snippet;
 		onSaved?: (note: Note) => void;
 		onStatusChange?: (status: SaveStatus) => void;
 		onHeadings?: (headings: NoteHeading[]) => void;
@@ -1038,6 +1040,12 @@ let toolbarResolved = $derived(
 
 		<div class="note-container" onclick={handleContainerClick} role="presentation">
 			<div class="note-header-fields">
+				{#if aboveTitle}
+					<div class="note-above-title">
+						{@render aboveTitle()}
+					</div>
+				{/if}
+
 				<h1
 					bind:this={titleEl}
 					contenteditable={readOnly ? 'false' : 'plaintext-only'}
@@ -1239,6 +1247,14 @@ let toolbarResolved = $derived(
 		flex-direction: column;
 		width: 100%;
 		margin-bottom: 24px;
+	}
+
+	.note-above-title {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		margin-bottom: 6px;
 	}
 
 	.note-title {
