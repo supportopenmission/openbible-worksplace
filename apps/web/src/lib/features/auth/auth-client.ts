@@ -72,6 +72,7 @@ export function setStoredAuthUser(user: AuthUserInfo | null): void {
 		} else {
 			window.localStorage.removeItem(USER_STORAGE_KEY);
 		}
+		window.dispatchEvent(new CustomEvent('openbible:auth-changed', { detail: user }));
 	}
 }
 

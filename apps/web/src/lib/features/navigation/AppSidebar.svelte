@@ -2,13 +2,16 @@
 	import { onMount } from 'svelte';
 	import {
 		BookOpen,
+		CheckCircle2,
+		Cloud,
 		Download,
 		GraduationCap,
 		Highlighter,
 		House,
 		NotebookPen,
 		ScrollText,
-		Settings
+		Settings,
+		User
 	} from '@lucide/svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import { goto } from '$app/navigation';
@@ -20,11 +23,20 @@
 		getAppUpdateState,
 		openAppUpdateDialog
 	} from '$lib/updates/app-updates.svelte';
+	import {
+		authClient,
+		getStoredAuthToken,
+		getStoredAuthUser,
+		setStoredAuthUser,
+		type AuthUserInfo
+	} from '$lib/features/auth/auth-client';
 	import ThemeToggle from './ThemeToggle.svelte';
 	import WorkspaceSelector from '$lib/features/workspace/WorkspaceSelector.svelte';
 	import MobileMoreDrawer from './MobileMoreDrawer.svelte';
 
 	let { currentPath = '/' }: { currentPath?: string } = $props();
+
+	let user = $state<AuthUserInfo | null>(null);
 
 	const links = [
 		{ label: 'Início', href: '/', icon: House },
@@ -53,6 +65,37 @@
 	let mobileNavRepaint = $state(false);
 	onMount(() => {
 		if (detectStorageKind() === 'native') void checkForAppUpdate();
+
+		user = getStoredAuthUser();
+
+		const authListener = (e: Event) => {
+			const customEvent = e as CustomEvent<AuthUserInfo | null>;
+			if (customEvent.detail !== undefined) {
+				user = customEvent.detail;
+			} else {
+				user = getStoredAuthUser();
+			}
+		};
+
+		window.addEventListener('openbible:auth-changed', authListener);
+
+		authClient
+			.getSession()
+			.then((session) => {
+				if (session?.data?.user) {
+					const updated = {
+						id: session.data.user.id,
+						name: session.data.user.name,
+						email: session.data.user.email
+					};
+					setStoredAuthUser(updated);
+					user = updated;
+				} else if (getStoredAuthToken()) {
+					setStoredAuthUser(null);
+					user = null;
+				}
+			})
+			.catch(() => {});
 
 		// iOS can keep a fixed layer at the old visual-viewport position after
 		// the standalone PWA or its system chrome settles. Toggle only the
@@ -86,6 +129,7 @@
 			viewport?.removeEventListener('scroll', refresh);
 			window.removeEventListener('resize', refresh);
 			window.removeEventListener('orientationchange', refresh);
+			window.removeEventListener('openbible:auth-changed', authListener);
 		};
 	});
 </script>
@@ -156,6 +200,52 @@
 	</Sidebar.Content>
 
 	<Sidebar.Footer class="sidebar-footer" aria-label="Workspace ativo e ações locais">
+		{#if user}
+			<a
+				href={resolve('/config')}
+				class="sidebar-auth-card"
+				title={`Conta conectada: ${user.name} (${user.email})`}
+				aria-label={`Conta conectada: ${user.name}, abrir configurações`}
+			>
+				<div class="auth-avatar" aria-hidden="true">
+					<User size={15} strokeWidth={1.8} />
+				</div>
+				<div class="auth-info">
+					<div class="auth-name-row">
+						<span class="auth-name">{user.name}</span>
+						<span class="auth-badge" role="status">
+							<CheckCircle2 size={10} aria-hidden="true" />
+							<span>Conectado</span>
+						</span>
+					</div>
+					<span class="auth-email">{user.email}</span>
+				</div>
+			</a>
+		{:else}
+			<div class="sidebar-sync-card">
+				<a
+					href={resolve('/config')}
+					class="sync-card-link"
+					title="Conecte-se para sincronizar"
+					aria-label="Conecte-se para sincronizar"
+				>
+					<div class="sync-card-icon" aria-hidden="true">
+						<Cloud size={15} strokeWidth={1.8} />
+					</div>
+					<div class="sync-card-text">
+						<span class="sync-card-title">Sincronização</span>
+						<span class="sync-card-desc">Conecte-se para sincronizar</span>
+					</div>
+				</a>
+				<a
+					href={resolve('/config')}
+					class="sync-card-action"
+				>
+					Entrar ou criar conta
+				</a>
+			</div>
+		{/if}
+
 		<ThemeToggle />
 		<WorkspaceSelector
 			manageLabel="Gerenciar workspaces"
@@ -340,6 +430,147 @@
 		background: color-mix(in oklch, var(--sidebar-foreground) 6%, transparent);
 	}
 
+	.sidebar-auth-card {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 8px 10px;
+		border: 1px solid color-mix(in oklch, var(--sidebar-foreground) 10%, transparent);
+		border-radius: 8px;
+		background: color-mix(in oklch, var(--sidebar-foreground) 3%, transparent);
+		color: var(--sidebar-foreground);
+		text-decoration: none;
+		transition: background-color 150ms ease, border-color 150ms ease;
+	}
+
+	.sidebar-auth-card:hover {
+		background: color-mix(in oklch, var(--sidebar-foreground) 6%, transparent);
+		border-color: color-mix(in oklch, var(--sidebar-foreground) 18%, transparent);
+	}
+
+	.auth-avatar {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		border-radius: 6px;
+		background: color-mix(in oklch, var(--sidebar-foreground) 8%, transparent);
+		color: var(--sidebar-foreground);
+		flex-shrink: 0;
+	}
+
+	.auth-info {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+		flex: 1;
+	}
+
+	.auth-name-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 6px;
+	}
+
+	.auth-name {
+		font-size: 0.78rem;
+		font-weight: 600;
+		color: var(--sidebar-foreground);
+		line-height: 1.2;
+	}
+
+	.auth-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		border-radius: 999px;
+		padding: 1px 5px;
+		font-size: 0.62rem;
+		font-weight: 550;
+		color: var(--sidebar-foreground);
+		background: color-mix(in oklch, var(--sidebar-foreground) 7%, transparent);
+		border: 1px solid color-mix(in oklch, var(--sidebar-foreground) 15%, transparent);
+		white-space: nowrap;
+	}
+
+	.auth-email {
+		font-size: 0.68rem;
+		color: color-mix(in oklch, var(--sidebar-foreground) 55%, transparent);
+		line-height: 1.2;
+	}
+
+	.sidebar-sync-card {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		padding: 10px;
+		border: 1px solid color-mix(in oklch, var(--sidebar-foreground) 10%, transparent);
+		border-radius: 8px;
+		background: color-mix(in oklch, var(--sidebar-foreground) 3%, transparent);
+	}
+
+	.sync-card-link {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.sync-card-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		border-radius: 6px;
+		background: color-mix(in oklch, var(--sidebar-foreground) 8%, transparent);
+		color: var(--sidebar-foreground);
+		flex-shrink: 0;
+	}
+
+	.sync-card-text {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	.sync-card-title {
+		font-size: 0.78rem;
+		font-weight: 600;
+		color: var(--sidebar-foreground);
+		line-height: 1.2;
+	}
+
+	.sync-card-desc {
+		font-size: 0.68rem;
+		color: color-mix(in oklch, var(--sidebar-foreground) 55%, transparent);
+		line-height: 1.2;
+	}
+
+	.sync-card-action {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 5px 8px;
+		border: 1px solid color-mix(in oklch, var(--sidebar-foreground) 16%, transparent);
+		border-radius: 6px;
+		font-size: 0.72rem;
+		font-weight: 550;
+		color: var(--sidebar-foreground);
+		background: transparent;
+		text-decoration: none;
+		transition: background-color 150ms ease, border-color 150ms ease;
+	}
+
+	.sync-card-action:hover {
+		background: color-mix(in oklch, var(--sidebar-foreground) 7%, transparent);
+		border-color: color-mix(in oklch, var(--sidebar-foreground) 24%, transparent);
+	}
+
 	:global([data-collapsible='icon'] .brand-logo-full) {
 		display: none;
 	}
@@ -378,6 +609,38 @@
 	:global([data-collapsible='icon'] .sidebar-footer .workspace-selector .selector-trigger) {
 		justify-content: center;
 		padding-inline: 7px;
+	}
+
+	:global([data-collapsible='icon'] .sidebar-footer .sidebar-auth-card) {
+		justify-content: center;
+		padding: 6px;
+		border-color: transparent;
+		background: transparent;
+	}
+
+	:global([data-collapsible='icon'] .sidebar-footer .sidebar-auth-card:hover) {
+		background: color-mix(in oklch, var(--sidebar-foreground) 6%, transparent);
+	}
+
+	:global([data-collapsible='icon'] .sidebar-footer .sidebar-auth-card .auth-info) {
+		display: none;
+	}
+
+	:global([data-collapsible='icon'] .sidebar-footer .sidebar-sync-card) {
+		padding: 4px;
+		border-color: transparent;
+		background: transparent;
+		align-items: center;
+	}
+
+	:global([data-collapsible='icon'] .sidebar-footer .sidebar-sync-card .sync-card-link:hover) {
+		background: color-mix(in oklch, var(--sidebar-foreground) 6%, transparent);
+		border-radius: 6px;
+	}
+
+	:global([data-collapsible='icon'] .sidebar-footer .sidebar-sync-card .sync-card-text),
+	:global([data-collapsible='icon'] .sidebar-footer .sidebar-sync-card .sync-card-action) {
+		display: none;
 	}
 
 	:global([data-collapsible='icon'] .sidebar-version) {

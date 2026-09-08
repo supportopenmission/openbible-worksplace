@@ -2,12 +2,18 @@
 	import { onMount } from 'svelte';
 	import { getWorkspaceState } from '$lib/features/workspace/workspace-state.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import SyncStatus from './SyncStatus.svelte';
 	import type { SyncStatusKind } from './SyncStatus.svelte';
-	import {
-		configureHttpSync
-	} from './sync-http-client';
+	import { configureHttpSync } from './sync-http-client';
 	import { syncWorkspaceWithAccount } from './sync-client';
+	import { getStoredAuthUser } from '../auth/auth-client';
+	import {
+		fetchUserCloudWorkspaces,
+		linkAndDownloadCloudWorkspace,
+		type CloudWorkspaceItem
+	} from './cloud-workspace-service';
+	import { RefreshCw, Link2, PlusCircle } from '@lucide/svelte';
 
 	const workspace = getWorkspaceState();
 
@@ -15,6 +21,11 @@
 	let saving = $state(false);
 	let message = $state('');
 	let error = $state('');
+
+	let linkDialogOpen = $state(false);
+	let availableCloudWorkspaces = $state<CloudWorkspaceItem[]>([]);
+	let linkingWorkspaceId = $state<string | null>(null);
+	let importLocalNotes = $state(false);
 
 	const backendLabel = $derived(
 		workspace?.dataContext?.backend === 'sqlite' || workspace?.storage?.kind === 'native'
@@ -71,7 +82,7 @@
 		}
 	}
 
-	async function saveSettings() {
+	async function saveSettings(forceNew = false) {
 		message = '';
 		error = '';
 		saving = true;
@@ -86,18 +97,26 @@
 			}
 			if (!workspace?.storage) throw new Error('workspace_storage_unavailable');
 			if (!workspace.workspaceId) throw new Error('workspace_id_required');
-			syncStatus = 'connecting';
-			const result = await syncWorkspaceWithAccount({ storage: workspace.storage });
-			lastSuccessAt = new Date().toISOString();
-			lastErrorCode = result.conflicts > 0 ? 'sync_conflict' : null;
-			if (result.conflicts > 0) {
-				syncStatus = 'error';
-				message = `${result.conflicts} conflito(s) foram preservados para revisão; as notas locais continuam disponíveis.`;
-			} else {
-				syncStatus = 'synced';
-				message = 'Sincronização com o servidor concluída. As notas continuam disponíveis localmente.';
+
+			const user = getStoredAuthUser();
+			if (user && !forceNew) {
+				try {
+					const remoteWorkspaces = await fetchUserCloudWorkspaces();
+					const alreadyLinked = remoteWorkspaces.some(
+						(item) => item.workspaceId === workspace.workspaceId
+					);
+					if (!alreadyLinked && remoteWorkspaces.length > 0) {
+						availableCloudWorkspaces = remoteWorkspaces;
+						linkDialogOpen = true;
+						saving = false;
+						return;
+					}
+				} catch {
+					// Segue para tentativa de sincronização normal caso a busca falhe
+				}
 			}
-			persistSettings();
+
+			await executeSync();
 		} catch (caught) {
 			syncStatus = 'error';
 			lastErrorCode = caught instanceof Error ? caught.message : 'sync_connection_failed';
@@ -109,6 +128,51 @@
 		} finally {
 			saving = false;
 		}
+	}
+
+	async function executeSync() {
+		if (!workspace?.storage) throw new Error('workspace_storage_unavailable');
+		syncStatus = 'connecting';
+		const result = await syncWorkspaceWithAccount({ storage: workspace.storage });
+		lastSuccessAt = new Date().toISOString();
+		lastErrorCode = result.conflicts > 0 ? 'sync_conflict' : null;
+		if (result.conflicts > 0) {
+			syncStatus = 'error';
+			message = `${result.conflicts} conflito(s) foram preservados para revisão; as notas locais continuam disponíveis.`;
+		} else {
+			syncStatus = 'synced';
+			message = 'Sincronização com o servidor concluída. As notas continuam disponíveis localmente.';
+		}
+		persistSettings();
+	}
+
+	async function handleChooseCloudWorkspace(cw: CloudWorkspaceItem) {
+		if (!workspace) return;
+		linkingWorkspaceId = cw.workspaceId;
+		error = '';
+		message = '';
+		try {
+			const res = await linkAndDownloadCloudWorkspace(workspace, cw, {
+				importCurrentNotes: importLocalNotes
+			});
+			if (res.success) {
+				linkDialogOpen = false;
+				syncEnabled = true;
+				syncStatus = 'synced';
+				lastSuccessAt = new Date().toISOString();
+				message = `Workspace "${cw.name}" vinculado com sucesso! As notas foram sincronizadas neste aparelho.`;
+				persistSettings();
+			}
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Erro ao vincular workspace da nuvem.';
+		} finally {
+			linkingWorkspaceId = null;
+		}
+	}
+
+	function handleSyncAsNew() {
+		linkDialogOpen = false;
+		void saveSettings(true);
 	}
 </script>
 
@@ -157,7 +221,7 @@
 	</label>
 
 	<div class="sync-actions">
-		<Button type="button" onclick={saveSettings} disabled={saving}>
+		<Button type="button" onclick={() => saveSettings()} disabled={saving}>
 			{saving ? 'Sincronizando…' : 'Sincronizar agora'}
 		</Button>
 		{#if message}
@@ -167,6 +231,69 @@
 			<p class="feedback error" role="alert">{error}</p>
 		{/if}
 	</div>
+
+	<Dialog.Root bind:open={linkDialogOpen}>
+		<Dialog.Content class="cloud-link-dialog">
+			<Dialog.Title>Vincular a um workspace na nuvem</Dialog.Title>
+			<Dialog.Description>
+				Sua conta possui {availableCloudWorkspaces.length} workspace(s) salvo(s) na nuvem. Você pode vincular este aparelho a um deles para puxar suas notas, ou sincronizar este workspace como um novo na nuvem.
+			</Dialog.Description>
+
+			<div class="cloud-workspaces-picker">
+				{#each availableCloudWorkspaces as cw (cw.workspaceId)}
+					{@const isLinking = linkingWorkspaceId === cw.workspaceId}
+					<div class="cloud-picker-card">
+						<div class="picker-info">
+							<span class="picker-name">{cw.name}</span>
+							<span class="picker-id">{cw.workspaceId}</span>
+						</div>
+						<Button
+							size="sm"
+							disabled={linkingWorkspaceId !== null}
+							onclick={() => handleChooseCloudWorkspace(cw)}
+						>
+							{#if isLinking}
+								<RefreshCw size={13} class="animate-spin mr-1" aria-hidden="true" />
+								<span>Baixando…</span>
+							{:else}
+								<Link2 size={13} class="mr-1" aria-hidden="true" />
+								<span>Vincular e puxar dados</span>
+							{/if}
+						</Button>
+					</div>
+				{/each}
+			</div>
+
+			<label class="merge-checkbox">
+				<input type="checkbox" bind:checked={importLocalNotes} />
+				<span>Copiar notas deste aparelho para o workspace vinculado</span>
+			</label>
+
+			<div class="dialog-separator">
+				<span>ou</span>
+			</div>
+
+			<div class="dialog-actions-footer">
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={linkingWorkspaceId !== null}
+					onclick={handleSyncAsNew}
+				>
+					<PlusCircle size={14} class="mr-1" aria-hidden="true" />
+					<span>Sincronizar como novo workspace na nuvem</span>
+				</Button>
+				<Button
+					variant="ghost"
+					size="sm"
+					disabled={linkingWorkspaceId !== null}
+					onclick={() => (linkDialogOpen = false)}
+				>
+					Cancelar
+				</Button>
+			</div>
+		</Dialog.Content>
+	</Dialog.Root>
 </section>
 
 <style>
@@ -317,6 +444,96 @@
 		.sync-summary > div {
 			padding: 12px 0;
 		}
+	}
+
+	:global(.cloud-link-dialog) {
+		max-width: 520px;
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+	}
+
+	.cloud-workspaces-picker {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		max-height: 240px;
+		overflow-y: auto;
+		margin-top: 4px;
+	}
+
+	.cloud-picker-card {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 10px 12px;
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		background: var(--background);
+	}
+
+	.picker-info {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+	}
+
+	.picker-name {
+		font-size: 0.84rem;
+		font-weight: 600;
+		color: var(--foreground);
+	}
+
+	.picker-id {
+		font-family: var(--font-mono, monospace);
+		font-size: 0.68rem;
+		color: var(--muted-foreground);
+	}
+
+	.merge-checkbox {
+		display: flex;
+		align-items: flex-start;
+		gap: 8px;
+		font-size: 0.75rem;
+		color: var(--muted-foreground);
+		cursor: pointer;
+		margin-top: 2px;
+	}
+
+	.merge-checkbox input {
+		margin-top: 2px;
+		accent-color: var(--foreground);
+	}
+
+	.dialog-separator {
+		display: flex;
+		align-items: center;
+		text-align: center;
+		color: var(--muted-foreground);
+		font-size: 0.72rem;
+		text-transform: uppercase;
+		margin: 4px 0;
+	}
+
+	.dialog-separator::before,
+	.dialog-separator::after {
+		content: '';
+		flex: 1;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.dialog-separator span {
+		padding: 0 8px;
+	}
+
+	.dialog-actions-footer {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		flex-wrap: wrap;
 	}
 
 	@media (prefers-reduced-motion: reduce) {

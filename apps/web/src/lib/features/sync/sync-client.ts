@@ -18,6 +18,7 @@ export interface SyncOptions {
 	endpoint?: string;
 	token?: string;
 	deviceId?: string;
+	fetcher?: typeof fetch;
 }
 
 export async function syncWorkspaceWithAccount(options: SyncOptions): Promise<HttpSyncResult> {
@@ -38,7 +39,8 @@ export async function syncWorkspaceWithAccount(options: SyncOptions): Promise<Ht
 	return syncWorkspaceHttp(options.storage, {
 		endpoint,
 		token,
-		deviceId
+		deviceId,
+		fetcher: options.fetcher
 	});
 }
 

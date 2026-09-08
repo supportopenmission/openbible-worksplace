@@ -188,7 +188,7 @@ export class WorkspaceState {
 	 */
 	async activateEntry(
 		entry: WorkspaceCatalogEntry,
-		options: { discard?: boolean } = {}
+		options: { discard?: boolean; storage?: WorkspaceStorage } = {}
 	): Promise<SwitchResult> {
 		const lifecycle = getWorkspaceLifecycle();
 		const previousActive = getActiveWorkspace().workspaceId;
@@ -202,7 +202,7 @@ export class WorkspaceState {
 		}
 		// A ativação vem de uma ação explícita da pessoa (seletor/gestão), então
 		// a API de pasta pode solicitar novamente a permissão durante o gesto.
-		const storage = await openWorkspaceStorage(entry, { requestPermission: true });
+		const storage = options.storage ?? (await openWorkspaceStorage(entry, { requestPermission: true }));
 		// Carrega e valida toda a configuração antes de mover o ponteiro. Assim,
 		// uma falha de leitura não deixa a janela apontando para uma raiz que o
 		// estado reativo ainda não conseguiu montar.
