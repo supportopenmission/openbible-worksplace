@@ -36,6 +36,8 @@ yarn-error.log*
 .env.production.local
 !.env.example
 !.env.test
+.dev.vars
+**/.dev.vars
 
 # turbo
 .turbo/

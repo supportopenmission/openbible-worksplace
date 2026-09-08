@@ -8,8 +8,9 @@ import {
 } from '$lib/server/sync/sync-service';
 
 export const GET: RequestHandler = async (event) => {
-	const d1 = event.platform?.env?.openbible_sync;
-	const auth = getAuth(d1);
+	const env = event.platform?.env;
+	const d1 = env?.openbible_sync;
+	const auth = getAuth(d1, env);
 	const session = await auth.api.getSession({ headers: event.request.headers });
 
 	if (!session?.user) {
@@ -23,13 +24,17 @@ export const GET: RequestHandler = async (event) => {
 		if (error instanceof SyncAuthError) {
 			return json({ error: 'unauthorized', message: error.message }, { status: error.status });
 		}
-		return json({ error: 'internal_error', message: 'Erro ao listar workspaces.' }, { status: 500 });
+		return json(
+			{ error: 'internal_error', message: 'Erro ao listar workspaces.' },
+			{ status: 500 }
+		);
 	}
 };
 
 export const POST: RequestHandler = async (event) => {
-	const d1 = event.platform?.env?.openbible_sync;
-	const auth = getAuth(d1);
+	const env = event.platform?.env;
+	const d1 = env?.openbible_sync;
+	const auth = getAuth(d1, env);
 	const session = await auth.api.getSession({ headers: event.request.headers });
 
 	if (!session?.user) {
@@ -37,7 +42,7 @@ export const POST: RequestHandler = async (event) => {
 	}
 
 	try {
-		const body = await event.request.json() as { workspaceId?: string; name?: string };
+		const body = (await event.request.json()) as { workspaceId?: string; name?: string };
 		if (!body.workspaceId) {
 			return json({ error: 'invalid_id', message: 'workspaceId é obrigatório.' }, { status: 400 });
 		}
@@ -51,6 +56,9 @@ export const POST: RequestHandler = async (event) => {
 		if (error instanceof SyncCoreError) {
 			return json({ error: error.code, message: error.message }, { status: 400 });
 		}
-		return json({ error: 'internal_error', message: 'Erro ao vincular workspace.' }, { status: 500 });
+		return json(
+			{ error: 'internal_error', message: 'Erro ao vincular workspace.' },
+			{ status: 500 }
+		);
 	}
 };

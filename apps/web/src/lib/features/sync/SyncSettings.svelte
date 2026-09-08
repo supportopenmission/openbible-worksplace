@@ -5,23 +5,14 @@
 	import SyncStatus from './SyncStatus.svelte';
 	import type { SyncStatusKind } from './SyncStatus.svelte';
 	import {
-		configureHttpSync,
-		getHttpSyncDeviceId,
-		syncWorkspaceHttp,
-		validateHttpSyncEndpoint
+		configureHttpSync
 	} from './sync-http-client';
+	import { syncWorkspaceWithAccount } from './sync-client';
 
 	const workspace = getWorkspaceState();
 
 	let syncEnabled = $state(false);
-	let endpoint = $state('');
-	let token = $state('');
-	let deviceId = $state('');
-	let scope = $state('Notas e destaques deste workspace');
-	let peerId = $state('');
-	let pairedPeer = $state('');
 	let saving = $state(false);
-	let pairing = $state(false);
 	let message = $state('');
 	let error = $state('');
 
@@ -44,10 +35,7 @@
 		const key = settingsKey();
 		if (!key) return;
 		try {
-			localStorage.setItem(
-				key,
-				JSON.stringify({ enabled: syncEnabled, endpoint, scope, pairedPeer })
-			);
+			localStorage.setItem(key, JSON.stringify({ enabled: syncEnabled }));
 		} catch {
 			// A restricted browser keeps the setting in the current session only.
 		}
@@ -59,42 +47,33 @@
 		try {
 			const value = JSON.parse(localStorage.getItem(key) ?? 'null') as {
 				enabled?: boolean;
-				endpoint?: string;
-				scope?: string;
-				pairedPeer?: string;
 			} | null;
 			if (!value) return;
 			syncEnabled = value.enabled === true;
-			endpoint = typeof value.endpoint === 'string' ? value.endpoint : '';
-			scope = typeof value.scope === 'string' ? value.scope : scope;
-			pairedPeer = typeof value.pairedPeer === 'string' ? value.pairedPeer : '';
-			deviceId = getHttpSyncDeviceId();
+			if (syncEnabled) {
+				syncStatus = 'synced';
+			}
 		} catch {
 			// Invalid local settings are ignored and can be replaced by a new save.
 		}
 	});
 
-	function validateEndpoint(): boolean {
-		if (!syncEnabled) return true;
-		if (!endpoint.trim()) {
-			error = 'Informe o endpoint HTTPS seguro do workspace.';
-			return false;
+	function handleToggleSync() {
+		persistSettings();
+		if (!syncEnabled) {
+			if (workspace?.workspaceId) configureHttpSync(workspace.workspaceId, null);
+			syncStatus = 'local';
+			lastErrorCode = null;
+			message = 'Sincronização remota desabilitada. As notas continuam somente neste dispositivo.';
+		} else {
+			message =
+				'Sincronização remota habilitada. Clique em "Sincronizar agora" para sincronizar com o servidor.';
 		}
-		if (!validateHttpSyncEndpoint(endpoint.trim())) {
-			error = 'Use um endpoint HTTPS; HTTP só é aceito em localhost para desenvolvimento.';
-			return false;
-		}
-		if (!token.trim()) {
-			error = 'Informe o token de acesso. Ele fica somente nesta sessão.';
-			return false;
-		}
-		return true;
 	}
 
 	async function saveSettings() {
 		message = '';
 		error = '';
-		if (!validateEndpoint()) return;
 		saving = true;
 		try {
 			if (!syncEnabled) {
@@ -108,17 +87,7 @@
 			if (!workspace?.storage) throw new Error('workspace_storage_unavailable');
 			if (!workspace.workspaceId) throw new Error('workspace_id_required');
 			syncStatus = 'connecting';
-			deviceId ||= getHttpSyncDeviceId();
-			configureHttpSync(workspace.workspaceId, {
-				endpoint: endpoint.trim(),
-				token: token.trim(),
-				deviceId
-			});
-			const result = await syncWorkspaceHttp(workspace.storage, {
-				endpoint: endpoint.trim(),
-				token: token.trim(),
-				deviceId
-			});
+			const result = await syncWorkspaceWithAccount({ storage: workspace.storage });
 			lastSuccessAt = new Date().toISOString();
 			lastErrorCode = result.conflicts > 0 ? 'sync_conflict' : null;
 			if (result.conflicts > 0) {
@@ -126,43 +95,20 @@
 				message = `${result.conflicts} conflito(s) foram preservados para revisão; as notas locais continuam disponíveis.`;
 			} else {
 				syncStatus = 'synced';
-				message = 'Sincronização concluída. As notas continuam disponíveis localmente.';
+				message = 'Sincronização com o servidor concluída. As notas continuam disponíveis localmente.';
 			}
 			persistSettings();
 		} catch (caught) {
 			syncStatus = 'error';
 			lastErrorCode = caught instanceof Error ? caught.message : 'sync_connection_failed';
-			message = 'A conexão remota falhou; as alterações locais continuam disponíveis.';
+			message =
+				lastErrorCode === 'unauthorized' ||
+				(caught instanceof Error && caught.message.includes('401'))
+					? 'Conecte sua conta para sincronizar este workspace com o servidor.'
+					: 'A conexão com o servidor falhou; as alterações locais continuam salvas com segurança.';
 		} finally {
 			saving = false;
 		}
-	}
-
-	async function pairDevice() {
-		message = '';
-		error = '';
-		const normalized = peerId.trim();
-		if (!normalized) {
-			error = 'Informe um identificador para vincular o dispositivo.';
-			return;
-		}
-		pairing = true;
-		try {
-			await Promise.resolve();
-			pairedPeer = normalized;
-			peerId = '';
-			persistSettings();
-			message = `Dispositivo “${normalized}” vinculado somente a este workspace.`;
-		} finally {
-			pairing = false;
-		}
-	}
-
-	function revokeDevice() {
-		if (!pairedPeer) return;
-		message = `Dispositivo “${pairedPeer}” revogado. Cópias locais não são apagadas.`;
-		pairedPeer = '';
-		persistSettings();
 	}
 </script>
 
@@ -202,89 +148,17 @@
 		{lastErrorCode}
 		onRetry={syncEnabled ? saveSettings : undefined}
 	/>
-
-	<div class="sync-section">
-		<div class="sync-section-heading">
-			<h3>Escopo</h3>
-			<p>O escopo fica preso ao workspace ativo e não inclui paths, handles ou o banco bruto.</p>
-		</div>
-		<label class="field">
-			<span>Documentos elegíveis</span>
-			<input bind:value={scope} aria-describedby="sync-scope-help" />
-			<small id="sync-scope-help">Por enquanto, notas e destaques deste workspace.</small>
-		</label>
-	</div>
-
-	<div class="sync-section">
-		<div class="sync-section-heading">
-			<h3>Transporte</h3>
-			<p>
-				O primeiro transporte remoto usa uma API HTTPS incremental. O serviço pode observar ou reter
-				o estado sincronizado; esta versão não oferece E2EE.
-			</p>
-		</div>
-		<label class="toggle-row">
-			<input type="checkbox" bind:checked={syncEnabled} />
-			<span>
-				<strong>Permitir sincronização remota</strong>
-				<small>Desative para continuar em modo local sem chamadas de rede.</small>
-			</span>
-		</label>
-		<label class="field">
-			<span>Endpoint HTTPS da API</span>
-			<input
-				bind:value={endpoint}
-				type="url"
-				placeholder="https://sync.exemplo.workers.dev"
-				disabled={!syncEnabled}
-				aria-describedby="sync-endpoint-help"
-			/>
-			<small id="sync-endpoint-help">Use HTTPS em produção; HTTP só funciona em localhost.</small>
-		</label>
-		<label class="field">
-			<span>Token da API</span>
-			<input
-				bind:value={token}
-				type="password"
-				placeholder="Token do workspace"
-				disabled={!syncEnabled}
-				aria-describedby="sync-token-help"
-			/>
-			<small id="sync-token-help"
-				>O token não é salvo no localStorage, IndexedDB, SQLite ou exportações.</small
-			>
-		</label>
-	</div>
-
-	<div class="sync-section">
-		<div class="sync-section-heading">
-			<h3>Dispositivos autorizados</h3>
-			<p>O vínculo é limitado ao workspace atual. Revogar não apaga cópias já entregues.</p>
-		</div>
-		{#if pairedPeer}
-			<div class="peer-row">
-				<div>
-					<strong class="technical-value">{pairedPeer}</strong>
-					<small>Autorizado neste workspace</small>
-				</div>
-				<Button type="button" variant="outline" size="sm" onclick={revokeDevice}>Revogar</Button>
-			</div>
-		{:else}
-			<div class="pair-row">
-				<label class="field">
-					<span>ID do dispositivo</span>
-					<input bind:value={peerId} placeholder="ex.: notebook-estudo" />
-				</label>
-				<Button type="button" size="sm" onclick={pairDevice} disabled={pairing}>
-					{pairing ? 'Vinculando…' : 'Vincular dispositivo'}
-				</Button>
-			</div>
-		{/if}
-	</div>
+	<label class="toggle-row">
+		<input type="checkbox" bind:checked={syncEnabled} onchange={handleToggleSync} />
+		<span>
+			<strong>Permitir sincronização em nuvem</strong>
+			<small>Desative para manter as notas deste workspace apenas neste dispositivo.</small>
+		</span>
+	</label>
 
 	<div class="sync-actions">
 		<Button type="button" onclick={saveSettings} disabled={saving}>
-			{saving ? 'Salvando…' : 'Salvar sincronização'}
+			{saving ? 'Sincronizando…' : 'Sincronizar agora'}
 		</Button>
 		{#if message}
 			<p class="feedback success" role="status">{message}</p>
@@ -319,7 +193,6 @@
 	}
 
 	h2,
-	h3,
 	p {
 		margin: 0;
 	}
@@ -330,16 +203,8 @@
 		letter-spacing: -0.03em;
 	}
 
-	h3 {
-		font-size: 0.95rem;
-		font-weight: 600;
-	}
-
 	.sync-description,
-	.sync-section-heading p,
-	.field small,
-	.toggle-row small,
-	.peer-row small {
+	.toggle-row small {
 		color: var(--muted-foreground);
 		font-size: 0.8rem;
 		line-height: 1.5;
@@ -396,60 +261,19 @@
 		font-size: 0.78rem;
 	}
 
-	.sync-section {
-		display: grid;
-		grid-template-columns: minmax(160px, 0.7fr) minmax(0, 1.3fr);
-		gap: 28px;
-		border-bottom: 1px solid var(--border);
-		padding: 22px 0;
-	}
-
-	.sync-section-heading {
-		display: grid;
-		align-content: start;
-		gap: 7px;
-	}
-
-	.field {
-		display: grid;
-		max-width: 620px;
-		gap: 7px;
-	}
-
-	.field > span,
-	.toggle-row strong {
-		font-size: 0.84rem;
-		font-weight: 550;
-	}
-
-	.field input {
-		min-height: 40px;
-		border: 1px solid var(--input);
-		border-radius: 6px;
-		background: var(--background);
-		padding: 8px 10px;
-		color: var(--foreground);
-		font: inherit;
-		font-size: 0.86rem;
-	}
-
-	.field input:focus-visible {
-		outline: 2px solid var(--ring);
-		outline-offset: 2px;
-	}
-
-	.field input:disabled {
-		cursor: not-allowed;
-		opacity: 0.55;
-	}
-
 	.toggle-row {
 		display: flex;
 		align-items: flex-start;
 		gap: 10px;
 		max-width: 620px;
-		margin-bottom: 18px;
+		margin-top: 20px;
+		margin-bottom: 8px;
 		cursor: pointer;
+	}
+
+	.toggle-row strong {
+		font-size: 0.84rem;
+		font-weight: 550;
 	}
 
 	.toggle-row input {
@@ -459,31 +283,9 @@
 		accent-color: var(--foreground);
 	}
 
-	.toggle-row span,
-	.peer-row > div {
+	.toggle-row span {
 		display: grid;
 		gap: 3px;
-	}
-
-	.pair-row {
-		display: flex;
-		align-items: end;
-		gap: 12px;
-		max-width: 620px;
-	}
-
-	.pair-row .field {
-		flex: 1;
-	}
-
-	.peer-row {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 16px;
-		max-width: 620px;
-		border: 1px solid var(--border);
-		padding: 12px;
 	}
 
 	.sync-actions {
@@ -491,7 +293,7 @@
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 12px;
-		padding-top: 22px;
+		padding-top: 20px;
 	}
 
 	.feedback {
@@ -512,23 +314,8 @@
 			gap: 12px;
 		}
 
-		.sync-section {
-			grid-template-columns: 1fr;
-			gap: 14px;
-			padding: 20px 0;
-		}
-
 		.sync-summary > div {
 			padding: 12px 0;
-		}
-
-		.pair-row {
-			align-items: stretch;
-			flex-direction: column;
-		}
-
-		.pair-row :global(button) {
-			align-self: flex-start;
 		}
 	}
 

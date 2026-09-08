@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { authClient } from './auth-client';
+	import { authClient, setStoredAuthToken, setStoredAuthUser } from './auth-client';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { LogIn, UserPlus, AlertCircle, CheckCircle2 } from '@lucide/svelte';
 
@@ -50,6 +50,16 @@
 				if (response.error) {
 					errorMessage = response.error.message || 'Erro ao realizar cadastro. Verifique se o email já existe.';
 				} else {
+					if (response.data?.token) {
+						setStoredAuthToken(response.data.token);
+					}
+					if (response.data?.user) {
+						setStoredAuthUser({
+							id: response.data.user.id,
+							name: response.data.user.name,
+							email: response.data.user.email
+						});
+					}
 					successMessage = 'Conta criada com sucesso! Conectando...';
 					setTimeout(() => {
 						onsuccess?.();
@@ -64,6 +74,16 @@
 				if (response.error) {
 					errorMessage = response.error.message || 'Email ou senha incorretos.';
 				} else {
+					if (response.data?.token) {
+						setStoredAuthToken(response.data.token);
+					}
+					if (response.data?.user) {
+						setStoredAuthUser({
+							id: response.data.user.id,
+							name: response.data.user.name,
+							email: response.data.user.email
+						});
+					}
 					successMessage = 'Login realizado com sucesso!';
 					setTimeout(() => {
 						onsuccess?.();

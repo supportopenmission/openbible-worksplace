@@ -11,9 +11,13 @@ const ALLOWED_ORIGINS = new Set([
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const origin = event.request.headers.get('origin');
+	const isLocalhost = origin ? /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) : false;
 	const isAllowed =
 		origin &&
-		(ALLOWED_ORIGINS.has(origin) || origin.endsWith('.workers.dev') || origin.endsWith('.pages.dev'));
+		(isLocalhost ||
+			ALLOWED_ORIGINS.has(origin) ||
+			origin.endsWith('.workers.dev') ||
+			origin.endsWith('.pages.dev'));
 
 	if (event.request.method === 'OPTIONS') {
 		return new Response(null, {
@@ -22,6 +26,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 				'Access-Control-Allow-Origin': isAllowed ? origin : origin || '*',
 				'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
 				'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+				'Access-Control-Expose-Headers': 'set-auth-token',
 				'Access-Control-Allow-Credentials': 'true',
 				'Access-Control-Max-Age': '86400'
 			}
@@ -33,6 +38,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (isAllowed && origin) {
 		response.headers.set('Access-Control-Allow-Origin', origin);
 		response.headers.set('Access-Control-Allow-Credentials', 'true');
+		response.headers.set('Access-Control-Expose-Headers', 'set-auth-token');
 	}
 
 	return response;

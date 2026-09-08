@@ -1,4 +1,4 @@
-import { authClient, getSyncServerBaseUrl } from '../auth/auth-client';
+import { authClient, getSyncServerBaseUrl, getStoredAuthToken, setStoredAuthToken } from '../auth/auth-client';
 import { syncWorkspaceHttp, type HttpSyncResult } from './sync-http-client';
 
 /**
@@ -22,8 +22,17 @@ export interface SyncOptions {
 
 export async function syncWorkspaceWithAccount(options: SyncOptions): Promise<HttpSyncResult> {
 	const endpoint = options.endpoint || getSyncServerBaseUrl();
-	const session = await authClient.getSession().catch(() => null);
-	const token = options.token || (session?.data?.session?.token ?? '');
+	const storedToken = getStoredAuthToken();
+	let token = options.token || storedToken || '';
+
+	if (!token) {
+		const session = await authClient.getSession().catch(() => null);
+		token = session?.data?.session?.token ?? '';
+		if (token) {
+			setStoredAuthToken(token);
+		}
+	}
+
 	const deviceId = options.deviceId || 'browser-client';
 
 	return syncWorkspaceHttp(options.storage, {

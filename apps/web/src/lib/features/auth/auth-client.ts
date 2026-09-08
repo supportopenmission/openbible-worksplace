@@ -26,14 +26,79 @@ export function isCustomSyncServerConfigured(): boolean {
 	return false;
 }
 
-let internalClient = createAuthClient({
-	baseURL: getSyncServerBaseUrl()
-});
+const TOKEN_STORAGE_KEY = 'openbible:auth-token';
+const USER_STORAGE_KEY = 'openbible:auth-user';
+
+export function getStoredAuthToken(): string | null {
+	if (typeof window !== 'undefined') {
+		const token = window.localStorage.getItem(TOKEN_STORAGE_KEY);
+		if (token && token.trim()) return token.trim();
+	}
+	return null;
+}
+
+export function setStoredAuthToken(token: string | null): void {
+	if (typeof window !== 'undefined') {
+		if (token && token.trim()) {
+			window.localStorage.setItem(TOKEN_STORAGE_KEY, token.trim());
+		} else {
+			window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+		}
+	}
+}
+
+export interface AuthUserInfo {
+	id?: string;
+	name: string;
+	email: string;
+}
+
+export function getStoredAuthUser(): AuthUserInfo | null {
+	if (typeof window !== 'undefined') {
+		try {
+			const raw = window.localStorage.getItem(USER_STORAGE_KEY);
+			if (raw) return JSON.parse(raw);
+		} catch {
+			return null;
+		}
+	}
+	return null;
+}
+
+export function setStoredAuthUser(user: AuthUserInfo | null): void {
+	if (typeof window !== 'undefined') {
+		if (user) {
+			window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+		} else {
+			window.localStorage.removeItem(USER_STORAGE_KEY);
+		}
+	}
+}
+
+function createInternalAuthClient(baseURL: string) {
+	return createAuthClient({
+		baseURL,
+		fetchOptions: {
+			onRequest(ctx) {
+				const token = getStoredAuthToken();
+				if (token) {
+					ctx.headers.set('authorization', `Bearer ${token}`);
+				}
+			},
+			onResponse(ctx) {
+				const serverToken = ctx.response.headers.get('set-auth-token');
+				if (serverToken) {
+					setStoredAuthToken(serverToken);
+				}
+			}
+		}
+	});
+}
+
+let internalClient = createInternalAuthClient(getSyncServerBaseUrl());
 
 export function refreshAuthClient(): void {
-	internalClient = createAuthClient({
-		baseURL: getSyncServerBaseUrl()
-	});
+	internalClient = createInternalAuthClient(getSyncServerBaseUrl());
 }
 
 export function setSyncServerBaseUrl(url: string | null): void {
@@ -68,7 +133,8 @@ export async function logoutAndPreserveLocalData(): Promise<{ success: boolean }
 	if (typeof window !== 'undefined') {
 		// Limpa apenas chaves de autenticação, jamais tocando em dados locais de workspace
 		window.localStorage.removeItem('better-auth.session_token');
-		window.localStorage.removeItem('openbible:auth-user');
+		setStoredAuthToken(null);
+		setStoredAuthUser(null);
 	}
 
 	return { success: true };

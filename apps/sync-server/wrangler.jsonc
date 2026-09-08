@@ -1,8 +1,16 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "openbible-sync-server",
+	"main": ".svelte-kit/cloudflare/_worker.js",
 	"compatibility_date": "2026-09-07",
-	"pages_build_output_dir": ".svelte-kit/cloudflare",
+	"compatibility_flags": ["nodejs_als"],
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	"observability": {
+		"enabled": true
+	},
 	"d1_databases": [
 		{
 			"binding": "openbible_sync",
@@ -13,6 +21,8 @@
 	],
 	"vars": {
 		"MAX_BATCH_SIZE": "50",
-		"MAX_PAYLOAD_BYTES": "262144"
+		"MAX_PAYLOAD_BYTES": "262144",
+		"BETTER_AUTH_URL": "https://openbible-sync-server.contato-207.workers.dev",
+		"BETTER_AUTH_TRUSTED_ORIGINS": "https://openbible.contato-207.workers.dev"
 	}
 }

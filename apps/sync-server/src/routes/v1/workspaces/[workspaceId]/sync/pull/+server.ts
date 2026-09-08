@@ -3,8 +3,9 @@ import { getAuth } from '$lib/server/auth';
 import { pullChanges, SyncAuthError, SyncCoreError } from '$lib/server/sync/sync-service';
 
 export const GET: RequestHandler = async (event) => {
-	const d1 = event.platform?.env?.openbible_sync;
-	const auth = getAuth(d1);
+	const env = event.platform?.env;
+	const d1 = env?.openbible_sync;
+	const auth = getAuth(d1, env);
 	const session = await auth.api.getSession({ headers: event.request.headers });
 
 	if (!session?.user) {
@@ -27,7 +28,10 @@ export const GET: RequestHandler = async (event) => {
 		return json({ error: 'invalid_revision', message: 'Cursor inválido.' }, { status: 400 });
 	}
 	if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
-		return json({ error: 'batch_limit_exceeded', message: 'limit deve estar entre 1 e 100.' }, { status: 400 });
+		return json(
+			{ error: 'batch_limit_exceeded', message: 'limit deve estar entre 1 e 100.' },
+			{ status: 400 }
+		);
 	}
 
 	try {
@@ -39,9 +43,14 @@ export const GET: RequestHandler = async (event) => {
 		}
 		if (error instanceof SyncCoreError) {
 			const status =
-				error.code === 'batch_limit_exceeded' || error.code === 'payload_limit_exceeded' ? 413 : 400;
+				error.code === 'batch_limit_exceeded' || error.code === 'payload_limit_exceeded'
+					? 413
+					: 400;
 			return json({ error: error.code, message: error.message }, { status });
 		}
-		return json({ error: 'internal_error', message: 'Erro ao buscar alterações.' }, { status: 500 });
+		return json(
+			{ error: 'internal_error', message: 'Erro ao buscar alterações.' },
+			{ status: 500 }
+		);
 	}
 };

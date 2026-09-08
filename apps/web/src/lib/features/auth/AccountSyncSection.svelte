@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { authClient } from './auth-client';
+	import {
+		authClient,
+		getStoredAuthUser,
+		setStoredAuthUser,
+		setStoredAuthToken
+	} from './auth-client';
 	import AccountAuthCard from './AccountAuthCard.svelte';
 	import ConnectedAccountPanel from './ConnectedAccountPanel.svelte';
 	import SyncServerConfigCard from './SyncServerConfigCard.svelte';
@@ -14,11 +19,10 @@
 		email: string;
 	}
 
-	let user = $state<SessionUser | null>(null);
-	let loading = $state(true);
+	let user = $state<SessionUser | null>(getStoredAuthUser());
+	let loading = $state(false);
 
 	async function refreshSession() {
-		loading = true;
 		try {
 			const session = await authClient.getSession();
 			if (session.data?.user) {
@@ -27,11 +31,17 @@
 					name: session.data.user.name,
 					email: session.data.user.email
 				};
-			} else {
+				setStoredAuthUser(user);
+				if (session.data.session?.token) {
+					setStoredAuthToken(session.data.session.token);
+				}
+			} else if (session.error && (session.error.status === 401 || session.error.status === 403)) {
 				user = null;
+				setStoredAuthUser(null);
+				setStoredAuthToken(null);
 			}
 		} catch {
-			user = null;
+			// Em caso de falha de rede/offline, mantém usuário armazenado localmente
 		} finally {
 			loading = false;
 		}
@@ -84,8 +94,8 @@
 		}}
 	/>
 
-	<div class="legacy-sync-divider">
-		<span class="divider-text">Configurações avançadas do Workspace</span>
+	<div class="workspace-sync-divider">
+		<span class="divider-text">Sincronização do Workspace</span>
 	</div>
 
 	<SyncSettings />
@@ -144,7 +154,7 @@
 		gap: 20px;
 	}
 
-	.legacy-sync-divider {
+	.workspace-sync-divider {
 		display: flex;
 		align-items: center;
 		margin-top: 12px;

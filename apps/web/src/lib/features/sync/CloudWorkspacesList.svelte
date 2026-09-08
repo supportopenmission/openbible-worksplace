@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { getSyncServerBaseUrl } from '../auth/auth-client';
+	import { getSyncServerBaseUrl, getStoredAuthToken } from '../auth/auth-client';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { FolderSync, RefreshCw, Cloud, AlertCircle } from '@lucide/svelte';
 
@@ -21,9 +21,11 @@
 
 		try {
 			const baseUrl = getSyncServerBaseUrl();
+			const token = getStoredAuthToken();
 			const response = await fetch(`${baseUrl}/v1/workspaces`, {
 				headers: {
-					'content-type': 'application/json'
+					'content-type': 'application/json',
+					...(token ? { authorization: `Bearer ${token}` } : {})
 				},
 				credentials: 'include'
 			});
