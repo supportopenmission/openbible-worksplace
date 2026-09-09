@@ -24,9 +24,12 @@ erDiagram
 
 ## Modelo operacional de workspaces (SPEC-0016)
 
-- Tauri usa um único `app.sqlite` por instalação, com `workspaces`,
+- Tauri usa um único `app.sqlite` por instalação em `~/.openbible/app.sqlite`, com `workspaces`,
   `active_workspace_pointer`, `legacy_workspace_migrations`, conteúdo de notas,
   destaques e projeções no schema v2.
+- O workspace nativo padrão fica em `~/.openbible/workspace/`; suas Bíblias
+  continuam em `bibles/*.sqlite`. Na atualização inicial, o banco e o workspace
+  padrão legados são migrados sem alterar workspaces escolhidos manualmente.
 - O PWA usa o IndexedDB versionado `openbible-workspace`, com stores
   `workspaces`, `active_workspace_pointer`, `legacy_workspace_migrations`,
   `workspace_blobs`, `workspace_notes`, `workspace_highlights`,

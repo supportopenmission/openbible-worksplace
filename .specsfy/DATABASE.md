@@ -66,19 +66,29 @@ definidas para esta primeira fatia.
 
 ## Persistência operacional de workspaces (SPEC-0016 revisada)
 
-O Tauri mantém um único `app.sqlite` por instalação; o PWA mantém um banco
-IndexedDB por origem. O registro de cada workspace é escopado por
-`workspace_id`; não existe um banco operacional separado por workspace nesta
-fatia. O SQLite da Bíblia continua sendo um recurso somente leitura e não é
-importado relacionalmente para o IndexedDB nesta fatia.
+O Tauri mantém um único `app.sqlite` por instalação em
+`~/.openbible/app.sqlite`; o PWA mantém um banco IndexedDB por origem. O
+registro de cada workspace é escopado por `workspace_id`; não existe um banco
+operacional separado por workspace nesta fatia. O SQLite da Bíblia continua
+sendo um recurso somente leitura e não é importado relacionalmente para o
+IndexedDB nesta fatia.
 
 | Banco/estrutura | Onde vive | Campos/escopo | Relações e regras |
 | --- | --- | --- | --- |
-| `app.sqlite` | diretório de dados da instalação Tauri | `workspaces`, `active_workspace_pointer`, `legacy_workspace_migrations`, `workspace_notes`, `workspace_highlights`, `workspace_index_state`, `note_verse_ref`, `reader_highlight`, `sync_documents`, `sync_snapshots`, `sync_changes`, `sync_queue`, `sync_peers`, `sync_endpoints`, `sync_conflicts`; schema v3 | abertura e migrations transacionais; conteúdo autoral operacional, estado CRDT, fila e projeções são escopados por `workspace_id` |
+| `app.sqlite` | `~/.openbible/app.sqlite` na instalação Tauri | `workspaces`, `active_workspace_pointer`, `legacy_workspace_migrations`, `workspace_notes`, `workspace_highlights`, `workspace_index_state`, `note_verse_ref`, `reader_highlight`, `sync_documents`, `sync_snapshots`, `sync_changes`, `sync_queue`, `sync_peers`, `sync_endpoints`, `sync_conflicts`; schema v3 | abertura e migrations transacionais; conteúdo autoral operacional, estado CRDT, fila e projeções são escopados por `workspace_id` |
 | `workspaces` | `app.sqlite` | `workspace_id`, `name`, `status`, `schema_version`, timestamps, `metadata_json` | `workspace_id` é a identidade única e a chave de escopo das operações |
 | `active_workspace_pointer` | `app.sqlite` | ponteiro único, `workspace_id`, `generation`, `updated_at` | aponta para `workspaces`; geração invalida resultados assíncronos antigos |
 | `legacy_workspace_migrations` | `app.sqlite` | origem, cursor, estado, erro e workspace associado | somente progresso/recovery; não transforma a fonte legada em backend ativo |
 | IndexedDB operacional | origem PWA, banco `openbible-workspace` | stores `workspaces`, `active_workspace_pointer`, `legacy_workspace_migrations`, `workspace_blobs`, `workspace_notes`, `workspace_highlights`, `workspace_index_state`, `note_verse_ref`, `reader_highlight`, `sync_documents`, `sync_snapshots`, `sync_changes`, `sync_queue`, `sync_peers`, `sync_endpoints`, `sync_conflicts`; schema v3 | adapter versionado implementado na T032; uma origem, vários `workspaceId`, chaves compostas, transações e exclusão por escopo |
+
+Na instalação nativa, o workspace interno padrão vive em
+`~/.openbible/workspace/`, com as Bíblias em `bibles/*.sqlite` e os arquivos
+compatíveis do workspace na mesma raiz. Na primeira abertura após esta mudança,
+o aplicativo copia o `app.sqlite` legado para a nova raiz e transfere o
+workspace padrão que estava em `app_data_dir/workspace`; a origem legada do
+banco é mantida para recovery quando a cópia é usada. Workspaces escolhidos
+manualmente não são movidos. O PWA permanece no backend IndexedDB/OPFS já
+selecionado pelo navegador.
 
 ### Persistência operacional de sincronização (SPEC-0019)
 

@@ -4,7 +4,7 @@
 ## Visão geral
 
 - Frameworks detectados: não identificados.
-- Arquivos de código: 933.
+- Arquivos de código: 934.
 - Arquivos de teste: 131.
 
 ## Roteiro

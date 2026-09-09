@@ -25,5 +25,6 @@ Decisões explícitas em `PROJECT.md` e `.specsfy/` prevalecem sobre inferência
 | Decisão | Fonte |
 | --- | --- |
 | Registro operacional de workspaces no Tauri em um único `app.sqlite`; no PWA, em IndexedDB versionado por origem | SPEC-0016 revisada, `.specsfy/DATABASE.md` e testes de paridade |
+| Persistência nativa estável em `~/.openbible/app.sqlite` e `~/.openbible/workspace/`; o PWA mantém o backend do navegador | Conversa de 2026-09-09, código Tauri e `.specsfy/DATABASE.md` |
 | `workspaceId` é o escopo de todas as operações; manifesto, catálogo e raízes legadas são migração/recovery, não backend ativo | SPEC-0016 revisada e decisão arquitetural registrada em ai-memory |
 | Markdown e PDF são formatos de exportação das notas; parser/exportador será uma fatia posterior | Conversa atual e seção de export source da SPEC-0016 |

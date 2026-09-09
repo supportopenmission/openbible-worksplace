@@ -1,5 +1,6 @@
 mod commands;
 mod database;
+mod paths;
 
 use commands::workspace::WorkspaceContext;
 use std::sync::Mutex;

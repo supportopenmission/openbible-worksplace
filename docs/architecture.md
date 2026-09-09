@@ -5,7 +5,7 @@
 
 | Tipo | Quantidade |
 | --- | --- |
-| Código | 933 |
+| Código | 934 |
 | Testes | 131 |
 
 ## Diagramas
@@ -25,9 +25,10 @@ classDiagram
 
 - `apps/web` é a aplicação SvelteKit do produto.
 - `apps/desktop` é uma casca Tauri que reutiliza a interface web; o runtime nativo
-  mantém um único `app.sqlite` por instalação para o registro operacional de
-  workspaces. A pasta escolhida continua preservada como fonte legada/autoral
-  durante migração e recovery.
+  mantém um único `app.sqlite` por instalação em `~/.openbible/app.sqlite` para
+  o registro operacional de workspaces. O workspace nativo padrão e suas
+  Bíblias ficam em `~/.openbible/workspace/`; a pasta escolhida continua
+  preservada como fonte legada/autoral durante migração e recovery.
 - Pacotes compartilhados restantes: `eslint-config` e `typescript-config`.
 - O PWA mantém o registro operacional no IndexedDB versionado `openbible-workspace`,
   com stores de workspaces, ponteiro ativo, migrações legadas, blobs, notas,

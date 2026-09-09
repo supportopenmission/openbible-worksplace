@@ -8,7 +8,7 @@ Valores de ambiente e integrações são documentados apenas pelos nomes declara
 
 ## Integrações de produto confirmadas
 
-- Release atual: `0.8.8`, espelhado no PWA e no shell Tauri.
+- Release atual: `0.8.9`, espelhado no PWA e no shell Tauri.
 
 - Bancos bíblicos SQLite importados pelo usuário devem seguir o padrão do OpenLP.
 - A aplicação também aceitará uma URL de distribuição, como Cloudflare R2, para
@@ -20,9 +20,11 @@ Valores de ambiente e integrações são documentados apenas pelos nomes declara
   que recompila com o adapter Cloudflare e inicia `wrangler dev --local`; não
   usar `vite preview` para essa saída.
 - O empacotamento desktop usa Tauri 2 como casca; o plugin de diálogo abre o
-  seletor nativo de pasta e o shell usa `app.sqlite` para o registro operacional
-  de workspaces. A raiz escolhida e seu manifesto permanecem preservados como
-  fonte legada/autoral de migração e recovery.
+  seletor nativo de pasta e o shell usa `~/.openbible/app.sqlite` para o registro
+  operacional de workspaces. O workspace interno padrão usa
+  `~/.openbible/workspace/`, mantendo as Bíblias em `bibles/*.sqlite`. A raiz
+  escolhida e seu manifesto permanecem preservados como fonte legada/autoral de
+  migração e recovery.
 - No PWA, o registro operacional usa o IndexedDB `openbible-workspace` por
   origem; o SQLite bíblico WASM permanece uma fonte somente leitura separada.
 - A sincronização opcional usa `apps/sync-api`, um Worker Cloudflare com D1.

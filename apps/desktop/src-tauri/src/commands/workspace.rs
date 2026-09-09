@@ -1,11 +1,13 @@
 use crate::commands::lock::{self, LockError, WorkspaceLock};
 use crate::database::WorkspaceDatabase;
+use crate::paths::{legacy_workspace_dir, native_workspace_dir};
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::io;
 use std::path::{Component, Path, PathBuf};
 use std::sync::Mutex;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 const FORMAT_VERSION: u32 = 1;
 
@@ -152,6 +154,7 @@ pub fn initialize(
     }
     fs::create_dir_all(root.join(".openbible"))?;
     fs::create_dir_all(root.join("bibles"))?;
+    fs::create_dir_all(root.join("notes"))?;
     let lock = lock::acquire(&root)?;
     context.root = Some(root.clone());
     context.lock = Some(lock);
@@ -163,6 +166,61 @@ pub fn initialize(
         atomic_write(&config_path, &bytes)?;
     }
     Ok(config)
+}
+
+fn migrate_legacy_workspace(source: &Path, destination: &Path) -> Result<(), CommandError> {
+    if source == destination || destination.exists() || !source.exists() {
+        return Ok(());
+    }
+
+    let parent = destination
+        .parent()
+        .ok_or_else(|| CommandError::new("workspace_path_error", true))?;
+    fs::create_dir_all(parent)?;
+
+    if fs::rename(source, destination).is_ok() {
+        return Ok(());
+    }
+
+    let staging = destination.with_file_name(format!(
+        ".{}-migration",
+        destination
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("workspace")
+    ));
+    if staging.exists() {
+        fs::remove_dir_all(&staging)?;
+    }
+
+    if let Err(error) = copy_workspace_tree(source, &staging) {
+        let _ = fs::remove_dir_all(&staging);
+        return Err(CommandError::from(error));
+    }
+
+    fs::rename(staging, destination)?;
+    Ok(())
+}
+
+fn copy_workspace_tree(source: &Path, destination: &Path) -> io::Result<()> {
+    fs::create_dir_all(destination)?;
+    for entry in fs::read_dir(source)? {
+        let entry = entry?;
+        let source_path = entry.path();
+        let destination_path = destination.join(entry.file_name());
+        let file_type = entry.file_type()?;
+        if file_type.is_dir() {
+            copy_workspace_tree(&source_path, &destination_path)?;
+        } else if file_type.is_file() {
+            fs::copy(source_path, destination_path)?;
+        } else {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "unsupported workspace entry",
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), CommandError> {
@@ -479,14 +537,14 @@ pub fn initialize_workspace(
         .map_err(|_| CommandError::new("state_error", true))?;
     let path = match preferred_path {
         Some(path) => Some(path),
-        None => Some(
-            app.path()
-                .app_data_dir()
-                .map_err(|_| CommandError::new("app_data_dir_unavailable", true))?
-                .join("workspace")
-                .to_string_lossy()
-                .into_owned(),
-        ),
+        None => {
+            let destination = native_workspace_dir(&app)
+                .map_err(|_| CommandError::new("home_dir_unavailable", true))?;
+            let legacy = legacy_workspace_dir(&app)
+                .map_err(|_| CommandError::new("app_data_dir_unavailable", true))?;
+            migrate_legacy_workspace(&legacy, &destination)?;
+            Some(destination.to_string_lossy().into_owned())
+        }
     };
     initialize(&mut context, path)
 }
@@ -630,4 +688,39 @@ pub fn inspect_bible(
         .lock()
         .map_err(|_| CommandError::new("state_error", true))?;
     inspect_bible_impl(&context, version)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::migrate_legacy_workspace;
+    use std::fs;
+    use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn test_root() -> PathBuf {
+        let suffix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock must be after epoch")
+            .as_nanos();
+        std::env::temp_dir().join(format!("openbible-workspace-migration-{suffix}"))
+    }
+
+    #[test]
+    fn moves_the_legacy_default_workspace_to_the_persistent_root() {
+        let root = test_root();
+        let source = root.join("legacy/workspace");
+        let destination = root.join("native/.openbible/workspace");
+        fs::create_dir_all(source.join("bibles")).expect("legacy workspace is created");
+        fs::write(source.join("bibles/nvt.sqlite"), b"bible").expect("bible is written");
+
+        migrate_legacy_workspace(&source, &destination).expect("workspace migrates");
+
+        assert!(!source.exists());
+        assert_eq!(
+            fs::read(destination.join("bibles/nvt.sqlite")).expect("migrated bible is readable"),
+            b"bible"
+        );
+
+        let _ = fs::remove_dir_all(root);
+    }
 }

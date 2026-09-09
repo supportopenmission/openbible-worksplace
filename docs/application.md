@@ -51,6 +51,7 @@ Relação: relaciona cada arquivo observado à sua superfície.
 | Outras fontes | apps/desktop/src-tauri/src/database.rs | MIGRATION_001, MIGRATION_002, MIGRATION_003, APP_DATABASE_FILE, CURRENT_SCHEMA_VERSION, DatabaseError |
 | Outras fontes | apps/desktop/src-tauri/src/lib.rs | — |
 | Outras fontes | apps/desktop/src-tauri/src/main.rs | — |
+| Outras fontes | apps/desktop/src-tauri/src/paths.rs | NATIVE_DATA_DIR_NAME, NATIVE_WORKSPACE_DIR_NAME |
 | Outras fontes | apps/sync-api/.wrangler/tmp/bundle-5mc82G/middleware-insertion-facade.js | MIDDLEWARE_TEST_INJECT |
 | Outras fontes | apps/sync-api/.wrangler/tmp/bundle-5mc82G/middleware-loader.entry.ts | __Facade_ScheduledController__, wrapExportedHandler, wrapWorkerEntrypoint, extends, does |
 | Outras fontes | apps/sync-api/.wrangler/tmp/dev-J3PAGd/index.js | clone, assertId, assertSafePayload, assertOperation, extends, payloadBytes, applyPush, pullChanges |
@@ -258,7 +259,6 @@ Relação: relaciona cada arquivo observado à sua superfície.
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/entry/start.Bl8SNCcv.js | — |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/0.CRqqP1Ix.js | Nt, Pt, Ft, It, Lt, Rt, zt, Bt |
 | Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/1.BKH76sC2.js | f |
-| Outras fontes | apps/web/.svelte-kit/cloudflare/_app/immutable/nodes/10.B0YPYul2.js | t |
 <!-- specsfy:documentator:end -->
 
 ## Fontes de aplicação relevantes

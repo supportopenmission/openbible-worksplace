@@ -1,10 +1,11 @@
 use crate::commands::workspace::CommandError;
+use crate::paths::{legacy_app_database_path, native_data_dir};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 use serde_json::json;
 use std::fs;
-use std::path::Path;
-use tauri::{AppHandle, Manager};
+use std::path::{Path, PathBuf};
+use tauri::AppHandle;
 
 const MIGRATION_001: &str = include_str!("../migrations/001_create_workspaces.sql");
 const MIGRATION_002: &str = include_str!("../migrations/002_create_workspace_content.sql");
@@ -62,8 +63,12 @@ impl WorkspaceDatabase {
     }
 
     pub fn open_app(app: &AppHandle) -> Result<Self, DatabaseError> {
-        let app_data_dir = app.path().app_data_dir().map_err(|_| DatabaseError::Path)?;
-        Self::open(app_data_dir.join(APP_DATABASE_FILE))
+        let native_data_dir = native_data_dir(app).map_err(|_| DatabaseError::Path)?;
+        let database_path = native_data_dir.join(APP_DATABASE_FILE);
+        let legacy_path =
+            legacy_app_database_path(app, APP_DATABASE_FILE).map_err(|_| DatabaseError::Path)?;
+        migrate_legacy_database(&legacy_path, &database_path)?;
+        Self::open(database_path)
     }
 
     pub fn status(&self) -> DatabaseStatus {
@@ -832,6 +837,60 @@ impl WorkspaceDatabase {
     }
 }
 
+fn migrate_legacy_database(source: &Path, destination: &Path) -> Result<(), DatabaseError> {
+    if source == destination || destination.exists() || !source.exists() {
+        return Ok(());
+    }
+
+    let parent = destination.parent().ok_or(DatabaseError::Path)?;
+    fs::create_dir_all(parent).map_err(|_| DatabaseError::Path)?;
+
+    let mut files = vec![(source.to_path_buf(), destination.to_path_buf())];
+    for suffix in ["-wal", "-shm"] {
+        let Some(source_sidecar) = sidecar_path(source, suffix) else {
+            continue;
+        };
+        let Some(destination_sidecar) = sidecar_path(destination, suffix) else {
+            continue;
+        };
+        if source_sidecar.exists() && !destination_sidecar.exists() {
+            files.push((source_sidecar, destination_sidecar));
+        }
+    }
+
+    let mut staged = Vec::with_capacity(files.len());
+    for (source_file, destination_file) in &files {
+        let temporary = migration_path(destination_file);
+        if temporary.exists() {
+            let _ = fs::remove_file(&temporary);
+        }
+        fs::copy(source_file, &temporary).map_err(|_| DatabaseError::Path)?;
+        staged.push((temporary, destination_file.clone()));
+    }
+
+    for (temporary, destination_file) in staged {
+        if fs::rename(&temporary, &destination_file).is_err() {
+            let _ = fs::remove_file(&temporary);
+            return Err(DatabaseError::Path);
+        }
+    }
+
+    Ok(())
+}
+
+fn sidecar_path(path: &Path, suffix: &str) -> Option<PathBuf> {
+    let file_name = path.file_name()?.to_string_lossy();
+    Some(path.with_file_name(format!("{file_name}{suffix}")))
+}
+
+fn migration_path(path: &Path) -> PathBuf {
+    let file_name = path
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "database".to_string());
+    path.with_file_name(format!(".{file_name}.migration"))
+}
+
 fn workspace_record_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<WorkspaceRecord> {
     Ok(WorkspaceRecord {
         workspace_id: row.get(0)?,
@@ -1007,7 +1066,10 @@ pub fn delete_workspace_content(
 
 #[cfg(test)]
 mod tests {
-    use super::{WorkspaceDatabase, APP_DATABASE_FILE, CURRENT_SCHEMA_VERSION, MIGRATION_001};
+    use super::{
+        migrate_legacy_database, WorkspaceDatabase, APP_DATABASE_FILE, CURRENT_SCHEMA_VERSION,
+        MIGRATION_001,
+    };
     use rusqlite::{params, Connection};
     use serde_json::json;
     use std::fs;
@@ -1070,6 +1132,43 @@ mod tests {
         assert_eq!(reopened.status().schema_version, CURRENT_SCHEMA_VERSION);
         drop(reopened);
         let _ = fs::remove_dir_all(path.parent().expect("test database has a parent"));
+    }
+
+    #[test]
+    fn copies_a_legacy_app_database_to_the_persistent_native_root() {
+        let suffix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock must be after epoch")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("openbible-database-migration-{suffix}"));
+        let source = root.join("legacy/app.sqlite");
+        let destination = root.join("native/.openbible/app.sqlite");
+
+        let mut legacy = WorkspaceDatabase::open(&source).expect("legacy database opens");
+        legacy
+            .ensure_workspace("workspace-legacy", "Workspace legado", "ready")
+            .expect("legacy workspace is persisted");
+        drop(legacy);
+
+        migrate_legacy_database(&source, &destination).expect("legacy database migrates");
+        assert!(
+            source.exists(),
+            "legacy data remains available for recovery"
+        );
+        assert!(destination.exists());
+
+        let migrated = WorkspaceDatabase::open(&destination).expect("migrated database opens");
+        assert_eq!(
+            migrated
+                .active_workspace()
+                .expect("active workspace is readable")
+                .expect("legacy workspace is preserved")
+                .workspace_id,
+            "workspace-legacy"
+        );
+
+        drop(migrated);
+        let _ = fs::remove_dir_all(root);
     }
 
     #[test]
