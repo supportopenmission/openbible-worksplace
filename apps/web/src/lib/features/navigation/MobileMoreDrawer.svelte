@@ -31,6 +31,7 @@
 		type AuthUserInfo
 	} from '$lib/features/auth/auth-client';
 	import WorkspaceSelector from '$lib/features/workspace/WorkspaceSelector.svelte';
+	import AccountAuthOverlay from '$lib/features/auth/AccountAuthOverlay.svelte';
 	import ThemeToggle from './ThemeToggle.svelte';
 	import {
 		getAppUpdateState,
@@ -45,6 +46,7 @@
 
 	let open = $state(false);
 	let showingWorkspaces = $state(false);
+	let authOpen = $state(false);
 
 	let activeWorkspaceName = $state('Escolher workspace');
 	let activeWorkspaceBackend = $state<string | null>(null);
@@ -105,11 +107,17 @@
 		refreshWorkspace();
 		void refreshUser();
 
-		const listener = () => refreshWorkspace();
-		window.addEventListener('openbible:workspace-activated', listener);
+		const workspaceListener = () => refreshWorkspace();
+		const authListener = (event: Event) => {
+			const customEvent = event as CustomEvent<AuthUserInfo | null>;
+			user = customEvent.detail !== undefined ? customEvent.detail : getStoredAuthUser();
+		};
+		window.addEventListener('openbible:workspace-activated', workspaceListener);
+		window.addEventListener('openbible:auth-changed', authListener);
 
 		return () => {
-			window.removeEventListener('openbible:workspace-activated', listener);
+			window.removeEventListener('openbible:workspace-activated', workspaceListener);
+			window.removeEventListener('openbible:auth-changed', authListener);
 		};
 	});
 </script>
@@ -161,7 +169,7 @@
 				<div class="workspaces-body">
 					<WorkspaceSelector
 						variant="mobile"
-						manageLabel="Gerenciar workspaces"
+					manageLabel="Gerenciar espaços de estudo"
 						onManage={() => handleNavigate('/config')}
 						onAction={() => {
 							open = false;
@@ -195,7 +203,7 @@
 				</div>
 
 				<!-- 2. Profile Card ou Banner "Conecte-se para sincronizar" -->
-				<div class="drawer-group" role="region" aria-label="Conta e Sincronização">
+				<div class="drawer-group" role="region" aria-label="Conta e sincronização">
 					{#if user}
 						<button
 							type="button"
@@ -234,7 +242,11 @@
 							<Button
 								size="sm"
 								class="sync-cta-button"
-								onclick={() => handleNavigate('/config')}
+								aria-haspopup="dialog"
+								onclick={() => {
+									open = false;
+									authOpen = true;
+								}}
 							>
 								Entrar ou criar conta
 							</Button>
@@ -314,6 +326,8 @@
 		</div>
 	</Drawer.Content>
 </Drawer.Root>
+
+<AccountAuthOverlay bind:open={authOpen} />
 
 <style>
 	:global(.mobile-nav-link) {

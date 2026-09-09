@@ -41,30 +41,62 @@
 	}
 </script>
 
-<div class="appearance-settings" role="radiogroup" aria-label="Aparência">
-	{#each options as option (option.value)}
-		{@const Icon = option.icon}
-		<label class="appearance-row" class:selected={theme === option.value}>
-			<span class="appearance-icon" aria-hidden="true">
-				<Icon size={15} strokeWidth={1.8} />
-			</span>
-			<span class="appearance-text">
-				<span class="appearance-label">{option.label}</span>
-				<span class="appearance-hint">{option.hint}</span>
-			</span>
-			<input
-				type="radio"
-				name="openbible-appearance"
-				value={option.value}
-				checked={theme === option.value}
-				onchange={() => void selectTheme(option.value)}
-				aria-label={option.label}
-			/>
-		</label>
-	{/each}
-</div>
+<section class="appearance-panel" aria-labelledby="appearance-settings-title">
+	<div class="appearance-heading">
+		<h2 id="appearance-settings-title">Aparência</h2>
+		<p>Escolha como o OpenBible deve aparecer neste dispositivo.</p>
+	</div>
+
+	<div class="appearance-settings" role="radiogroup" aria-label="Aparência">
+		{#each options as option (option.value)}
+			{@const Icon = option.icon}
+			<label class="appearance-row" class:selected={theme === option.value}>
+				<span class="appearance-icon" aria-hidden="true">
+					<Icon size={15} strokeWidth={1.8} />
+				</span>
+				<span class="appearance-text">
+					<span class="appearance-label">{option.label}</span>
+					<span class="appearance-hint">{option.hint}</span>
+				</span>
+				<input
+					type="radio"
+					name="openbible-appearance"
+					value={option.value}
+					checked={theme === option.value}
+					onchange={() => void selectTheme(option.value)}
+					aria-label={option.label}
+				/>
+			</label>
+		{/each}
+	</div>
+</section>
 
 <style>
+	.appearance-panel {
+		display: grid;
+		gap: 20px;
+	}
+
+	.appearance-heading {
+		display: grid;
+		gap: 8px;
+	}
+
+	.appearance-heading h2 {
+		margin: 0;
+		font-size: 1.2rem;
+		font-weight: 650;
+		letter-spacing: -0.025em;
+	}
+
+	.appearance-heading p {
+		max-width: 56ch;
+		margin: 0;
+		color: var(--muted-foreground);
+		font-size: 0.82rem;
+		line-height: 1.55;
+	}
+
 	.appearance-settings {
 		display: grid;
 		border-top: 1px solid var(--border);

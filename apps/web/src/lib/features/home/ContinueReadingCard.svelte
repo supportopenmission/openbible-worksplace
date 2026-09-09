@@ -56,7 +56,11 @@
 	}
 </script>
 
-<section class="continue-card" aria-label="Continuar leitura">
+<section
+	class="continue-card"
+	class:empty-state={!continuation || continuation.kind === 'empty'}
+	aria-label="Continuar leitura"
+>
 	<p class="eyebrow">Continuar leitura</p>
 	{#if loading}
 		<div role="status" aria-label="Carregando continuidade">
@@ -66,10 +70,12 @@
 	{:else if errorMessage}
 		<p class="continue-error" role="alert">{errorMessage}</p>
 		{#if onRetry}
-			<Button type="button" variant="outline" size="sm" data-testid="retry-button" onclick={onRetry}>Tentar novamente</Button>
+			<Button type="button" variant="outline" size="sm" data-testid="retry-button" onclick={onRetry}
+				>Tentar novamente</Button
+			>
 		{/if}
 	{:else if !continuation || continuation.kind === 'empty'}
-		<Empty.Root data-testid="continue-empty">
+		<Empty.Root class="continue-empty" data-testid="continue-empty">
 			<Empty.Header>
 				<Empty.Media variant="icon">
 					<BookOpen size={16} strokeWidth={1.8} aria-hidden="true" />
@@ -102,9 +108,18 @@
 <style>
 	.continue-card {
 		border: 1px solid var(--border);
-		border-radius: 12px;
+		border-radius: 10px;
 		padding: 20px;
 		background: transparent;
+	}
+
+	.continue-card.empty-state {
+		padding-block: 16px;
+	}
+
+	:global(.continue-empty) {
+		gap: 12px;
+		padding: 20px;
 	}
 
 	.eyebrow {
@@ -118,7 +133,7 @@
 	.continue-title {
 		margin: 0 0 16px;
 		font-family: var(--font-mono);
-		font-size: 1.05rem;
+		font-size: 1rem;
 		font-weight: 600;
 		letter-spacing: -0.01em;
 		line-height: 1.4;

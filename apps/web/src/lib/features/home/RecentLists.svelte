@@ -21,7 +21,6 @@
 		highlightsError = '',
 		onRetryNotes,
 		onRetryHighlights,
-		onCreateNote,
 		onHighlightRemoved
 	}: {
 		notes: Note[];
@@ -32,7 +31,6 @@
 		highlightsError?: string;
 		onRetryNotes?: () => void;
 		onRetryHighlights?: () => void;
-		onCreateNote?: () => void;
 		onHighlightRemoved?: (highlight: ReaderHighlightRecord) => void;
 	} = $props();
 
@@ -67,74 +65,89 @@
 	}
 </script>
 
-<div class="recent-lists">
-	<section class="recent-section" aria-labelledby="recent-notes-heading">
-		<div class="recent-heading-row">
-			<h2 id="recent-notes-heading" class="recent-title">Notas recentes</h2>
-			<a class="recent-link" href={resolve('/notes')}>
-				Ver todas <ArrowUpRight size={14} strokeWidth={1.8} aria-hidden="true" />
-			</a>
-		</div>
-		{#if notesError}
-			<p class="recent-error" role="alert">{notesError}</p>
-			{#if onRetryNotes}
-				<Button type="button" variant="outline" size="sm" data-testid="retry-button" onclick={onRetryNotes}>Tentar novamente</Button>
-			{/if}
-		{:else if notes.length === 0}
-			<p class="recent-min-empty">
-				Nenhuma nota ainda.
-				{#if onCreateNote}
-					<button type="button" class="inline-action" onclick={onCreateNote}>
-						Crie a primeira nota
-					</button>
+{#if notesError || notes.length > 0 || highlightsError || visibleHighlights.length > 0}
+	<div
+		class="recent-lists"
+		class:single-column={!(notesError || notes.length > 0) ||
+			!(highlightsError || visibleHighlights.length > 0)}
+	>
+		{#if notesError || notes.length > 0}
+			<section class="recent-section" aria-labelledby="recent-notes-heading">
+				<div class="recent-heading-row">
+					<h2 id="recent-notes-heading" class="recent-title">Notas recentes</h2>
+					<a class="recent-link" href={resolve('/notes')}>
+						Ver todas <ArrowUpRight size={14} strokeWidth={1.8} aria-hidden="true" />
+					</a>
+				</div>
+				{#if notesError}
+					<p class="recent-error" role="alert">{notesError}</p>
+					{#if onRetryNotes}
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							data-testid="retry-button"
+							onclick={onRetryNotes}>Tentar novamente</Button
+						>
+					{/if}
+				{:else if notes.length === 0}
+					<p class="recent-min-empty">Nenhuma nota ainda.</p>
+				{:else}
+					<ul class="note-list">
+						{#each notes as note (note.id)}
+							<li>
+								<a class="note-row" href={resolve(`/notes/${note.id}`)}>
+									<span class="note-title">{note.title || 'Nota sem título'}</span>
+									<span class="note-meta">
+										<span class="note-id">{note.id}</span>
+										{#if formatDate(note.updatedAt)}
+											<span aria-hidden="true">·</span>
+											<time datetime={note.updatedAt}>{formatDate(note.updatedAt)}</time>
+										{/if}
+									</span>
+								</a>
+							</li>
+						{/each}
+					</ul>
 				{/if}
-			</p>
-		{:else}
-			<ul class="note-list">
-				{#each notes as note (note.id)}
-					<li>
-						<a class="note-row" href={resolve(`/notes/${note.id}`)}>
-							<span class="note-title">{note.title || 'Nota sem título'}</span>
-							<span class="note-meta">
-								<span class="note-id">{note.id}</span>
-								{#if formatDate(note.updatedAt)}
-									<span aria-hidden="true">·</span>
-									<time datetime={note.updatedAt}>{formatDate(note.updatedAt)}</time>
-								{/if}
-							</span>
-						</a>
-					</li>
-				{/each}
-			</ul>
+			</section>
 		{/if}
-	</section>
 
-	<section class="recent-section" aria-labelledby="recent-highlights-heading">
-		<div class="recent-heading-row">
-			<h2 id="recent-highlights-heading" class="recent-title">Destaques recentes</h2>
-			<a class="recent-link" href={resolve('/highlights')}>
-				Ver todos <ArrowUpRight size={14} strokeWidth={1.8} aria-hidden="true" />
-			</a>
-		</div>
-		{#if highlightsError}
-			<p class="recent-error" role="alert">{highlightsError}</p>
-			{#if onRetryHighlights}
-				<Button type="button" variant="outline" size="sm" data-testid="retry-button" onclick={onRetryHighlights}>Tentar novamente</Button>
-			{/if}
-		{:else}
-			<HighlightsList
-				highlights={visibleHighlights}
-				{catalog}
-				{storage}
-				layout="rail"
-				emptyVariant="inline"
-				emptyMessage="Nenhum destaque neste workspace."
-				onNavigate={handleNavigateHighlight}
-				onRemoved={handleRemovedHighlight}
-			/>
+		{#if highlightsError || visibleHighlights.length > 0}
+			<section class="recent-section" aria-labelledby="recent-highlights-heading">
+				<div class="recent-heading-row">
+					<h2 id="recent-highlights-heading" class="recent-title">Destaques recentes</h2>
+					<a class="recent-link" href={resolve('/highlights')}>
+						Ver todos <ArrowUpRight size={14} strokeWidth={1.8} aria-hidden="true" />
+					</a>
+				</div>
+				{#if highlightsError}
+					<p class="recent-error" role="alert">{highlightsError}</p>
+					{#if onRetryHighlights}
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							data-testid="retry-button"
+							onclick={onRetryHighlights}>Tentar novamente</Button
+						>
+					{/if}
+				{:else}
+					<HighlightsList
+						highlights={visibleHighlights}
+						{catalog}
+						{storage}
+						layout="rail"
+						emptyVariant="inline"
+						emptyMessage="Nenhum destaque neste workspace."
+						onNavigate={handleNavigateHighlight}
+						onRemoved={handleRemovedHighlight}
+					/>
+				{/if}
+			</section>
 		{/if}
-	</section>
-</div>
+	</div>
+{/if}
 
 <style>
 	.recent-lists {
@@ -142,6 +155,10 @@
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 		gap: 40px;
 		margin-top: 40px;
+	}
+
+	.recent-lists.single-column {
+		grid-template-columns: minmax(0, 1fr);
 	}
 
 	.recent-section {
@@ -158,7 +175,7 @@
 
 	.recent-title {
 		margin: 0;
-		font-size: 1.05rem;
+		font-size: 1rem;
 		font-weight: 600;
 		letter-spacing: -0.02em;
 	}
@@ -244,24 +261,6 @@
 		color: var(--muted-foreground);
 		font-size: 0.82rem;
 		line-height: 1.55;
-	}
-
-	.inline-action {
-		border: 0;
-		padding: 0;
-		background: transparent;
-		color: var(--foreground);
-		font: inherit;
-		font-weight: 500;
-		text-decoration: underline;
-		text-underline-offset: 3px;
-		cursor: pointer;
-	}
-
-	.inline-action:focus-visible {
-		outline: 2px solid var(--ring);
-		outline-offset: 2px;
-		border-radius: 4px;
 	}
 
 	@media (max-width: 900px) {

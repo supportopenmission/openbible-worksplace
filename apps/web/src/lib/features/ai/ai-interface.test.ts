@@ -26,7 +26,7 @@ describe('AI interface contract', () => {
 		await page.viewport(320, 900);
 		await render(AgentCapabilityPanel, { props: { capability: 'pwa' } });
 
-		await expect.element(page.getByRole('status')).toHaveTextContent('gateway confiável');
+		await expect.element(page.getByRole('status')).toHaveTextContent('Conexão segura necessária');
 		expect(page.getByRole('textbox', { name: /credencial/i })).not.toBeInTheDocument();
 		expect(page.getByRole('button', { name: 'Salvar perfil' })).not.toBeInTheDocument();
 	});

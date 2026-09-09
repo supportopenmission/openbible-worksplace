@@ -33,10 +33,12 @@
 	import ThemeToggle from './ThemeToggle.svelte';
 	import WorkspaceSelector from '$lib/features/workspace/WorkspaceSelector.svelte';
 	import MobileMoreDrawer from './MobileMoreDrawer.svelte';
+	import AccountAuthOverlay from '$lib/features/auth/AccountAuthOverlay.svelte';
 
 	let { currentPath = '/' }: { currentPath?: string } = $props();
 
 	let user = $state<AuthUserInfo | null>(null);
+	let authOpen = $state(false);
 
 	const links = [
 		{ label: 'Início', href: '/', icon: House },
@@ -63,6 +65,7 @@
 	});
 	const update = getAppUpdateState();
 	let mobileNavRepaint = $state(false);
+	let mobileNavBottom = $state(0);
 	onMount(() => {
 		if (detectStorageKind() === 'native') void checkForAppUpdate();
 
@@ -117,18 +120,33 @@
 		};
 
 		const viewport = window.visualViewport;
+		const updateViewportInset = () => {
+			const visualBottom = viewport
+				? viewport.offsetTop + viewport.height
+				: window.innerHeight;
+			mobileNavBottom = Math.max(0, window.innerHeight - visualBottom);
+		};
 		refresh();
+		updateViewportInset();
 		viewport?.addEventListener('resize', refresh);
 		viewport?.addEventListener('scroll', refresh);
+		viewport?.addEventListener('resize', updateViewportInset);
+		viewport?.addEventListener('scroll', updateViewportInset);
 		window.addEventListener('resize', refresh);
+		window.addEventListener('resize', updateViewportInset);
 		window.addEventListener('orientationchange', refresh);
+		window.addEventListener('orientationchange', updateViewportInset);
 
 		return () => {
 			if (frame) cancelAnimationFrame(frame);
 			viewport?.removeEventListener('resize', refresh);
 			viewport?.removeEventListener('scroll', refresh);
+			viewport?.removeEventListener('resize', updateViewportInset);
+			viewport?.removeEventListener('scroll', updateViewportInset);
 			window.removeEventListener('resize', refresh);
+			window.removeEventListener('resize', updateViewportInset);
 			window.removeEventListener('orientationchange', refresh);
+			window.removeEventListener('orientationchange', updateViewportInset);
 			window.removeEventListener('openbible:auth-changed', authListener);
 		};
 	});
@@ -237,18 +255,20 @@
 						<span class="sync-card-desc">Conecte-se para sincronizar</span>
 					</div>
 				</a>
-				<a
-					href={resolve('/config')}
+				<button
+					type="button"
 					class="sync-card-action"
+					aria-haspopup="dialog"
+					onclick={() => (authOpen = true)}
 				>
 					Entrar ou criar conta
-				</a>
+				</button>
 			</div>
 		{/if}
 
 		<ThemeToggle />
 		<WorkspaceSelector
-			manageLabel="Gerenciar workspaces"
+			manageLabel="Gerenciar espaços de estudo"
 			onManage={() => goto(resolve('/config'))}
 		/>
 		<p class="sidebar-version">OpenBible v{APP_VERSION}</p>
@@ -256,9 +276,12 @@
 	<Sidebar.Rail />
 </Sidebar.Root>
 
+<AccountAuthOverlay bind:open={authOpen} />
+
 <nav
 	class="mobile-bottom-nav"
 	class:viewport-repaint={mobileNavRepaint}
+	style={`--mobile-nav-bottom: ${mobileNavBottom}px`}
 	aria-label="Navegação mobile"
 	data-safe-area="bottom"
 >
@@ -341,12 +364,12 @@
 	}
 
 	:global(.sidebar-menu) {
-		gap: 2px;
+		gap: 4px;
 	}
 
 	:global(.nav-link) {
 		position: relative;
-		min-height: 34px;
+		min-height: 36px;
 		border-radius: 8px;
 		padding-inline: 10px;
 		color: color-mix(in oklch, var(--sidebar-foreground) 72%, transparent);
@@ -587,13 +610,38 @@
 		display: none;
 	}
 
+	:global(.group[data-collapsible='icon'] .nav-link) {
+		min-width: 40px !important;
+		width: 40px !important;
+		min-height: 40px;
+		margin-inline: auto;
+		justify-content: center;
+		padding-inline: 0;
+	}
+
+	:global([data-collapsible='icon'] .nav-link > span:last-child) {
+		display: none;
+	}
+
+	:global(.group[data-collapsible='icon'] .sidebar-group) {
+		padding-inline: 4px;
+	}
+
+	:global([data-collapsible='icon'] .nav-link[data-active='true']) {
+		background: color-mix(in oklch, var(--sidebar-foreground) 10%, transparent);
+		box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--sidebar-foreground) 10%, transparent);
+	}
+
 	:global([data-collapsible='icon'] .sidebar-footer) {
-		padding-inline: 6px;
+		padding-inline: 4px;
 	}
 
 	:global([data-collapsible='icon'] .sidebar-footer .theme-toggle) {
+		width: 40px;
+		min-height: 40px;
+		margin-inline: auto;
 		justify-content: center;
-		padding-inline: 7px;
+		padding-inline: 0;
 	}
 
 	:global([data-collapsible='icon'] .sidebar-footer .theme-toggle span) {
@@ -606,9 +654,16 @@
 		display: none;
 	}
 
+	:global([data-collapsible='icon'] .sidebar-footer .workspace-selector .selector-chevron) {
+		display: none;
+	}
+
 	:global([data-collapsible='icon'] .sidebar-footer .workspace-selector .selector-trigger) {
+		width: 40px;
+		min-height: 40px;
+		margin-inline: auto;
 		justify-content: center;
-		padding-inline: 7px;
+		padding-inline: 0;
 	}
 
 	:global([data-collapsible='icon'] .sidebar-footer .sidebar-auth-card) {
@@ -627,15 +682,25 @@
 	}
 
 	:global([data-collapsible='icon'] .sidebar-footer .sidebar-sync-card) {
-		padding: 4px;
+		width: 40px;
+		min-height: 40px;
+		margin-inline: auto;
+		justify-content: center;
+		padding: 0;
 		border-color: transparent;
 		background: transparent;
 		align-items: center;
 	}
 
+	:global([data-collapsible='icon'] .sidebar-footer .sidebar-sync-card .sync-card-link) {
+		width: 40px;
+		min-height: 40px;
+		justify-content: center;
+		border-radius: 8px;
+	}
+
 	:global([data-collapsible='icon'] .sidebar-footer .sidebar-sync-card .sync-card-link:hover) {
 		background: color-mix(in oklch, var(--sidebar-foreground) 6%, transparent);
-		border-radius: 6px;
 	}
 
 	:global([data-collapsible='icon'] .sidebar-footer .sidebar-sync-card .sync-card-text),
@@ -659,7 +724,7 @@
 		.mobile-bottom-nav {
 			position: fixed;
 			right: 0;
-			bottom: 0;
+			bottom: var(--mobile-nav-bottom, 0px);
 			left: 0;
 			z-index: 30;
 			display: grid;
@@ -672,6 +737,8 @@
 			transform: translate3d(0, 0, 0);
 			-webkit-backface-visibility: hidden;
 			backface-visibility: hidden;
+			isolation: isolate;
+			contain: layout paint;
 			height: calc(56px + env(safe-area-inset-bottom, 0px));
 			min-height: 56px;
 			padding: 4px 8px env(safe-area-inset-bottom, 0px);

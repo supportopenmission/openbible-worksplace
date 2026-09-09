@@ -3,10 +3,7 @@
 	import PageHeader from '$lib/features/navigation/PageHeader.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { isTauriRuntime } from '$lib/storage/tauri-runtime';
-	import {
-		invokeWorkspaceCommand,
-		TauriCommandError
-	} from '$lib/storage/tauri-bridge';
+	import { invokeWorkspaceCommand, TauriCommandError } from '$lib/storage/tauri-bridge';
 
 	export type AgentCapability = 'tauri' | 'pwa' | 'unavailable';
 
@@ -14,9 +11,8 @@
 		capability?: AgentCapability;
 	}
 
-	const {
-		capability = isTauriRuntime() ? 'tauri' : 'unavailable'
-	}: AgentCapabilityPanelProps = $props();
+	const { capability = isTauriRuntime() ? 'tauri' : 'unavailable' }: AgentCapabilityPanelProps =
+		$props();
 
 	let profileName = $state('Assistência local');
 	let provider = $state('openai');
@@ -32,17 +28,17 @@
 
 	const capabilityTitle = $derived(
 		capability === 'tauri'
-			? 'Tauri / cofre do dispositivo'
+			? 'Assistência segura neste computador'
 			: capability === 'pwa'
-				? 'PWA / gateway confiável'
+				? 'Assistência temporária no navegador'
 				: 'Assistência indisponível'
 	);
 	const capabilityDescription = $derived(
 		capability === 'tauri'
-			? 'A credencial fica somente no armazenamento seguro do sistema. O workspace recebe apenas o perfil redigido.'
+			? 'Sua credencial fica protegida no sistema. Seus dados de estudo recebem apenas as configurações necessárias.'
 			: capability === 'pwa'
-				? 'O navegador usa somente uma sessão temporária de gateway. API keys não são aceitas nesta fronteira.'
-				: 'Este dispositivo não oferece uma fronteira segura configurada para credenciais de IA.'
+				? 'O navegador usa uma sessão temporária e segura. Para começar, configure uma conexão confiável.'
+				: 'Este dispositivo ainda não oferece uma forma segura de configurar a assistência.'
 	);
 	const isConfigured = $derived(secretRef !== null);
 
@@ -60,7 +56,7 @@
 		event.preventDefault();
 		clearFeedback();
 		if (capability !== 'tauri') {
-			error = 'Configure a assistência em um dispositivo com cofre nativo.';
+			error = 'Configure a assistência em um dispositivo com armazenamento seguro.';
 			return;
 		}
 		if (!profileName.trim() || !provider.trim() || !model.trim() || !secret.trim()) {
@@ -85,7 +81,7 @@
 				result.value && typeof result.value.secretRef === 'string' ? result.value.secretRef : null;
 			secretRef = returnedSecretRef;
 			secret = '';
-			message = 'Perfil salvo no cofre do dispositivo. A credencial foi removida do formulário.';
+			message = 'Configuração salva com segurança. A credencial foi removida do formulário.';
 		} catch (failure) {
 			error = errorMessage(failure);
 		} finally {
@@ -101,8 +97,8 @@
 				name: 'agent.profile.capability'
 			});
 			message = result.value?.available
-				? 'O cofre nativo está disponível neste dispositivo.'
-				: 'O cofre nativo não está disponível. A assistência permanece bloqueada.';
+				? 'O armazenamento seguro está disponível neste dispositivo.'
+				: 'O armazenamento seguro não está disponível. A assistência permanece bloqueada.';
 		} catch (failure) {
 			error = errorMessage(failure);
 		} finally {
@@ -121,7 +117,7 @@
 				secretRef
 			});
 			secretRef = null;
-			message = 'Credencial revogada. Nenhum arquivo do workspace foi alterado.';
+			message = 'Credencial revogada. Nenhum arquivo dos seus estudos foi alterado.';
 		} catch (failure) {
 			error = errorMessage(failure);
 		} finally {
@@ -134,7 +130,7 @@
 	<PageHeader
 		eyebrow="Configurações / Assistência"
 		title="Assistência"
-		description="Conecte uma capability controlada para consultar seu workspace sem colocar credenciais nos dados portáteis."
+		description="Configure uma assistência segura para consultar seus estudos sem incluir sua credencial nos dados exportados."
 	/>
 
 	<div class="capability-status" data-capability={capability} role="status" aria-live="polite">
@@ -158,14 +154,15 @@
 			<div class="form-heading">
 				<div>
 					<p class="section-eyebrow">Perfil do dispositivo</p>
-					<h2>Configurar provedor</h2>
+					<h2>Escolher provedor de IA</h2>
 				</div>
 				{#if isConfigured}
 					<span class="configured-state">Configurado</span>
 				{/if}
 			</div>
 			<p class="form-description">
-				A credencial é enviada somente ao backend Tauri e nunca aparece no workspace, backup, sync ou diagnóstico.
+				A credencial é enviada somente ao armazenamento seguro e nunca aparece nos seus estudos,
+				cópias, sincronização ou diagnóstico.
 			</p>
 
 			<div class="field-grid">
@@ -182,28 +179,30 @@
 					<input bind:value={model} autocomplete="off" />
 				</label>
 				<label class="field">
-					<span>Endpoint <small>(opcional)</small></span>
+					<span>Endereço do serviço <small>(opcional)</small></span>
 					<input bind:value={endpoint} type="url" autocomplete="url" placeholder="https://..." />
 				</label>
 				<label class="field field-wide">
-					<span>API key</span>
+					<span>Chave da API</span>
 					<input
 						bind:value={secret}
 						type="password"
 						autocomplete="new-password"
 						aria-describedby="agent-secret-help"
 					/>
-					<small id="agent-secret-help">Usada apenas durante o envio ao cofre nativo; não será salva no workspace.</small>
+					<small id="agent-secret-help"
+						>Usada apenas para conectar o serviço; não será salva nos seus estudos.</small
+					>
 				</label>
 			</div>
 
 			<div class="agent-actions">
 				<Button type="submit" disabled={saving}>
 					<KeyRound data-icon="inline-start" size={15} strokeWidth={1.8} aria-hidden="true" />
-					{saving ? 'Salvando...' : 'Salvar no cofre'}
+					{saving ? 'Salvando...' : 'Salvar configuração'}
 				</Button>
 				<Button type="button" variant="outline" onclick={testCapability} disabled={testing}>
-					{testing ? 'Verificando...' : 'Testar capability'}
+					{testing ? 'Verificando...' : 'Testar disponibilidade'}
 				</Button>
 				{#if isConfigured}
 					<Button type="button" variant="ghost" onclick={revokeProfile} disabled={revoking}>
@@ -216,16 +215,18 @@
 		<section class="capability-message" aria-labelledby="agent-gateway-title">
 			<div class="message-icon" aria-hidden="true"><Sparkles size={18} strokeWidth={1.8} /></div>
 			<div>
-				<h2 id="agent-gateway-title">Gateway confiável necessário</h2>
-				<p>O PWA não aceita API keys. Configure um gateway HTTPS para habilitar uma sessão temporária.</p>
+				<h2 id="agent-gateway-title">Conexão segura necessária</h2>
+				<p>Para usar a assistência no navegador, configure uma conexão HTTPS confiável.</p>
 			</div>
 		</section>
 	{:else}
 		<section class="capability-message" aria-labelledby="agent-unavailable-title">
 			<div class="message-icon" aria-hidden="true"><ShieldAlert size={18} strokeWidth={1.8} /></div>
 			<div>
-				<h2 id="agent-unavailable-title">Nenhuma capability disponível</h2>
-				<p>Leitura, edição, exportação e sincronização local continuam disponíveis neste dispositivo.</p>
+				<h2 id="agent-unavailable-title">Nenhuma forma de assistência disponível</h2>
+				<p>
+					Leitura, edição, exportação e sincronização local continuam disponíveis neste dispositivo.
+				</p>
 			</div>
 		</section>
 	{/if}

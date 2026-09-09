@@ -40,4 +40,12 @@ describe('config sem tela inicial', () => {
 		expect(source).not.toMatch(/class="about-version"/);
 		expect(source).not.toContain('config-footer');
 	});
+
+	it('mantém a seção selecionada em uma URL navegável', () => {
+		const source = readFileSync(new URL('./ConfigPage.svelte', import.meta.url), 'utf8');
+		expect(source).toContain("searchParams.get('section')");
+		expect(source).toContain('replaceState');
+		expect(source).toContain('urlSection');
+		expect(source).toContain('<svelte:head>');
+	});
 });

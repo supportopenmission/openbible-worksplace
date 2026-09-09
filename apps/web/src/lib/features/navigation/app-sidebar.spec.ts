@@ -17,7 +17,7 @@ describe('shell persistente com Início primeiro', () => {
 		const selector = new URL('../workspace/WorkspaceSelector.svelte', import.meta.url);
 
 		expect(source).toContain('WorkspaceSelector');
-		expect(source).toContain('Gerenciar workspaces');
+		expect(source).toContain('Gerenciar espaços de estudo');
 		expect(source).toContain('aria-label');
 		const selectorSource = readFileSync(selector, 'utf8');
 		expect(selectorSource).toContain('window.location.reload()');
@@ -34,5 +34,20 @@ describe('shell persistente com Início primeiro', () => {
 		expect(source).toContain('activeWorkspaceBackend');
 		expect(source).toContain('workspace-backend');
 		expect(source).toContain('showingWorkspaces = false');
+	});
+
+	it('abre o mesmo fluxo de autenticação no drawer Mais e na navegação desktop', () => {
+		const drawer = readFileSync(new URL('./MobileMoreDrawer.svelte', import.meta.url), 'utf8');
+		const sidebar = readFileSync(new URL('./AppSidebar.svelte', import.meta.url), 'utf8');
+		const overlay = readFileSync(
+			new URL('../auth/AccountAuthOverlay.svelte', import.meta.url),
+			'utf8'
+		);
+
+		expect(drawer).toContain('authOpen = true');
+		expect(drawer).toContain('<AccountAuthOverlay bind:open={authOpen} />');
+		expect(sidebar).toContain('<AccountAuthOverlay bind:open={authOpen} />');
+		expect(overlay).toContain('Entrar ou criar conta');
+		expect(overlay).toContain('AccountAuthCard');
 	});
 });

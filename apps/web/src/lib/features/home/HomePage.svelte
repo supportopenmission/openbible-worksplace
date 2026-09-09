@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { loadBibleCatalog } from '$lib/features/bible/bible-reader';
 	import type { BibleCatalog } from '$lib/features/bible/bible-reader';
@@ -12,7 +10,6 @@
 	import { resolveHomeContinuation } from './home-continuation';
 	import type { HomeContinuation } from './home-continuation';
 	import { loadHomeRecents } from './home-recents';
-	import { createNote } from '$lib/features/notes/notes-repository';
 	import type { Note } from '$lib/features/notes/note-types';
 	import type { ReaderHighlightRecord } from '$lib/features/bible/reader-highlights-repository';
 	import type { WorkspaceStorage } from '$lib/storage/types';
@@ -93,20 +90,6 @@
 		const current = effectiveStorage;
 		if (current) void loadHome(current);
 	}
-
-	async function handleCreateNote() {
-		const current = effectiveStorage;
-		if (!current) {
-			await goto(resolve('/notes'));
-			return;
-		}
-		try {
-			const note = await createNote(current);
-			await goto(resolve(`/notes/${note.id}`));
-		} catch {
-			await goto(resolve('/notes'));
-		}
-	}
 </script>
 
 <svelte:head>
@@ -115,11 +98,7 @@
 </svelte:head>
 
 <main class="home-page" data-storage-kind={effectiveStorage?.kind ?? 'unconfigured'}>
-	<PageHeader
-		eyebrow="Seu espaço de estudo"
-		title="Início"
-		description="Retome de onde parou e escolha o próximo passo."
-	/>
+	<PageHeader title="Início" description="Retome de onde parou ou comece uma leitura." />
 	<div class="home-body">
 		{#if continuationLoading || recentsLoading}
 			<div role="status" aria-label="Carregando início">
@@ -144,7 +123,6 @@
 				{highlightsError}
 				onRetryNotes={notesError ? retryRecents : undefined}
 				onRetryHighlights={highlightsError ? retryRecents : undefined}
-				onCreateNote={handleCreateNote}
 			/>
 			<!-- retry localizado por seção -->
 		{/if}
@@ -165,7 +143,7 @@
 
 	:global(.home-skeleton) {
 		height: 96px;
-		border-radius: 12px;
+		border-radius: 10px;
 	}
 
 	:global(.home-skeleton + .home-skeleton) {

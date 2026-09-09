@@ -57,6 +57,12 @@ describe('pwa shell', () => {
 		expect(providerStyles).not.toContain('100dvh');
 	});
 
+	// SPECSFY: US-002 FR-004 NFR-003 AC-004
+	it('mantém o shell mobile limitado à viewport para permitir rolagem interna', async () => {
+		const frame = await readFile(APP_FRAME, 'utf8');
+		expect(frame).toContain('max-height: 100svh;');
+	});
+
 	// SPECSFY: US-001 US-002 FR-002 FR-004 NFR-001 NFR-003 AC-004
 	it('estende o tema sob notch e barra com safe-area', async () => {
 		const html = await readFile(APP_HTML, 'utf8');
@@ -90,6 +96,8 @@ describe('pwa shell', () => {
 	it('mantém a barra inferior como navegação única com safe-area', async () => {
 		const sidebar = await readFile(APP_SIDEBAR, 'utf8');
 		expect(sidebar).toContain('mobile-bottom-nav');
+		expect(sidebar).toContain('position: fixed;');
+		expect(sidebar).toContain('bottom: var(--mobile-nav-bottom, 0px);');
 		expect(sidebar).toContain('safe-area-inset-bottom');
 		expect(sidebar).toContain('height: calc(56px + env(safe-area-inset-bottom, 0px));');
 		expect(sidebar).toContain('padding: 4px 8px env(safe-area-inset-bottom, 0px);');
@@ -100,6 +108,8 @@ describe('pwa shell', () => {
 	it('recompõe a barra quando o visual viewport do iOS muda', async () => {
 		const sidebar = await readFile(APP_SIDEBAR, 'utf8');
 		expect(sidebar).toContain('visualViewport');
+		expect(sidebar).toContain('--mobile-nav-bottom');
+		expect(sidebar).toContain('offsetTop');
 		expect(sidebar).toContain('viewport-repaint');
 		expect(sidebar).toContain('translate3d(0, 0, 0.001px)');
 	});

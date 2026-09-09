@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import type { Component } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import { resolve } from '$app/paths';
 	import { APP_VERSION } from '$lib/app-version';
 	import {
 		Bell,
@@ -46,14 +49,16 @@
 		| 'about'
 		| 'appearance'
 		| 'updates';
+	type ConfigSection = { id: ConfigSectionId; label: string; icon: Component };
+	type ConfigGroup = { id: string; label: string; sectionIds: ConfigSectionId[] };
 	let activeSection = $state<ConfigSectionId>('appearance');
 
-	const configSections: Array<{ id: ConfigSectionId; label: string; icon: Component }> = [
+	const configSections: ConfigSection[] = [
 		{ id: 'appearance', label: 'Aparência', icon: SunMoon },
 		{ id: 'account', label: 'Conta e sincronização', icon: User },
-		{ id: 'stats', label: 'Estatísticas', icon: ChartColumn },
+		{ id: 'stats', label: 'Uso e armazenamento', icon: ChartColumn },
 		{ id: 'assistance', label: 'Assistência', icon: Sparkles },
-		{ id: 'workspaces', label: 'Workspaces', icon: FolderOpen },
+		{ id: 'workspaces', label: 'Espaços de estudo', icon: FolderOpen },
 		{ id: 'bibles', label: 'Bíblias', icon: BookOpen },
 		{ id: 'reminder', label: 'Lembrete diário', icon: Bell },
 		{ id: 'updates', label: 'Atualizações', icon: Download },
@@ -61,19 +66,63 @@
 		{ id: 'about', label: 'Sobre', icon: Info }
 	];
 
+	const configGroups: ConfigGroup[] = [
+		{
+			id: 'workspace-data',
+			label: 'Dados e armazenamento',
+			sectionIds: ['workspaces', 'stats', 'backups']
+		},
+		{ id: 'bible-library', label: 'Biblioteca bíblica', sectionIds: ['bibles'] },
+		{
+			id: 'privacy-sync',
+			label: 'Privacidade e sincronização',
+			sectionIds: ['account', 'assistance']
+		},
+		{
+			id: 'app-behavior',
+			label: 'Comportamento do aplicativo',
+			sectionIds: ['appearance', 'reminder', 'updates', 'about']
+		}
+	];
+	const configSectionById = new Map(configSections.map((section) => [section.id, section]));
+
 	let mobileSection = $state<ConfigSectionId | null>(null);
 	let mobileSubheading = $state<HTMLElement | null>(null);
+	function sectionFromUrl(value: string | null): ConfigSectionId | null {
+		return value && configSectionById.has(value as ConfigSectionId)
+			? (value as ConfigSectionId)
+			: null;
+	}
+
+	const urlSection = $derived(sectionFromUrl(page.url.searchParams.get('section')));
 	const mobileSectionLabel = $derived(
 		configSections.find((section) => section.id === mobileSection)?.label ?? ''
 	);
+	const documentSectionLabel = $derived(
+		configSections.find((section) => section.id === (urlSection ?? 'appearance'))?.label ??
+			'Configurações'
+	);
+
+	function sectionHref(id: ConfigSectionId | null): string {
+		return `${resolve('/config')}${id ? `?section=${encodeURIComponent(id)}` : ''}`;
+	}
+
+	function navigateToSection(id: ConfigSectionId | null, replaceState = false) {
+		void goto(sectionHref(id), { keepFocus: true, noScroll: true, replaceState });
+	}
+
+	$effect(() => {
+		activeSection = urlSection ?? 'appearance';
+		mobileSection = isMobile.current ? urlSection : null;
+	});
 
 	function openMobileSection(id: ConfigSectionId) {
-		mobileSection = id;
-		document.querySelector('.shell-main')?.scrollTo({ top: 0 });
+		navigateToSection(id);
+		document.querySelector('.shell-main')?.scrollTo({ top: 0, behavior: 'auto' });
 	}
 
 	function closeMobileSection() {
-		mobileSection = null;
+		navigateToSection(null, true);
 		document.querySelector('.shell-main')?.scrollTo({ top: 0 });
 	}
 
@@ -89,6 +138,7 @@
 					: (currentIndex + (event.key === 'ArrowDown' ? 1 : -1) + ids.length) % ids.length;
 		event.preventDefault();
 		activeSection = ids[nextIndex];
+		navigateToSection(activeSection);
 		void tick().then(() => document.getElementById(`config-tab-${activeSection}`)?.focus());
 	}
 
@@ -141,6 +191,18 @@
 	}
 </script>
 
+<svelte:head>
+	<title>
+		{urlSection
+			? `${documentSectionLabel} · Configurações | OpenBible`
+			: 'Configurações | OpenBible'}
+	</title>
+	<meta
+		name="description"
+		content="Gerencie seus dados, espaços de estudo, cópias, Bíblias, aparência, lembretes e atualizações do OpenBible."
+	/>
+</svelte:head>
+
 <div class="config-page">
 	<h1 class="sr-only">Configurações</h1>
 
@@ -149,25 +211,35 @@
 			<div class="config-index">
 				<h2 class="config-index-title">Configurações</h2>
 				<nav class="config-index-list" aria-label="Seções de configuração">
-					{#each configSections as section (section.id)}
-						{@const Icon = section.icon}
-						<button
-							type="button"
-							class="config-index-row"
-							aria-controls={`config-mobile-panel-${section.id}`}
-							onclick={() => openMobileSection(section.id)}
-						>
-							<span class="config-index-icon" aria-hidden="true">
-								<Icon size={15} strokeWidth={1.8} />
-							</span>
-							<span class="config-index-label">{section.label}</span>
-							<ChevronRight
-								size={16}
-								strokeWidth={1.8}
-								aria-hidden="true"
-								class="config-index-chevron"
-							/>
-						</button>
+					{#each configGroups as group (group.id)}
+						<section class="config-index-group" aria-labelledby={`config-index-group-${group.id}`}>
+							<h3 id={`config-index-group-${group.id}`} class="config-index-group-title">
+								{group.label}
+							</h3>
+							<div class="config-index-list">
+								{#each group.sectionIds as sectionId (sectionId)}
+									{@const section = configSectionById.get(sectionId)!}
+									{@const Icon = section.icon}
+									<button
+										type="button"
+										class="config-index-row"
+										aria-controls={`config-mobile-panel-${section.id}`}
+										onclick={() => openMobileSection(section.id)}
+									>
+										<span class="config-index-icon" aria-hidden="true">
+											<Icon size={15} strokeWidth={1.8} />
+										</span>
+										<span class="config-index-label">{section.label}</span>
+										<ChevronRight
+											size={16}
+											strokeWidth={1.8}
+											aria-hidden="true"
+											class="config-index-chevron"
+										/>
+									</button>
+								{/each}
+							</div>
+						</section>
 					{/each}
 				</nav>
 			</div>
@@ -229,29 +301,40 @@
 		<div class="config-layout">
 			<nav class="config-sidebar" aria-label="Seções de configuração">
 				<h2 class="config-sidebar-title">Configurações</h2>
-				<div
-					class="config-sidebar-list"
-					role="tablist"
-					aria-orientation="vertical"
-					aria-label="Seções de configuração"
-				>
-					{#each configSections as section (section.id)}
-						{@const Icon = section.icon}
-						<button
-							id={`config-tab-${section.id}`}
-							type="button"
-							class="config-sidebar-item"
-							class:active={activeSection === section.id}
-							role="tab"
-							aria-selected={activeSection === section.id}
-							aria-controls={`config-panel-${section.id}`}
-							tabindex={activeSection === section.id ? 0 : -1}
-							onclick={() => (activeSection = section.id)}
-							onkeydown={handleSectionKeydown}
+				<div role="tablist" aria-orientation="vertical" aria-label="Seções de configuração">
+					{#each configGroups as group (group.id)}
+						<section
+							class="config-sidebar-group"
+							aria-labelledby={`config-sidebar-group-${group.id}`}
 						>
-							<Icon size={16} strokeWidth={1.8} aria-hidden="true" />
-							<span>{section.label}</span>
-						</button>
+							<h3 id={`config-sidebar-group-${group.id}`} class="config-sidebar-group-title">
+								{group.label}
+							</h3>
+							<div class="config-sidebar-list">
+								{#each group.sectionIds as sectionId (sectionId)}
+									{@const section = configSectionById.get(sectionId)!}
+									{@const Icon = section.icon}
+									<button
+										id={`config-tab-${section.id}`}
+										type="button"
+										class="config-sidebar-item"
+										class:active={activeSection === section.id}
+										role="tab"
+										aria-selected={activeSection === section.id}
+										aria-controls={`config-panel-${section.id}`}
+										tabindex={activeSection === section.id ? 0 : -1}
+										onclick={() => {
+											activeSection = section.id;
+											navigateToSection(section.id);
+										}}
+										onkeydown={handleSectionKeydown}
+									>
+										<Icon size={16} strokeWidth={1.8} aria-hidden="true" />
+										<span>{section.label}</span>
+									</button>
+								{/each}
+							</div>
+						</section>
 					{/each}
 				</div>
 			</nav>
@@ -419,7 +502,8 @@
 			</a>
 		</div>
 		<p class="about-hint">
-			Seus dados ficam guardados neste dispositivo, no workspace que você configurou. Conta e sincronização na nuvem são opcionais.
+			Seus dados ficam guardados neste dispositivo, no espaço de estudo que você configurou. Conta e
+			sincronização na nuvem são opcionais.
 		</p>
 	</div>
 {/snippet}
@@ -468,6 +552,19 @@
 		display: flex;
 		flex-direction: column;
 		gap: 2px;
+	}
+
+	.config-sidebar-group + .config-sidebar-group {
+		margin-top: 24px;
+	}
+
+	.config-sidebar-group-title,
+	.config-index-group-title {
+		margin: 0 12px 8px;
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+		font-weight: 600;
+		letter-spacing: -0.01em;
 	}
 
 	.config-sidebar-item {
@@ -537,6 +634,10 @@
 
 	.config-index-list {
 		border-top: 1px solid var(--border);
+	}
+
+	.config-index-group + .config-index-group {
+		margin-top: 24px;
 	}
 
 	.config-index-row {

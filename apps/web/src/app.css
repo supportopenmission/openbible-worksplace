@@ -188,8 +188,13 @@ input {
 }
 
 :focus-visible {
-	outline: 2px solid var(--ring);
-	outline-offset: 2px;
+	outline: 1.5px solid color-mix(in oklch, var(--ring) 72%, transparent);
+	outline-offset: 1px;
+}
+
+/* Primitives already expose their own focus ring; avoid stacking two halos. */
+[data-slot]:focus-visible {
+	outline: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

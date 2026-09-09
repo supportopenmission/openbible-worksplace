@@ -58,7 +58,7 @@
 			</div>
 		{:else if update.status === 'downloading'}
 			<div class="progress-track" aria-label={`Download ${update.progress}%`}>
-				<div class="progress-value" style={`width: ${update.progress}%`}></div>
+				<div class="progress-value" style={`transform: scaleX(${update.progress / 100})`}></div>
 			</div>
 			<p class="progress-label" role="status" aria-live="polite">
 				{update.progress > 0 ? `${update.progress}% concluído` : 'Preparando download…'}
@@ -97,8 +97,10 @@
 
 	.progress-value {
 		height: 100%;
+		width: 100%;
+		transform-origin: left center;
 		background: var(--foreground);
-		transition: width 180ms ease;
+		transition: transform 180ms ease;
 	}
 
 	.progress-label,

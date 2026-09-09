@@ -28,15 +28,9 @@
 <section class="quick-actions" aria-labelledby="quick-actions-heading">
 	<h2 id="quick-actions-heading" class="actions-title">Ações rápidas</h2>
 	<div class="actions-grid">
-		<a class="action-link" href={resolve('/bible')}>
-			<span class="action-icon" aria-hidden="true"><BookOpen size={20} strokeWidth={1.8} /></span>
-			<span class="action-text">
-				<span class="action-label">Ler a Bíblia <ArrowUpRight size={14} strokeWidth={1.8} aria-hidden="true" /></span>
-				<span class="action-description">Abra o leitor e continue seu estudo.</span>
-			</span>
-		</a>
 		<button class="action-link" type="button" onclick={handleCreateNote} disabled={creatingNote}>
-			<span class="action-icon" aria-hidden="true"><NotebookPen size={20} strokeWidth={1.8} /></span>
+			<span class="action-icon" aria-hidden="true"><NotebookPen size={20} strokeWidth={1.8} /></span
+			>
 			<span class="action-text">
 				<span class="action-label">Nova nota</span>
 				<span class="action-description">
@@ -47,11 +41,18 @@
 		<a class="action-link" href={resolve('/sermons')}>
 			<span class="action-icon" aria-hidden="true"><ScrollText size={20} strokeWidth={1.8} /></span>
 			<span class="action-text">
-				<span class="action-label">Novo sermão <ArrowUpRight size={14} strokeWidth={1.8} aria-hidden="true" /></span>
+				<span class="action-label"
+					>Novo sermão <ArrowUpRight size={14} strokeWidth={1.8} aria-hidden="true" /></span
+				>
 				<span class="action-description">Organize a mensagem que você vai compartilhar.</span>
 			</span>
 		</a>
 	</div>
+	<a class="read-link" href={resolve('/bible')}>
+		<BookOpen size={16} strokeWidth={1.8} aria-hidden="true" />
+		<span>Ler a Bíblia</span>
+		<ArrowUpRight size={14} strokeWidth={1.8} aria-hidden="true" />
+	</a>
 	{#if createError}
 		<p class="actions-error" role="alert">{createError}</p>
 	{/if}
@@ -64,14 +65,14 @@
 
 	.actions-title {
 		margin: 0 0 16px;
-		font-size: 1.05rem;
+		font-size: 1rem;
 		font-weight: 600;
 		letter-spacing: -0.02em;
 	}
 
 	.actions-grid {
 		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 12px;
 	}
 
@@ -80,7 +81,7 @@
 		gap: 14px;
 		align-items: flex-start;
 		border: 1px solid var(--border);
-		border-radius: 12px;
+		border-radius: 10px;
 		padding: 16px;
 		background: transparent;
 		color: inherit;
@@ -129,7 +130,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 0.92rem;
+		font-size: 0.875rem;
 		font-weight: 600;
 		letter-spacing: -0.01em;
 	}
@@ -138,6 +139,29 @@
 		color: var(--muted-foreground);
 		font-size: 0.8rem;
 		line-height: 1.5;
+	}
+
+	.read-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		margin-top: 12px;
+		color: var(--muted-foreground);
+		font-size: 0.8rem;
+		font-weight: 500;
+		text-decoration: none;
+	}
+
+	.read-link:hover {
+		color: var(--foreground);
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+
+	.read-link:focus-visible {
+		outline: 3px solid color-mix(in oklch, var(--ring) 45%, transparent);
+		outline-offset: 3px;
+		border-radius: 6px;
 	}
 
 	.actions-error {
