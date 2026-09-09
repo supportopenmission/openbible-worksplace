@@ -59,3 +59,5 @@ vite.config.ts.timestamp-*
 # Orca screenshot drops
 .orca/
 
+# Impeccable local critique and live-preview artifacts
+.impeccable/
