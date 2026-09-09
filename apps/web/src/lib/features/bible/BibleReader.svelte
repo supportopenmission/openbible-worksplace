@@ -6,14 +6,12 @@
 		BookOpen,
 		ChevronDown,
 		Highlighter,
-		Menu,
 		Plus,
 		RefreshCw,
 		Search,
 		StickyNote,
 		X
 	} from '@lucide/svelte';
-	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 	import { resolve } from '$app/paths';
@@ -138,7 +136,6 @@
 	let searchLoading = $state(false);
 	let searchMessage = $state('');
 	let searchOpen = $state(false);
-	let fabOpen = $state(false);
 	let highlightsSheetOpen = $state(false);
 	let allHighlights = $state<ReaderHighlightRecord[]>([]);
 	let allHighlightsLoading = $state(false);
@@ -159,6 +156,28 @@
 	let popoverAnchor = $state<HTMLElement | null>(null);
 	let popoverError = $state('');
 	let popoverBusy = $state(false);
+	let eraseUndo = $state<{ target: ReaderHighlight; previous: ReaderHighlight[] } | null>(null);
+	let eraseUndoSeconds = $state(0);
+	let eraseUndoTimer: ReturnType<typeof setInterval> | null = null;
+
+	function clearEraseUndoTimer() {
+		if (eraseUndoTimer !== null) {
+			clearInterval(eraseUndoTimer);
+			eraseUndoTimer = null;
+		}
+	}
+
+	function startEraseUndoCountdown() {
+		clearEraseUndoTimer();
+		eraseUndoSeconds = 8;
+		eraseUndoTimer = setInterval(() => {
+			eraseUndoSeconds -= 1;
+			if (eraseUndoSeconds <= 0) {
+				clearEraseUndoTimer();
+				eraseUndo = null;
+			}
+		}, 1000);
+	}
 	let splitNote = $state<Note | null>(null);
 	let splitNoteList = $state<Note[] | null>(null);
 	let splitTab = $state<'bible' | 'note'>('note');
@@ -177,58 +196,35 @@
 	let verseNoteSelectorLoading = $state(false);
 	let verseNoteSelectorError = $state('');
 	let loadToken = 0;
-	let toolbarVisible = $state(true);
-	let lastScrollY = 0;
+	const GESTURE_HINT_KEY = 'openbible.reader-gesture-seen';
+	let gestureHintDismissed = $state(true);
+	let gestureHintLoaded = $state(false);
+
+	$effect(() => {
+		if (gestureHintLoaded || typeof window === 'undefined') return;
+		gestureHintLoaded = true;
+		try {
+			gestureHintDismissed = window.localStorage.getItem(GESTURE_HINT_KEY) === '1';
+		} catch {
+			gestureHintDismissed = false;
+		}
+	});
+
+	function dismissGestureHint() {
+		gestureHintDismissed = true;
+		try {
+			window.localStorage.setItem(GESTURE_HINT_KEY, '1');
+		} catch {
+			// Sem persistência: apenas oculta na sessão.
+		}
+	}
+
 	/** Sessão de ponteiro: não precisa ser reativa — só evita o click pós-arraste. */
 	let versePointerActive = false;
 	let versePointerStart = 0;
 	let versePointerDragged = false;
 	let suppressVerseClick = false;
 	let pendingToggleClose = false;
-
-	const scrollDelta = 10;
-	const scrollRevealTop = 48;
-	let scrollBlockers = $derived({
-		selector: selectorOpen,
-		search: searchOpen,
-		highlights: highlightsSheetOpen
-	});
-
-	$effect(() => {
-		if (selectorOpen || searchOpen || highlightsSheetOpen) toolbarVisible = true;
-	});
-
-	$effect(() => {
-		void selectedChapter;
-		void selectedBookId;
-		toolbarVisible = true;
-	});
-
-	onMount(() => {
-		lastScrollY = window.scrollY;
-
-		const onScroll = () => {
-			if (scrollBlockers.selector || scrollBlockers.search || scrollBlockers.highlights) {
-				lastScrollY = window.scrollY;
-				return;
-			}
-
-			const currentY = window.scrollY;
-
-			if (currentY <= scrollRevealTop) {
-				toolbarVisible = true;
-			} else if (currentY - lastScrollY > scrollDelta) {
-				toolbarVisible = false;
-			} else if (lastScrollY - currentY > scrollDelta) {
-				toolbarVisible = true;
-			}
-
-			lastScrollY = currentY;
-		};
-
-		window.addEventListener('scroll', onScroll, { passive: true });
-		return () => window.removeEventListener('scroll', onScroll);
-	});
 
 	let usableVersions = $derived(
 		catalog?.versions.filter((version) => version.books.some((book) => book.chapters.length > 0)) ??
@@ -565,12 +561,30 @@
 		selectedChapter = selection.chapter;
 		searchResults = null;
 		searchMessage = '';
+		searchOpen = false;
 		await loadChapter(selection);
 	}
 
 	async function moveChapter(selection: { bookId: number; chapter: number } | null) {
 		if (!selectedVersion || !selection) return;
 		await chooseSelection(selectionFor(selectedVersion.id, selection.bookId, selection.chapter));
+	}
+
+	function clearSearch() {
+		searchResults = null;
+		searchMessage = '';
+	}
+
+	function searchSnippet(text: string, term: string): { pre: string; match: string; post: string } {
+		const needle = term.trim().toLowerCase();
+		if (!needle) return { pre: text, match: '', post: '' };
+		const index = text.toLowerCase().indexOf(needle);
+		if (index === -1) return { pre: text, match: '', post: '' };
+		return {
+			pre: text.slice(0, index),
+			match: text.slice(index, index + needle.length),
+			post: text.slice(index + needle.length)
+		};
 	}
 
 	async function runSearch() {
@@ -589,7 +603,6 @@
 				results.length === 0
 					? 'Nenhum versículo encontrado.'
 					: `${results.length} resultados encontrados.`;
-			searchOpen = false;
 		} catch (error) {
 			searchResults = null;
 			searchMessage = error instanceof Error ? error.message : 'Não foi possível fazer a busca.';
@@ -667,25 +680,6 @@
 		highlightsSheetOpen = true;
 		void loadAllHighlights();
 	}
-
-	function openReaderSearch() {
-		fabOpen = false;
-		searchOpen = true;
-	}
-
-	function openReaderHighlights() {
-		fabOpen = false;
-		openHighlightsSheet();
-	}
-
-	$effect(() => {
-		if (!fabOpen || typeof window === 'undefined') return;
-		const closeOnEscape = (event: KeyboardEvent) => {
-			if (event.key === 'Escape') fabOpen = false;
-		};
-		window.addEventListener('keydown', closeOnEscape);
-		return () => window.removeEventListener('keydown', closeOnEscape);
-	});
 
 	async function openNoteFromVerse(verseNumber: number) {
 		const ref = noteRefForVerse(verseNumber);
@@ -984,11 +978,24 @@
 		const currentStorage = storage;
 		if (!currentStorage || !target) return;
 		const previous = highlights;
+		const erased = previous.find(
+			(highlight) =>
+				highlight.versionId === target.versionId &&
+				highlight.bookId === target.bookId &&
+				highlight.chapter === target.chapter &&
+				highlight.verseStart === target.verseStart &&
+				highlight.verseEnd === target.verseEnd
+		);
 		highlights = eraseHighlight(highlights, target);
 		popoverBusy = true;
 		popoverError = '';
+		eraseUndo = null;
 		try {
 			await removeHighlight(currentStorage, target);
+			if (erased) {
+				eraseUndo = { target: { ...target, styleId: erased.styleId }, previous };
+				startEraseUndoCountdown();
+			}
 		} catch {
 			highlights = previous;
 			popoverError = 'Não foi possível apagar o destaque neste workspace.';
@@ -997,12 +1004,35 @@
 		}
 	}
 
+	async function undoErase() {
+		const undone = eraseUndo;
+		const currentStorage = storage;
+		if (!currentStorage || !undone) return;
+		eraseUndo = null;
+		clearEraseUndoTimer();
+		const previous = highlights;
+		highlights = undone.previous;
+		try {
+			await persistHighlight(currentStorage, undone.target);
+		} catch {
+			highlights = previous;
+			popoverError = 'Não foi possível restaurar o destaque neste workspace.';
+		}
+	}
+
 	async function copy(text: string) {
 		try {
+			if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
+				throw new Error('clipboard-unavailable');
+			}
+			if (!text.trim()) {
+				popoverError = 'Nada para copiar nesta seleção.';
+				return;
+			}
 			await navigator.clipboard.writeText(text);
 			popoverError = '';
 		} catch {
-			popoverError = 'Não foi possível copiar. A área de transferência não está disponível.';
+			popoverError = 'Não foi possível copiar. Libere a área de transferência e tente de novo.';
 		}
 	}
 
@@ -1101,22 +1131,69 @@
 		}}
 	>
 		<label for="bible-search">Buscar no texto</label>
-		<div class="search-row">
-			<Input
+		<InputGroup.Root class="search-input-group">
+			<InputGroup.Input
 				id="bible-search"
 				type="search"
 				bind:value={searchTerm}
 				placeholder="Ex.: esperança"
 				autocomplete="off"
-				autofocus
+				autofocus={!isMobile.current}
 			/>
-			<Button type="submit" disabled={searchLoading}>
-				<Search size={15} strokeWidth={1.8} aria-hidden="true" />
-				Buscar
-			</Button>
-		</div>
+			<InputGroup.Addon align="inline-end" class="search-input-action">
+				<InputGroup.Button type="submit" variant="default" size="sm" disabled={searchLoading}>
+					{#if searchLoading}
+						<RefreshCw size={15} strokeWidth={1.8} class="search-loading-icon" aria-hidden="true" />
+					{:else}
+						<Search size={15} strokeWidth={1.8} aria-hidden="true" />
+					{/if}
+					Buscar
+				</InputGroup.Button>
+			</InputGroup.Addon>
+		</InputGroup.Root>
 		{#if searchMessage}
 			<p class="search-panel-message" role="status">{searchMessage}</p>
+		{/if}
+		{#if searchResults}
+			<div class="search-results">
+				<div class="search-results-head">
+					<h3>Resultados</h3>
+					<button type="button" class="search-results-dismiss" onclick={clearSearch}>
+						Limpar
+					</button>
+				</div>
+				{#if searchResults.length > 0}
+					<ul>
+						{#each searchResults as result (`${result.bookId}-${result.chapter}-${result.verse}`)}
+							{@const snippet = searchSnippet(result.text, searchTerm)}
+							<li>
+								<button
+									type="button"
+									class="search-result"
+									aria-label={`Abrir ${result.bookName} ${result.chapter}:${result.verse} no leitor`}
+									onclick={() =>
+										void chooseSelection(
+											selectionFor(selectedVersion.id, result.bookId, result.chapter)
+										)}
+								>
+									<span class="search-result-head">
+										<strong>{result.bookName} {result.chapter}:{result.verse}</strong>
+										<ArrowUpRight size={14} strokeWidth={1.8} aria-hidden="true" />
+									</span>
+									<span class="search-result-text"
+										>{snippet.pre}<mark>{snippet.match}</mark>{snippet.post}</span
+									>
+									<span class="search-result-action">Abrir no leitor</span>
+								</button>
+							</li>
+						{/each}
+					</ul>
+				{:else}
+					<p class="search-results-empty" role="status">
+						Nenhum resultado para “{searchTerm.trim()}”. Tente outra palavra ou verifique a grafia.
+					</p>
+				{/if}
+			</div>
 		{/if}
 	</form>
 {/snippet}
@@ -1130,7 +1207,7 @@
 					type="button"
 					size="sm"
 					class="version-dropdown-trigger"
-					aria-label="Versão"
+					aria-label="Versão da tradução no filtro de livros"
 					title={selectedVersion?.name}
 				>
 					<span class="version-trigger-label">{displayVersionAbbreviation(selectedVersion!)}</span>
@@ -1197,12 +1274,13 @@
 				<h2 class="bible-empty-title" data-slot="empty-title">Nenhuma Bíblia instalada</h2>
 				<Empty.Description>
 					Você ainda não tem nenhuma Bíblia neste workspace.
-					<br />Importe um SQLite no padrão OpenLP para começar a leitura.
+					<br />Importe um arquivo <code>.sqlite</code> da sua tradução — por exemplo
+					<code>almeida.sqlite</code>. O arquivo fica só neste dispositivo.
 				</Empty.Description>
 			</Empty.Header>
 			<Empty.Content class="bible-empty-actions">
 				<button class="button primary" type="button" onclick={() => (showLocalImport = true)}>
-					Importar arquivos
+					Importar arquivo .sqlite
 				</button>
 				<button
 					class="button secondary"
@@ -1210,7 +1288,7 @@
 					onclick={() => (showRemoteImport = true)}
 					aria-haspopup="dialog"
 				>
-					Usar URL do bucket
+					Usar link de distribuição
 				</button>
 				<a class="text-action" href={resolve('/config')}>
 					Abrir configurações <ArrowUpRight size={13} strokeWidth={1.8} aria-hidden="true" />
@@ -1220,9 +1298,10 @@
 		<Dialog.Root bind:open={showLocalImport}>
 			<Dialog.Content class="bible-import-dialog" aria-labelledby="bible-import-local-title">
 				<div class="import-dialog-head">
-					<Dialog.Title id="bible-import-local-title">Importar arquivos SQLite</Dialog.Title>
+					<Dialog.Title id="bible-import-local-title">Importar arquivo .sqlite</Dialog.Title>
 					<Dialog.Description>
-						Envie arquivos compatíveis com o padrão OpenLP. Eles ficam em <code>bibles/</code>.
+						Envie um arquivo <code>.sqlite</code> compatível (padrão OpenLP). Ele fica em
+						<code>bibles/</code> neste dispositivo.
 					</Dialog.Description>
 				</div>
 				<LocalBibleImport {storage} onInstalled={handleInstalled} />
@@ -1231,9 +1310,9 @@
 		<Dialog.Root bind:open={showRemoteImport}>
 			<Dialog.Content class="bible-import-dialog" aria-labelledby="bible-import-remote-title">
 				<div class="import-dialog-head">
-					<Dialog.Title id="bible-import-remote-title">Importar do bucket R2</Dialog.Title>
+					<Dialog.Title id="bible-import-remote-title">Importar por link</Dialog.Title>
 					<Dialog.Description>
-						Informe a URL pública do bucket para listar e instalar as versões.
+						Informe o link público da distribuição para listar e instalar as versões.
 					</Dialog.Description>
 				</div>
 				<RemoteBibleImport {storage} variant="bible" bare onInstalled={handleInstalled} />
@@ -1251,13 +1330,9 @@
 		{/if}
 	{:else if selectedVersion && selectedBook && selectedChapter !== null}
 		{#snippet readerToolbar()}
-			<section
-				class="reader-toolbar"
-				class:toolbar-hidden={!toolbarVisible}
-				aria-label="Controles do leitor"
-			>
+			<section class="reader-toolbar" aria-label="Controles do leitor">
 				<div class="toolbar-shell">
-					<ButtonGroup class="reader-toolbar-group" aria-label="Navegação da Bíblia">
+					<ButtonGroup class="reader-toolbar-group" aria-label="Localizar passagem">
 						<Button
 							variant="ghost"
 							size="icon-sm"
@@ -1300,8 +1375,7 @@
 							type="button"
 							data-slot="button"
 							onclick={() => openSelector('version')}
-							aria-label="Versão"
-							role="combobox"
+							aria-label="Versão da Bíblia"
 							aria-haspopup="dialog"
 							aria-controls="bible-selector"
 							aria-expanded={selectorOpen && selectorMode === 'version'}
@@ -1321,6 +1395,45 @@
 						>
 							<ArrowRight size={16} strokeWidth={1.8} aria-hidden="true" />
 						</Button>
+						{#if isMobile.current}
+							<DropdownMenu.Root>
+								<DropdownMenu.Trigger>
+									{#snippet child({ props })}
+										<Button
+											{...props}
+											variant="ghost"
+											size="icon-sm"
+											class="toolbar-mobile-actions-trigger"
+											aria-label="Abrir ações de leitura"
+											title="Ações de leitura"
+										>
+											<ChevronDown size={16} strokeWidth={1.8} aria-hidden="true" />
+										</Button>
+									{/snippet}
+								</DropdownMenu.Trigger>
+								<DropdownMenu.Content
+									align="end"
+									side="bottom"
+									sideOffset={8}
+									class="mobile-reader-actions-menu"
+								>
+									<DropdownMenu.Label>Ações de leitura</DropdownMenu.Label>
+									<DropdownMenu.Item
+										class="reader-action-menu-item"
+										onclick={() => (searchOpen = true)}
+									>
+										<Search size={15} strokeWidth={1.8} aria-hidden="true" />
+										<span>Buscar no texto</span>
+									</DropdownMenu.Item>
+									<DropdownMenu.Item class="reader-action-menu-item" onclick={openHighlightsSheet}>
+										<Highlighter size={15} strokeWidth={1.8} aria-hidden="true" />
+										<span>Destaques</span>
+									</DropdownMenu.Item>
+								</DropdownMenu.Content>
+							</DropdownMenu.Root>
+						{/if}
+					</ButtonGroup>
+					<ButtonGroup class="reader-toolbar-actions" aria-label="Buscar e destaques">
 						<Button
 							variant="ghost"
 							size="icon-sm"
@@ -1348,83 +1461,26 @@
 		{#if !desktopSplitActive && !(isMobile.current && (splitNote !== null || splitNoteList !== null))}
 			{@render readerToolbar()}
 		{/if}
-		<div
-			class="reader-fab"
-			class:fab-open={fabOpen}
-			class:fab-hidden={popoverOpen ||
-				(isMobile.current &&
-					(splitNote !== null || splitNoteList !== null) &&
-					splitTab !== 'bible')}
-		>
-			<div class="fab-actions" aria-hidden={!fabOpen}>
-				<button
-					type="button"
-					class="fab-action"
-					tabindex={fabOpen ? 0 : -1}
-					onclick={openReaderSearch}
-					aria-label="Buscar no texto"
-				>
-					<span class="fab-label" aria-hidden="true">Buscar</span>
-					<span class="fab-circle" aria-hidden="true">
-						<Search size={16} strokeWidth={1.8} />
-					</span>
-				</button>
-				<button
-					type="button"
-					class="fab-action"
-					tabindex={fabOpen ? 0 : -1}
-					onclick={openReaderHighlights}
-					aria-label="Destaques"
-				>
-					<span class="fab-label" aria-hidden="true">Destaques</span>
-					<span class="fab-circle" aria-hidden="true">
-						<Highlighter size={16} strokeWidth={1.8} />
-					</span>
-				</button>
-			</div>
-			<button
-				type="button"
-				class="fab-main"
-				onclick={() => (fabOpen = !fabOpen)}
-				aria-expanded={fabOpen}
-				aria-label={fabOpen ? 'Fechar ações de leitura' : 'Abrir ações de leitura'}
-			>
-				{#if fabOpen}
-					<X size={18} strokeWidth={2} aria-hidden="true" />
-				{:else}
-					<Menu size={18} strokeWidth={2} aria-hidden="true" />
-				{/if}
-			</button>
-		</div>
 
-		{#if isMobile.current}
-			<Sheet.Root bind:open={searchOpen}>
-				<Sheet.Content side="bottom" class="search-drawer-content">
-					<Sheet.Header class="search-panel-header">
-						<Sheet.Title>Buscar na Bíblia</Sheet.Title>
-						<Sheet.Description>Pesquise por uma palavra ou frase na versão atual.</Sheet.Description
-						>
-					</Sheet.Header>
-					{@render searchForm()}
-				</Sheet.Content>
-			</Sheet.Root>
-		{:else}
-			<Dialog.Root bind:open={searchOpen}>
-				<Dialog.Content class="search-dialog-content">
-					<div class="search-panel-header">
-						<Dialog.Title>Buscar na Bíblia</Dialog.Title>
-						<Dialog.Description
-							>Pesquise por uma palavra ou frase na versão atual.</Dialog.Description
-						>
-					</div>
-					{@render searchForm()}
-				</Dialog.Content>
-			</Dialog.Root>
-		{/if}
+		<Sheet.Root bind:open={searchOpen}>
+			<Sheet.Content
+				side={isMobile.current ? 'bottom' : 'right'}
+				class={isMobile.current ? 'search-drawer-content' : 'search-sheet-content'}
+			>
+				<Sheet.Header class="search-panel-header">
+					<Sheet.Title>Buscar na Bíblia</Sheet.Title>
+					<Sheet.Description>Pesquise por uma palavra ou frase na versão atual.</Sheet.Description>
+				</Sheet.Header>
+				{@render searchForm()}
+			</Sheet.Content>
+		</Sheet.Root>
 
 		<Sheet.Root bind:open={highlightsSheetOpen}>
-			<Sheet.Content side={isMobile.current ? 'bottom' : 'right'} class="highlights-sheet-content">
-				<Sheet.Header>
+			<Sheet.Content
+				side={isMobile.current ? 'bottom' : 'right'}
+				class={isMobile.current ? 'search-drawer-content' : 'search-sheet-content'}
+			>
+				<Sheet.Header class="search-panel-header">
 					<Sheet.Title>Destaques</Sheet.Title>
 					<Sheet.Description>Todos os destaques salvos neste workspace.</Sheet.Description>
 				</Sheet.Header>
@@ -1615,35 +1671,6 @@
 			</section>
 		{/if}
 
-		{#if searchResults}
-			<section class="search-results" aria-labelledby="search-results-heading">
-				<div class="section-heading">
-					<h2 id="search-results-heading">Resultados da busca</h2>
-					<p>{searchMessage}</p>
-				</div>
-				{#if searchResults.length > 0}
-					<ul>
-						{#each searchResults as result (`${result.bookId}-${result.chapter}-${result.verse}`)}
-							<li>
-								<button
-									type="button"
-									onclick={() =>
-										chooseSelection(
-											selectionFor(selectedVersion.id, result.bookId, result.chapter)
-										)}
-								>
-									<strong>{result.bookName} {result.chapter}:{result.verse}</strong>
-									<span>{result.text}</span>
-								</button>
-							</li>
-						{/each}
-					</ul>
-				{/if}
-			</section>
-		{:else if searchMessage}
-			<p class="inline-message" role="status">{searchMessage}</p>
-		{/if}
-
 		{#if highlightError}
 			<p class="highlight-error" role="alert">{highlightError}</p>
 		{/if}
@@ -1685,6 +1712,17 @@
 						Este capítulo não possui versículos disponíveis.
 					</p>
 				{:else}
+					{#if !gestureHintDismissed}
+						<div class="verse-coachmark" role="status" aria-label="Como selecionar versículos">
+							<div class="coachmark-copy">
+								<h3>Como selecionar versículos</h3>
+								<p>Toque para selecionar. Arraste ou use Shift+toque para ampliar o intervalo.</p>
+							</div>
+							<button type="button" class="verse-gesture-dismiss" onclick={dismissGestureHint}>
+								Ocultar
+							</button>
+						</div>
+					{/if}
 					<ol class="verse-list">
 						{#each verses as verse (verse.number)}
 							{@const covering = highlightsCoveringVerse(highlights, verse.number)}
@@ -1697,6 +1735,12 @@
 							{@const hasWavy = covering.some(
 								(highlight) => readerHighlightStyle(highlight.styleId)?.kind === 'wavy'
 							)}
+							{@const underlineStyle = covering.find(
+								(highlight) => readerHighlightStyle(highlight.styleId)?.kind === 'underline'
+							)}
+							{@const wavyStyle = covering.find(
+								(highlight) => readerHighlightStyle(highlight.styleId)?.kind === 'wavy'
+							)}
 							<li>
 								<div class="verse-row" data-selected={selected ? 'true' : undefined}>
 									<span class="verse-number-cell">
@@ -1705,18 +1749,19 @@
 										>
 										{#if noteIndicatorVerses.includes(verse.number)}
 											{@const noteBadge = noteBadgeForVerse(verse.number)}
+											{@const noteLabel = `Abrir nota do versículo ${verse.number}`}
 											<button
 												type="button"
 												class="verse-note-button"
-												aria-label="Abrir nota"
-												title="Abrir nota"
+												aria-label={noteLabel}
+												title={noteLabel}
 												onclick={(event) =>
 													void handleNoteIconClick(
 														verse.number,
 														event.currentTarget as HTMLElement
 													)}
 											>
-												<StickyNote size={12} strokeWidth={1.8} aria-hidden="true" />
+												<StickyNote size={14} strokeWidth={1.8} aria-hidden="true" />
 												{#if noteBadge}
 													<span class="verse-note-badge" aria-hidden="true">{noteBadge}</span>
 												{/if}
@@ -1748,7 +1793,9 @@
 											<span
 												class="verse-text"
 												data-underline={hasUnderline ? 'true' : undefined}
-												data-wavy={hasWavy ? 'true' : undefined}>{verse.text}</span
+												data-underline-style={underlineStyle?.styleId}
+												data-wavy={hasWavy ? 'true' : undefined}
+												data-wavy-style={wavyStyle?.styleId}>{verse.text}</span
 											>
 											{#if covering.length > 0}
 												<span class="sr-only">Destacado: {verseMarkLabel(covering)}</span>
@@ -1792,6 +1839,15 @@
 				onCreateNote={() => void createNoteFromSelection()}
 				onClose={closePopover}
 			/>
+		{/if}
+
+		{#if eraseUndo}
+			<div class="erase-undo-toast" role="status" aria-live="polite">
+				<span>Destaque apagado. Desfazer ({eraseUndoSeconds}s)</span>
+				<button type="button" class="erase-undo-button" onclick={() => void undoErase()}>
+					Desfazer
+				</button>
+			</div>
 		{/if}
 
 		<VerseNoteSelector
@@ -1867,8 +1923,7 @@
 		text-underline-offset: 3px;
 	}
 
-	.state-label,
-	.section-heading p {
+	.state-label {
 		margin: 0;
 		color: var(--muted-foreground);
 		font-size: 0.75rem;
@@ -2047,27 +2102,14 @@
 		margin-top: 0;
 		padding: 6px 0 8px;
 		background: var(--background);
-		transition:
-			padding 220ms ease,
-			opacity 220ms ease;
-	}
-
-	.reader-toolbar.toolbar-hidden {
-		padding-block: 0;
-		opacity: 0;
-		pointer-events: none;
 	}
 
 	.toolbar-shell {
 		display: flex;
 		width: fit-content;
 		max-width: 100%;
-		transform: translateY(0);
-		transition: transform 220ms ease;
-	}
-
-	.reader-toolbar.toolbar-hidden .toolbar-shell {
-		transform: translateY(calc(-100% - 12px));
+		align-items: center;
+		gap: 8px;
 	}
 
 	.reader-page.with-note .reader-toolbar {
@@ -2082,10 +2124,21 @@
 		flex-wrap: nowrap;
 		align-items: center;
 		border: 1px solid var(--border);
-		border-radius: 999px;
+		border-radius: 14px;
 		background: color-mix(in oklch, var(--foreground) 7%, var(--background));
 		padding: 2px;
 		overflow: hidden;
+	}
+
+	:global(.reader-toolbar-actions) {
+		display: inline-flex;
+		flex-shrink: 0;
+		align-items: center;
+		gap: 2px;
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		background: color-mix(in oklch, var(--foreground) 7%, var(--background));
+		padding: 2px;
 	}
 
 	.toolbar-choice {
@@ -2096,12 +2149,12 @@
 		justify-content: center;
 		gap: 3px;
 		border: 0;
-		border-radius: 9999px;
+		border-radius: 8px;
 		background: transparent;
 		padding: 3px 7px;
 		color: var(--foreground);
 		font: inherit;
-		font-size: 0.76rem;
+		font-size: 0.75rem;
 		font-weight: 500;
 		line-height: 1;
 		cursor: pointer;
@@ -2159,9 +2212,26 @@
 
 	:global(.toolbar-nav-button),
 	:global(.toolbar-search-button),
-	:global(.toolbar-highlights-button) {
+	:global(.toolbar-highlights-button),
+	:global(.toolbar-mobile-actions-trigger) {
 		flex: 0 0 auto;
-		border-radius: 9999px;
+		border-radius: 10px;
+	}
+
+	:global(.toolbar-mobile-actions-trigger[data-state='open'] svg) {
+		transform: rotate(180deg);
+	}
+
+	:global(.toolbar-mobile-actions-trigger svg) {
+		transition: transform 160ms ease;
+	}
+
+	:global(.mobile-reader-actions-menu) {
+		min-width: 188px;
+	}
+
+	:global(.reader-action-menu-item) {
+		gap: 8px;
 	}
 
 	.sr-only {
@@ -2278,7 +2348,7 @@
 	.version-menu-name {
 		overflow: hidden;
 		color: var(--muted-foreground);
-		font-size: 0.72rem;
+		font-size: 0.75rem;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
@@ -2328,7 +2398,7 @@
 		justify-content: space-between;
 		gap: 8px;
 		border: 1px solid color-mix(in oklch, var(--foreground) 12%, var(--background));
-		border-radius: 11px;
+		border-radius: 10px;
 		background: transparent;
 		padding: 10px 11px;
 		color: var(--foreground);
@@ -2345,9 +2415,10 @@
 	.book-option.selected,
 	.chapter-option.selected,
 	.version-option.selected {
+		border-width: 2px;
 		border-color: var(--foreground);
-		background: var(--foreground);
-		color: var(--background);
+		background: var(--muted);
+		color: var(--foreground);
 	}
 
 	.book-option-copy {
@@ -2366,13 +2437,13 @@
 	.book-option small {
 		color: var(--muted-foreground);
 		font-family: var(--font-mono);
-		font-size: 0.56rem;
+		font-size: 0.6875rem;
 		text-transform: uppercase;
 	}
 
 	.book-option.selected small,
 	.book-option.selected :global(svg) {
-		color: color-mix(in oklch, var(--background) 65%, transparent);
+		color: var(--muted-foreground);
 	}
 
 	.selector-empty {
@@ -2491,7 +2562,7 @@
 		min-width: 0;
 		min-height: 44px;
 		border: 1px solid color-mix(in oklch, var(--foreground) 12%, var(--background));
-		border-radius: 11px;
+		border-radius: 10px;
 		background: transparent;
 		padding: 10px 12px;
 		color: var(--foreground);
@@ -2598,7 +2669,8 @@
 	.search-panel-form {
 		display: grid;
 		gap: 8px;
-		margin-top: 24px;
+		width: min(100%, 480px);
+		margin: 24px auto 0;
 	}
 
 	.search-panel-form > label {
@@ -2607,10 +2679,45 @@
 		font-weight: 500;
 	}
 
-	.search-row {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		gap: 8px;
+	:global(.search-input-group) {
+		min-height: 38px;
+		background: color-mix(in oklch, var(--foreground) 3%, var(--background));
+	}
+
+	:global(.search-input-group [data-slot='input-group-control']) {
+		min-width: 0;
+		font-size: 0.875rem;
+	}
+
+	:global(.search-input-group [data-slot='input-group-addon']) {
+		padding-inline: 4px 3px;
+	}
+
+	:global(.search-input-group [data-slot='input-group-addon'].search-input-action) {
+		cursor: default;
+	}
+
+	:global(.search-input-group [data-slot='input-group-control']:focus-visible) {
+		outline: none;
+		box-shadow: none;
+		--tw-ring-shadow: 0 0 #0000;
+		--tw-ring-offset-shadow: 0 0 #0000;
+	}
+
+	:global(.search-loading-icon) {
+		animation: search-spin 900ms linear infinite;
+	}
+
+	@keyframes search-spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		:global(.search-loading-icon) {
+			animation: none;
+		}
 	}
 
 	.search-panel-message {
@@ -2619,12 +2726,24 @@
 		font-size: 0.8rem;
 	}
 
-	:global(.search-dialog-content) {
-		width: min(100% - 32px, 560px);
+	:global(.search-sheet-content) {
+		width: min(100%, 420px);
+		max-width: 420px;
+		padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+		border-color: var(--border);
+		background: var(--background);
+	}
+
+	:global(.dark .search-sheet-content) {
+		border-color: #292929;
+		background: #090909;
 	}
 
 	:global(.search-drawer-content) {
-		max-height: min(560px, calc(100dvh - 24px));
+		width: 100%;
+		max-width: none;
+		max-height: min(90dvh, calc(100dvh - 16px));
+		border-radius: 16px 16px 0 0;
 		padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
 		border-color: var(--border);
 		background: var(--background);
@@ -2640,8 +2759,6 @@
 	}
 
 	.diagnostic,
-	.search-results,
-	.inline-message,
 	.chapter-error {
 		margin-top: 28px;
 		border-top: 1px solid var(--border);
@@ -2675,25 +2792,42 @@
 	}
 
 	.search-results {
-		max-width: 760px;
+		display: grid;
+		gap: 8px;
+		margin-top: 8px;
+		border-top: 1px solid var(--border);
+		padding-top: 12px;
+		max-height: min(320px, 40dvh);
+		overflow-y: auto;
 	}
 
-	.section-heading {
+	.search-results-head {
 		display: flex;
-		flex-wrap: wrap;
 		align-items: baseline;
 		justify-content: space-between;
 		gap: 8px 16px;
 	}
 
-	.section-heading h2 {
+	.search-results-head h3 {
 		margin: 0;
-		font-size: 1rem;
+		font-size: 0.875rem;
 		font-weight: 600;
 	}
 
+	.search-results-dismiss {
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: transparent;
+		padding: 4px 10px;
+		color: var(--foreground);
+		font: inherit;
+		font-size: 0.75rem;
+		font-weight: 500;
+		cursor: pointer;
+	}
+
 	.search-results ul {
-		margin: 16px 0 0;
+		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
@@ -2705,19 +2839,31 @@
 	.search-results button {
 		display: grid;
 		width: 100%;
-		gap: 4px;
+		gap: 5px;
 		border: 0;
+		border-radius: 8px;
 		background: transparent;
-		padding: 12px 0;
+		padding: 10px 8px;
 		color: inherit;
 		text-align: left;
 		cursor: pointer;
 	}
 
-	.search-results button:hover strong,
-	.search-results button:focus-visible strong {
-		text-decoration: underline;
-		text-underline-offset: 3px;
+	.search-results button:hover,
+	.search-results button:focus-visible {
+		background: color-mix(in oklch, var(--foreground) 6%, transparent);
+	}
+
+	.search-results button:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: -2px;
+	}
+
+	.search-result-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
 	}
 
 	.search-results strong {
@@ -2725,7 +2871,23 @@
 		font-weight: 600;
 	}
 
-	.search-results span {
+	.search-result-head :global(svg) {
+		flex: 0 0 auto;
+		color: var(--muted-foreground);
+		opacity: 0;
+		transform: translate(-3px, 3px);
+		transition:
+			opacity 140ms ease,
+			transform 140ms ease;
+	}
+
+	.search-results button:hover .search-result-head :global(svg),
+	.search-results button:focus-visible .search-result-head :global(svg) {
+		opacity: 1;
+		transform: translate(0, 0);
+	}
+
+	.search-results .search-result-text {
 		overflow: hidden;
 		color: var(--muted-foreground);
 		font-size: 0.8rem;
@@ -2733,7 +2895,27 @@
 		white-space: nowrap;
 	}
 
-	.inline-message,
+	.search-result-action {
+		color: var(--muted-foreground);
+		font-size: 0.6875rem;
+		font-weight: 500;
+		letter-spacing: 0.01em;
+	}
+
+	.search-results mark {
+		background: color-mix(in oklch, var(--foreground) 16%, transparent);
+		color: inherit;
+		border-radius: 2px;
+		padding: 0 1px;
+	}
+
+	.search-results-empty {
+		margin: 0;
+		color: var(--muted-foreground);
+		font-size: 0.8rem;
+		line-height: 1.5;
+	}
+
 	.chapter-status {
 		color: var(--muted-foreground);
 		font-size: 0.8rem;
@@ -2765,6 +2947,110 @@
 
 	.verse-list li + li {
 		margin-top: 16px;
+	}
+
+	.verse-coachmark {
+		position: fixed;
+		right: 20px;
+		bottom: 20px;
+		z-index: 28;
+		display: flex;
+		max-width: min(380px, calc(100vw - 40px));
+		align-items: flex-end;
+		gap: 18px;
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		background: var(--background);
+		padding: 14px 14px 14px 16px;
+		box-shadow: 0 12px 30px color-mix(in oklch, var(--foreground) 12%, transparent);
+		color: var(--muted-foreground);
+		font-size: 0.78rem;
+		line-height: 1.45;
+		animation: coachmark-enter 180ms ease-out;
+	}
+
+	@keyframes coachmark-enter {
+		from {
+			opacity: 0;
+			transform: translateY(8px);
+		}
+	}
+
+	.coachmark-copy {
+		display: grid;
+		gap: 4px;
+		min-width: 0;
+		flex: 1;
+	}
+
+	.coachmark-copy h3 {
+		margin: 0;
+		color: var(--foreground);
+		font-size: 0.82rem;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+	}
+
+	.coachmark-copy p {
+		margin: 0;
+	}
+
+	@media (hover: hover) {
+		.verse-content:hover {
+			background: color-mix(in oklch, var(--foreground) 4%, transparent);
+			outline: 1px dashed color-mix(in oklch, var(--foreground) 20%, transparent);
+			outline-offset: -1px;
+		}
+	}
+
+	.verse-gesture-dismiss {
+		flex: 0 0 auto;
+		min-height: 32px;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: var(--background);
+		padding: 5px 10px;
+		color: var(--foreground);
+		font: inherit;
+		font-size: 0.75rem;
+		font-weight: 500;
+		cursor: pointer;
+	}
+
+	.verse-gesture-dismiss:hover {
+		background: var(--muted);
+		color: var(--foreground);
+	}
+
+	.erase-undo-toast {
+		position: sticky;
+		bottom: calc(16px + env(safe-area-inset-bottom));
+		z-index: 26;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin: 12px auto 0;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		background: var(--background);
+		padding: 8px 8px 8px 12px;
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+		color: var(--foreground);
+		font-size: 0.8rem;
+		max-width: min(420px, 100%);
+	}
+
+	.erase-undo-button {
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: var(--muted);
+		padding: 6px 12px;
+		color: var(--foreground);
+		font: inherit;
+		font-size: 0.8rem;
+		font-weight: 500;
+		cursor: pointer;
 	}
 
 	.verse-row {
@@ -2825,28 +3111,39 @@
 	.verse-note-button {
 		position: relative;
 		display: inline-flex;
+		min-width: 32px;
+		min-height: 32px;
 		align-items: center;
 		justify-content: center;
 		border: 0;
-		border-radius: 4px;
+		border-radius: 8px;
 		background: transparent;
-		padding: 1px;
+		margin: -8px -8px -8px 0;
+		padding: 8px;
 		color: var(--muted-foreground);
 		cursor: pointer;
+	}
+
+	@media (pointer: coarse) {
+		.verse-note-button {
+			min-width: 44px;
+			min-height: 44px;
+			padding: 12px;
+		}
 	}
 
 	.verse-note-badge {
 		position: absolute;
 		top: -4px;
 		right: -6px;
-		min-width: 12px;
+		min-width: 16px;
 		border: 1px solid var(--border);
 		border-radius: 999px;
 		background: var(--background);
-		padding: 0 3px;
+		padding: 1px 4px;
 		color: var(--foreground);
 		font-family: var(--font-mono);
-		font-size: 0.5rem;
+		font-size: 0.6875rem;
 		font-weight: 600;
 		line-height: 1.3;
 		text-align: center;
@@ -2860,19 +3157,6 @@
 	.verse-note-button:focus-visible {
 		outline: 2px solid var(--ring);
 		outline-offset: 1px;
-	}
-
-	:global(.highlights-sheet-content) {
-		width: min(100%, 420px);
-		max-width: 420px;
-		padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
-		border-color: var(--border);
-		background: var(--background);
-	}
-
-	:global(.dark .highlights-sheet-content) {
-		border-color: #292929;
-		background: #090909;
 	}
 
 	.highlights-sheet-status {
@@ -2907,21 +3191,25 @@
 	.verse-text[data-underline='true'] {
 		text-decoration-line: underline;
 		text-decoration-thickness: 2px;
-		text-underline-offset: 0.22em;
-		text-decoration-color: var(--ink-stroke);
+		text-underline-offset: 0.2em;
+		text-decoration-color: color-mix(in oklch, var(--pen-gold) 78%, var(--foreground));
 	}
 
 	.verse-text[data-wavy='true'] {
 		text-decoration-line: underline;
 		text-decoration-style: wavy;
 		text-decoration-thickness: 1.5px;
-		text-underline-offset: 0.2em;
-		text-decoration-color: var(--ink-stroke);
+		text-underline-offset: 0.18em;
+		text-decoration-color: color-mix(in oklch, var(--pen-lilac) 80%, var(--foreground));
 	}
 
 	.verse-mark[data-kind='pen'] {
-		inset: -2px -4px;
-		border-radius: 4px;
+		inset: -1px -4px;
+		border-radius: 0.16em 0.28em 0.12em 0.22em / 0.24em 0.16em 0.2em 0.14em;
+		box-shadow: 0 1px 0 color-mix(in oklch, var(--foreground) 7%, transparent);
+		transform: rotate(-0.18deg);
+		transform-origin: center;
+		opacity: 0.92;
 	}
 
 	.verse-mark[data-style-id='pen-gold'] {
@@ -2943,7 +3231,7 @@
 	.verse-mark[data-kind='box'] {
 		inset: -3px -5px;
 		border-radius: 5px;
-		outline: 1.5px solid var(--ink-stroke);
+		outline: 1.5px solid color-mix(in oklch, var(--pen-sky) 72%, var(--foreground));
 	}
 
 	.highlight-error {
@@ -2957,98 +3245,20 @@
 		color: var(--destructive);
 	}
 
-	.reader-fab {
-		display: none;
-	}
-
-	@media (max-width: 700px) {
-		.reader-fab.fab-hidden {
-			display: none;
-		}
-
-		.reader-fab {
-			position: fixed;
-			right: 16px;
-			bottom: calc(88px + env(safe-area-inset-bottom));
-			z-index: 30;
-			display: flex;
-			flex-direction: column;
-			align-items: flex-end;
-			gap: 12px;
-		}
-
-		.fab-main {
-			display: flex;
-			width: 48px;
-			height: 48px;
-			align-items: center;
-			justify-content: center;
-			border: 1px solid var(--border);
-			border-radius: 999px;
-			background: var(--primary);
-			padding: 0;
-			color: var(--primary-foreground);
-			cursor: pointer;
-		}
-
-		.fab-actions {
-			display: flex;
-			flex-direction: column;
-			align-items: flex-end;
-			gap: 10px;
-			opacity: 0;
-			pointer-events: none;
-			transform: translateY(8px) scale(0.96);
-			transition:
-				opacity 180ms ease,
-				transform 180ms ease;
-		}
-
-		.fab-open .fab-actions {
-			opacity: 1;
-			pointer-events: auto;
-			transform: none;
-		}
-
-		.fab-action {
-			display: flex;
-			align-items: center;
-			gap: 8px;
-			border: 0;
-			background: transparent;
-			padding: 0;
-			color: var(--foreground);
-			font: inherit;
-			font-size: 0.78rem;
-			font-weight: 500;
-			cursor: pointer;
-		}
-
-		.fab-label {
-			border: 1px solid var(--border);
-			border-radius: 999px;
-			background: var(--background);
-			padding: 4px 10px;
-			line-height: 1.2;
-			white-space: nowrap;
-		}
-
-		.fab-circle {
-			display: flex;
-			width: 40px;
-			height: 40px;
-			align-items: center;
-			justify-content: center;
-			border: 1px solid var(--border);
-			border-radius: 999px;
-			background: var(--background);
-		}
-	}
+	/* FAB removido: busca e destaques vivem na toolbar persistente (camada única). */
 
 	@media (max-width: 700px) {
 		.reader-page {
 			padding-top: 14px;
 			padding-inline: 0;
+		}
+
+		.verse-coachmark {
+			right: 50%;
+			bottom: calc(68px + env(safe-area-inset-bottom));
+			max-width: min(360px, calc(100vw - 32px));
+			align-items: flex-end;
+			transform: translateX(50%);
 		}
 
 		.reading-column {
@@ -3071,25 +3281,38 @@
 
 		.toolbar-shell {
 			justify-content: center;
+			flex-wrap: wrap;
 			min-width: min(290px, 100%);
+			row-gap: 8px;
 		}
 
 		:global(.reader-toolbar-group) {
 			display: grid;
-			grid-template-columns: auto minmax(0, 1fr) auto auto auto;
-			grid-template-areas: 'prev book chapter version next';
+			grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
+			grid-template-areas: 'prev book chapter version next actions';
 			gap: 2px 4px;
 			width: 100%;
-			border-radius: 16px;
+			max-width: 420px;
+			border-radius: 14px;
 			padding: 4px;
 		}
 
 		:global(.reader-toolbar-group > :nth-child(1)) {
 			grid-area: prev;
+			min-width: 44px;
+			min-height: 44px;
 		}
 
 		:global(.reader-toolbar-group > :nth-child(5)) {
 			grid-area: next;
+			min-width: 44px;
+			min-height: 44px;
+		}
+
+		:global(.reader-toolbar-group > .toolbar-mobile-actions-trigger) {
+			grid-area: actions;
+			min-width: 44px;
+			min-height: 44px;
 		}
 
 		:global(.reader-toolbar-group > .book-choice) {
@@ -3105,14 +3328,19 @@
 			grid-area: version;
 		}
 
-		:global(.reader-toolbar-group > .toolbar-search-button),
-		:global(.reader-toolbar-group > .toolbar-highlights-button) {
+		:global(.reader-toolbar-actions) {
 			display: none;
+		}
+
+		:global(.reader-toolbar-actions .toolbar-search-button),
+		:global(.reader-toolbar-actions .toolbar-highlights-button) {
+			min-width: 44px;
+			min-height: 44px;
 		}
 
 		.toolbar-choice {
 			padding-inline: 5px;
-			font-size: 0.72rem;
+			font-size: 0.75rem;
 		}
 
 		.book-choice {
@@ -3121,22 +3349,26 @@
 			max-width: none;
 		}
 
+		.book-choice span {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
 		.chapter-choice {
 			flex: 0 0 auto;
-			min-width: 40px;
+			min-width: 44px;
+			min-height: 44px;
 		}
 
 		.version-choice {
 			flex: 0 0 auto;
 			min-width: 44px;
+			min-height: 44px;
 		}
 
 		.version-label {
-			max-width: 44px;
-		}
-
-		:global(.choice-chevron) {
-			display: none;
+			max-width: 64px;
 		}
 
 		:global(.selector-dialog-content) {
@@ -3210,23 +3442,21 @@
 		}
 
 		.chapter-choice {
-			min-width: 34px;
+			min-width: 44px;
 		}
 
 		.version-choice {
-			min-width: 38px;
-		}
-
-		.version-label {
-			max-width: 38px;
+			min-width: 44px;
 		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
 		.reader-toolbar,
 		.toolbar-shell,
-		.fab-actions {
+		.verse-coachmark,
+		.search-result-head :global(svg) {
 			transition: none;
+			animation: none;
 		}
 
 		:global([data-slot='dialog-content']),

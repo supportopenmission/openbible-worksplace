@@ -5,7 +5,10 @@
 	import HighlightsList from '$lib/features/bible/HighlightsList.svelte';
 	import PageHeader from '$lib/features/navigation/PageHeader.svelte';
 	import { loadBibleCatalog } from '$lib/features/bible/bible-reader';
-	import { isSameReaderHighlight } from '$lib/features/bible/reader-highlights';
+	import {
+		isSameReaderHighlight,
+		readerHighlightStyle
+	} from '$lib/features/bible/reader-highlights';
 	import {
 		readAllReaderHighlights,
 		type ReaderHighlightRecord
@@ -23,6 +26,28 @@
 	let catalog = $state<Awaited<ReturnType<typeof loadBibleCatalog>> | null>(null);
 	let loading = $state(true);
 	let errorMessage = $state('');
+	let searchQuery = $state('');
+	let kindFilter = $state<'all' | 'pen' | 'underline' | 'wavy' | 'box'>('all');
+
+	function highlightBookName(highlight: ReaderHighlightRecord): string {
+		const version = catalog?.versions.find((item) => item.id === highlight.versionId);
+		return version?.books.find((item) => item.id === highlight.bookId)?.name ?? '';
+	}
+
+	function highlightKind(highlight: ReaderHighlightRecord): string {
+		return readerHighlightStyle(highlight.styleId)?.kind ?? 'pen';
+	}
+
+	let filteredHighlights = $derived.by(() => {
+		const query = searchQuery.trim().toLowerCase();
+		return highlights.filter((highlight) => {
+			if (kindFilter !== 'all' && highlightKind(highlight) !== kindFilter) return false;
+			if (!query) return true;
+			const book = highlightBookName(highlight).toLowerCase();
+			const haystack = `${book} ${highlight.chapter} ${highlight.verseStart} ${highlight.verseEnd} ${highlight.versionId}`.toLowerCase();
+			return haystack.includes(query);
+		});
+	});
 
 	$effect(() => {
 		const storage = activeStorage;
@@ -70,6 +95,16 @@
 	function handleRemoved(highlight: ReaderHighlightRecord) {
 		highlights = highlights.filter((item) => !isSameReaderHighlight(item, highlight));
 	}
+
+	function handleRestored(highlight: ReaderHighlightRecord) {
+		const exists = highlights.some((item) => isSameReaderHighlight(item, highlight));
+		if (!exists) highlights = [...highlights, highlight];
+	}
+
+	function clearFilters() {
+		searchQuery = '';
+		kindFilter = 'all';
+	}
 </script>
 
 <svelte:head>
@@ -102,15 +137,48 @@
 			</Button>
 		</div>
 	{:else}
-		<div class="highlights-collection" class:highlights-collection-empty={highlights.length === 0}>
+		{#if highlights.length > 0}
+			<div class="highlights-toolbar" role="search">
+				<input
+					type="search"
+					class="highlights-search"
+					placeholder="Buscar por livro, capítulo…"
+					aria-label="Buscar destaques"
+					bind:value={searchQuery}
+				/>
+				<select class="highlights-filter" aria-label="Filtrar por estilo" bind:value={kindFilter}>
+					<option value="all">Todos os estilos</option>
+					<option value="pen">Canetas</option>
+					<option value="underline">Sublinhado</option>
+					<option value="wavy">Ondulado</option>
+					<option value="box">Caixa</option>
+				</select>
+			</div>
+			<p class="highlights-count" role="status">
+				{#if filteredHighlights.length === highlights.length}
+					{highlights.length} {highlights.length === 1 ? 'destaque' : 'destaques'}
+				{:else}
+					{filteredHighlights.length} de {highlights.length} destaques
+				{/if}
+			</p>
+		{/if}
+		{#if highlights.length > 0 && filteredHighlights.length === 0}
+			<div class="highlights-no-match">
+				<p>Nenhum destaque corresponde aos filtros.</p>
+				<Button type="button" variant="outline" onclick={clearFilters}>Limpar filtros</Button>
+			</div>
+		{:else}
+		<div class="highlights-collection" class:highlights-collection-empty={filteredHighlights.length === 0}>
 			<HighlightsList
-				{highlights}
+				highlights={filteredHighlights}
 				{catalog}
 				storage={activeStorage}
 				onNavigate={handleNavigate}
 				onRemoved={handleRemoved}
+				onRestored={handleRestored}
 			/>
 		</div>
+		{/if}
 	{/if}
 </section>
 
@@ -132,6 +200,63 @@
 
 	.highlights-collection {
 		margin-top: 8px;
+	}
+
+	.highlights-toolbar {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-top: 12px;
+	}
+
+	.highlights-search {
+		min-width: 0;
+		flex: 1 1 220px;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		background: var(--background);
+		padding: 8px 12px;
+		color: inherit;
+		font-size: 0.85rem;
+	}
+
+	.highlights-search:focus-visible,
+	.highlights-filter:focus-visible {
+		outline: 1.5px solid color-mix(in oklch, var(--ring) 72%, transparent);
+		outline-offset: 1px;
+	}
+
+	.highlights-filter {
+		flex: 0 1 180px;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		background: var(--background);
+		padding: 8px 10px;
+		color: inherit;
+		font-size: 0.85rem;
+	}
+
+	.highlights-count {
+		margin: 10px 0 0;
+		color: var(--muted-foreground);
+		font-size: 0.78rem;
+	}
+
+	.highlights-no-match {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 12px;
+		margin-top: 16px;
+		border: 1px dashed var(--border);
+		border-radius: 12px;
+		padding: 20px;
+	}
+
+	.highlights-no-match p {
+		margin: 0;
+		color: var(--muted-foreground);
+		font-size: 0.85rem;
 	}
 
 	@media (max-width: 767px) {

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { Copy, Eraser, Link, NotebookPen, Square, Underline, X } from '@lucide/svelte';
+	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { READER_HIGHLIGHT_PALETTE } from './reader-highlights';
 
 	let {
@@ -44,6 +45,8 @@
 	let left = $state(viewportMargin);
 	let focusedOnOpen = false;
 
+	let showMore = $state(false);
+
 	function updatePosition() {
 		if (!open || !anchor || !surface || typeof window === 'undefined') return;
 		const target = anchor.getBoundingClientRect();
@@ -59,6 +62,10 @@
 			maxTop
 		);
 	}
+
+	$effect(() => {
+		if (!open) showMore = false;
+	});
 
 	$effect(() => {
 		if (!open) {
@@ -121,8 +128,40 @@
 			</button>
 		</div>
 
-		<div class="popover-toolbar">
-			<div class="action-group" role="group" aria-label="Canetas de destaque">
+		<div class="popover-toolbar" aria-label="Estilos e ações da seleção">
+			<div class="action-group" role="group" aria-label="Traços de destaque">
+				{#each strokes as stroke (stroke.id)}
+					<button
+						type="button"
+						class="tool-action"
+						aria-label={stroke.label}
+						title={stroke.label}
+						aria-pressed={activeStyleId === stroke.id}
+						disabled={busy}
+						onclick={() => onApplyStyle(stroke.id)}
+					>
+						{#if stroke.kind === 'underline'}
+							<Underline size={15} strokeWidth={1.8} aria-hidden="true" />
+						{:else if stroke.kind === 'wavy'}
+							<svg class="wavy-icon" viewBox="0 0 18 6" aria-hidden="true" width="15" height="7">
+								<path
+									d="M0 3 C1.5 0.5 3 5.5 4.5 3 S7.5 0.5 9 3 10.5 5.5 12 3 13.5 0.5 15 3 16.5 5.5 18 3"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+								/>
+							</svg>
+						{:else}
+							<Square size={13} strokeWidth={1.8} aria-hidden="true" />
+						{/if}
+					</button>
+				{/each}
+			</div>
+
+			<Separator orientation="vertical" class="popover-divider" aria-hidden="true" />
+
+			<div class="action-group" role="group" aria-label="Marcador manual">
 				{#each pens as pen (pen.id)}
 					<button
 						type="button"
@@ -138,45 +177,12 @@
 				{/each}
 			</div>
 
-			<span class="popover-divider" aria-hidden="true"></span>
+			<Separator orientation="vertical" class="popover-divider" aria-hidden="true" />
 
-			<div class="action-group" role="group" aria-label="Riscos">
-				{#each strokes as stroke (stroke.id)}
-					<button
-						type="button"
-						class="tool-action"
-						aria-label={stroke.label}
-						title={stroke.label}
-						aria-pressed={activeStyleId === stroke.id}
-						disabled={busy}
-						onclick={() => onApplyStyle(stroke.id)}
-					>
-						{#if stroke.kind === 'underline'}
-							<Underline size={15} strokeWidth={1.8} aria-hidden="true" />
-						{:else if stroke.kind === 'wavy'}
-							<svg
-								class="wavy-icon"
-								viewBox="0 0 18 6"
-								aria-hidden="true"
-								width="15"
-								height="7"
-							>
-								<path
-									d="M0 3 C1.5 0.5 3 5.5 4.5 3 S7.5 0.5 9 3 10.5 5.5 12 3 13.5 0.5 15 3 16.5 5.5 18 3"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-								/>
-							</svg>
-						{:else}
-							<Square size={13} strokeWidth={1.8} aria-hidden="true" />
-						{/if}
-					</button>
-				{/each}
+			<div class="action-group" role="group" aria-label="Limpar destaque">
 				<button
 					type="button"
-					class="tool-action"
+					class="tool-action erase-action"
 					aria-label="Apagar destaque"
 					title="Apagar destaque"
 					disabled={busy}
@@ -186,40 +192,56 @@
 				</button>
 			</div>
 
-			<span class="popover-divider" aria-hidden="true"></span>
-
-			<div class="action-group" role="group" aria-label="Copiar e anotar">
-				<button
-					type="button"
-					class="tool-action"
-					aria-label="Copiar referência"
-					title="Copiar referência"
-					disabled={busy}
-					onclick={onCopyReference}
-				>
-					<Link size={15} strokeWidth={1.8} aria-hidden="true" />
-				</button>
-				<button
-					type="button"
-					class="tool-action"
-					aria-label="Copiar texto e referência"
-					title="Copiar texto e referência"
-					disabled={busy}
-					onclick={onCopyText}
-				>
-					<Copy size={15} strokeWidth={1.8} aria-hidden="true" />
-				</button>
-				<button
-					type="button"
-					class="tool-action"
-					aria-label="Criar nota"
-					title="Criar nota"
-					disabled={busy}
-					onclick={onCreateNote}
-				>
-					<NotebookPen size={15} strokeWidth={1.8} aria-hidden="true" />
-				</button>
-			</div>
+			<Separator orientation="vertical" class="popover-divider" aria-hidden="true" />
+			<button
+				type="button"
+				class="tool-action tool-action-labeled more-toggle"
+				aria-expanded={showMore}
+				aria-label={showMore ? 'Mostrar menos ações' : 'Mostrar mais ações'}
+				title={showMore ? 'Mostrar menos ações' : 'Mostrar mais ações'}
+				disabled={busy}
+				onclick={() => (showMore = !showMore)}
+			>
+				<span aria-hidden="true">{showMore ? 'Menos' : 'Mais'}</span>
+			</button>
+			{#if showMore}
+				<Separator orientation="vertical" class="popover-divider" aria-hidden="true" />
+				<div class="action-group" role="group" aria-label="Copiar e anotar">
+					<button
+						type="button"
+						class="tool-action tool-action-labeled"
+						aria-label="Copiar referência"
+						title="Copiar referência"
+						disabled={busy}
+						onclick={onCopyReference}
+					>
+						<Link size={15} strokeWidth={1.8} aria-hidden="true" />
+						<span aria-hidden="true">Referência</span>
+					</button>
+					<button
+						type="button"
+						class="tool-action tool-action-labeled"
+						aria-label="Copiar texto e referência"
+						title="Copiar texto e referência"
+						disabled={busy}
+						onclick={onCopyText}
+					>
+						<Copy size={15} strokeWidth={1.8} aria-hidden="true" />
+						<span aria-hidden="true">Texto</span>
+					</button>
+					<button
+						type="button"
+						class="tool-action tool-action-labeled"
+						aria-label="Criar nota"
+						title="Criar nota"
+						disabled={busy}
+						onclick={onCreateNote}
+					>
+						<NotebookPen size={15} strokeWidth={1.8} aria-hidden="true" />
+						<span aria-hidden="true">Nota</span>
+					</button>
+				</div>
+			{/if}
 		</div>
 
 		{#if errorMessage}
@@ -243,12 +265,12 @@
 		flex-direction: column;
 		gap: 6px;
 		width: max-content;
-		max-width: min(440px, calc(100vw - 24px));
+		max-width: min(520px, calc(100vw - 24px));
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		background: var(--background);
-		padding: 8px 10px;
-		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+		padding: 10px;
+		box-shadow: 0 14px 32px color-mix(in oklch, var(--foreground) 14%, transparent);
 		pointer-events: none;
 		animation: popover-fade 120ms ease;
 	}
@@ -299,17 +321,19 @@
 	.popover-close {
 		display: flex;
 		flex-shrink: 0;
-		width: 22px;
-		height: 22px;
+		width: 28px;
+		height: 28px;
 		align-items: center;
 		justify-content: center;
 		border: 0;
-		border-radius: 4px;
+		border-radius: 8px;
 		background: transparent;
 		padding: 0;
 		color: var(--muted-foreground);
 		cursor: pointer;
-		transition: background-color 0.12s ease, color 0.12s ease;
+		transition:
+			background-color 0.12s ease,
+			color 0.12s ease;
 	}
 
 	.popover-close:hover {
@@ -320,8 +344,10 @@
 	.popover-toolbar {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: 6px;
+		min-width: 0;
 		overflow-x: auto;
+		padding: 2px;
 		scrollbar-width: none;
 	}
 
@@ -336,21 +362,25 @@
 		gap: 3px;
 	}
 
-	.popover-divider {
+	:global(.popover-divider) {
 		flex-shrink: 0;
 		width: 1px;
-		height: 20px;
+		height: 24px;
 		background: var(--border);
+	}
+
+	:global(.popover-toolbar > [data-slot='separator']) {
+		align-self: center;
 	}
 
 	.pen-action {
 		display: flex;
-		width: 30px;
-		height: 30px;
+		width: 36px;
+		height: 36px;
 		align-items: center;
 		justify-content: center;
 		border: 0;
-		border-radius: 999px;
+		border-radius: 10px;
 		background: transparent;
 		padding: 0;
 		cursor: pointer;
@@ -363,8 +393,8 @@
 
 	.pen-dot {
 		display: block;
-		width: 20px;
-		height: 20px;
+		width: 23px;
+		height: 23px;
 		border: 1px solid var(--border);
 		border-radius: 999px;
 	}
@@ -385,6 +415,12 @@
 		background: color-mix(in oklch, var(--pen-lilac) var(--swatch-alpha), transparent);
 	}
 
+	.pen-action[aria-pressed='true'] {
+		background: color-mix(in oklch, var(--foreground) 10%, transparent);
+		outline: 2px solid var(--foreground);
+		outline-offset: -2px;
+	}
+
 	.pen-action[aria-pressed='true'] .pen-dot {
 		border-color: var(--foreground);
 		border-width: 2px;
@@ -393,26 +429,48 @@
 	.tool-action {
 		display: flex;
 		flex-shrink: 0;
-		width: 30px;
-		height: 30px;
+		width: 40px;
+		height: 40px;
 		align-items: center;
 		justify-content: center;
 		border: 1px solid transparent;
-		border-radius: 6px;
+		border-radius: 10px;
 		background: transparent;
 		padding: 0;
 		color: var(--foreground);
 		cursor: pointer;
-		transition: background-color 0.12s ease, border-color 0.12s ease;
+		transition:
+			background-color 0.12s ease,
+			border-color 0.12s ease;
+	}
+
+	.tool-action-labeled {
+		width: auto;
+		gap: 6px;
+		padding: 0 12px;
+		font-size: 0.75rem;
+		font-weight: 500;
 	}
 
 	.tool-action:hover:not(:disabled) {
 		background: color-mix(in oklch, var(--foreground) 8%, transparent);
 	}
 
+	.erase-action {
+		color: var(--destructive);
+	}
+
+	.erase-action:hover:not(:disabled) {
+		background: color-mix(in oklch, var(--destructive) 10%, transparent);
+	}
+
 	.tool-action[aria-pressed='true'] {
 		border-color: var(--foreground);
 		background: color-mix(in oklch, var(--foreground) 10%, transparent);
+	}
+
+	.more-toggle {
+		min-width: 52px;
 	}
 
 	.tool-action:disabled,
@@ -428,7 +486,7 @@
 	.popover-error {
 		margin: 4px 0 0;
 		color: var(--destructive);
-		font-size: 0.72rem;
+		font-size: 0.75rem;
 		line-height: 1.4;
 	}
 
@@ -443,6 +501,19 @@
 	@media (prefers-reduced-motion: reduce) {
 		.selection-popover {
 			animation: none;
+		}
+	}
+
+	@media (max-width: 700px) {
+		.selection-popover {
+			width: calc(100vw - 24px);
+			max-width: calc(100vw - 24px);
+		}
+
+		.popover-toolbar {
+			width: 100%;
+			flex-wrap: wrap;
+			overflow: visible;
 		}
 	}
 </style>

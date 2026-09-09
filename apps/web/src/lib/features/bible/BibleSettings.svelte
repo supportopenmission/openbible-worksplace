@@ -23,27 +23,27 @@
 			<p class="eyebrow">Importação</p>
 			<h2 id="bible-import-heading">Adicionar Bíblias</h2>
 			<p class="intro">
-				Instale arquivos SQLite do computador ou carregue versões publicadas em um bucket R2.
+				Instale Bíblias do seu computador ou carregue uma versão disponível online.
 			</p>
 		</div>
 
 		{#if storage}
 			<div class="import-sources">
 				<section class="import-source" aria-labelledby="local-bible-import-heading">
-					<h3 id="local-bible-import-heading">Arquivos SQLite</h3>
-					<p>Arraste ou selecione uma ou mais Bíblias para instalar no workspace.</p>
+					<h3 id="local-bible-import-heading">Do seu computador</h3>
+					<p>Arraste ou selecione uma ou mais Bíblias para instalar no espaço de estudo.</p>
 					<LocalBibleImport {storage} onInstalled={refreshLibrary} />
 				</section>
 
 				<section class="import-source" aria-labelledby="remote-bible-import-heading">
-					<h3 id="remote-bible-import-heading">Bucket R2</h3>
-					<p>Informe uma URL pública para listar e instalar arquivos <code>.sqlite</code>.</p>
+					<h3 id="remote-bible-import-heading">De um endereço online</h3>
+					<p>Informe um endereço público para listar e instalar arquivos de Bíblia.</p>
 					<RemoteBibleImport {storage} variant="config" bare onInstalled={refreshLibrary} />
 				</section>
 			</div>
 		{:else}
 			<p class="state-message" role="status">
-				Workspace indisponível. Configure o armazenamento antes de importar Bíblias.
+				Espaço de estudo indisponível. Configure o armazenamento antes de importar Bíblias.
 			</p>
 		{/if}
 	</section>
@@ -114,11 +114,6 @@
 
 	.import-source > p {
 		margin-bottom: 4px;
-	}
-
-	code {
-		font-family: var(--font-mono);
-		font-size: 0.86em;
 	}
 
 	@media (max-width: 720px) {

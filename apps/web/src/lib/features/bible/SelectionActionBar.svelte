@@ -35,6 +35,12 @@
 
 	let surface = $state<HTMLDivElement | null>(null);
 
+	let showMore = $state(false);
+
+	$effect(() => {
+		if (!open) showMore = false;
+	});
+
 	$effect(() => {
 		if (!open || typeof window === 'undefined') return;
 		const dismiss = (event: PointerEvent) => {
@@ -79,7 +85,37 @@
 			</button>
 		</div>
 		<div class="bar-scroll">
-			<div class="action-group" role="group" aria-label="Canetas de destaque">
+			<div class="action-group" role="group" aria-label="Traços de destaque">
+				{#each strokes as stroke (stroke.id)}
+					<button
+						type="button"
+						class="tool-action"
+						aria-label={stroke.label}
+						title={stroke.label}
+						aria-pressed={activeStyleId === stroke.id}
+						disabled={busy}
+						onclick={() => onApplyStyle(stroke.id)}
+					>
+						{#if stroke.kind === 'underline'}
+							<Underline size={17} strokeWidth={1.8} aria-hidden="true" />
+						{:else if stroke.kind === 'wavy'}
+							<svg class="wavy-icon" viewBox="0 0 18 6" aria-hidden="true" width="17" height="8">
+								<path
+									d="M0 3 C1.5 0.5 3 5.5 4.5 3 S7.5 0.5 9 3 10.5 5.5 12 3 13.5 0.5 15 3 16.5 5.5 18 3"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+								/>
+							</svg>
+						{:else}
+							<Square size={15} strokeWidth={1.8} aria-hidden="true" />
+						{/if}
+					</button>
+				{/each}
+			</div>
+			<span class="bar-divider" aria-hidden="true"></span>
+			<div class="action-group" role="group" aria-label="Marcador manual">
 				{#each pens as pen (pen.id)}
 					<button
 						type="button"
@@ -95,43 +131,10 @@
 				{/each}
 			</div>
 			<span class="bar-divider" aria-hidden="true"></span>
-			<div class="action-group" role="group" aria-label="Riscos">
-				{#each strokes as stroke (stroke.id)}
-					<button
-						type="button"
-						class="tool-action"
-						aria-label={stroke.label}
-						title={stroke.label}
-						aria-pressed={activeStyleId === stroke.id}
-						disabled={busy}
-						onclick={() => onApplyStyle(stroke.id)}
-					>
-						{#if stroke.kind === 'underline'}
-							<Underline size={17} strokeWidth={1.8} aria-hidden="true" />
-						{:else if stroke.kind === 'wavy'}
-							<svg
-								class="wavy-icon"
-								viewBox="0 0 18 6"
-								aria-hidden="true"
-								width="17"
-								height="8"
-							>
-								<path
-									d="M0 3 C1.5 0.5 3 5.5 4.5 3 S7.5 0.5 9 3 10.5 5.5 12 3 13.5 0.5 15 3 16.5 5.5 18 3"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-								/>
-							</svg>
-						{:else}
-							<Square size={15} strokeWidth={1.8} aria-hidden="true" />
-						{/if}
-					</button>
-				{/each}
+			<div class="action-group" role="group" aria-label="Limpar destaque">
 				<button
 					type="button"
-					class="tool-action"
+					class="tool-action erase-action"
 					aria-label="Apagar destaque"
 					title="Apagar destaque"
 					disabled={busy}
@@ -141,38 +144,55 @@
 				</button>
 			</div>
 			<span class="bar-divider" aria-hidden="true"></span>
-			<div class="action-group" role="group" aria-label="Copiar e anotar">
-				<button
-					type="button"
-					class="tool-action"
-					aria-label="Copiar referência"
-					title="Copiar referência"
-					disabled={busy}
-					onclick={onCopyReference}
-				>
-					<Link size={17} strokeWidth={1.8} aria-hidden="true" />
-				</button>
-				<button
-					type="button"
-					class="tool-action"
-					aria-label="Copiar texto e referência"
-					title="Copiar texto e referência"
-					disabled={busy}
-					onclick={onCopyText}
-				>
-					<Copy size={17} strokeWidth={1.8} aria-hidden="true" />
-				</button>
-				<button
-					type="button"
-					class="tool-action"
-					aria-label="Criar nota"
-					title="Criar nota"
-					disabled={busy}
-					onclick={onCreateNote}
-				>
-					<NotebookPen size={17} strokeWidth={1.8} aria-hidden="true" />
-				</button>
-			</div>
+			<button
+				type="button"
+				class="tool-action tool-action-labeled more-toggle"
+				aria-expanded={showMore}
+				aria-label={showMore ? 'Mostrar menos ações' : 'Mostrar mais ações'}
+				title={showMore ? 'Mostrar menos ações' : 'Mostrar mais ações'}
+				disabled={busy}
+				onclick={() => (showMore = !showMore)}
+			>
+				<span aria-hidden="true">{showMore ? 'Menos' : 'Mais'}</span>
+			</button>
+			{#if showMore}
+				<span class="bar-divider" aria-hidden="true"></span>
+				<div class="action-group" role="group" aria-label="Copiar e anotar">
+					<button
+						type="button"
+						class="tool-action tool-action-labeled"
+						aria-label="Copiar referência"
+						title="Copiar referência"
+						disabled={busy}
+						onclick={onCopyReference}
+					>
+						<Link size={17} strokeWidth={1.8} aria-hidden="true" />
+						<span aria-hidden="true">Referência</span>
+					</button>
+					<button
+						type="button"
+						class="tool-action tool-action-labeled"
+						aria-label="Copiar texto e referência"
+						title="Copiar texto e referência"
+						disabled={busy}
+						onclick={onCopyText}
+					>
+						<Copy size={17} strokeWidth={1.8} aria-hidden="true" />
+						<span aria-hidden="true">Texto</span>
+					</button>
+					<button
+						type="button"
+						class="tool-action tool-action-labeled"
+						aria-label="Criar nota"
+						title="Criar nota"
+						disabled={busy}
+						onclick={onCreateNote}
+					>
+						<NotebookPen size={17} strokeWidth={1.8} aria-hidden="true" />
+						<span aria-hidden="true">Nota</span>
+					</button>
+				</div>
+			{/if}
 		</div>
 		{#if errorMessage}
 			<p role="alert" class="bar-error">{errorMessage}</p>
@@ -195,9 +215,10 @@
 		left: 12px;
 		z-index: 30;
 		border: 1px solid var(--border);
-		border-radius: 16px;
+		border-radius: 14px;
 		background: var(--background);
 		padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+		box-shadow: 0 12px 28px color-mix(in oklch, var(--foreground) 12%, transparent);
 		animation: bar-rise 180ms ease;
 	}
 
@@ -206,6 +227,7 @@
 
 		border-color: #292929;
 		background: #090909;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42);
 	}
 
 	@keyframes bar-rise {
@@ -229,7 +251,7 @@
 		margin: 0;
 		color: var(--muted-foreground);
 		font-family: var(--font-mono);
-		font-size: 0.68rem;
+		font-size: 0.75rem;
 		letter-spacing: 0.02em;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -243,7 +265,7 @@
 		align-items: center;
 		justify-content: center;
 		border: 0;
-		border-radius: 999px;
+		border-radius: 8px;
 		background: transparent;
 		padding: 0;
 		color: var(--muted-foreground);
@@ -260,6 +282,7 @@
 		align-items: center;
 		gap: 10px;
 		overflow-x: auto;
+		padding: 2px;
 		scrollbar-width: none;
 		-webkit-overflow-scrolling: touch;
 	}
@@ -289,7 +312,7 @@
 		align-items: center;
 		justify-content: center;
 		border: 0;
-		border-radius: 999px;
+		border-radius: 10px;
 		background: transparent;
 		padding: 0;
 		cursor: pointer;
@@ -324,6 +347,12 @@
 		background: color-mix(in oklch, var(--pen-lilac) var(--swatch-alpha), transparent);
 	}
 
+	.pen-action[aria-pressed='true'] {
+		background: color-mix(in oklch, var(--foreground) 10%, transparent);
+		outline: 2px solid var(--foreground);
+		outline-offset: -2px;
+	}
+
 	.pen-action[aria-pressed='true'] .pen-dot {
 		border-color: var(--foreground);
 		border-width: 2px;
@@ -337,15 +366,31 @@
 		align-items: center;
 		justify-content: center;
 		border: 1px solid transparent;
-		border-radius: 999px;
+		border-radius: 10px;
 		background: transparent;
 		padding: 0;
 		color: var(--foreground);
 		cursor: pointer;
 	}
 
+	.tool-action-labeled {
+		width: auto;
+		gap: 6px;
+		padding: 0 12px;
+		font-size: 0.75rem;
+		font-weight: 500;
+	}
+
 	.tool-action:hover:not(:disabled) {
 		background: color-mix(in oklch, var(--foreground) 6%, transparent);
+	}
+
+	.erase-action {
+		color: var(--destructive);
+	}
+
+	.erase-action:hover:not(:disabled) {
+		background: color-mix(in oklch, var(--destructive) 10%, transparent);
 	}
 
 	.tool-action[aria-pressed='true'] {
@@ -366,7 +411,7 @@
 	.bar-error {
 		margin: 6px 0 0;
 		color: var(--destructive);
-		font-size: 0.72rem;
+		font-size: 0.75rem;
 		line-height: 1.4;
 	}
 

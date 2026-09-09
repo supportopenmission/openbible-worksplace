@@ -1,7 +1,6 @@
 import { Decoration, DecorationSet } from '@milkdown/kit/prose/view';
 import type { Node as ProseNode } from '@milkdown/kit/prose/model';
 import { parseBibleReferences } from '../parser/BibleReferenceParser';
-import type { BibleReference } from '../parser/types';
 
 /**
  * Builds a DecorationSet containing inline decorations for all valid bible references
@@ -23,10 +22,7 @@ export function buildBibleReferenceDecorations(doc: ProseNode): DecorationSet {
 				if (child.isText && child.text) {
 					// Avoid inline code and links
 					const isIgnored = child.marks.some(
-						(m) =>
-							m.type.name === 'code_inline' ||
-							m.type.name === 'code' ||
-							m.type.name === 'link'
+						(m) => m.type.name === 'code_inline' || m.type.name === 'code' || m.type.name === 'link'
 					);
 
 					if (!isIgnored) {
@@ -48,13 +44,11 @@ export function buildBibleReferenceDecorations(doc: ProseNode): DecorationSet {
 										'data-raw': ref.raw,
 										'data-book': ref.book,
 										'data-chapter': ref.chapter != null ? String(ref.chapter) : '',
-										'data-verse-start':
-											ref.verseStart != null ? String(ref.verseStart) : '',
-										'data-verse-end':
-											ref.verseEnd != null ? String(ref.verseEnd) : '',
+										'data-verse-start': ref.verseStart != null ? String(ref.verseStart) : '',
+										'data-verse-end': ref.verseEnd != null ? String(ref.verseEnd) : '',
 										role: 'button',
 										tabindex: '0',
-										title: `Passagem bíblica: ${ref.raw}`
+										title: `Ctrl/Cmd + passar o mouse para pré-visualizar: ${ref.raw}`
 									},
 									{
 										reference: ref

@@ -40,7 +40,7 @@ describe('remote bible import', () => {
 			await render(RemoteBibleImport, { props: { storage, initialUrl: 'https://cdn.exemplo.com/biblias/' } });
 			await page.getByRole('button', { name: /^carregar$/i }).click();
 			await expect.element(page.getByRole('alert')).toBeInTheDocument();
-			expect(page.getByRole('textbox', { name: /url do bucket/i })).toBeInTheDocument();
+			expect(page.getByRole('textbox', { name: /endereço público/i })).toBeInTheDocument();
 		} finally {
 			vi.unstubAllGlobals();
 		}
@@ -76,9 +76,9 @@ describe('remote bible import', () => {
 		// SPECSFY: US-001 US-002 FR-005 NFR-001 NFR-002 AC-009
 		const storage = createStorage();
 		await render(RemoteBibleImport, { props: { storage } });
-		expect(page.getByRole('textbox', { name: /url do bucket/i })).toBeInTheDocument();
+		expect(page.getByRole('textbox', { name: /endereço público/i })).toBeInTheDocument();
 		expect(page.getByRole('button', { name: /^carregar$/i })).toBeDisabled();
-		const input = page.getByRole('textbox', { name: /url do bucket/i });
+		const input = page.getByRole('textbox', { name: /endereço público/i });
 		await input.fill('https://cdn.exemplo.com/biblias/');
 		await expect.element(page.getByRole('button', { name: /^carregar$/i })).not.toBeDisabled();
 	});

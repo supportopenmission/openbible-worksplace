@@ -23,7 +23,7 @@
 		results = [];
 		errorMessage = '';
 		if (selectedFiles.length === 0) {
-			errorMessage = 'Selecione pelo menos um arquivo com extensão .sqlite.';
+			errorMessage = 'Selecione pelo menos uma Bíblia para continuar.';
 		}
 	}
 
@@ -45,7 +45,7 @@
 				onInstalled?.(results);
 			}
 		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : 'Não foi possível importar as Bíblias.';
+			errorMessage = 'Não foi possível importar as Bíblias. Tente novamente.';
 		} finally {
 			importing = false;
 		}
@@ -57,12 +57,12 @@
 		class="dropzone"
 		role="button"
 		tabindex="0"
-		aria-label="Selecionar Bíblias SQLite"
+		aria-label="Selecionar Bíblias do computador"
 		onkeydown={(event) => (event.key === 'Enter' || event.key === ' ' ? fileInput?.click() : undefined)}
 		ondragover={(event) => event.preventDefault()}
 		ondrop={handleDrop}
 	>
-		<strong>Arraste seus arquivos SQLite</strong>
+		<strong>Arraste suas Bíblias para cá</strong>
 		<span>ou selecione pelo diálogo de arquivos</span>
 		<Button variant="outline" size="sm" type="button" onclick={() => fileInput?.click()} disabled={importing}>
 			Selecionar arquivos
@@ -110,7 +110,7 @@
 								? 'Já existe'
 								: result.reason === 'copy-failed'
 									? 'Falha ao copiar'
-									: 'SQLite inválido'}
+								: 'Formato não reconhecido'}
 					</small>
 				</li>
 			{/each}

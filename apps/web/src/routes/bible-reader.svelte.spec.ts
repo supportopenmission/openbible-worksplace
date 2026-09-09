@@ -178,14 +178,14 @@ describe('/bible', () => {
 		await expect.element(page.getByRole('link', { name: /voltar ao início/i })).toBeInTheDocument();
 	});
 
-	it('opens Bible search in a desktop dialog', async () => {
+	it('opens Bible search in a desktop sheet', async () => {
 		await page.viewport(1440, 900);
 		await render(Page, {
 			props: { storageOverride: createStorage(async () => ['ara.sqlite'], bibleBytes) }
 		});
 
 		await page.getByRole('button', { name: /buscar no texto/i }).click();
-		await expect.element(page.getByRole('dialog')).toHaveAttribute('data-slot', 'dialog-content');
+		await expect.element(page.getByRole('dialog')).toHaveAttribute('data-slot', 'sheet-content');
 		await expect
 			.element(page.getByRole('heading', { name: /buscar na bíblia/i }))
 			.toBeInTheDocument();
@@ -254,7 +254,9 @@ describe('/bible', () => {
 		await expect(drawer).toHaveAttribute('data-slot', 'sheet-content');
 		await expect(drawer).toHaveAttribute('data-selector-mode', 'version');
 		await expect.element(drawer.getByRole('option', { selected: true })).toBeInTheDocument();
-		await expect.element(drawer.getByRole('listbox', { name: /versões disponíveis/i })).toBeInTheDocument();
+		await expect
+			.element(drawer.getByRole('listbox', { name: /versões disponíveis/i }))
+			.toBeInTheDocument();
 	});
 });
 
@@ -275,7 +277,9 @@ describe('/bible verse selection popover', () => {
 		// SPECSFY: US-001 FR-001 FR-002 NFR-001 AC-001
 		await openGenesis1();
 		await page.getByRole('button', { name: /disse deus: haja luz/i }).click();
-		await expect.element(page.getByRole('button', { name: /copiar referência/i })).toBeInTheDocument();
+		await expect
+			.element(page.getByRole('button', { name: /copiar referência/i }))
+			.toBeInTheDocument();
 		await expect
 			.element(page.getByRole('button', { name: /copiar texto e referência/i }))
 			.toBeInTheDocument();
@@ -323,7 +327,9 @@ describe('/bible verse selection popover', () => {
 		// SPECSFY: US-001 FR-002 NFR-001 AC-015
 		await openGenesis1();
 		await page.getByRole('button', { name: /disse deus: haja luz/i }).click();
-		await expect.element(page.getByRole('button', { name: /copiar referência/i })).toBeInTheDocument();
+		await expect
+			.element(page.getByRole('button', { name: /copiar referência/i }))
+			.toBeInTheDocument();
 		await userEvent.keyboard('{Escape}');
 		expect(page.getByRole('button', { name: /copiar referência/i })).not.toBeInTheDocument();
 	});
@@ -417,7 +423,9 @@ describe('/bible multi-note verse selector', () => {
 		// SPECSFY: US-002 FR-004 FR-005 NFR-001 NFR-003 AC-006
 		await openGenesis1WithNotes();
 		await page.getByRole('button', { name: /abrir nota/i }).click();
-		await expect.element(page.getByRole('dialog', { name: /notas do versículo/i })).toBeInTheDocument();
+		await expect
+			.element(page.getByRole('dialog', { name: /notas do versículo/i }))
+			.toBeInTheDocument();
 	});
 
 	it('opens a mobile drawer listing note titles for two notes on the verse', async () => {
@@ -466,7 +474,9 @@ describe('/bible multi-note verse selector', () => {
 
 	it('does not open the selector when workspace storage is unavailable', async () => {
 		// SPECSFY: FR-004 NFR-002 AC-019
-		await render(Page, { props: { storageOverride: null, initialError: 'workspace indisponível' } });
+		await render(Page, {
+			props: { storageOverride: null, initialError: 'workspace indisponível' }
+		});
 		expect(page.getByRole('button', { name: /abrir nota/i })).not.toBeInTheDocument();
 	});
 

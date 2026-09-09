@@ -131,13 +131,13 @@
 		<p class="eyebrow">Biblioteca</p>
 		<h2 id="bible-manager-heading">Bíblias instaladas</h2>
 		<p class="intro">
-			Versões em <code>bibles/</code>. A exclusão é permanente e não toca em notas ou sermões.
+			Suas versões ficam neste dispositivo. A exclusão é permanente e não toca em notas ou sermões.
 		</p>
 	</div>
 
 	{#if !effectiveScope}
 		<p class="state-message" role="status">
-			Workspace indisponível. Configure o armazenamento para gerenciar Bíblias.
+			Espaço de estudo indisponível. Configure o armazenamento para gerenciar Bíblias.
 		</p>
 	{:else if loading}
 		<p class="state-message" role="status" aria-live="polite">Carregando Bíblias…</p>
@@ -167,13 +167,16 @@
 							{/if}
 						</div>
 						<small class="entry-meta">
-							{entry.fileName}
 							{#if entry.status === 'installed'}
-								· {entry.books} livro(s) · {formatBytes(entry.size)}
+								{entry.books} livro(s) · {formatBytes(entry.size)}
 							{:else}
-								· {entry.diagnostic ?? 'Arquivo inválido'}
+								{entry.diagnostic ?? 'Arquivo inválido'}
 							{/if}
 						</small>
+						<details class="entry-details">
+							<summary>Detalhes técnicos</summary>
+							<code>{entry.fileName}</code>
+						</details>
 					</span>
 					<div class="entry-actions">
 						{#if isInstalled && !isDefault && installedCount > 1}
@@ -192,7 +195,7 @@
 							size="sm"
 							onclick={() => (deleteTarget = entry)}
 							disabled={!canDelete || deleting}
-							aria-label={`Excluir ${entry.fileName}`}
+							aria-label={`Excluir ${entry.name}`}
 						>
 							<Trash2 size={15} strokeWidth={1.8} aria-hidden="true" />
 							Excluir
@@ -219,8 +222,8 @@
 		<Dialog.Title>Excluir Bíblia</Dialog.Title>
 		<Dialog.Description>
 			{#if deleteTarget}
-				Esta ação remove <strong>{deleteTarget.fileName}</strong> permanentemente. Não há lixeira para
-				Bíblias. Deseja continuar?
+				Esta ação remove <strong>{deleteTarget.name}</strong> permanentemente. Não há lixeira para Bíblias.
+				Deseja continuar?
 			{/if}
 		</Dialog.Description>
 		<div class="dialog-actions">
@@ -337,8 +340,21 @@
 	}
 	.entry-meta {
 		color: var(--muted-foreground);
-		font-family: var(--font-mono);
 		font-size: 0.7rem;
+		overflow-wrap: anywhere;
+	}
+	.entry-details {
+		color: var(--muted-foreground);
+		font-size: 0.68rem;
+	}
+	.entry-details summary {
+		cursor: pointer;
+	}
+	.entry-details code {
+		display: block;
+		margin-top: 3px;
+		font-family: var(--font-mono);
+		font-size: 0.68rem;
 		overflow-wrap: anywhere;
 	}
 	.dialog-actions {

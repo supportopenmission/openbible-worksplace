@@ -48,7 +48,7 @@
 
 	async function loadList() {
 		if (!storage) {
-			listError = 'Workspace indisponível. Configure o armazenamento antes de importar.';
+			listError = 'Espaço de estudo indisponível. Configure o armazenamento antes de importar.';
 			return;
 		}
 		loadingList = true;
@@ -66,9 +66,9 @@
 				progress: null,
 				statusMessage: installed.has(entry.name) ? 'Instalado' : ''
 			}));
-			if (rows.length === 0) listError = 'Nenhum .sqlite encontrado no manifest.';
+			if (rows.length === 0) listError = 'Nenhuma Bíblia encontrada neste endereço.';
 		} catch (error) {
-			listError = error instanceof Error ? error.message : 'Não foi possível carregar a lista.';
+			listError = 'Não foi possível carregar as Bíblias deste endereço. Confira o endereço e tente novamente.';
 		} finally {
 			loadingList = false;
 		}
@@ -138,8 +138,8 @@
 <section class="remote-import" data-variant={variant}>
 	{#if !bare}
 		<div class="remote-head">
-			<h2>Bucket R2</h2>
-			<p class="intro">Informe a URL pública do bucket. Listamos os <code>.sqlite</code> e instalamos com progresso por arquivo.</p>
+			<h2>De um endereço online</h2>
+			<p class="intro">Informe um endereço público para listar e instalar Bíblias com progresso por arquivo.</p>
 		</div>
 	{/if}
 
@@ -150,7 +150,7 @@
 		}}
 	>
 		<label class="url-field">
-			<span>URL do bucket</span>
+			<span>Endereço público</span>
 			<InputGroup.Root class="url-group">
 				<InputGroup.Input
 					type="url"
@@ -173,15 +173,15 @@
 			</InputGroup.Root>
 		</label>
 	</form>
-	<p class="hint">Lemos <code>manifest.json</code> na raiz (ou <code>index.json</code>). Uma URL direta <code>.sqlite</code> importa um único arquivo.</p>
+	<p class="hint">O endereço precisa ser público e apontar para uma lista de Bíblias ou para um único arquivo.</p>
 
 	{#if listError}
 		<p class="error" role="alert">{listError}</p>
 		<div class="help" aria-live="polite">
-			<strong>Como corrigir no R2:</strong>
-			<span>1. Abra <code>{bucketUrl.trim().replace(/\/$/, '')}/manifest.json</code> em nova aba. Se der 404/NoSuchKey, suba o manifest.</span>
-			<span>2. Use URL pública (r2.dev ou domínio próprio), não o endpoint <code>r2.cloudflarestorage.com</code>.</span>
-			<span>3. Em R2 → bucket → Settings → CORS Policy, libere GET para este origin.</span>
+			<strong>Como corrigir o endereço:</strong>
+			<span>1. Confirme se o endereço está correto e pode ser aberto sem login.</span>
+			<span>2. Confirme se ele contém uma lista de Bíblias ou aponta diretamente para um arquivo.</span>
+			<span>3. Se o problema continuar, peça ao responsável pelo endereço para liberar o acesso pelo navegador.</span>
 		</div>
 	{/if}
 
@@ -194,7 +194,7 @@
 			</div>
 		</div>
 
-		<ul class="remote-list" aria-label="Arquivos SQLite disponíveis">
+		<ul class="remote-list" aria-label="Bíblias disponíveis online">
 			{#each rows as row (row.url)}
 				<li class:installed={row.installed}>
 					<label class="row-select">
@@ -224,7 +224,7 @@
 		</ul>
 
 		{#if diagnostics.length > 0}
-			<p class="feedback" aria-live="polite">{diagnostics.length} item(ns) ignorado(s) no manifest.</p>
+			<p class="feedback" aria-live="polite">{diagnostics.length} item(ns) ignorado(s) na lista publicada.</p>
 		{/if}
 
 		<div class="install-bar">
@@ -268,10 +268,6 @@
 		color: var(--muted-foreground);
 		font-size: 0.82rem;
 		line-height: 1.55;
-	}
-	code {
-		font-family: var(--font-mono);
-		font-size: 0.86em;
 	}
 	.url-field {
 		display: grid;

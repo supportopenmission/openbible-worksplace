@@ -27,18 +27,19 @@ export type HighlightSelection = VerseRange & {
 };
 
 /**
- * Paleta Q6: canetas sólidas nomeadas, três riscos e apagar. Nuvem,
- * strike-through, risco duplo, tracejado e atalhos de uma letra ficam fora.
+ * Paleta Q6: sublinhado como leitura padrão, marcador manual nomeado,
+ * dois traços alternativos e apagar. Nuvem, strike-through, risco duplo,
+ * tracejado e atalhos de uma letra ficam fora.
  */
 export const READER_HIGHLIGHT_PALETTE: ReaderHighlightStyle[] = [
+	{ id: 'underline', kind: 'underline', label: 'Sublinhado' },
+	{ id: 'wavy', kind: 'wavy', label: 'Sublinhado ondulado' },
+	{ id: 'box', kind: 'box', label: 'Caixa' },
 	{ id: 'pen-gold', kind: 'pen', label: 'Caneta dourada' },
 	{ id: 'pen-mint', kind: 'pen', label: 'Caneta verde' },
 	{ id: 'pen-sky', kind: 'pen', label: 'Caneta azul' },
 	{ id: 'pen-rose', kind: 'pen', label: 'Caneta rosa' },
 	{ id: 'pen-lilac', kind: 'pen', label: 'Caneta lilás' },
-	{ id: 'underline', kind: 'underline', label: 'Sublinhado' },
-	{ id: 'wavy', kind: 'wavy', label: 'Sublinhado ondulado' },
-	{ id: 'box', kind: 'box', label: 'Caixa' },
 	{ id: 'erase', kind: 'erase', label: 'Apagar' }
 ];
 
@@ -159,9 +160,7 @@ export async function loadHighlightPassage(
 	try {
 		const verses = await readBibleChapter(version, highlight.bookId, highlight.chapter);
 		const passage = verses
-			.filter(
-				(verse) => verse.number >= highlight.verseStart && verse.number <= highlight.verseEnd
-			)
+			.filter((verse) => verse.number >= highlight.verseStart && verse.number <= highlight.verseEnd)
 			.map((verse) => `${verse.number} ${verse.text.trim()}`)
 			.join(' ');
 

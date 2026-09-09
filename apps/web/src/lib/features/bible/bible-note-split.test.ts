@@ -17,9 +17,14 @@ describe('BibleNoteSplit', () => {
 		expect(source).toContain('aria-label="Fechar nota"');
 	});
 
-	it('keeps the reader FAB out of the note tab', async () => {
+	it('keeps reader controls in the Bible tab with a single persistent toolbar', async () => {
 		const source = await readFile(READER, 'utf8');
-		expect(source).toContain("splitTab !== 'bible'");
 		expect(source).toContain('toolbar={readerToolbar}');
+		expect(source).not.toContain('reader-fab');
+		expect(source).not.toContain('fabOpen');
+		expect(source).not.toContain('toolbar-hidden');
+		expect(source).not.toContain('toolbarVisible');
+		expect(source).toContain('reader-toolbar-group');
+		expect(source).toContain('reader-toolbar-actions');
 	});
 });

@@ -14,7 +14,11 @@
 		referenceLabel,
 		readerHighlightStyle
 	} from './reader-highlights';
-	import { removeHighlight, type ReaderHighlightRecord } from './reader-highlights-repository';
+	import {
+		persistHighlight,
+		removeHighlight,
+		type ReaderHighlightRecord
+	} from './reader-highlights-repository';
 	import { displayVersionAbbreviation } from './version-label';
 
 	let {
@@ -25,7 +29,8 @@
 		emptyVariant = 'panel',
 		emptyMessage = 'Nenhum destaque salvo neste workspace.',
 		onNavigate,
-		onRemoved
+		onRemoved,
+		onRestored
 	}: {
 		highlights: ReaderHighlightRecord[];
 		catalog?: BibleCatalog | null;
@@ -35,7 +40,8 @@
 		emptyMessage?: string;
 		onNavigate?: (highlight: ReaderHighlightRecord) => void;
 		onRemoved?: (highlight: ReaderHighlightRecord) => void;
-	} = $props();
+			onRestored?: (highlight: ReaderHighlightRecord) => void;
+		} = $props();
 
 	const isMobile = new IsMobile();
 
@@ -46,6 +52,39 @@
 	let passageError = $state('');
 	let removeError = $state('');
 	let removing = $state(false);
+	let previewTexts = $state<Record<string, string>>({});
+	let lastRemoved = $state<ReaderHighlightRecord | null>(null);
+	let undoBusy = $state(false);
+	let undoSeconds = $state(0);
+	let undoTimer: ReturnType<typeof setTimeout> | null = null;
+	let undoInterval: ReturnType<typeof setInterval> | null = null;
+
+	function clearUndoTimers() {
+		if (undoTimer) {
+			clearTimeout(undoTimer);
+			undoTimer = null;
+		}
+		if (undoInterval) {
+			clearInterval(undoInterval);
+			undoInterval = null;
+		}
+	}
+
+	function startUndoCountdown() {
+		clearUndoTimers();
+		undoSeconds = 8;
+		undoInterval = setInterval(() => {
+			undoSeconds -= 1;
+			if (undoSeconds <= 0) {
+				clearUndoTimers();
+				lastRemoved = null;
+			}
+		}, 1000);
+		undoTimer = setTimeout(() => {
+			clearUndoTimers();
+			lastRemoved = null;
+		}, 8000);
+	}
 
 	function bookName(versionId: string, bookId: number): string {
 		const version = catalog?.versions.find((item) => item.id === versionId);
@@ -78,6 +117,31 @@
 
 	function highlightKey(highlight: ReaderHighlightRecord): string {
 		return `${highlight.versionId}-${highlight.bookId}-${highlight.chapter}-${highlight.verseStart}-${highlight.verseEnd}`;
+	}
+
+	function previewFor(highlight: ReaderHighlightRecord): string {
+		return previewTexts[highlightKey(highlight)] ?? '';
+	}
+
+	async function loadPreviews(
+		targetCatalog: BibleCatalog | null | undefined,
+		items: ReaderHighlightRecord[]
+	) {
+		if (!targetCatalog || items.length === 0) return;
+		const missing = items
+			.filter((item) => !(highlightKey(item) in previewTexts))
+			.slice(0, 60);
+		for (const item of missing) {
+			try {
+				const result = await loadHighlightPassage(targetCatalog, item);
+				if ('text' in result && result.text) {
+					const snippet = result.text.length > 140 ? `${result.text.slice(0, 140)}…` : result.text;
+					previewTexts[highlightKey(item)] = snippet;
+				}
+			} catch {
+				// Prévia é progressiva: falha silenciosa mantém só a referência.
+			}
+		}
 	}
 
 	function openDetail(highlight: ReaderHighlightRecord) {
@@ -123,6 +187,8 @@
 		removeError = '';
 		try {
 			await removeHighlight(storage, highlight);
+			lastRemoved = { ...highlight };
+			startUndoCountdown();
 			onRemoved?.(highlight);
 			if (selectedHighlight && isSameReaderHighlight(selectedHighlight, highlight)) {
 				closeDetail();
@@ -134,6 +200,21 @@
 		}
 	}
 
+	async function handleUndo() {
+		if (!storage || !lastRemoved || undoBusy) return;
+		undoBusy = true;
+		try {
+			await persistHighlight(storage, lastRemoved);
+			onRestored?.(lastRemoved);
+			lastRemoved = null;
+			clearUndoTimers();
+		} catch {
+			removeError = 'Não foi possível desfazer a remoção.';
+		} finally {
+			undoBusy = false;
+		}
+	}
+
 	function handleNavigate(highlight: ReaderHighlightRecord) {
 		onNavigate?.(highlight);
 		closeDetail();
@@ -142,6 +223,13 @@
 	$effect(() => {
 		if (!detailOpen || !selectedHighlight) return;
 		void loadPassage(selectedHighlight);
+	});
+
+	$effect(() => {
+		void highlights;
+		void catalog;
+		if (!catalog || highlights.length === 0) return;
+		void loadPreviews(catalog, highlights);
 	});
 </script>
 
@@ -255,7 +343,10 @@
 					{@render styleIndicator(highlight.styleId)}
 					<span class="card-text">
 						<span class="card-reference">{rowReference(highlight)}</span>
-						<span class="card-meta">{versionAbbreviation(highlight.versionId)}</span>
+						<span class="card-meta">{versionAbbreviation(highlight.versionId)} · {rowStyleLabel(highlight.styleId)}</span>
+						{#if previewFor(highlight)}
+							<span class="card-preview">{previewFor(highlight)}</span>
+						{/if}
 					</span>
 				</button>
 				<Button
@@ -271,6 +362,14 @@
 			</article>
 		{/each}
 	</div>
+	{#if lastRemoved}
+		<div class="undo-banner" role="status">
+			<p>Destaque removido. Desfazer ({undoSeconds}s)</p>
+			<Button type="button" size="sm" variant="outline" disabled={undoBusy} onclick={() => void handleUndo()}>
+				Desfazer
+			</Button>
+		</div>
+	{/if}
 {/if}
 
 {#if isMobile.current}
@@ -379,7 +478,7 @@
 		display: flex;
 		min-width: 0;
 		flex: 1;
-		align-items: center;
+		align-items: flex-start;
 		gap: 8px;
 		border: 0;
 		padding: 4px 2px;
@@ -390,8 +489,8 @@
 	}
 
 	.card-main:focus-visible {
-		outline: 2px solid var(--ring);
-		outline-offset: 2px;
+		outline: 1.5px solid color-mix(in oklch, var(--ring) 72%, transparent);
+		outline-offset: 1px;
 		border-radius: 8px;
 	}
 
@@ -417,6 +516,34 @@
 		color: var(--muted-foreground);
 		font-size: 0.7rem;
 		line-height: 1.35;
+	}
+
+	.card-preview {
+		display: -webkit-box;
+		overflow: hidden;
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+		line-height: 1.45;
+		text-overflow: ellipsis;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+	}
+
+	.undo-banner {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-top: 12px;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		padding: 8px 8px 8px 14px;
+		background: var(--background);
+	}
+
+	.undo-banner p {
+		margin: 0;
+		font-size: 0.82rem;
 	}
 
 	.style-indicator {
@@ -487,6 +614,9 @@
 
 	:global(.highlight-detail-sheet) {
 		padding-bottom: calc(16px + env(safe-area-inset-bottom));
+		padding-top: 20px;
+		border-top-left-radius: 14px;
+		border-top-right-radius: 14px;
 	}
 
 	:global(.highlight-detail-sheet) .detail-meta,
@@ -531,8 +661,10 @@
 
 	.detail-passage {
 		margin: 16px 0 0;
-		border-left: 2px solid var(--border);
-		padding: 0 0 0 14px;
+		border-left: 2px solid color-mix(in oklch, var(--foreground) 22%, var(--border));
+		border-radius: 0 10px 10px 0;
+		background: color-mix(in oklch, var(--muted) 38%, transparent);
+		padding: 12px 16px;
 	}
 
 	.detail-passage p {
@@ -562,8 +694,8 @@
 	.detail-actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 10px;
-		margin-top: 18px;
+		gap: 8px;
+		margin-top: 20px;
 	}
 
 	.detail-actions :global(button) {
@@ -571,4 +703,18 @@
 		align-items: center;
 		gap: 8px;
 	}
+
+	@media (max-width: 767px) {
+		:global(.highlight-detail-sheet) .detail-actions {
+			align-items: stretch;
+			flex-direction: column;
+		}
+
+		:global(.highlight-detail-sheet) .detail-actions :global(button) {
+			width: 100%;
+			min-height: 44px;
+			justify-content: center;
+		}
+	}
+
 </style>
