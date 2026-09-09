@@ -16,7 +16,6 @@ export function videoAttrsToFence(videoId: string, url: string): string {
 	return renderVideoFence({ videoId, url });
 }
 
-/** Append a video block after the active block, keeping it intact. */
 export function buildVideoInsertTransaction(
 	state: EditorState,
 	attrs: { videoId: string; url: string }
@@ -24,7 +23,7 @@ export function buildVideoInsertTransaction(
 	const videoType = state.schema.nodes.video;
 	const paragraphType = state.schema.nodes.paragraph;
 	if (!videoType || !paragraphType) return null;
-	const videoNode = videoType.create({ ...attrs, loaded: false });
+	const videoNode = videoType.create({ ...attrs, loaded: true });
 	const paragraphNode = paragraphType.create();
 	const selection = state.selection;
 	const blockStart = 'node' in selection ? selection.from : selection.$from.before(1);
@@ -48,7 +47,7 @@ export const videoNodeSchema = $nodeSchema('video', () => ({
 	attrs: {
 		videoId: { default: '' },
 		url: { default: '' },
-		loaded: { default: false }
+		loaded: { default: true }
 	},
 	parseDOM: [
 		{
@@ -56,34 +55,74 @@ export const videoNodeSchema = $nodeSchema('video', () => ({
 			getAttrs: (dom: HTMLElement) => ({
 				videoId: dom.getAttribute('data-video-id') ?? '',
 				url: dom.getAttribute('data-url') ?? '',
-				loaded: dom.getAttribute('data-loaded') === 'true'
+				loaded: dom.getAttribute('data-loaded') !== 'false'
 			})
 		}
 	],
 	toDOM: (node) => {
 		const videoId = node.attrs.videoId as string;
-		const url = node.attrs.url as string;
-		const loaded = node.attrs.loaded === true;
+		const url =
+			(node.attrs.url as string) || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : '');
+		const loaded = node.attrs.loaded !== false;
 		if (loaded && videoId) {
 			return [
 				'figure',
-				{ 'data-type': 'video', 'data-video-id': videoId, 'data-url': url, class: 'video-embed' },
+				{
+					'data-type': 'video',
+					'data-video-id': videoId,
+					'data-url': url,
+					'data-loaded': 'true',
+					class: 'video-embed'
+				},
 				[
-					'iframe',
-					{
-						src: youtubeEmbedUrl(videoId),
-						title: 'Vídeo do YouTube',
-						allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
-						allowfullscreen: 'true',
-						frameborder: '0',
-						class: 'video-player'
-					}
+					'div',
+					{ class: 'video-header' },
+					[
+						'div',
+						{ class: 'video-header-left' },
+						['span', { class: 'video-provider' }, 'YouTube'],
+						['span', { class: 'video-title-placeholder' }, '']
+					],
+					[
+						'a',
+						{
+							href: url,
+							target: '_blank',
+							rel: 'noopener noreferrer',
+							class: 'video-external-link',
+							title: 'Assistir no YouTube'
+						},
+						'Assistir no YouTube ↗'
+					]
+				],
+				[
+					'div',
+					{ class: 'video-frame-wrap' },
+					[
+						'iframe',
+						{
+							src: youtubeEmbedUrl(videoId),
+							title: 'Vídeo do YouTube',
+							allow:
+								'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
+							allowfullscreen: 'true',
+							frameborder: '0',
+							class: 'video-player',
+							loading: 'lazy'
+						}
+					]
 				]
 			];
 		}
 		return [
 			'figure',
-			{ 'data-type': 'video', 'data-video-id': videoId, 'data-url': url, class: 'video-embed' },
+			{
+				'data-type': 'video',
+				'data-video-id': videoId,
+				'data-url': url,
+				'data-loaded': 'false',
+				class: 'video-embed'
+			},
 			[
 				'div',
 				{
@@ -93,8 +132,26 @@ export const videoNodeSchema = $nodeSchema('video', () => ({
 					'data-video-id': videoId,
 					'aria-label': 'Reproduzir vídeo do YouTube'
 				},
-				['span', { class: 'video-play', 'aria-hidden': 'true' }, '▶'],
-				['span', { class: 'video-domain' }, 'YouTube']
+				[
+					'div',
+					{ class: 'video-facade-thumb-wrap' },
+					[
+						'img',
+						{
+							src: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+							alt: 'Thumbnail do vídeo',
+							class: 'video-facade-thumb',
+							loading: 'lazy'
+						}
+					],
+					['span', { class: 'video-play-badge', 'aria-hidden': 'true' }, '▶']
+				],
+				[
+					'div',
+					{ class: 'video-facade-info' },
+					['span', { class: 'video-play' }, 'Reproduzir vídeo do YouTube'],
+					['span', { class: 'video-domain' }, 'YouTube']
+				]
 			]
 		];
 	},
@@ -105,7 +162,7 @@ export const videoNodeSchema = $nodeSchema('video', () => ({
 			state.addNode(type, {
 				videoId: directive.attributes?.videoId ?? '',
 				url: directive.attributes?.url ?? '',
-				loaded: false
+				loaded: true
 			});
 		}
 	},

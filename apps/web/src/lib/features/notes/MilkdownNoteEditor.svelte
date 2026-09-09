@@ -592,9 +592,44 @@ let toolbarResolved = $derived(
 		}
 	}
 
+	const videoTitleCache = new Map<string, string>();
+
+	function enrichVideoBlocks() {
+		if (!host) return;
+		const figures = host.querySelectorAll<HTMLElement>('figure[data-type="video"]');
+		for (const figure of figures) {
+			const videoId = figure.getAttribute('data-video-id');
+			if (!videoId) continue;
+			const titleEl = figure.querySelector<HTMLElement>('.video-title-placeholder');
+			if (!titleEl || titleEl.dataset.fetched === 'true') continue;
+
+			if (videoTitleCache.has(videoId)) {
+				const title = videoTitleCache.get(videoId)!;
+				titleEl.textContent = ` • ${title}`;
+				titleEl.title = title;
+				titleEl.dataset.fetched = 'true';
+			} else {
+				fetch(
+					`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+				)
+					.then((res) => (res.ok ? res.json() : null))
+					.then((data) => {
+						if (data?.title) {
+							videoTitleCache.set(videoId, data.title);
+							titleEl.textContent = ` • ${data.title}`;
+							titleEl.title = data.title;
+							titleEl.dataset.fetched = 'true';
+						}
+					})
+					.catch(() => {});
+			}
+		}
+	}
+
 	function refreshHeadings() {
-		if (!host || !onHeadings) return;
-		onHeadings(collectEditorHeadings(host));
+		if (!host) return;
+		if (onHeadings) onHeadings(collectEditorHeadings(host));
+		enrichVideoBlocks();
 	}
 
 	function runSlash(item: MilkdownSlashItem) {
@@ -1571,40 +1606,127 @@ let toolbarResolved = $derived(
 		text-underline-offset: 2px;
 	}
 	:global(.milkdown-host .ProseMirror figure.video-embed) {
-		margin: 16px 0;
-	}
-	:global(.milkdown-host .ProseMirror .video-facade) {
-		display: flex;
-		width: 100%;
-		box-sizing: border-box;
-		align-items: center;
-		justify-content: center;
-		gap: 10px;
-		padding: 28px 16px;
+		margin: 20px 0;
 		border: 1px solid var(--border);
-		border-radius: var(--radius-lg);
-		background-color: var(--background);
-		cursor: pointer;
-		font-size: 0.875rem;
+		border-radius: 12px;
+		overflow: hidden;
+		background-color: var(--card, var(--background));
 	}
-	:global(.milkdown-host .ProseMirror .video-facade:focus-visible) {
-		outline: 2px solid var(--ring);
-		outline-offset: 2px;
-	}
-	:global(.milkdown-host .ProseMirror .video-facade .video-play) {
-		font-size: 1.25rem;
-		line-height: 1;
-	}
-	:global(.milkdown-host .ProseMirror .video-facade .video-domain) {
-		font-family: var(--font-mono);
+	:global(.milkdown-host .ProseMirror .video-header) {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 8px 14px;
+		background: color-mix(in oklch, var(--foreground) 3%, transparent);
+		border-bottom: 1px solid var(--border);
+		gap: 12px;
 		font-size: 0.75rem;
+	}
+	:global(.milkdown-host .ProseMirror .video-header-left) {
+		display: flex;
+		align-items: center;
+		min-width: 0;
+		flex: 1;
+		gap: 6px;
+		overflow: hidden;
+	}
+	:global(.milkdown-host .ProseMirror .video-provider) {
+		font-family: var(--font-mono);
+		font-size: 0.7rem;
+		font-weight: 600;
+		color: var(--foreground);
+		padding: 2px 6px;
+		border-radius: 4px;
+		background: color-mix(in oklch, var(--foreground) 6%, transparent);
+		flex-shrink: 0;
+	}
+	:global(.milkdown-host .ProseMirror .video-title-placeholder) {
+		font-size: 0.75rem;
+		color: var(--foreground);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		min-width: 0;
+	}
+	:global(.milkdown-host .ProseMirror .video-external-link) {
+		font-family: var(--font-mono);
+		font-size: 0.7rem;
 		color: var(--muted-foreground);
+		text-decoration: none;
+		flex-shrink: 0;
+		transition: color 0.15s;
+	}
+	:global(.milkdown-host .ProseMirror .video-external-link:hover) {
+		color: var(--foreground);
+		text-decoration: underline;
+	}
+	:global(.milkdown-host .ProseMirror .video-frame-wrap) {
+		position: relative;
+		width: 100%;
+		aspect-ratio: 16 / 9;
+		background: #000;
 	}
 	:global(.milkdown-host .ProseMirror iframe.video-player) {
 		width: 100%;
+		height: 100%;
+		border: none;
+		display: block;
+	}
+	:global(.milkdown-host .ProseMirror .video-facade) {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		box-sizing: border-box;
+		border: none;
+		background-color: #000;
+		cursor: pointer;
+	}
+	:global(.milkdown-host .ProseMirror .video-facade-thumb-wrap) {
+		position: relative;
+		width: 100%;
 		aspect-ratio: 16 / 9;
-		border: 1px solid var(--border);
-		border-radius: var(--radius-lg);
+		overflow: hidden;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	:global(.milkdown-host .ProseMirror .video-facade-thumb) {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		opacity: 0.85;
+		transition: transform 0.25s ease, opacity 0.25s ease;
+	}
+	:global(.milkdown-host .ProseMirror .video-facade:hover .video-facade-thumb) {
+		opacity: 1;
+		transform: scale(1.02);
+	}
+	:global(.milkdown-host .ProseMirror .video-play-badge) {
+		position: absolute;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 56px;
+		height: 40px;
+		background: #ff0000;
+		color: #ffffff;
+		border-radius: 10px;
+		font-size: 1.25rem;
+		box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+		transition: transform 0.2s ease;
+	}
+	:global(.milkdown-host .ProseMirror .video-facade:hover .video-play-badge) {
+		transform: scale(1.1);
+	}
+	:global(.milkdown-host .ProseMirror .video-facade-info) {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 10px 14px;
+		background: var(--background);
+		color: var(--foreground);
+		font-size: 0.8125rem;
 	}
 	:global(.video-url-dialog) {
 		display: flex;
