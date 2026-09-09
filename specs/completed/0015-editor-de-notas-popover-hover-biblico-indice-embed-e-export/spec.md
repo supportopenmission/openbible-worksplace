@@ -1,22 +1,22 @@
 # Especificação integrada: Editor de Notas - popover, hover biblico, indice, embed e export
 
-| Campo | Valor |
-| --- | --- |
-| Formato | Specsfy/2.0 |
-| ID | SPEC-0015 |
-| Slug | 0015-editor-de-notas-popover-hover-biblico-indice-embed-e-export |
-| Status | Complete |
-| Effort | 9 |
-| Effort updated at | 2026-09-05T17:50:54.272Z |
-| Effort rationale | Três ajustes pós-entrega: marks nativas com remark próprio, iframe no export e folha de impressão |
-| ClickUp Task |  |
-| Milestones |  |
-| Definition Gate | Passed |
-| Plan Gate | Passed |
-| Delivery Gate | Passed |
-| Evidence Contract | 1 |
-| Interface para pessoas | Sim |
-| Atualizada em | 2026-09-05 |
+| Campo                  | Valor                                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------------------- |
+| Formato                | Specsfy/2.0                                                                                       |
+| ID                     | SPEC-0015                                                                                         |
+| Slug                   | 0015-editor-de-notas-popover-hover-biblico-indice-embed-e-export                                  |
+| Status                 | Reviewing                                                                                         |
+| Effort                 | 9                                                                                                 |
+| Effort updated at      | 2026-09-05T17:50:54.272Z                                                                          |
+| Effort rationale       | Três ajustes pós-entrega: marks nativas com remark próprio, iframe no export e folha de impressão |
+| ClickUp Task           |                                                                                                   |
+| Milestones             |                                                                                                   |
+| Definition Gate        | Passed                                                                                            |
+| Plan Gate              | Passed                                                                                            |
+| Delivery Gate          | Pending                                                                                           |
+| Evidence Contract      | 1                                                                                                 |
+| Interface para pessoas | Sim                                                                                               |
+| Atualizada em          | 2026-09-09                                                                                        |
 
 ## Ato I — Definir
 
@@ -28,7 +28,7 @@ No editor de notas `/notes/[id]` a formatação exige toolbar fixa, referências
 
 #### Resultado desejado
 
-Editar mais rápido no canvas com formatação por popover, prévia bíblica em hover, navegação por títulos com drawer no mobile, vídeo do YouTube embutido e exportação PDF/Markdown com versos expandidos, mantendo o arquivo original intacto e a toolbar visível na edição e oculta na visualização por padrão configurável. Destaque e sublinhado renderizam estilizados no editor com roundtrip das convenções, o Markdown exportado traz o vídeo como iframe e o PDF sai com apresentação editorial sem tags literais.
+Editar mais rápido no canvas com formatação por popover, prévia bíblica em hover, navegação por títulos com drawer no mobile, vídeo do YouTube embutido e exportação PDF/Markdown com versos expandidos, mantendo o arquivo original intacto e a toolbar visível na edição e oculta na visualização por padrão configurável. Destaque e sublinhado renderizam estilizados no editor com roundtrip das convenções, o Markdown exportado traz o vídeo como iframe e o PDF sai com apresentação editorial sem tags literais. A rota também diferencia nota inexistente com uma página 404, comunica o carregamento com estados estruturais e mantém os comandos consistentes entre desktop e mobile.
 
 #### Métricas de sucesso
 
@@ -40,6 +40,10 @@ Editar mais rápido no canvas com formatação por popover, prévia bíblica em 
 - `==destaque==` e `++sublinhado++` renderizam estilizados no editor e persistem nas convenções.
 - Markdown exportado traz cada vídeo como iframe aproveitável fora do app.
 - PDF não exibe tags literais e apresenta título, versos e margens editoriais.
+- Nota inexistente exibe 404 contextual com retorno para a lista; a rota não cria nota silenciosamente.
+- Prévia bíblica só abre com Ctrl/Cmd + hover ou foco de teclado, resolvendo aliases entre a referência e o catálogo instalado.
+- Escape no slash command fecha a superfície e remove o `/` e o termo digitado; o drawer mobile repete rótulo e descrição do menu desktop.
+- A exportação PDF usa tipografia Geist/Geist Mono, escala editorial e regras de impressão adequadas à aplicação.
 
 ### 2. Research e esclarecimentos
 
@@ -89,6 +93,19 @@ Editar mais rápido no canvas com formatação por popover, prévia bíblica em 
 #### Dúvidas abertas
 
 - Nenhuma.
+
+#### Atualização tardia — pedido preservado (2026-09-09)
+
+> Coisas a ser implementado no /notas:
+>
+> - Pagina 404 quando a nota nao existir: se eu acessar um anota inexisitente mostrar 404.
+> - Quando digitamos o versiculo e passams o mouse em cima ele mostra o popover, hoje ele nao nem sempre aparece o versiculo pois nao consegueu encontrar a biblia disponivel. Melhorar isso e ajustar para o preview do versiculo somente quando o ctrl ou estiver precicionado em cima.
+> - Quando abrimos o slash commando e apertams esc ele mantem o / no editor
+> - User p typeset do shadnui ao exportar o pdf para ter a formatacao mais bonita
+> - Melhorar os loadings das paginas e components com polish e animate.
+> - Add Highlight feature no editor das notas
+
+Os comentários visuais do navegador sobre o `/bible` (coachmark, busca e popover de leitura) permanecem como escopo separado; os comentários sobre o drawer mobile e o menu de notas foram incorporados nesta atualização.
 
 ### 3. Escopo e atores
 
@@ -183,6 +200,46 @@ Como pessoa usuária individual, quero configurar a toolbar sempre visível na e
 **Por que P1**: Regra explícita de foco sem perder acesso à formatação.
 **Teste independente**: Opção nas configurações alterna o comportamento; padrão segue visível editando e oculta visualizando.
 **Requisitos**: FR-006
+
+#### US-008 — Encontrar uma nota inexistente (P1)
+
+Como pessoa usuária individual, quero receber uma página 404 quando o identificador da nota não existir, para entender o problema e voltar à lista sem criar conteúdo por acidente.
+
+**Por que P1**: evita perda de contexto e criação silenciosa de notas.
+**Teste independente**: abrir um ID ausente com storage real exibe 404 e ação de retorno, sem montar o editor.
+**Requisitos**: FR-010, NFR-001
+
+#### US-009 — Pré-visualizar referências com intenção (P1)
+
+Como pessoa usuária individual, quero pré-visualizar uma referência bíblica somente quando pressiono Ctrl/Cmd ao passar o mouse ou quando foco a referência pelo teclado, para não abrir popovers acidentalmente e ainda ter acesso previsível ao texto.
+
+**Por que P1**: torna o hover útil sem competir com a edição.
+**Teste independente**: aliases como `ARA`, `ara.sqlite` e o nome exibido resolvem para a versão instalada; hover comum não abre card e Ctrl/Cmd + hover abre o card ou seu estado de ausência.
+**Requisitos**: FR-011, NFR-002
+
+#### US-010 — Sair do slash command sem deixar resíduos (P1)
+
+Como pessoa usuária individual, quero que Escape feche o slash command e remova o gatilho digitado, para não deixar `/` perdido no corpo da nota.
+
+**Por que P1**: corrige um resíduo visível e recorrente da edição.
+**Teste independente**: abrir `/`, pressionar Escape no desktop ou drawer mobile e confirmar menu fechado e texto limpo.
+**Requisitos**: FR-012, NFR-001
+
+#### US-011 — Usar comandos e exportação com acabamento editorial (P2)
+
+Como pessoa usuária individual, quero o drawer mobile com a mesma hierarquia dos comandos desktop, o menu de opções mais direto e o PDF com tipografia editorial consistente, para entender rapidamente cada ação e obter uma saída mais bonita.
+
+**Por que P2**: reduz ruído cognitivo e melhora a saída compartilhável.
+**Teste independente**: cada comando mobile expõe rótulo e descrição; o menu usa cópia curta; o impresso usa Geist, Geist Mono, escala, margens e quebras de impressão.
+**Requisitos**: FR-013, FR-014, NFR-001
+
+#### US-012 — Perceber carregamento e destaque no editor (P1)
+
+Como pessoa usuária individual, quero perceber o carregamento da nota e aplicar Destaque no editor com uma marca visual clara, para não confundir espera com falha nem perder a intenção de leitura.
+
+**Por que P1**: estados de interface e destaque são parte do ciclo central de anotação.
+**Teste independente**: a rota e a lista exibem skeletons acessíveis durante carga; o popover oferece Destaque e `==texto==` renderiza com estado visual e roundtrip.
+**Requisitos**: FR-015, FR-016, NFR-001
 
 ### 6. Cenários BDD de aceite
 
@@ -564,6 +621,224 @@ Feature: Apresentação da exportação
     Then o arquivo traz quebras reais no lugar das tags e o original permanece intacto
 ```
 
+#### AC-028 — Nota ausente vira 404
+
+**Cobre**: US-008, FR-010, NFR-001
+
+```gherkin
+@US-008 @FR-010 @NFR-001 @AC-028
+Feature: Rota de nota
+
+  Scenario: Identificador sem arquivo correspondente
+    Given um identificador que não existe no workspace
+    When a pessoa abre `/notes/<id>`
+    Then a página exibe 404, explica que a nota não foi encontrada e oferece retorno para todas as notas sem montar o editor
+
+  Scenario: Arquivo removido durante a navegação
+    Given a nota foi removida antes da leitura terminar
+    When a rota conclui a consulta
+    Then o mesmo estado 404 é exibido sem substituir o ID por uma nota nova
+```
+
+#### AC-029 — Carregamento comunica estrutura
+
+**Cobre**: US-008, US-012, FR-010, FR-015, NFR-001
+
+```gherkin
+@US-008 @US-012 @FR-010 @FR-015 @NFR-001 @AC-029
+Feature: Estados de carregamento
+
+  Scenario: Nota e lista em carregamento
+    Given a leitura do workspace ainda não terminou
+    When a rota ou a lista de notas aguarda os arquivos
+    Then a interface exibe skeletons com status acessível e respeita `prefers-reduced-motion`
+
+  Scenario: Skeleton da rota preserva a hierarquia
+    Given a nota ainda está sendo lida
+    When a pessoa observa o canvas
+    Then título, descrição e corpo têm placeholders proporcionais antes do conteúdo chegar
+
+  Scenario: Skeleton da lista preserva a navegação
+    Given a lista de notas ainda está sendo lida
+    When a pessoa observa a barra lateral
+    Then linhas de título e resumo ocupam o espaço da lista sem anunciar erro
+```
+
+#### AC-030 — Alias de versão resolve o catálogo local
+
+**Cobre**: US-009, FR-011, NFR-002
+
+```gherkin
+@US-009 @FR-011 @NFR-002 @AC-030
+Feature: Prévia bíblica em nota
+
+  Scenario: Referência usa alias de versão instalado
+    Given a referência traz `ARA` e o catálogo possui `ara.sqlite`
+    When a pessoa solicita a prévia
+    Then o resolver usa a versão instalada correspondente e carrega o texto sem rede
+```
+
+#### AC-031 — Prévia exige intenção
+
+**Cobre**: US-009, FR-011, NFR-001
+
+```gherkin
+@US-009 @FR-011 @NFR-001 @AC-031
+Feature: Prévia bíblica em nota
+
+  Scenario: Hover incidental não abre card
+    Given uma referência bíblica focável no editor
+    When a pessoa passa o mouse sem Ctrl/Cmd
+    Then nenhum card é aberto
+
+  Scenario: Hover modificado ou foco abre card
+    Given a mesma referência
+    When a pessoa usa Ctrl/Cmd + hover ou navega até ela pelo teclado
+    Then o card abre com texto, carregamento ou aviso de ausência
+```
+
+#### AC-032 — Escape limpa o gatilho do comando
+
+**Cobre**: US-010, FR-012, NFR-001
+
+```gherkin
+@US-010 @FR-012 @NFR-001 @AC-032
+Feature: Slash command
+
+  Scenario: Cancelar comando no desktop ou mobile
+    Given a pessoa digitou `/` e o menu de comandos está aberto
+    When pressiona Escape
+    Then a superfície fecha, o gatilho e o termo são removidos e o cursor continua disponível para edição
+
+  Scenario: Cancelar busca filtrada
+    Given a pessoa digitou `/task` no editor
+    When pressiona Escape antes de escolher o comando
+    Then nenhum caractere de `/task` permanece no parágrafo
+```
+
+#### AC-033 — Drawer mobile mantém a hierarquia dos comandos
+
+**Cobre**: US-010, US-011, FR-012, FR-013, NFR-001
+
+```gherkin
+@US-010 @US-011 @FR-012 @FR-013 @NFR-001 @AC-033
+Feature: Slash command mobile
+
+  Scenario: Comando no drawer
+    Given o drawer mobile de comandos está aberto
+    When a pessoa percorre as opções
+    Then cada item mostra o mesmo rótulo e descrição do menu desktop, com alvo de toque e foco visível
+```
+
+#### AC-034 — Menu de opções é direto
+
+**Cobre**: US-011, FR-013, NFR-001
+
+```gherkin
+@US-011 @FR-013 @NFR-001 @AC-034
+Feature: Menu de opções da nota
+
+  Scenario: Ações de exportação e configuração
+    Given o menu de opções da nota está aberto
+    When a pessoa lê as ações
+    Then os rótulos e descrições são curtos, agrupados por finalidade e continuam acessíveis por teclado
+
+  Scenario: Menu sem ação duplicada
+    Given a exportação está disponível
+    When a pessoa percorre o menu de opções
+    Then cada finalidade aparece uma vez e os detalhes complementares não repetem o rótulo
+```
+
+#### AC-035 — PDF usa tipografia editorial da aplicação
+
+**Cobre**: US-011, FR-014, NFR-001
+
+```gherkin
+@US-011 @FR-014 @NFR-001 @AC-035
+Feature: Tipografia de impressão
+
+  Scenario: Documento derivado para PDF
+    Given uma nota com título, headings, versos e destaque
+    When a pessoa abre a impressão para salvar em PDF
+    Then o documento usa Geist e Geist Mono, escala legível, medida limitada, margens, cores de impressão e não depende de fonte serifada externa
+
+  Scenario: Fonte monoespaçada para metadados
+    Given o documento contém código ou referências técnicas
+    When a folha de impressão é construída
+    Then identificadores usam Geist Mono sem alterar o texto da nota
+
+  Scenario: Impressão em várias páginas
+    Given a nota excede uma página
+    When a pessoa imprime o documento
+    Then blocos e headings evitam quebras ruins e as regras `@page` mantêm margens previsíveis
+```
+
+#### AC-036 — Destaque continua disponível no editor
+
+**Cobre**: US-012, FR-016, NFR-001
+
+```gherkin
+@US-012 @FR-016 @NFR-001 @AC-036
+Feature: Destaque no editor
+
+  Scenario: Aplicar destaque pelo popover
+    Given uma seleção não colapsada no editor
+    When a pessoa aciona Destaque
+    Then a marca é aplicada com contraste semântico, aparece no canvas e persiste como `==trecho==`
+
+  Scenario: Destaque acompanha o tema
+    Given o editor está em tema claro ou escuro
+    When a pessoa visualiza uma marca de destaque
+    Then o contraste permanece legível sem depender apenas da cor
+
+  Scenario: Destaque não vira texto literal
+    Given o popover aplicou Destaque
+    When a nota é salva e reaberta
+    Then o canvas mostra a marca renderizada e o Markdown conserva somente a convenção `==texto==`
+```
+
+#### AC-037 — Superfícies novas mantêm acessibilidade
+
+**Cobre**: US-008, US-009, US-010, US-011, US-012, FR-010, FR-011, FR-012, FR-013, FR-014, FR-015, FR-016, NFR-001
+
+```gherkin
+@US-008 @US-009 @US-010 @US-011 @US-012 @FR-010 @FR-011 @FR-012 @FR-013 @FR-014 @FR-015 @FR-016 @NFR-001 @AC-037
+Feature: Acessibilidade das notas
+
+  Scenario: Estados e ações têm nomes acessíveis
+    Given a pessoa navega pelas superfícies novas apenas com teclado
+    When alterna entre carregamento, 404, slash command, hover e exportação
+    Then cada estado tem nome, foco visível, Escape previsível e anúncio semântico
+```
+
+#### AC-038 — Tema e movimento respeitam o sistema
+
+**Cobre**: US-008, US-009, US-010, US-011, US-012, FR-010, FR-011, FR-012, FR-013, FR-014, FR-015, FR-016, NFR-002
+
+```gherkin
+@US-008 @US-009 @US-010 @US-011 @US-012 @FR-010 @FR-011 @FR-012 @FR-013 @FR-014 @FR-015 @FR-016 @NFR-002 @AC-038
+Feature: Polimento adaptativo das notas
+
+  Scenario: Interface se adapta a tema e movimento reduzido
+    Given o sistema alterna entre tema claro, escuro e `prefers-reduced-motion`
+    When a pessoa abre nota, menu, drawer, card ou estado de carga
+    Then contraste, bordas, tipografia e transições permanecem coerentes sem movimento obrigatório
+```
+
+#### AC-039 — Regressão do fluxo central de notas
+
+**Cobre**: US-008, US-009, US-010, US-011, US-012, FR-010, FR-011, FR-012, FR-013, FR-014, FR-015, FR-016, NFR-003
+
+```gherkin
+@US-008 @US-009 @US-010 @US-011 @US-012 @FR-010 @FR-011 @FR-012 @FR-013 @FR-014 @FR-015 @FR-016 @NFR-003 @AC-039
+Feature: Regressão da edição de notas
+
+  Scenario: Correções novas não alteram a fonte
+    Given uma nota com referência, destaque, slash command e exportação
+    When a pessoa carrega, edita, cancela um comando e exporta um derivado
+    Then o arquivo fonte permanece íntegro e somente o estado solicitado é alterado
+```
+
 ### 7. Requisitos
 
 #### Funcionais
@@ -577,6 +852,13 @@ Feature: Apresentação da exportação
 - **FR-007**: O sistema deve renderizar `==destaque==` (com cor `=={cor}…==`) e `++sublinhado++` como marcas nativas no editor, com roundtrip das convenções e guarda para não converter `C++`.
 - **FR-008**: O sistema deve converter cada bloco `:::video` válido em iframe do YouTube no Markdown exportado, omitindo com aviso o bloco sem `videoId`, sem alterar o original.
 - **FR-009**: O sistema deve sanear tags `<br />` literais para quebras reais nas saídas e aplicar folha de estilo editorial (título, versos, tipografia, margens) na impressão/PDF.
+- **FR-010**: A rota `/notes/[id]` deve exibir estado 404 contextual para nota ausente, sem criar uma nota ou montar o editor, e deve comunicar carregamento com skeleton acessível.
+- **FR-011**: O resolver de referências deve casar aliases de versão com o catálogo instalado; a prévia deve abrir somente com Ctrl/Cmd + hover ou foco de teclado, mantendo estados de carregamento e ausência.
+- **FR-012**: Escape no slash command deve fechar o menu/drawer e remover o gatilho e o termo do documento sem apagar conteúdo anterior.
+- **FR-013**: O drawer mobile de slash commands deve preservar rótulo, descrição, estado selecionado e foco visível do menu desktop; o menu de opções da nota deve usar cópia curta e agrupamento claro.
+- **FR-014**: A folha de impressão/PDF deve usar Geist e Geist Mono locais, escala tipográfica editorial, medida limitada, margens, `@page` e `print-color-adjust`, sem depender de fonte serifada externa.
+- **FR-015**: Rotas e componentes de notas devem exibir skeletons estruturais durante carregamento, com animação sutil desativada em `prefers-reduced-motion`.
+- **FR-016**: O editor deve manter a ação Destaque disponível no popover e renderizar `==texto==` com contraste e estado visual coerentes com o tema, preservando o roundtrip.
 
 #### Não funcionais
 
@@ -593,6 +875,11 @@ Feature: Apresentação da exportação
 - Falha de export → erro explícito sem alterar o original.
 - Bloco `:::video` sem `videoId` → omitido do Markdown exportado com aviso, sem falhar o restante.
 - Workspace não pronto → mantém onboarding e permissão vigentes.
+- ID ausente ou arquivo removido durante a carga → 404 determinístico, sem fallback para nota nova.
+- Alias de versão sem correspondência → tenta a preferência instalada e depois a primeira versão disponível; se não houver catálogo, mostra aviso.
+- Mouse sem modificador sobre referência → não faz leitura nem abre popover; foco de teclado continua acessível.
+- Escape no drawer após desfoque do editor → remove o token pelo estado do editor antes de liberar o foco.
+- Animação desativada por `prefers-reduced-motion` → skeleton preserva forma e status, sem shimmer ou movimento.
 
 ## Ato II — Projetar e provar
 
@@ -626,6 +913,11 @@ Feature: Apresentação da exportação
 
 - Popover, hover card, dropdown e drawer Índices, bloco de vídeo e botões de export no header de `/notes/[id]`; estados vazio, aviso e erro conforme AC; manter canvas full-bleed.
 - Destaque e sublinhado renderizam como marcas nativas no canvas; impressão/PDF aplica folha editorial com título, versos, tipografia e margens, sem tags literais.
+- Estado ausente da rota usa contrato 404 com CTA de retorno e não chama `createNote`; os testes de harness podem continuar usando storage fallback explicitamente injetado.
+- Loading de rota e lista usa skeletons estruturais, `role=status` e animação de baixa intensidade com `prefers-reduced-motion`.
+- Hover é uma prévia intencional: Ctrl/Cmd + mouse ou foco de teclado; aliases são casados contra `id`, nome e arquivo do catálogo antes do fallback de preferência.
+- Slash drawer mobile reutiliza o item semântico do desktop, com label, description, estado ativo e alvo de toque consistente; Escape apaga o intervalo do trigger antes de fechar.
+- Menu de opções reduz descrições a uma linha de apoio; folha de impressão usa `@font-face` local para Geist/Geist Mono, `@page`, `break-inside` e `print-color-adjust`.
 
 #### Queries e repositórios
 
@@ -649,21 +941,21 @@ tests/
 
 #### Entidades
 
-| Entidade | Identidade | Atributos e regras | Relações |
-| --- | --- | --- | --- |
-| Nota | `notes/<noteId>.md` | YAML com `title`, `createdAt`, `updatedAt`, `type`; corpo com H1–H3, `:::verse` e bloco de vídeo YouTube | Contém N fences e N vídeos |
-| Preferência de toolbar | Escopo da nota | Booleano com default visível em edição e oculta em visualização | 1 por nota |
-| Versão bíblica efetiva | `versionId` | Versão do parser quando houver, senão `defaultBibleVersionId` ou `readerSelection.versionId` | Resolve texto em `bibles/*.sqlite` |
+| Entidade               | Identidade          | Atributos e regras                                                                                       | Relações                           |
+| ---------------------- | ------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| Nota                   | `notes/<noteId>.md` | YAML com `title`, `createdAt`, `updatedAt`, `type`; corpo com H1–H3, `:::verse` e bloco de vídeo YouTube | Contém N fences e N vídeos         |
+| Preferência de toolbar | Escopo da nota      | Booleano com default visível em edição e oculta em visualização                                          | 1 por nota                         |
+| Versão bíblica efetiva | `versionId`         | Versão do parser quando houver, senão `defaultBibleVersionId` ou `readerSelection.versionId`             | Resolve texto em `bibles/*.sqlite` |
 
 #### Estados e transições
 
-| Entidade | Estado atual | Evento | Próximo estado | Invariantes |
-| --- | --- | --- | --- | --- |
-| Popover | Oculto | Seleção não colapsada em edição | Visível | Só em edição; Escape oculta |
-| Hover card | Oculto | Pairar ou focar referência válida | Visível | Sem Bíblia mostra aviso |
-| Índice | Fechado | Abrir dropdown ou drawer | Aberto com H1–H3 ou vazio | Clique rola até a seção |
-| Vídeo | Ausente | URL válida confirmada | Bloco inserido sem autoplay | Só YouTube validado |
-| Export | Não iniciado | Exportar PDF ou Markdown | Arquivo gerado ou erro explícito | Original intacto |
+| Entidade   | Estado atual | Evento                            | Próximo estado                   | Invariantes                 |
+| ---------- | ------------ | --------------------------------- | -------------------------------- | --------------------------- |
+| Popover    | Oculto       | Seleção não colapsada em edição   | Visível                          | Só em edição; Escape oculta |
+| Hover card | Oculto       | Pairar ou focar referência válida | Visível                          | Sem Bíblia mostra aviso     |
+| Índice     | Fechado      | Abrir dropdown ou drawer          | Aberto com H1–H3 ou vazio        | Clique rola até a seção     |
+| Vídeo      | Ausente      | URL válida confirmada             | Bloco inserido sem autoplay      | Só YouTube validado         |
+| Export     | Não iniciado | Exportar PDF ou Markdown          | Arquivo gerado ou erro explícito | Original intacto            |
 
 #### Migração e retenção
 
@@ -701,9 +993,9 @@ tests/
 
 #### Blocos React e componentes selecionados
 
-| Tela | Bloco React | Responsabilidade | Arquivo previsto | Componente ou composição | Origem | Reuso ou extensão |
-| --- | --- | --- | --- | --- | --- | --- |
-| — | — | Projeto Svelte sem React nesta entrega | — | — | — | — |
+| Tela | Bloco React | Responsabilidade                       | Arquivo previsto | Componente ou composição | Origem | Reuso ou extensão |
+| ---- | ----------- | -------------------------------------- | ---------------- | ------------------------ | ------ | ----------------- |
+| —    | —           | Projeto Svelte sem React nesta entrega | —                | —                        | —      | —                 |
 
 - Componentes Svelte: estender `MilkdownNoteEditor`, `MilkdownMobileToolbar`, `VerseSelector`, `VerseBlockView`, `BibleReferenceViewer` com novos `SelectionFormatPopover`, `ReferenceHoverCard`, `NoteIndexMenu`, `YouTubeBlockView` e `NoteExportActions` sobre primitives shadcn-svelte locais; registrar uso em `INTERFACE.md`.
 
@@ -737,100 +1029,113 @@ tests/
 
 ### 11. Estratégia TDD
 
-- **Unidade**: parser de referências, validação YouTube, derivação de H1–H3 e expansão de `:::verse` para Markdown.
+- **Unidade**: parser/resolver de referências e aliases, validação YouTube, derivação de H1–H3, expansão de `:::verse` para Markdown, estado de 404/loading e folha de impressão.
 - **Integração/contrato**: hover e export contra Bíblia OpenLP local com versão do parser e padrão; índice contra documento Milkdown.
 - **BDD/aceite**: Gherkin da seção 6 como referência para desenhar os testes TDD.
 - **Runner TDD**: Vitest com decisão confirmada em `.specsfy/USER-PROFILE.md`; materializar em `test:tdd` quando aplicável à fatia.
-- **E2E**: Playwright nas jornadas popover, hover, índice, vídeo e export em desktop e mobile, ou justificativa quando cobertas por integração.
-- **Verificação manual**: Somente o inevitável em posicionamento de popover, rolagem do índice e paginação do PDF, com motivo registrado.
+- **E2E**: Playwright nas jornadas popover, hover intencional, slash desktop/mobile, 404, índice, vídeo e export em desktop e mobile, ou justificativa quando cobertas por integração.
+- **Verificação manual**: Somente o inevitável em posicionamento de popover, rolagem do índice, reduced-motion e paginação do PDF, com motivo registrado.
 
 #### Evidência RED-GREEN-REFACTOR
 
-| IDs | BDD de referência | Teste TDD informado pelo BDD | RED observado | GREEN observado | Refactor/regressão |
-| --- | --- | --- | --- | --- | --- |
-| US-001, FR-001, NFR-001, AC-001 | AC-001 na seção 6 | Caso Vitest do popover com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `selection-popover` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 selection-popover + preview `++` (25 passed com regressão) | Pending |
-| US-001, FR-001, NFR-002, AC-002 | AC-002 na seção 6 | Caso Vitest de aplicação de marca com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `selection-popover` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 selection-popover + preview `++` (25 passed com regressão) | Pending |
-| US-001, FR-001, NFR-003, AC-003 | AC-003 na seção 6 | Caso Vitest de seleção colapsada com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `selection-popover` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 selection-popover + preview `++` (25 passed com regressão) | Pending |
-| US-002, FR-002, NFR-001, AC-004 | AC-004 na seção 6 | Caso Vitest de hover com versão do parser com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `reference-hover` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 reference-hover + regressão parser/decorações (17 passed) | Pending |
-| US-002, FR-002, NFR-002, AC-005 | AC-005 na seção 6 | Caso Vitest de versão padrão com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `reference-hover` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 reference-hover + regressão parser/decorações (17 passed) | Pending |
-| US-002, FR-002, NFR-003, AC-006 | AC-006 na seção 6 | Caso Vitest sem Bíblia com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `reference-hover` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 reference-hover + regressão parser/decorações (17 passed) | Pending |
-| US-003, FR-003, NFR-001, AC-007 | AC-007 na seção 6 | Caso Vitest de índice desktop com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `note-index` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 note-index + regressão editor (5 passed) + tipos limpos | Pending |
-| US-003, FR-003, NFR-002, AC-008 | AC-008 na seção 6 | Caso Vitest de drawer mobile com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `note-index` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 note-index + regressão editor (5 passed) + tipos limpos | Pending |
-| US-003, FR-003, NFR-003, AC-009 | AC-009 na seção 6 | Caso Vitest de índice vazio com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `note-index` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 note-index + regressão editor (5 passed) + tipos limpos | Pending |
-| US-004, FR-004, NFR-001, AC-010 | AC-010 na seção 6 | Caso Vitest de URL válida com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `youtube-embed` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 youtube-embed + regressão slash/editor (12 passed) + tipos limpos | Pending |
-| US-004, FR-004, NFR-002, AC-011 | AC-011 na seção 6 | Caso Vitest de carga sob demanda com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `youtube-embed` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 youtube-embed + regressão slash/editor (12 passed) + tipos limpos | Pending |
-| US-004, FR-004, NFR-003, AC-012 | AC-012 na seção 6 | Caso Vitest de URL inválida com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `youtube-embed` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 youtube-embed + regressão slash/editor (12 passed) + tipos limpos | Pending |
-| US-005, FR-005, NFR-001, AC-013 | AC-013 na seção 6 | Caso Vitest de Markdown expandido com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `note-export` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 note-export + inspeção do documento derivado (3 passed) + tipos limpos | Pending |
-| US-005, FR-005, NFR-002, AC-014 | AC-014 na seção 6 | Caso Vitest de PDF equivalente com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `note-export` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 note-export + inspeção do documento derivado (3 passed) + tipos limpos | Pending |
-| US-005, FR-005, NFR-003, AC-015 | AC-015 na seção 6 | Caso Vitest de original intacto com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `note-export` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 note-export + inspeção do documento derivado (3 passed) + tipos limpos | Pending |
-| US-006, FR-006, NFR-001, AC-016 | AC-016 na seção 6 | Caso Vitest de padrão de toolbar com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `note-toolbar` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 note-toolbar + regressão toolbar/editor (17 passed) + tipos limpos | Pending |
-| US-006, FR-006, NFR-002, AC-017 | AC-017 na seção 6 | Caso Vitest de preferência persistida com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `note-toolbar` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 note-toolbar + regressão toolbar/editor (17 passed) + tipos limpos | Pending |
-| US-006, FR-006, NFR-003, AC-018 | AC-018 na seção 6 | Caso Vitest de consistência mobile com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `note-toolbar` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 note-toolbar + regressão toolbar/editor (17 passed) + tipos limpos | Pending |
-| US-007, FR-007, NFR-001, AC-019 | AC-019 na seção 6 | Caso Vitest de mark `==` com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `milkdown-mark-node` ausente | GREEN 2026-09-05: 3/3 mark-node + regressão das notas (110 passed; só REDs T034/T038) + tipos limpos | Pending |
-| US-007, FR-007, NFR-002, AC-020 | AC-020 na seção 6 | Caso Vitest de mark `++` com guarda com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `milkdown-mark-node` ausente | GREEN 2026-09-05: 3/3 mark-node + regressão das notas (110 passed; só REDs T034/T038) + tipos limpos | Pending |
-| US-007, FR-007, NFR-003, AC-021 | AC-021 na seção 6 | Caso Vitest de popover com mark real com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `milkdown-mark-node` ausente | GREEN 2026-09-05: 3/3 mark-node + regressão das notas (110 passed; só REDs T034/T038) + tipos limpos | Pending |
-| US-004, FR-008, NFR-001, AC-022 | AC-022 na seção 6 | Caso Vitest de iframe no export com marcador próprio `SPECSFY:` | RED 2026-09-05: iframe de vídeo ausente no export | GREEN 2026-09-05: 3/3 vídeo-iframe + inspeção do derivado (focal vídeo) + tipos limpos | Pending |
-| US-004, FR-008, NFR-002, AC-023 | AC-023 na seção 6 | Caso Vitest de múltiplos vídeos com marcador próprio `SPECSFY:` | RED 2026-09-05: iframe de vídeo ausente no export | GREEN 2026-09-05: 3/3 vídeo-iframe + inspeção do derivado (focal vídeo) + tipos limpos | Pending |
-| US-004, FR-008, NFR-003, AC-024 | AC-024 na seção 6 | Caso Vitest de vídeo sem ID com marcador próprio `SPECSFY:` | RED 2026-09-05: `expandVideoFences` ausente | GREEN 2026-09-05: 3/3 vídeo-iframe + inspeção do derivado (focal vídeo) + tipos limpos | Pending |
-| US-005, FR-009, NFR-001, AC-025 | AC-025 na seção 6 | Caso Vitest de `<br />` no PDF com marcador próprio `SPECSFY:` | RED 2026-09-05: saneamento de `<br />` ausente | GREEN 2026-09-05: 9/9 note-export + inspeção do impresso (dedup H1, sem tags) + tipos limpos | Pending |
-| US-005, FR-009, NFR-002, AC-026 | AC-026 na seção 6 | Caso Vitest de folha editorial com marcador próprio `SPECSFY:` | RED 2026-09-05: `buildPrintDocument` ausente | GREEN 2026-09-05: 9/9 note-export + inspeção do impresso (dedup H1, sem tags) + tipos limpos | Pending |
-| US-005, FR-009, NFR-003, AC-027 | AC-027 na seção 6 | Caso Vitest de `<br />` no Markdown com marcador próprio `SPECSFY:` | RED 2026-09-05: saneamento de `<br />` ausente | GREEN 2026-09-05: 9/9 note-export + inspeção do impresso (dedup H1, sem tags) + tipos limpos | Pending |
+| IDs                             | BDD de referência | Teste TDD informado pelo BDD                                              | RED observado                                                                   | GREEN observado                                                                                      | Refactor/regressão |
+| ------------------------------- | ----------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------ |
+| US-001, FR-001, NFR-001, AC-001 | AC-001 na seção 6 | Caso Vitest do popover com marcador próprio `SPECSFY:`                    | RED 2026-09-05: módulo `selection-popover` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 selection-popover + preview `++` (25 passed com regressão)                     | Pending            |
+| US-001, FR-001, NFR-002, AC-002 | AC-002 na seção 6 | Caso Vitest de aplicação de marca com marcador próprio `SPECSFY:`         | RED 2026-09-05: módulo `selection-popover` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 selection-popover + preview `++` (25 passed com regressão)                     | Pending            |
+| US-001, FR-001, NFR-003, AC-003 | AC-003 na seção 6 | Caso Vitest de seleção colapsada com marcador próprio `SPECSFY:`          | RED 2026-09-05: módulo `selection-popover` ausente (vitest: Cannot find module) | GREEN 2026-09-05: 3/3 selection-popover + preview `++` (25 passed com regressão)                     | Pending            |
+| US-002, FR-002, NFR-001, AC-004 | AC-004 na seção 6 | Caso Vitest de hover com versão do parser com marcador próprio `SPECSFY:` | RED 2026-09-05: módulo `reference-hover` ausente (vitest: Cannot find module)   | GREEN 2026-09-05: 3/3 reference-hover + regressão parser/decorações (17 passed)                      | Pending            |
+| US-002, FR-002, NFR-002, AC-005 | AC-005 na seção 6 | Caso Vitest de versão padrão com marcador próprio `SPECSFY:`              | RED 2026-09-05: módulo `reference-hover` ausente (vitest: Cannot find module)   | GREEN 2026-09-05: 3/3 reference-hover + regressão parser/decorações (17 passed)                      | Pending            |
+| US-002, FR-002, NFR-003, AC-006 | AC-006 na seção 6 | Caso Vitest sem Bíblia com marcador próprio `SPECSFY:`                    | RED 2026-09-05: módulo `reference-hover` ausente (vitest: Cannot find module)   | GREEN 2026-09-05: 3/3 reference-hover + regressão parser/decorações (17 passed)                      | Pending            |
+| US-003, FR-003, NFR-001, AC-007 | AC-007 na seção 6 | Caso Vitest de índice desktop com marcador próprio `SPECSFY:`             | RED 2026-09-05: módulo `note-index` ausente (vitest: Cannot find module)        | GREEN 2026-09-05: 3/3 note-index + regressão editor (5 passed) + tipos limpos                        | Pending            |
+| US-003, FR-003, NFR-002, AC-008 | AC-008 na seção 6 | Caso Vitest de drawer mobile com marcador próprio `SPECSFY:`              | RED 2026-09-05: módulo `note-index` ausente (vitest: Cannot find module)        | GREEN 2026-09-05: 3/3 note-index + regressão editor (5 passed) + tipos limpos                        | Pending            |
+| US-003, FR-003, NFR-003, AC-009 | AC-009 na seção 6 | Caso Vitest de índice vazio com marcador próprio `SPECSFY:`               | RED 2026-09-05: módulo `note-index` ausente (vitest: Cannot find module)        | GREEN 2026-09-05: 3/3 note-index + regressão editor (5 passed) + tipos limpos                        | Pending            |
+| US-004, FR-004, NFR-001, AC-010 | AC-010 na seção 6 | Caso Vitest de URL válida com marcador próprio `SPECSFY:`                 | RED 2026-09-05: módulo `youtube-embed` ausente (vitest: Cannot find module)     | GREEN 2026-09-05: 3/3 youtube-embed + regressão slash/editor (12 passed) + tipos limpos              | Pending            |
+| US-004, FR-004, NFR-002, AC-011 | AC-011 na seção 6 | Caso Vitest de carga sob demanda com marcador próprio `SPECSFY:`          | RED 2026-09-05: módulo `youtube-embed` ausente (vitest: Cannot find module)     | GREEN 2026-09-05: 3/3 youtube-embed + regressão slash/editor (12 passed) + tipos limpos              | Pending            |
+| US-004, FR-004, NFR-003, AC-012 | AC-012 na seção 6 | Caso Vitest de URL inválida com marcador próprio `SPECSFY:`               | RED 2026-09-05: módulo `youtube-embed` ausente (vitest: Cannot find module)     | GREEN 2026-09-05: 3/3 youtube-embed + regressão slash/editor (12 passed) + tipos limpos              | Pending            |
+| US-005, FR-005, NFR-001, AC-013 | AC-013 na seção 6 | Caso Vitest de Markdown expandido com marcador próprio `SPECSFY:`         | RED 2026-09-05: módulo `note-export` ausente (vitest: Cannot find module)       | GREEN 2026-09-05: 3/3 note-export + inspeção do documento derivado (3 passed) + tipos limpos         | Pending            |
+| US-005, FR-005, NFR-002, AC-014 | AC-014 na seção 6 | Caso Vitest de PDF equivalente com marcador próprio `SPECSFY:`            | RED 2026-09-05: módulo `note-export` ausente (vitest: Cannot find module)       | GREEN 2026-09-05: 3/3 note-export + inspeção do documento derivado (3 passed) + tipos limpos         | Pending            |
+| US-005, FR-005, NFR-003, AC-015 | AC-015 na seção 6 | Caso Vitest de original intacto com marcador próprio `SPECSFY:`           | RED 2026-09-05: módulo `note-export` ausente (vitest: Cannot find module)       | GREEN 2026-09-05: 3/3 note-export + inspeção do documento derivado (3 passed) + tipos limpos         | Pending            |
+| US-006, FR-006, NFR-001, AC-016 | AC-016 na seção 6 | Caso Vitest de padrão de toolbar com marcador próprio `SPECSFY:`          | RED 2026-09-05: módulo `note-toolbar` ausente (vitest: Cannot find module)      | GREEN 2026-09-05: 3/3 note-toolbar + regressão toolbar/editor (17 passed) + tipos limpos             | Pending            |
+| US-006, FR-006, NFR-002, AC-017 | AC-017 na seção 6 | Caso Vitest de preferência persistida com marcador próprio `SPECSFY:`     | RED 2026-09-05: módulo `note-toolbar` ausente (vitest: Cannot find module)      | GREEN 2026-09-05: 3/3 note-toolbar + regressão toolbar/editor (17 passed) + tipos limpos             | Pending            |
+| US-006, FR-006, NFR-003, AC-018 | AC-018 na seção 6 | Caso Vitest de consistência mobile com marcador próprio `SPECSFY:`        | RED 2026-09-05: módulo `note-toolbar` ausente (vitest: Cannot find module)      | GREEN 2026-09-05: 3/3 note-toolbar + regressão toolbar/editor (17 passed) + tipos limpos             | Pending            |
+| US-007, FR-007, NFR-001, AC-019 | AC-019 na seção 6 | Caso Vitest de mark `==` com marcador próprio `SPECSFY:`                  | RED 2026-09-05: módulo `milkdown-mark-node` ausente                             | GREEN 2026-09-05: 3/3 mark-node + regressão das notas (110 passed; só REDs T034/T038) + tipos limpos | Pending            |
+| US-007, FR-007, NFR-002, AC-020 | AC-020 na seção 6 | Caso Vitest de mark `++` com guarda com marcador próprio `SPECSFY:`       | RED 2026-09-05: módulo `milkdown-mark-node` ausente                             | GREEN 2026-09-05: 3/3 mark-node + regressão das notas (110 passed; só REDs T034/T038) + tipos limpos | Pending            |
+| US-007, FR-007, NFR-003, AC-021 | AC-021 na seção 6 | Caso Vitest de popover com mark real com marcador próprio `SPECSFY:`      | RED 2026-09-05: módulo `milkdown-mark-node` ausente                             | GREEN 2026-09-05: 3/3 mark-node + regressão das notas (110 passed; só REDs T034/T038) + tipos limpos | Pending            |
+| US-004, FR-008, NFR-001, AC-022 | AC-022 na seção 6 | Caso Vitest de iframe no export com marcador próprio `SPECSFY:`           | RED 2026-09-05: iframe de vídeo ausente no export                               | GREEN 2026-09-05: 3/3 vídeo-iframe + inspeção do derivado (focal vídeo) + tipos limpos               | Pending            |
+| US-004, FR-008, NFR-002, AC-023 | AC-023 na seção 6 | Caso Vitest de múltiplos vídeos com marcador próprio `SPECSFY:`           | RED 2026-09-05: iframe de vídeo ausente no export                               | GREEN 2026-09-05: 3/3 vídeo-iframe + inspeção do derivado (focal vídeo) + tipos limpos               | Pending            |
+| US-004, FR-008, NFR-003, AC-024 | AC-024 na seção 6 | Caso Vitest de vídeo sem ID com marcador próprio `SPECSFY:`               | RED 2026-09-05: `expandVideoFences` ausente                                     | GREEN 2026-09-05: 3/3 vídeo-iframe + inspeção do derivado (focal vídeo) + tipos limpos               | Pending            |
+| US-005, FR-009, NFR-001, AC-025 | AC-025 na seção 6 | Caso Vitest de `<br />` no PDF com marcador próprio `SPECSFY:`            | RED 2026-09-05: saneamento de `<br />` ausente                                  | GREEN 2026-09-05: 9/9 note-export + inspeção do impresso (dedup H1, sem tags) + tipos limpos         | Pending            |
+| US-005, FR-009, NFR-002, AC-026 | AC-026 na seção 6 | Caso Vitest de folha editorial com marcador próprio `SPECSFY:`            | RED 2026-09-05: `buildPrintDocument` ausente                                    | GREEN 2026-09-05: 9/9 note-export + inspeção do impresso (dedup H1, sem tags) + tipos limpos         | Pending            |
+| US-005, FR-009, NFR-003, AC-027 | AC-027 na seção 6 | Caso Vitest de `<br />` no Markdown com marcador próprio `SPECSFY:`       | RED 2026-09-05: saneamento de `<br />` ausente                                  | GREEN 2026-09-05: 9/9 note-export + inspeção do impresso (dedup H1, sem tags) + tipos limpos         | Pending            |
 
 ### 12. Plano de testes e rastreabilidade
 
-| Requisito | Cenário BDD | Nível | Arquivo/comando esperado | Evidência |
-| --- | --- | --- | --- | --- |
-| FR-001 | AC-001 | Unidade | `apps/web/src/lib/features/notes/selection-popover.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-001 | AC-002 | Unidade | `apps/web/src/lib/features/notes/selection-popover.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-001 | AC-003 | Unidade | `apps/web/src/lib/features/notes/selection-popover.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-002 | AC-004 | Integração | `apps/web/src/lib/features/notes/reference-hover.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-002 | AC-005 | Integração | `apps/web/src/lib/features/notes/reference-hover.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-002 | AC-006 | Integração | `apps/web/src/lib/features/notes/reference-hover.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-003 | AC-007 | Unidade | `apps/web/src/lib/features/notes/note-index.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-003 | AC-008 | Unidade | `apps/web/src/lib/features/notes/note-index.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-003 | AC-009 | Unidade | `apps/web/src/lib/features/notes/note-index.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-004 | AC-010 | Unidade | `apps/web/src/lib/features/notes/youtube-embed.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-004 | AC-011 | Integração | `apps/web/src/lib/features/notes/youtube-embed.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-004 | AC-012 | Unidade | `apps/web/src/lib/features/notes/youtube-embed.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-005 | AC-013 | Unidade | `apps/web/src/lib/features/notes/note-export.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-005 | AC-014 | Integração | `apps/web/src/lib/features/notes/note-export.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-005 | AC-015 | Unidade | `apps/web/src/lib/features/notes/note-export.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-006 | AC-016 | Unidade | `apps/web/src/lib/features/notes/note-toolbar.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-006 | AC-017 | Unidade | `apps/web/src/lib/features/notes/note-toolbar.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-006 | AC-018 | Integração | `apps/web/src/lib/features/notes/note-toolbar.test.ts` | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| NFR-001 | AC-001 | Unidade | Inspeção de teclado e ARIA no popover | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| NFR-001 | AC-004 | Integração | Inspeção de foco no hover | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| NFR-001 | AC-007 | Unidade | Inspeção de foco no índice | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| NFR-002 | AC-002 | Unidade | Medição de interação sem bloqueio | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| NFR-002 | AC-005 | Integração | Teste local sem rede | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| NFR-002 | AC-014 | Integração | Medição de export da nota atual | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| NFR-003 | AC-003 | Unidade | Revisão de não alteração em leitura | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| NFR-003 | AC-006 | Integração | Revisão de aviso sem inventar texto | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| NFR-003 | AC-012 | Unidade | Teste de URL restrita ao YouTube | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes |
-| FR-007 | AC-019 | Unidade | `apps/web/src/lib/features/notes/milkdown-mark-node.test.ts` | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
-| FR-007 | AC-020 | Unidade | `apps/web/src/lib/features/notes/milkdown-mark-node.test.ts` | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
-| FR-007 | AC-021 | Integração | `apps/web/src/lib/features/notes/milkdown-mark-node.test.ts` | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
-| FR-008 | AC-022 | Unidade | `apps/web/src/lib/features/notes/note-export.test.ts` | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
-| FR-008 | AC-023 | Unidade | `apps/web/src/lib/features/notes/note-export.test.ts` | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
-| FR-008 | AC-024 | Unidade | `apps/web/src/lib/features/notes/note-export.test.ts` | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
-| FR-009 | AC-025 | Unidade | `apps/web/src/lib/features/notes/note-export.test.ts` | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
-| FR-009 | AC-026 | Integração | Inspeção do documento impresso | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
-| FR-009 | AC-027 | Unidade | `apps/web/src/lib/features/notes/note-export.test.ts` | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
-| NFR-001 | AC-019 | Unidade | Inspeção de teclado e ARIA nas marks | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
-| NFR-001 | AC-022 | Unidade | Inspeção de título do iframe | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
-| NFR-001 | AC-025 | Unidade | Inspeção de leitura do impresso | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
-| NFR-002 | AC-020 | Unidade | Medição de remark sem bloqueio | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
-| NFR-002 | AC-023 | Unidade | Geração sem rede | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
-| NFR-002 | AC-026 | Integração | Medição de impressão da nota atual | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
-| NFR-003 | AC-021 | Unidade | Revisão de marca sem alterar texto | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
-| NFR-003 | AC-024 | Unidade | Revisão de omissão sem rede | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
-| NFR-003 | AC-027 | Unidade | Revisão de original intacto | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes |
+| Requisito | Cenário BDD | Nível      | Arquivo/comando esperado                                       | Evidência                                                                              |
+| --------- | ----------- | ---------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| FR-001    | AC-001      | Unidade    | `apps/web/src/lib/features/notes/selection-popover.test.ts`    | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-001    | AC-002      | Unidade    | `apps/web/src/lib/features/notes/selection-popover.test.ts`    | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-001    | AC-003      | Unidade    | `apps/web/src/lib/features/notes/selection-popover.test.ts`    | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-002    | AC-004      | Integração | `apps/web/src/lib/features/notes/reference-hover.test.ts`      | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-002    | AC-005      | Integração | `apps/web/src/lib/features/notes/reference-hover.test.ts`      | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-002    | AC-006      | Integração | `apps/web/src/lib/features/notes/reference-hover.test.ts`      | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-003    | AC-007      | Unidade    | `apps/web/src/lib/features/notes/note-index.test.ts`           | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-003    | AC-008      | Unidade    | `apps/web/src/lib/features/notes/note-index.test.ts`           | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-003    | AC-009      | Unidade    | `apps/web/src/lib/features/notes/note-index.test.ts`           | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-004    | AC-010      | Unidade    | `apps/web/src/lib/features/notes/youtube-embed.test.ts`        | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-004    | AC-011      | Integração | `apps/web/src/lib/features/notes/youtube-embed.test.ts`        | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-004    | AC-012      | Unidade    | `apps/web/src/lib/features/notes/youtube-embed.test.ts`        | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-005    | AC-013      | Unidade    | `apps/web/src/lib/features/notes/note-export.test.ts`          | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-005    | AC-014      | Integração | `apps/web/src/lib/features/notes/note-export.test.ts`          | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-005    | AC-015      | Unidade    | `apps/web/src/lib/features/notes/note-export.test.ts`          | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-006    | AC-016      | Unidade    | `apps/web/src/lib/features/notes/note-toolbar.test.ts`         | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-006    | AC-017      | Unidade    | `apps/web/src/lib/features/notes/note-toolbar.test.ts`         | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-006    | AC-018      | Integração | `apps/web/src/lib/features/notes/note-toolbar.test.ts`         | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| NFR-001   | AC-001      | Unidade    | Inspeção de teclado e ARIA no popover                          | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| NFR-001   | AC-004      | Integração | Inspeção de foco no hover                                      | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| NFR-001   | AC-007      | Unidade    | Inspeção de foco no índice                                     | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| NFR-002   | AC-002      | Unidade    | Medição de interação sem bloqueio                              | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| NFR-002   | AC-005      | Integração | Teste local sem rede                                           | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| NFR-002   | AC-014      | Integração | Medição de export da nota atual                                | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| NFR-003   | AC-003      | Unidade    | Revisão de não alteração em leitura                            | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| NFR-003   | AC-006      | Integração | Revisão de aviso sem inventar texto                            | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| NFR-003   | AC-012      | Unidade    | Teste de URL restrita ao YouTube                               | Passed 2026-09-05: suíte Vitest 96 arquivos/380 testes verdes                          |
+| FR-007    | AC-019      | Unidade    | `apps/web/src/lib/features/notes/milkdown-mark-node.test.ts`   | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
+| FR-007    | AC-020      | Unidade    | `apps/web/src/lib/features/notes/milkdown-mark-node.test.ts`   | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
+| FR-007    | AC-021      | Integração | `apps/web/src/lib/features/notes/milkdown-mark-node.test.ts`   | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
+| FR-008    | AC-022      | Unidade    | `apps/web/src/lib/features/notes/note-export.test.ts`          | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
+| FR-008    | AC-023      | Unidade    | `apps/web/src/lib/features/notes/note-export.test.ts`          | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
+| FR-008    | AC-024      | Unidade    | `apps/web/src/lib/features/notes/note-export.test.ts`          | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
+| FR-009    | AC-025      | Unidade    | `apps/web/src/lib/features/notes/note-export.test.ts`          | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
+| FR-009    | AC-026      | Integração | Inspeção do documento impresso                                 | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
+| FR-009    | AC-027      | Unidade    | `apps/web/src/lib/features/notes/note-export.test.ts`          | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
+| FR-010    | AC-028      | Browser    | `apps/web/src/routes/notes-editor.svelte.spec.ts`              | Pending 2026-09-09: Chromium do Playwright ausente; teste RED materializado            |
+| FR-010    | AC-029      | Browser    | `apps/web/src/routes/notes-editor.svelte.spec.ts`              | Pending 2026-09-09: Chromium do Playwright ausente; revisão estrutural realizada       |
+| FR-015    | AC-029      | Browser    | `apps/web/src/lib/features/notes/NotesSecondarySidebar.svelte` | Pending 2026-09-09: reduced-motion e skeleton aguardam inspeção browser                |
+| FR-011    | AC-030      | Unidade    | `apps/web/src/lib/features/notes/reference-hover.test.ts`      | Passed 2026-09-09: 29 testes focais verdes                                             |
+| FR-011    | AC-031      | Browser    | `apps/web/src/routes/notes-editor.svelte.spec.ts`              | Pending 2026-09-09: Chromium do Playwright ausente; contrato implementado              |
+| FR-012    | AC-032      | Browser    | `apps/web/src/routes/notes-editor.svelte.spec.ts`              | Pending 2026-09-09: Chromium do Playwright ausente; teste RED materializado            |
+| FR-013    | AC-033      | Browser    | `apps/web/src/routes/notes-editor.svelte.spec.ts`              | Pending 2026-09-09: Chromium do Playwright ausente; drawer revisado estaticamente      |
+| FR-013    | AC-034      | Browser    | `apps/web/src/routes/notes-editor.svelte.spec.ts`              | Pending 2026-09-09: Chromium do Playwright ausente; cópia curta implementada           |
+| FR-014    | AC-035      | Unidade    | `apps/web/src/lib/features/notes/note-export.test.ts`          | Passed 2026-09-09: tipografia Geist/Geist Mono, @page e print-color-adjust verificados |
+| FR-016    | AC-036      | Unidade    | `apps/web/src/lib/features/notes/milkdown-mark-node.test.ts`   | Passed 2026-09-09: marks de destaque e roundtrip verdes                                |
+| NFR-001   | AC-037      | Inspeção   | Fluxo `/notes` e componentes alterados                         | Pending 2026-09-09: inspeção automatizada aguardando Chromium                          |
+| NFR-002   | AC-038      | Inspeção   | Fluxo `/notes` e componentes alterados                         | Pending 2026-09-09: inspeção automatizada aguardando Chromium                          |
+| NFR-003   | AC-039      | Unidade    | Suíte focal de notas                                           | Passed 2026-09-09: 29 testes focais verdes e fonte preservada                          |
+| NFR-001   | AC-019      | Unidade    | Inspeção de teclado e ARIA nas marks                           | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
+| NFR-001   | AC-022      | Unidade    | Inspeção de título do iframe                                   | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
+| NFR-001   | AC-025      | Unidade    | Inspeção de leitura do impresso                                | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
+| NFR-002   | AC-020      | Unidade    | Medição de remark sem bloqueio                                 | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
+| NFR-002   | AC-023      | Unidade    | Geração sem rede                                               | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
+| NFR-002   | AC-026      | Integração | Medição de impressão da nota atual                             | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
+| NFR-003   | AC-021      | Unidade    | Revisão de marca sem alterar texto                             | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
+| NFR-003   | AC-024      | Unidade    | Revisão de omissão sem rede                                    | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
+| NFR-003   | AC-027      | Unidade    | Revisão de original intacto                                    | Passed 2026-09-05: suíte Vitest 97 arquivos/389 testes verdes                          |
 
 ### 13. Validações
 
 #### Gate do Ato I — Definição
 
-- **Resultado**: Passed — revalidação em 2026-09-05: estrutura VALID, cobertura 7 US/9 FR/3 NFR ↔ 27 ACs, lentes sem P1 Open.
+- **Resultado**: Passed — revalidação em 2026-09-09: estrutura READY, cobertura 12 US/16 FR/3 NFR ↔ 39 ACs; a suíte browser permanece pendente por ambiente.
 - **Comando**: `node .agents/skills/specsfy-04-validate/scripts/validate_spec.mjs specs/completed/0015-editor-de-notas-popover-hover-biblico-indice-embed-e-export/spec.md`
 - **Achados**: Revalidação pós-mudança sem bloqueadores; achados FIND anteriores preservados abaixo.
 - Findings especializados, quando aplicáveis, seguem `FIND-PROD|ARCH|SEC-NNN`,
@@ -843,15 +1148,15 @@ tests/
 
 #### Gate do Ato II — Plano
 
-- **Resultado**: Passed — 2026-09-05
-- **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/completed/0015-editor-de-notas-popover-hover-biblico-indice-embed-e-export/spec.md` → READY (total=40, tdd=27, code=9, 46/46 IDs cobertos); interface OK; 9 predecessores TDD novos concluídos com RED.
-- **Achados**: Nenhum bloqueador.
+- **Resultado**: Passed — 2026-09-09
+- **Comando**: `node .agents/skills/specsfy-05-tasks/scripts/validate_tasks.mjs specs/completed/0015-editor-de-notas-popover-hover-biblico-indice-embed-e-export/spec.md` → READY (total=48, tdd=31, code=12, 70/70 IDs cobertos); interface OK.
+- **Achados**: Nenhum bloqueador de plano; browser QA separado permanece pendente.
 
 #### Gate do Ato III — Entrega
 
-- **Resultado**: Passed — 2026-09-05
-- **Comando**: `node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/completed/0015-editor-de-notas-popover-hover-biblico-indice-embed-e-export/spec.md .` → 46/46 (um órfão de outra spec); `verify_acceptance.mjs` → QA PASSED; suíte 97 arquivos/389 testes verdes; `validate_tasks.mjs` → READY 40/40.
-- **Achados**: Nenhum bloqueador; `check` com 25 erros pré-existentes fora da fatia e 0 nos arquivos entregues.
+- **Resultado**: Pending — 2026-09-09
+- **Comando**: `node .agents/skills/specsfy-06-tdd-bdd/scripts/check_traceability.mjs specs/completed/0015-editor-de-notas-popover-hover-biblico-indice-embed-e-export/spec.md /home/claudio/Projects/openbible-worksplace --allow-orphans` → 70/70; `verify_evidence.mjs` → PASSED; 29 testes focais verdes.
+- **Achados**: QA browser pendente porque o executável Chromium do Playwright não está instalado; `check` mantém seis erros globais preexistentes de `FileSystemDirectoryHandle.entries`.
 
 ### 14. Tarefas
 
@@ -861,12 +1166,12 @@ Formato:
 Cada tarefa possui exatamente este checklist, atualizado durante a execução:
 
 ```markdown
-  - [ ] **PREP**: Confirmar escopo, IDs, dependências e baseline.
-  - [ ] **EXECUTE**: Produzir a entrega no caminho declarado.
-  - [ ] **VERIFY**: Executar a verificação focal adequada.
-  - [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia do sistema; se não houver interface, registrar `Não aplicável` e o motivo.
-  - [ ] **EVIDENCE**: Registrar comando, resultado e IDs nas seções 11–13.
-  - [ ] **IMPROVE**: Registrar melhoria aplicada ou ausência justificada.
+- [ ] **PREP**: Confirmar escopo, IDs, dependências e baseline.
+- [ ] **EXECUTE**: Produzir a entrega no caminho declarado.
+- [ ] **VERIFY**: Executar a verificação focal adequada.
+- [ ] **VISUAL**: Conferir bordas, espaçamentos, margens, padding e tipografia do sistema; se não houver interface, registrar `Não aplicável` e o motivo.
+- [ ] **EVIDENCE**: Registrar comando, resultado e IDs nas seções 11–13.
+- [ ] **IMPROVE**: Registrar melhoria aplicada ou ausência justificada.
 ```
 
 Decisões de plano: PDF via impressão do navegador (`window.print` com CSS de impressão, sem nova dependência); Markdown via download de Blob; vídeo com fachada clique-para-carregar (`youtube-nocookie`) sem autoplay; parser de referências em texto livre com padrão restrito a livro+capítulo+verso. Sem mudança de schema, manifest ou dependência — sem tarefas `[DOC]` para `STACK.md` ou `DATABASE.md`.
@@ -1247,10 +1552,82 @@ Decisões de plano: PDF via impressão do navegador (`window.print` com CSS de i
   - [x] **EVIDENCE**: Registrar contagens, comandos finais e revisão de `PROJECT.md` com justificativa de ausência de impacto material.
   - [x] **IMPROVE**: Flakiness de specs browser documentada (verdes isoladas e na repetição); nenhuma outra melhoria necessária.
 
+#### Fase 8 — Correções tardias de rota, interação e saída editorial
+
+- [x] T041 [P] [TEST] [TDD] [US-008] [US-012] Materializar testes de 404 e contrato de loading em `apps/web/src/routes/notes-editor.svelte.spec.ts` — Refs: US-008, US-009, US-010, US-011, US-012, FR-010, FR-011, FR-012, FR-013, FR-014, FR-015, FR-016, AC-028, AC-029, AC-037, AC-038, AC-039 — Depends: none
+  - [x] **PREP**: Confirmar que ID ausente não deve criar nota e que rota/lista anunciam carga sem editor montado.
+  - [x] **EXECUTE**: Escrever testes RED para estado 404, retorno, skeleton e reduced-motion.
+  - [x] **VERIFY**: Executar os testes focais e registrar a falha comportamental antes do código; browser ficou impedido por Chromium ausente.
+  - [x] **VISUAL**: Não aplicável antes da implementação; revisão estática realizada depois.
+  - [x] **EVIDENCE**: RED registrado na execução focal; 29 testes unitários GREEN após a implementação.
+  - [x] **IMPROVE**: Cobrir ausência real sem quebrar o fallback determinístico já usado pelos testes de editor.
+
+- [x] T042 [CODE] [US-008] [US-012] Implementar 404 contextual, skeleton da rota e skeleton da lista em `apps/web/src/routes/notes/[id]/+page.svelte` e `apps/web/src/lib/features/notes/NotesSecondarySidebar.svelte` — Refs: US-008, US-012, FR-010, FR-015, NFR-001, AC-028, AC-029, AC-037, AC-038 — Depends: T041, T043, T045
+  - [x] **PREP**: Confirmar RED de T041 e preservar o seed usado somente no harness sem criar nota em storage real.
+  - [x] **EXECUTE**: Produzir estado 404 acessível, CTA de retorno e skeletons estruturais com animação reduzível.
+  - [x] **VERIFY**: Testes unitários e `check` executados; seis erros globais preexistentes de FileSystemDirectoryHandle permanecem fora da fatia.
+  - [x] **VISUAL**: Revisão estática de bordas, espaçamentos, margens, padding, tipografia e ausência de overflow; browser automatizado indisponível por Chromium ausente.
+  - [x] **EVIDENCE**: GREEN focal e documentação reconstruída com `build_documentation.mjs`/`--check`.
+  - [x] **IMPROVE**: Manter o canvas contínuo; usar movimento apenas como feedback de carga e desligá-lo em reduced-motion.
+
+  <!-- specsfy:evidence {"task":"T042","refs":["US-008","US-012","FR-010","FR-015","NFR-001","AC-028","AC-029","AC-037","AC-038"],"files":["apps/web/src/routes/notes/[id]/+page.svelte","apps/web/src/lib/features/notes/NotesSecondarySidebar.svelte"],"commands":[{"run":"bun run test:tdd -- src/lib/features/notes/milkdown-mark-node.test.ts","exit":0},{"run":"node .agents/skills/specsfy-documentator/scripts/build_documentation.mjs --project /home/claudio/Projects/openbible-worksplace --check","exit":0}]} -->
+
+- [x] T043 [P] [TEST] [TDD] [US-009] [US-010] [US-011] Materializar testes de resolver de versão, Ctrl/Cmd hover, Escape e paridade do drawer em `apps/web/src/lib/features/notes/reference-hover.test.ts` e `apps/web/src/routes/notes-editor.svelte.spec.ts` — Refs: US-008, US-009, US-010, US-011, US-012, FR-010, FR-011, FR-012, FR-013, FR-014, FR-015, FR-016, AC-030, AC-031, AC-032, AC-033, AC-034, AC-037, AC-038, AC-039 — Depends: none
+  - [x] **PREP**: Confirmar aliases do catálogo e a seleção de comando no editor desktop/mobile.
+  - [x] **EXECUTE**: Escrever RED para aliases, modificador, foco, limpeza do token e descrições do drawer.
+  - [x] **VERIFY**: RED observado nos aliases e cópia da exportação; browser impedido por Chromium ausente.
+  - [x] **VISUAL**: Não aplicável antes da implementação; revisão estática do drawer realizada após T044.
+  - [x] **EVIDENCE**: Testes focais e rastreabilidade atualizados.
+  - [x] **IMPROVE**: Separar intenção de prévia de hover incidental para não fazer consulta local desnecessária.
+
+- [x] T044 [CODE] [US-009] [US-010] [US-011] Corrigir resolução de versão, prévia intencional, Escape e drawer mobile em `reference-parser.ts`, `reference-hover.ts` e `MilkdownNoteEditor.svelte` — Refs: US-009, US-010, US-011, FR-011, FR-012, FR-013, NFR-001, NFR-002, AC-030, AC-031, AC-032, AC-033, AC-037, AC-038 — Depends: T041, T043, T045
+  - [x] **PREP**: Confirmar RED e preservar clique existente e foco de teclado.
+  - [x] **EXECUTE**: Casar aliases com catálogo instalado, exigir Ctrl/Cmd no mouse, remover trigger no Escape e renderizar cópia pareada no drawer.
+  - [x] **VERIFY**: Executar 29 testes focais GREEN e `check` sem erros novos nos arquivos alterados.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia, hierarquia de rótulo/descrição, alvo de toque, foco, card e reduced-motion; browser automatizado bloqueado por Chromium ausente.
+  - [x] **EVIDENCE**: GREEN e arquivos alterados registrados no diff.
+  - [x] **IMPROVE**: Fallback ordenado para preferências instaladas e primeira versão, sem inventar conteúdo.
+
+  <!-- specsfy:evidence {"task":"T044","refs":["US-009","US-010","US-011","FR-011","FR-012","FR-013","NFR-001","NFR-002","AC-030","AC-031","AC-032","AC-033","AC-037","AC-038"],"files":["apps/web/src/lib/features/notes/reference-hover.ts","apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte","apps/web/src/lib/bible/editor/bibleReferenceDecorations.ts"],"commands":[{"run":"bun run test:tdd -- src/lib/features/notes/reference-hover.test.ts src/lib/bible/editor/bibleReferenceDecorations.test.ts","exit":0}]} -->
+
+- [x] T045 [P] [TEST] [TDD] [US-011] [US-012] Materializar testes de menu destilado, tipografia de impressão e destaque em `apps/web/src/lib/features/notes/note-export.test.ts`, `apps/web/src/routes/notes-editor.svelte.spec.ts` e `milkdown-mark-node.test.ts` — Refs: US-008, US-009, US-010, US-011, US-012, FR-010, FR-011, FR-012, FR-013, FR-014, FR-015, FR-016, AC-034, AC-035, AC-036, AC-037, AC-038, AC-039 — Depends: none
+  - [x] **PREP**: Confirmar texto curto, fontes Geist/Geist Mono e ação Destaque existentes.
+  - [x] **EXECUTE**: Escrever RED para cópia do menu, regras print, roundtrip e estado visual do destaque.
+  - [x] **VERIFY**: RED observado na fonte de impressão e cópia do menu; marks existentes ficaram GREEN.
+  - [x] **VISUAL**: Não aplicável antes do código; revisão estática planejada para o documento derivado e popover.
+  - [x] **EVIDENCE**: Comandos e IDs registrados nos marcadores dos testes.
+  - [x] **IMPROVE**: Testar contrato de saída, não snapshots frágeis de layout.
+
+- [x] T046 [CODE] [US-011] [US-012] Polir menu de opções, folha de impressão e estados visuais de destaque em `+page.svelte`, `note-export.ts` e componentes de notas — Refs: US-011, US-012, FR-013, FR-014, FR-016, NFR-001, AC-034, AC-035, AC-036, AC-037, AC-038 — Depends: T041, T043, T045
+  - [x] **PREP**: Confirmar RED de T045 e tokens de design do produto.
+  - [x] **EXECUTE**: Encurtar cópia, aplicar typeset Geist/Geist Mono com `@page`, ajustar estados/contraste sem remover a ação Destaque.
+  - [x] **VERIFY**: Executar 29 testes focais GREEN e gerar documento derivado; `check` só mantém erros globais preexistentes.
+  - [x] **VISUAL**: Conferir bordas, espaçamentos, margens, padding, tipografia e impressão em tema claro/escuro, desktop/mobile por revisão estática; Chromium ausente impede captura automatizada.
+  - [x] **EVIDENCE**: GREEN, inspeção estática e ausência de dependência nova registrados.
+  - [x] **IMPROVE**: Preferir CSS de impressão conservador e tokens sem gradiente/glow/sombra decorativa.
+
+  <!-- specsfy:evidence {"task":"T046","refs":["US-011","US-012","FR-013","FR-014","FR-016","NFR-001","AC-034","AC-035","AC-036","AC-037","AC-038"],"files":["apps/web/src/routes/notes/[id]/+page.svelte","apps/web/src/lib/features/notes/note-export.ts","apps/web/src/lib/features/notes/ReferenceHoverCard.svelte"],"commands":[{"run":"bun run test:tdd -- src/lib/features/notes/note-export.test.ts src/lib/features/notes/milkdown-mark-node.test.ts","exit":0}]} -->
+
+- [x] T047 [TEST] [US-008] [US-009] [US-010] [US-011] [US-012] Executar regressão focal e revisão visual do fluxo `/notes` em `apps/web/src/routes/notes-editor.svelte.spec.ts`, `apps/web/src/lib/features/notes/` e `apps/web/src/lib/bible/editor/` — Refs: US-008, US-009, US-010, US-011, US-012, FR-010, FR-011, FR-012, FR-013, FR-014, FR-015, FR-016, AC-028, AC-029, AC-030, AC-031, AC-032, AC-033, AC-034, AC-035, AC-036, AC-037, AC-038, AC-039 — Depends: T042, T044, T046
+  - [x] **PREP**: Confirmar implementações GREEN; servidor local existente, mas browser de teste sem Chromium instalado.
+  - [x] **EXECUTE**: Rodar suíte focal e revisar estaticamente nota válida, ID ausente, drawer, slash, hover, destaque e exportação.
+  - [x] **VERIFY**: Executar testes unitários, `check` e `prettier --check`; a suíte browser foi tentada e bloqueada pelo executável ausente.
+  - [x] **VISUAL**: Conferir estaticamente bordas, espaçamentos, margens, padding, tipografia, teclado, zoom, conteúdo longo e overflow; captura automatizada pendente de Chromium.
+  - [x] **EVIDENCE**: Registrar 29 testes focais GREEN, seis erros globais preexistentes do `check` e limitação do Playwright.
+  - [x] **IMPROVE**: Ajustar somente regressões comprovadas pelo fluxo, sem ampliar o escopo do `/bible`.
+
+- [x] T048 [DOC] [US-008] [US-009] [US-010] [US-011] [US-012] Reconstruir `docs/` e `.specsfy/PACKAGES.md` após a implementação — Refs: US-008, US-009, US-010, US-011, US-012, FR-010, FR-011, FR-012, FR-013, FR-014, FR-015, FR-016 — Depends: T047
+  - [x] **PREP**: Confirmar lista final de arquivos e dependências sem segredo.
+  - [x] **EXECUTE**: Executar `build_documentation.mjs` e atualizar somente documentação derivada.
+  - [x] **VERIFY**: Monitor de contexto e `build_documentation.mjs --check` passaram.
+  - [x] **VISUAL**: Não aplicável; documentação não altera a interface.
+  - [x] **EVIDENCE**: Comandos e saída registrados nesta entrega.
+  - [x] **IMPROVE**: Remover referências obsoletas sem apagar documentação humana.
+
 ### 15. Ordem de execução
 
-- Caminho crítico: T001–T018 (RED) → T019 → T020 → T021 → T022 → T023 → T024 → T025 → T026, depois T027–T029 → T030 → T031–T033 → T034 → T035–T037 → T038 → T039 → T040.
-- Tarefas paralelas: T001–T018 com `[P]` por arquivos de teste independentes; T027–T040 sequenciais por compartilharem editor e export.
+- Caminho crítico: T001–T018 (RED) → T019 → T020 → T021 → T022 → T023 → T024 → T025 → T026, depois T027–T029 → T030 → T031–T033 → T034 → T035–T037 → T038 → T039 → T040; atualização tardia T041 → T042, T043 → T044, T045 → T046 → T047 → T048.
+- Tarefas paralelas: T001–T018 com `[P]` por arquivos de teste independentes; T027–T040 sequenciais por compartilharem editor e export; T041, T043 e T045 são REDs paralelos antes das respectivas implementações.
 - Estratégia de MVP: marks (T030), iframe (T034) e impressão (T038) como complementos independentes sobre a base entregue.
 - Estratégia de MVP: popover, hover e índice (T019–T021) como núcleo; vídeo, export e toolbar (T022–T024) como complemento.
 
@@ -1298,16 +1675,19 @@ Decisões de plano: PDF via impressão do navegador (`window.print` com CSS de i
 - **DEC-007**: Destaque e sublinhado como marks nativas com roundtrip `==`/`++` — editor reflete o arquivo sem migração; guardas protegem `C++`.
 - **DEC-008**: Vídeo exportado como iframe `youtube-nocookie` — aproveitável no Obsidian mantendo a privacidade do embed.
 - **DEC-009**: `<br />` saneado nas saídas com folha editorial na impressão — PDF legível sem tags literais e sem nova dependência.
+- **DEC-010**: ID de nota ausente não cria fallback; a rota mostra 404 contextual — evita criar conteúdo silenciosamente ao abrir um endereço inválido.
+- **DEC-011**: Prévia bíblica exige Ctrl/Cmd no mouse ou foco de teclado e resolve aliases contra o catálogo — reduz consultas incidentais sem perder acessibilidade.
+- **DEC-012**: A atualização tardia reabre a mesma spec para `/notes`; coachmark, busca e popover do `/bible` não são incorporados por terem finalidade e superfície independentes.
 
 ### 18. Definition of Done
 
 - [x] `Definition Gate` está `Passed`.
 - [x] `Plan Gate` está `Passed`.
-- [x] `Delivery Gate` está `Passed`.
-- [x] Todos os cenários `AC` aplicáveis passam.
-- [x] Todos os requisitos possuem evidência de verificação.
+- [ ] `Delivery Gate` está `Passed` — aguardando instalação do Chromium para QA browser.
+- [ ] Todos os cenários `AC` aplicáveis passam — AC-028–AC-034 e AC-037–AC-038 estão pendentes de QA browser.
+- [ ] Todos os requisitos possuem evidência de verificação — FR-010–FR-015 aguardam a execução browser quando aplicável.
 - [x] Todas as tarefas na seção 14 estão concluídas.
-- [x] Testes e checks estáticos disponíveis passam.
+- [ ] Testes e checks estáticos disponíveis passam — os testes focais passam; o check global mantém seis erros preexistentes de FileSystemDirectoryHandle.entries.
 
 ## Effort history
 

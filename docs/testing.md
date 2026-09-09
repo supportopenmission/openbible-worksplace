@@ -3,7 +3,7 @@
 <!-- specsfy:documentator:start -->
 ## Resumo
 
-- Arquivos de teste: 126.
+- Arquivos de teste: 130.
 - Runner: não identificado.
 - Scripts: build: turbo run build; check-types: turbo run check-types; dev: turbo run dev; lint: turbo run lint; format: prettier --write .; format:check: prettier --check ..
 
@@ -31,6 +31,8 @@
 | apps/web/src/lib/features/ai/gateway-red.test.ts |
 | apps/web/src/lib/features/ai/proposal-red.test.ts |
 | apps/web/src/lib/features/ai/service-worker-boundary-red.test.ts |
+| apps/web/src/lib/features/auth/auth-client.test.ts |
+| apps/web/src/lib/features/auth/email-suggestion.test.ts |
 | apps/web/src/lib/features/bible/bible-library.test.ts |
 | apps/web/src/lib/features/bible/bible-note-split.test.ts |
 | apps/web/src/lib/features/bible/bible-reader.test.ts |
@@ -70,6 +72,7 @@
 | apps/web/src/lib/features/notes/milkdown-slash-drawer.test.ts |
 | apps/web/src/lib/features/notes/milkdown-slash.test.ts |
 | apps/web/src/lib/features/notes/milkdown-verse-node.test.ts |
+| apps/web/src/lib/features/notes/milkdown-video-node.test.ts |
 | apps/web/src/lib/features/notes/note-block-interactions.test.ts |
 | apps/web/src/lib/features/notes/note-editor-service.test.ts |
 | apps/web/src/lib/features/notes/note-editor-viewport.test.ts |
@@ -95,6 +98,7 @@
 | apps/web/src/lib/features/onboarding/onboarding-errors.test.ts |
 | apps/web/src/lib/features/onboarding/storage-choice.svelte.spec.ts |
 | apps/web/src/lib/features/sync/account-sync.test.ts |
+| apps/web/src/lib/features/sync/cloud-workspace-service.test.ts |
 | apps/web/src/lib/features/sync/external-edit-bridge.test.ts |
 | apps/web/src/lib/features/sync/peer-conflict-panel.svelte.spec.ts |
 | apps/web/src/lib/features/sync/peer-conflict-panel.test.ts |

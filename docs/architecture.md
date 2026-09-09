@@ -5,8 +5,8 @@
 
 | Tipo | Quantidade |
 | --- | --- |
-| Código | 880 |
-| Testes | 126 |
+| Código | 931 |
+| Testes | 130 |
 
 ## Diagramas
 
