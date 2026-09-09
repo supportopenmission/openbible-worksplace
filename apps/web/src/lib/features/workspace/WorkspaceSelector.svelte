@@ -2,7 +2,7 @@
 	import { onMount, tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { FolderPlus, Plus, Settings2 } from '@lucide/svelte';
+	import { ChevronDown, FolderPlus, Plus, Settings2 } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Drawer from '$lib/components/ui/drawer/index.js';
@@ -23,7 +23,6 @@
 		getCatalogEntry,
 		listCatalog,
 		readManifest,
-		storageBackendLabel,
 		upsertCatalogEntry,
 		writeManifest,
 		type WorkspaceCatalogEntry
@@ -41,7 +40,7 @@
 	const workspace = getWorkspaceState();
 
 	let {
-		manageLabel = 'Gerenciar workspaces',
+		manageLabel = 'Gerenciar espaços de estudo',
 		variant = 'desktop',
 		onManage,
 		onCreate,
@@ -75,26 +74,41 @@
 	}
 
 	const activeEntry = $derived(entries.find((entry) => entry.workspaceId === activeId) ?? null);
-	const activeName = $derived(activeEntry?.nameCache ?? 'Nenhum workspace');
-	const activeBackend = $derived(activeEntry?.backend ?? null);
+	const activeName = $derived(activeEntry?.nameCache ?? 'Nenhum espaço de estudo');
+	const activeBackend = $derived(activeEntry?.storageKind ?? null);
+
+	function storageLocationLabel(kind: StorageKind): string {
+		return kind === 'native' ? 'Computador' : kind === 'local' ? 'Pasta escolhida' : 'Navegador';
+	}
+
+	function statusLabel(status: WorkspaceCatalogEntry['status']): string {
+		return {
+			registered: 'preparado',
+			opening: 'abrindo',
+			ready: 'disponível',
+			'permission-needed': 'aguarda permissão',
+			unavailable: 'indisponível',
+			locked: 'em uso em outra janela',
+			invalid: 'precisa ser verificado',
+			detached: 'fora da lista'
+		}[status];
+	}
+
 	const activeBackendLabel = $derived(
-		activeBackend ? storageBackendLabel(activeBackend) : 'Banco local'
+		activeBackend ? storageLocationLabel(activeBackend) : 'Neste dispositivo'
 	);
 
 	function formatSelectorName(name: string): string {
 		const trimmed = name.trim();
-		if (!trimmed) return 'Workspace';
+		if (!trimmed) return 'Espaço de estudo';
 		if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed)) {
 			return `${trimmed.slice(0, 8)}…`;
-		}
-		if (trimmed.length > 24) {
-			return `${trimmed.slice(0, 22)}…`;
 		}
 		return trimmed;
 	}
 
 	const displayActiveName = $derived(
-		loading ? 'Abrindo workspace…' : formatSelectorName(activeName)
+		loading ? 'Abrindo espaço de estudo…' : formatSelectorName(activeName)
 	);
 
 	function announce(message: string) {
@@ -112,18 +126,18 @@
 		}
 		if (!target) {
 			switchingId = null;
-			error = 'Esse workspace não está mais cadastrado neste dispositivo.';
+			error = 'Esse espaço de estudo não está mais cadastrado neste dispositivo.';
 			announce(error);
 			return;
 		}
-		announce(`Abrindo workspace ${target?.nameCache ?? ''}…`);
+		announce(`Abrindo espaço de estudo ${target?.nameCache ?? ''}…`);
 		try {
 			if (workspace && target) await workspace.activateEntry(target);
 			else if (workspace) await workspace.flushAndSwitch(id);
 			else await getWorkspaceLifecycle().flushAndSwitch(id);
 			refresh();
 			const next = entries.find((entry) => entry.workspaceId === id);
-			announce(`Workspace ${next?.nameCache ?? 'selecionado'} ativo.`);
+			announce(`Espaço de estudo ${next?.nameCache ?? 'selecionado'} aberto.`);
 			onAction?.();
 			await goto(resolve('/'));
 			// Os consumidores têm caches e editores próprios. Uma recarga completa
@@ -252,7 +266,7 @@
 		error = '';
 		if (pendingActivationFlow === 'add') addError = '';
 		else createError = '';
-		await activateAndClose(pending.workspaceId, `Workspace ${pending.workspaceName} ativo.`);
+		await activateAndClose(pending.workspaceId, `Espaço de estudo ${pending.workspaceName} aberto.`);
 		if (getActiveWorkspace().workspaceId === pending.workspaceId) {
 			pendingActivation = null;
 		} else if (error) {
@@ -341,7 +355,7 @@
 	async function submitCreate() {
 		const trimmed = createName.trim();
 		if (!trimmed) {
-			createError = 'Dê um nome ao workspace para continuar.';
+				createError = 'Dê um nome ao espaço de estudo para continuar.';
 			return;
 		}
 		if (createSaving) return;
@@ -382,7 +396,7 @@
 					lastOpenedAt: new Date().toISOString(),
 					status: 'ready'
 				});
-				await trackActivation(id, trimmed, 'create', `Workspace ${trimmed} criado e ativo.`);
+				await trackActivation(id, trimmed, 'create', `Espaço de estudo ${trimmed} criado e aberto.`);
 				return;
 			}
 			const picked =
@@ -424,7 +438,7 @@
 				manifest.workspaceId,
 				trimmed,
 				'create',
-				`Workspace ${trimmed} criado e ativo.`
+				`Espaço de estudo ${trimmed} criado e aberto.`
 			);
 		} catch (failure) {
 			if (failure instanceof DOMException && failure.name === 'AbortError') {
@@ -434,11 +448,11 @@
 				'code' in failure &&
 				(failure as { code?: unknown }).code === 'AUTOSAVE_FAILED'
 			) {
-				createError = 'Há alterações não salvas no workspace atual. Resolva-as e envie de novo.';
+				createError = 'Há alterações não salvas no espaço atual. Resolva-as e tente de novo.';
 			} else if (failure instanceof Error) {
-				createError = failure.message || 'Não foi possível criar o workspace. Tente novamente.';
+				createError = failure.message || 'Não foi possível criar o espaço de estudo. Tente novamente.';
 			} else {
-				createError = 'Não foi possível criar o workspace. Tente novamente.';
+				createError = 'Não foi possível criar o espaço de estudo. Tente novamente.';
 			}
 		} finally {
 			createSaving = false;
@@ -458,7 +472,7 @@
 					manifestId,
 					manifestName,
 					'create',
-					`Workspace ${manifestName} atualizado e ativo.`
+					`Espaço de estudo ${manifestName} atualizado e aberto.`
 				);
 				return;
 			}
@@ -489,10 +503,10 @@
 				copyId,
 				trimmed,
 				'create',
-				`Workspace ${trimmed} criado como cópia independente.`
+				`Espaço de estudo ${trimmed} criado como cópia independente.`
 			);
 		} catch {
-			createError = 'Não foi possível resolver a colisão de ID. Tente novamente.';
+			createError = 'Não foi possível resolver a pasta duplicada. Tente novamente.';
 		} finally {
 			createSaving = false;
 		}
@@ -510,7 +524,7 @@
 			const manifest = await readManifest(picked);
 			if (!manifest) {
 				addError =
-					'A pasta não tem um manifesto válido (.openbible/config.json v2). Para uma pasta nova, use Criar workspace.';
+					'A pasta não está preparada para o OpenBible. Para uma pasta nova, use Criar espaço de estudo.';
 				return;
 			}
 			if (getCatalogEntry(manifest.workspaceId)) {
@@ -535,7 +549,7 @@
 				id,
 				manifest.name,
 				'add',
-				`Workspace ${manifest.name} adicionado e ativo.`
+				`Espaço de estudo ${manifest.name} adicionado e aberto.`
 			);
 		} catch (failure) {
 			if (failure instanceof DOMException && failure.name === 'AbortError') {
@@ -638,12 +652,12 @@
 
 <div class="workspace-selector" data-variant={variant} aria-busy={loading || undefined}>
 	{#if variant === 'mobile'}
-		<div class="mobile-list" role="menu" aria-label="Workspaces" aria-busy={loading || undefined}>
+		<div class="mobile-list" role="menu" aria-label="Espaços de estudo" aria-busy={loading || undefined}>
 			{#if loading}
-				<p class="menu-status" role="status">Abrindo workspace…</p>
+				<p class="menu-status" role="status">Abrindo espaço de estudo…</p>
 			{:else if entries.length === 0}
 				<p class="menu-status" role="status">
-					Nenhum workspace cadastrado. Crie um novo ou adicione uma pasta existente.
+					Nenhum espaço de estudo cadastrado. Crie um novo ou adicione uma pasta existente.
 				</p>
 			{:else}
 				{#each entries as entry (entry.workspaceId)}
@@ -652,17 +666,17 @@
 						class="mobile-item"
 						role="menuitemradio"
 						aria-checked={entry.workspaceId === activeId}
-						aria-label={`${entry.nameCache}, ${storageBackendLabel(entry.backend)}${entry.workspaceId === activeId ? ', ativo' : ''}`}
+						aria-label={`${entry.nameCache}, ${storageLocationLabel(entry.storageKind)}${entry.workspaceId === activeId ? ', em uso' : ''}`}
 						title={entry.nameCache}
 						disabled={switchingId !== null}
 						onclick={() => selectWorkspace(entry.workspaceId)}
 					>
 						<span class="workspace-item-name">{entry.nameCache}</span>
-						<span class="workspace-item-backend">{storageBackendLabel(entry.backend)}</span>
+						<span class="workspace-item-backend">{storageLocationLabel(entry.storageKind)}</span>
 						{#if entry.workspaceId === activeId}
-							<span class="workspace-item-state">ativo</span>
+							<span class="workspace-item-state">em uso</span>
 						{:else if entry.status !== 'ready' && entry.status !== 'registered'}
-							<span class="workspace-item-state">{entry.status}</span>
+							<span class="workspace-item-state">{statusLabel(entry.status)}</span>
 						{/if}
 						{#if switchingId === entry.workspaceId}
 							<span class="workspace-item-state" role="status">abrindo…</span>
@@ -670,10 +684,10 @@
 					</button>
 				{/each}
 			{/if}
-			<div class="mobile-actions" role="group" aria-label="Ações de workspace">
+			<div class="mobile-actions" role="group" aria-label="Ações do espaço de estudo">
 				<button type="button" class="mobile-item mobile-action" onclick={handleCreate}>
 					<Plus size={15} strokeWidth={2} aria-hidden="true" />
-					<span>Criar workspace</span>
+					<span>Criar espaço de estudo</span>
 				</button>
 				<button type="button" class="mobile-item mobile-action" onclick={handleAdd}>
 					<FolderPlus size={15} strokeWidth={2} aria-hidden="true" />
@@ -694,7 +708,7 @@
 						type="button"
 						variant="ghost"
 						class="selector-trigger"
-						aria-label={`Trocar de workspace, ativo: ${activeName}, ${activeBackendLabel}`}
+			aria-label={`Trocar de espaço de estudo, atual: ${activeName}, local: ${activeBackendLabel}`}
 						title={activeName}
 					>
 						<span class="selector-avatar" aria-hidden="true">
@@ -706,16 +720,19 @@
 								<span class="selector-backend">{activeBackendLabel}</span>
 							{/if}
 						</span>
+						<span class="selector-chevron" aria-hidden="true">
+							<ChevronDown size={14} strokeWidth={1.8} />
+						</span>
 					</Button>
 				{/snippet}
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content align="start" class="workspace-menu">
-				<DropdownMenu.Label>Workspaces</DropdownMenu.Label>
+			<DropdownMenu.Label>Espaços de estudo</DropdownMenu.Label>
 				{#if loading}
-					<p class="menu-status" role="status">Abrindo workspace…</p>
+					<p class="menu-status" role="status">Abrindo espaço de estudo…</p>
 				{:else if entries.length === 0}
 					<p class="menu-status" role="status">
-						Nenhum workspace cadastrado. Crie um novo ou adicione uma pasta existente.
+						Nenhum espaço de estudo cadastrado. Crie um novo ou adicione uma pasta existente.
 					</p>
 				{:else}
 					<DropdownMenu.Group>
@@ -723,15 +740,17 @@
 							<DropdownMenu.Item
 								class="workspace-item"
 								aria-current={entry.workspaceId === activeId ? 'true' : undefined}
-								aria-label={`${entry.nameCache}, ${storageBackendLabel(entry.backend)}${entry.workspaceId === activeId ? ', ativo' : ''}`}
+								aria-label={`${entry.nameCache}, ${storageLocationLabel(entry.storageKind)}${entry.workspaceId === activeId ? ', em uso' : ''}`}
 								onclick={() => selectWorkspace(entry.workspaceId)}
 							>
-								<span class="workspace-item-name">{entry.nameCache}</span>
-								<span class="workspace-item-backend">{storageBackendLabel(entry.backend)}</span>
+								<span class="workspace-item-copy">
+									<span class="workspace-item-name">{entry.nameCache}</span>
+									<span class="workspace-item-backend">{storageLocationLabel(entry.storageKind)}</span>
+								</span>
 								{#if entry.workspaceId === activeId}
-									<span class="workspace-item-state">ativo</span>
+									<span class="workspace-item-state">em uso</span>
 								{:else if entry.status !== 'ready' && entry.status !== 'registered'}
-									<span class="workspace-item-state">{entry.status}</span>
+								<span class="workspace-item-state">{statusLabel(entry.status)}</span>
 								{/if}
 								{#if switchingId === entry.workspaceId}
 									<span class="workspace-item-state" role="status">abrindo…</span>
@@ -743,7 +762,7 @@
 				<DropdownMenu.Separator />
 				<DropdownMenu.Item class="workspace-action" onclick={handleCreate}>
 					<Plus size={14} strokeWidth={2} aria-hidden="true" />
-					<span>Criar workspace</span>
+					<span>Criar espaço de estudo</span>
 				</DropdownMenu.Item>
 				<DropdownMenu.Item class="workspace-action" onclick={handleAdd}>
 					<FolderPlus size={14} strokeWidth={2} aria-hidden="true" />
@@ -772,7 +791,7 @@
 		}}
 	>
 		<div class="workspace-dialog-field">
-			<label class="workspace-dialog-label" for="workspace-create-name">Nome do workspace</label>
+			<label class="workspace-dialog-label" for="workspace-create-name">Nome do espaço de estudo</label>
 			<input
 				id="workspace-create-name"
 				bind:this={createInput}
@@ -786,20 +805,19 @@
 			/>
 			<p class="workspace-dialog-hint" id="workspace-create-help">
 				{#if createKind === 'opfs'}
-					Será criada uma raiz lógica isolada no armazenamento do navegador. Ela não é uma pasta do
-					sistema.
+					Seus dados serão guardados de forma isolada neste navegador; nenhuma pasta do sistema será criada.
 				{:else if createKind === 'native'}
-					Escolha uma pasta vazia do computador; ela será preparada como raiz dedicada.
+					Escolha uma pasta vazia do computador para guardar este espaço de estudo.
 				{:else}
-					Escolha uma pasta vazia; ela será preparada como raiz dedicada.
+					Escolha uma pasta vazia para guardar este espaço de estudo.
 				{/if}
 			</p>
 		</div>
 		{#if createCollision}
 			<div class="workspace-dialog-collision" role="group" aria-label="Colisão de identidade">
 				<p class="workspace-dialog-text">
-					A pasta já pertence ao workspace “{createCollision.manifestName}”, que está cadastrado.
-					Atualize a localização preservando o ID ou crie uma cópia independente com novo ID.
+					A pasta já pertence ao espaço de estudo “{createCollision.manifestName}”, que está cadastrado.
+					Atualize a localização ou crie uma cópia independente.
 				</p>
 				<div class="workspace-dialog-row">
 					<button
@@ -859,7 +877,7 @@
 				{createSaving
 					? 'Criando…'
 					: createKind === 'opfs'
-						? 'Criar workspace'
+						? 'Criar espaço de estudo'
 						: 'Escolher pasta e criar'}
 			</button>
 		</div>
@@ -870,8 +888,7 @@
 	<div class="workspace-dialog-form" aria-busy={addBusy || undefined}>
 		{#if addKind === 'opfs'}
 			<p class="workspace-dialog-text" role="status">
-				No navegador sem acesso a pastas, cada workspace é uma raiz lógica isolada. Crie uma nova
-				raiz em vez de adicionar.
+				Neste navegador, cada espaço de estudo fica separado. Crie um novo em vez de adicionar uma pasta.
 			</p>
 			<div class="workspace-dialog-row">
 				<button
@@ -891,19 +908,19 @@
 					}}
 					disabled={addBusy}
 				>
-					Criar workspace
+					Criar espaço de estudo
 				</button>
 			</div>
 		{:else}
 			<p class="workspace-dialog-text">
-				Escolha a pasta de um workspace existente. O manifesto será validado antes do cadastro;
-				pastas arbitrárias entram como não gerenciadas.
+				Escolha a pasta de um espaço de estudo existente. O OpenBible verifica a pasta antes de adicioná-la;
+				pastas comuns continuam sob seu controle.
 			</p>
 			{#if addCollision}
 				<div class="workspace-dialog-collision" role="group" aria-label="Colisão de identidade">
 					<p class="workspace-dialog-text">
-						A raiz “{addCollision.manifestName}” já está cadastrada. Atualize a localização
-						preservando o ID ou crie uma cópia independente com novo ID.
+					A pasta “{addCollision.manifestName}” já está cadastrada. Atualize a localização ou crie uma
+					cópia independente.
 					</p>
 					<div class="workspace-dialog-row">
 						<button
@@ -928,7 +945,7 @@
 			{#if pendingActivation && pendingActivationFlow === 'add'}
 				<div class="workspace-dialog-collision" role="group" aria-label="Ativação pendente">
 					<p class="workspace-dialog-text">
-						“{pendingActivation.workspaceName}” já está cadastrado; só falta ativá-lo. Retentar não
+						“{pendingActivation.workspaceName}” já está cadastrado; só falta abri-lo. Tentar novamente não
 						escolhe a pasta de novo.
 					</p>
 					<div class="workspace-dialog-row">
@@ -973,8 +990,8 @@
 		<Drawer.NestedRoot bind:open={createOpen}>
 			<Drawer.Content class="workspace-dialog-drawer">
 				<Drawer.Header>
-					<Drawer.Title>Criar workspace</Drawer.Title>
-					<Drawer.Description>Um novo vault independente com identidade própria.</Drawer.Description
+					<Drawer.Title>Criar espaço de estudo</Drawer.Title>
+					<Drawer.Description>Um espaço separado para suas notas, destaques e Bíblias.</Drawer.Description
 					>
 				</Drawer.Header>
 				<div class="workspace-dialog-body">
@@ -985,8 +1002,8 @@
 	{:else}
 		<Dialog.Root bind:open={createOpen}>
 			<Dialog.Content class="workspace-dialog" aria-describedby={undefined}>
-				<Dialog.Title>Criar workspace</Dialog.Title>
-				<Dialog.Description>Um novo vault independente com identidade própria.</Dialog.Description>
+				<Dialog.Title>Criar espaço de estudo</Dialog.Title>
+				<Dialog.Description>Um espaço separado para suas notas, destaques e Bíblias.</Dialog.Description>
 				{@render createForm()}
 			</Dialog.Content>
 		</Dialog.Root>
@@ -999,7 +1016,7 @@
 			<Drawer.Content class="workspace-dialog-drawer">
 				<Drawer.Header>
 					<Drawer.Title>Adicionar pasta existente</Drawer.Title>
-					<Drawer.Description>Cadastre uma raiz sem mover nenhum arquivo.</Drawer.Description>
+					<Drawer.Description>Adicione uma pasta sem mover nenhum arquivo.</Drawer.Description>
 				</Drawer.Header>
 				<div class="workspace-dialog-body">
 					{@render addForm()}
@@ -1010,7 +1027,7 @@
 		<Dialog.Root bind:open={addOpen}>
 			<Dialog.Content class="workspace-dialog" aria-describedby={undefined}>
 				<Dialog.Title>Adicionar pasta existente</Dialog.Title>
-				<Dialog.Description>Cadastre uma raiz sem mover nenhum arquivo.</Dialog.Description>
+				<Dialog.Description>Adicione uma pasta sem mover nenhum arquivo.</Dialog.Description>
 				{@render addForm()}
 			</Dialog.Content>
 		</Dialog.Root>
@@ -1031,9 +1048,10 @@
 		display: flex;
 		align-items: center;
 		justify-content: flex-start;
-		min-height: 34px;
+		min-height: 40px;
 		border-radius: 8px;
 		padding-inline: 10px;
+		gap: 3px;
 		font-size: 0.8rem;
 		font-weight: 500;
 		color: color-mix(in oklch, var(--sidebar-foreground) 80%, transparent);
@@ -1043,25 +1061,38 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 20px;
-		height: 20px;
-		border-radius: 4px;
+		width: 24px;
+		height: 24px;
+		border-radius: 7px;
 		background: color-mix(in oklch, var(--sidebar-foreground) 10%, transparent);
 		font-size: 0.75rem;
 		font-weight: 600;
 		flex-shrink: 0;
-		margin-right: 8px;
 	}
 
 	.selector-copy {
 		display: flex;
 		min-width: 0;
-		max-width: calc(100% - 28px);
 		overflow: hidden;
 		flex: 1;
 		flex-direction: column;
 		align-items: flex-start;
 		gap: 1px;
+	}
+
+	.selector-chevron {
+		display: inline-flex;
+		flex-shrink: 0;
+		align-items: center;
+		justify-content: center;
+		margin-inline-start: auto;
+		color: var(--muted-foreground);
+		transition: color 140ms ease, transform 140ms ease;
+	}
+
+	:global(.workspace-selector .selector-trigger[aria-expanded='true'] .selector-chevron) {
+		color: var(--foreground);
+		transform: rotate(180deg);
 	}
 
 	.selector-backend,
@@ -1159,15 +1190,33 @@
 		text-align: start;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+		font-size: 0.75rem;
+		font-weight: 550;
+		letter-spacing: -0.02em;
+		line-height: 1.35;
 	}
 
 	:global(.workspace-menu) {
-		min-width: 240px;
+		min-width: 280px;
 		max-width: min(320px, calc(100vw - 32px));
 	}
 
 	:global(.workspace-item) {
-		gap: 8px;
+		min-height: 44px;
+		gap: 10px;
+	}
+
+	:global(.workspace-item[aria-current='true']) {
+		background: color-mix(in oklch, var(--foreground) 7%, transparent);
+		font-weight: 600;
+	}
+
+	.workspace-item-copy {
+		display: flex;
+		min-width: 0;
+		flex: 1;
+		flex-direction: column;
+		gap: 1px;
 	}
 
 	.workspace-item-name {
@@ -1186,8 +1235,9 @@
 	}
 
 	.workspace-item-backend {
-		margin-inline-start: auto;
-		max-width: 9rem;
+		width: 100%;
+		max-width: 100%;
+		margin-inline-start: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -1354,6 +1404,7 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		.workspace-selector :global(.selector-trigger),
+		.selector-chevron,
 		.mobile-item {
 			transition: none;
 		}

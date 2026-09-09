@@ -31,6 +31,7 @@
 		upsertCatalogEntry,
 		type DeleteGuardPreview,
 		type WorkspaceCatalogEntry,
+		type WorkspaceCatalogStatus,
 		WorkspaceDeleteBlockedError
 	} from '$lib/storage/workspace-catalog';
 	import { getWorkspaceLifecycle } from '$lib/storage/workspace-lifecycle';
@@ -100,7 +101,28 @@
 	}
 
 	function kindLabel(kind: StorageKind): string {
-		return storageKindLabel(kind);
+		return kind === 'native' ? 'Computador' : kind === 'local' ? 'Pasta escolhida' : 'Navegador';
+	}
+
+	function storageLocationLabel(kind: StorageKind): string {
+		return kind === 'native'
+			? 'Pasta do OpenBible no computador'
+			: kind === 'local'
+				? 'Pasta escolhida neste dispositivo'
+				: 'Armazenamento interno do navegador';
+	}
+
+	function catalogStatusLabel(status: WorkspaceCatalogStatus): string {
+		return {
+			registered: 'preparado',
+			opening: 'abrindo',
+			ready: 'disponível',
+			'permission-needed': 'aguarda permissão',
+			unavailable: 'indisponível',
+			locked: 'em uso em outra janela',
+			invalid: 'precisa ser verificado',
+			detached: 'fora da lista'
+		}[status];
 	}
 
 	function lastOpenedLabel(value: string | null): string {
@@ -138,12 +160,12 @@
 	async function saveRename(entry: WorkspaceCatalogEntry) {
 		const trimmed = renameValue.trim();
 		if (!trimmed) {
-			renameError = 'Dê um nome ao workspace para salvar.';
+			renameError = 'Dê um nome ao espaço de estudo para salvar.';
 			return;
 		}
 		const storage = workspace?.storage;
 		if (!storage || entry.workspaceId !== catalogActiveId) {
-			renameError = 'Torne o workspace ativo para renomeá-lo.';
+			renameError = 'Abra este espaço de estudo para renomeá-lo.';
 			return;
 		}
 		renameSaving = true;
@@ -153,7 +175,7 @@
 			refreshCatalog();
 			renameId = null;
 			manageError = '';
-			manageMessage = `Workspace renomeado para “${trimmed}”. A pasta física não mudou.`;
+			manageMessage = `Espaço de estudo renomeado para “${trimmed}”. A pasta não mudou.`;
 			focusVaultHeading();
 		} catch {
 			renameError = 'Não foi possível salvar o nome. Tente novamente.';
@@ -170,7 +192,7 @@
 			if (workspace) await workspace.activateEntry(entry);
 			else await getWorkspaceLifecycle().flushAndSwitch(entry.workspaceId);
 			refreshCatalog();
-			manageMessage = `Workspace “${entry.nameCache}” ativo.`;
+			manageMessage = `Espaço de estudo “${entry.nameCache}” aberto.`;
 			focusVaultHeading();
 		} catch (failure) {
 			const code =
@@ -179,12 +201,12 @@
 					: '';
 			manageError =
 				code === 'AUTOSAVE_FAILED'
-					? 'Há alterações não salvas no workspace atual. Tente novamente ou descarte para trocar.'
+					? 'Há alterações não salvas no espaço atual. Tente novamente ou descarte para trocar.'
 					: code === 'permission' || code === 'needs-reconnect'
-						? 'A raiz precisa de reconexão. Use Localizar novamente para apontar a pasta certa.'
+						? 'A pasta precisa ser localizada novamente. Use Localizar novamente para apontar a pasta certa.'
 						: code === 'missing' || code === 'invalid' || code === 'locked'
-							? 'Não foi possível montar a raiz. O cadastro foi preservado.'
-							: 'Não foi possível ativar o workspace. Se a raiz saiu do lugar, use Localizar novamente.';
+							? 'Não foi possível abrir a pasta. O cadastro foi preservado.'
+							: 'Não foi possível abrir o espaço de estudo. Se a pasta mudou de lugar, use Localizar novamente.';
 		} finally {
 			manageBusy = false;
 		}
@@ -212,8 +234,8 @@
 			const remaining = listCatalog();
 			manageMessage =
 				remaining.length === 0
-					? `“${entry.nameCache}” saiu da lista; os arquivos permanecem na raiz. Crie ou adicione um workspace pelo seletor para continuar.`
-					: `“${entry.nameCache}” saiu da lista; nenhum arquivo foi apagado e a raiz pode ser adicionada de novo.`;
+					? `“${entry.nameCache}” saiu da lista; os arquivos permanecem na pasta. Crie ou adicione um espaço de estudo pelo seletor para continuar.`
+					: `“${entry.nameCache}” saiu da lista; nenhum arquivo foi apagado e a pasta pode ser adicionada de novo.`;
 			focusVaultHeading();
 		} catch {
 			manageError = 'Não foi possível remover da lista. Tente novamente.';
@@ -226,12 +248,12 @@
 		if (manageBusy) return;
 		const restored = restoreCatalogEntry(entry.workspaceId);
 		if (!restored) {
-			manageError = 'Não foi possível restaurar o workspace. Tente novamente.';
+			manageError = 'Não foi possível restaurar o espaço de estudo. Tente novamente.';
 			return;
 		}
 		refreshCatalog();
 		manageError = '';
-		manageMessage = `“${restored.nameCache}” voltou à lista. Abra-o para verificar a raiz, se necessário.`;
+		manageMessage = `“${restored.nameCache}” voltou à lista. Abra-o para verificar a pasta, se necessário.`;
 		focusVaultHeading();
 	}
 
@@ -259,12 +281,12 @@
 				deletePreview = null;
 				deleteError =
 					failure.code === 'locked'
-						? 'A raiz está com lock em outra janela. Feche-a lá para verificar a exclusão.'
+						? 'A pasta está sendo usada em outra janela. Feche-a para verificar a exclusão.'
 						: failure.code === 'permission' || failure.code === 'needs-reconnect'
-							? 'Sem acesso à raiz para verificar a exclusão. Localize-a novamente antes de excluir.'
-							: 'A raiz está ausente ou sem manifesto válido; nada pode ser verificado nem apagado aqui.';
+							? 'Sem acesso à pasta para verificar a exclusão. Localize-a novamente antes de excluir.'
+							: 'A pasta está ausente ou não foi preparada pelo OpenBible; nada pode ser verificado nem apagado aqui.';
 			} else {
-				deleteError = 'Não foi possível verificar a raiz. Tente novamente.';
+				deleteError = 'Não foi possível verificar a pasta. Tente novamente.';
 			}
 		} finally {
 			deleteLoading = false;
@@ -291,14 +313,14 @@
 				}
 				manageMessage =
 					remaining.length === 0
-						? `“${deletedName}” foi excluído com a raiz. Crie ou adicione um workspace pelo seletor para continuar.`
-						: `“${deletedName}” foi excluído com a raiz, sem tocar nos outros workspaces.`;
+						? `“${deletedName}” foi excluído com a pasta. Crie ou adicione um espaço de estudo pelo seletor para continuar.`
+						: `“${deletedName}” foi excluído com a pasta, sem tocar nos outros espaços de estudo.`;
 			} else if (workspace) {
 				try {
 					await workspace.activateEntry(remaining[0]);
-					manageMessage = `“${deletedName}” foi excluído; “${remaining[0].nameCache}” está ativo.`;
+					manageMessage = `“${deletedName}” foi excluído; “${remaining[0].nameCache}” está aberto.`;
 				} catch {
-					manageMessage = `“${deletedName}” foi excluído. Ative outro workspace na lista para continuar.`;
+					manageMessage = `“${deletedName}” foi excluído. Abra outro espaço de estudo na lista para continuar.`;
 				}
 				refreshCatalog();
 			}
@@ -311,7 +333,7 @@
 						: `${failure.message} Nenhuma opção de forçar está disponível.`;
 			} else {
 				deleteError =
-					'A exclusão falhou no meio do caminho. Verifique a raiz antes de tentar de novo.';
+					'A exclusão falhou no meio do caminho. Verifique a pasta antes de tentar de novo.';
 			}
 		} finally {
 			deleteBusy = false;
@@ -328,7 +350,7 @@
 			const manifest = await readManifest(picked);
 			if (!manifest) {
 				manageError =
-					'A pasta escolhida não tem um manifesto válido (.openbible/config.json v2). Escolha a raiz do workspace ou uma pasta preparada pelo OpenBible.';
+					'A pasta escolhida não está preparada para o OpenBible. Escolha a pasta de um espaço de estudo ou prepare uma nova pelo aplicativo.';
 				return;
 			}
 			if (manifest.workspaceId === entry.workspaceId) {
@@ -361,7 +383,7 @@
 			} else if (error instanceof Error) {
 				manageError = error.message;
 			} else {
-				manageError = 'Não foi possível localizar a raiz. Tente novamente.';
+				manageError = 'Não foi possível localizar a pasta. Tente novamente.';
 			}
 		} finally {
 			manageBusy = false;
@@ -379,12 +401,12 @@
 			refreshCatalog();
 			manageMessage =
 				result.action === 'copy'
-					? `Cópia independente criada com novo ID; “${collision.entryName}” segue intacto.`
-					: `Localização de “${collision.foundName}” atualizada sem duplicar o ID.`;
+					? `Cópia independente criada; “${collision.entryName}” segue intacto.`
+					: `Localização de “${collision.foundName}” atualizada sem criar uma duplicata.`;
 			collision = null;
 			focusVaultHeading();
 		} catch {
-			manageError = 'Não foi possível resolver a colisão de ID. Tente novamente.';
+			manageError = 'Não foi possível resolver a pasta duplicada. Tente novamente.';
 		} finally {
 			manageBusy = false;
 		}
@@ -444,16 +466,12 @@
 			});
 			indexVersion = projection.projectionVersion;
 			indexProgress = 1;
-			indexMessage = `${projection.records.length} registro(s) reconciliado(s) na projeção v${projection.projectionVersion}.`;
+			indexMessage = `${projection.records.length} registro(s) organizados para pesquisa.`;
 		} catch (error) {
 			if (error instanceof WorkspaceIndexRebuildCancelledError) {
-				indexMessage =
-					'Reconstrução cancelada antes do commit; os registros primários permanecem intactos.';
+				indexMessage = 'Organização cancelada; seus dados permanecem intactos.';
 			} else {
-				indexError =
-					error instanceof Error
-						? error.message
-						: 'Não foi possível reconstruir o índice do workspace.';
+				indexError = 'Não foi possível organizar os dados para pesquisa. Tente novamente.';
 			}
 		} finally {
 			indexRebuilding = false;
@@ -474,31 +492,38 @@
 	<section class="workspace-settings" class:embedded aria-labelledby="workspace-settings-heading">
 		{#if !embedded}
 			<div class="section-heading">
-				<p class="eyebrow">Workspace</p>
-				<h2 id="workspace-settings-heading">Onde seus arquivos ficam</h2>
+				<p class="eyebrow">Dados</p>
+				<h2 id="workspace-settings-heading">Onde seus dados ficam</h2>
 				<p class="intro">
-					Os registros do workspace ficam no armazenamento local deste app. Markdown e PDF são
-					formatos de exportação; a origem continua escopada ao workspace ativo.
+					Suas notas, destaques e preferências ficam neste dispositivo por padrão. Markdown e PDF
+					são formatos de exportação; o conteúdo original continua separado por espaço de estudo.
 				</p>
 			</div>
 		{:else}
-			<h2 id="workspace-settings-heading" class="sr-only">
-				{view === 'workspaces' ? 'Gerenciar workspaces' : 'Armazenamento do workspace'}
+			<h2 id="workspace-settings-heading" class="config-panel-heading">
+				{view === 'workspaces' ? 'Gerenciar espaços de estudo' : 'Armazenamento dos dados'}
 			</h2>
 			<p class="panel-lead">
 				{view === 'workspaces'
-					? 'Gerencie a identidade, o estado e o ciclo de vida dos workspaces deste dispositivo.'
-					: `Este ambiente usa ${storageBackendLabel(kind === 'native' ? 'sqlite' : 'indexeddb')} para o workspace. Markdown e PDF são saídas de exportação quando solicitadas.`}
+					? 'Crie, organize e reabra espaços de estudo neste dispositivo.'
+					: 'Seus dados ficam neste dispositivo por padrão. Escolha uma pasta quando quiser manter uma cópia acessível fora do navegador.'}
 			</p>
 		{/if}
 
 		{#if view === 'storage'}
-			<dl class="facts">
-				<div>
-					<dt>Banco operacional</dt>
-					<dd>{storageBackendLabel(kind === 'native' ? 'sqlite' : 'indexeddb')}</dd>
-				</div>
-			</dl>
+			<div class="storage-location">
+				<span class="fact-label">Local dos dados</span>
+				<strong>{storageLocationLabel(kind)}</strong>
+			</div>
+			<details class="technical-details">
+				<summary>Ver detalhes técnicos</summary>
+				<dl class="facts">
+					<div>
+						<dt>Banco operacional</dt>
+						<dd>{storageBackendLabel(kind === 'native' ? 'sqlite' : 'indexeddb')}</dd>
+					</div>
+				</dl>
+			</details>
 
 			<div class="actions">
 				{#if workspace.storage?.kind === 'local' || workspace.storage?.kind === 'native'}
@@ -522,7 +547,7 @@
 			{/if}
 			{#if kind === 'native' && workspace.config?.migrationState}
 				<p class="feedback" aria-live="polite">
-					Migração: {workspace.config.migrationState === 'completed'
+					Atualização do armazenamento: {workspace.config.migrationState === 'completed'
 						? 'concluída'
 						: workspace.config.migrationState === 'error'
 							? 'precisa ser repetida'
@@ -535,18 +560,15 @@
 			{#if workspace.storage}
 				<section class="index-recovery" aria-labelledby="workspace-index-heading">
 					<div>
-						<p class="eyebrow">Índice derivado</p>
-						<h3 id="workspace-index-heading">Reconstruir índice do workspace</h3>
+						<h3 id="workspace-index-heading">Reorganizar dados para pesquisa</h3>
 						<p class="switch-hint">
-							Refaz a projeção de destaques a partir dos registros primários no
-							{storageBackendLabel(kind === 'native' ? 'sqlite' : 'indexeddb')}. Bíblias importadas
-							não são alteradas.
+							Organiza os destaques para a pesquisa; Bíblias importadas não são alteradas.
 						</p>
 					</div>
 					<div class="actions index-actions">
 						{#if indexRebuilding}
 							<button class="secondary" type="button" onclick={cancelWorkspaceContentRebuild}>
-								Cancelar reconstrução
+								Cancelar organização
 							</button>
 						{:else}
 							<button
@@ -554,17 +576,17 @@
 								type="button"
 								onclick={() => void rebuildWorkspaceContent()}
 							>
-								{indexError ? 'Tentar novamente' : 'Reconstruir índice'}
+								{indexError ? 'Tentar novamente' : 'Reorganizar para pesquisa'}
 							</button>
 						{/if}
 					</div>
 					{#if indexRebuilding}
 						<div class="index-progress" aria-live="polite">
 							<div class="progress-track" aria-hidden="true">
-								<span style={`width: ${Math.round(indexProgress * 100)}%`}></span>
+								<span style={`transform: scaleX(${indexProgress})`}></span>
 							</div>
 							<p class="feedback" role="status">
-								Reconstruindo índice: {Math.round(indexProgress * 100)}%
+								Organizando dados para pesquisa: {Math.round(indexProgress * 100)}%
 							</p>
 						</div>
 					{:else if indexError}
@@ -572,24 +594,23 @@
 					{:else if indexMessage}
 						<p class="feedback" role="status">{indexMessage}</p>
 					{:else if indexVersion}
-						<p class="switch-hint">Última projeção conhecida: v{indexVersion}.</p>
+						<p class="switch-hint">Pesquisa atualizada na versão v{indexVersion}.</p>
 					{/if}
 				</section>
 			{/if}
 			<div class="vault-block">
 				<h3 class="switch-title" bind:this={vaultHeading} tabindex="-1">
-					Workspaces neste dispositivo
+					Espaços de estudo neste dispositivo
 				</h3>
 				<p class="switch-hint">
-					A lista mostra registros locais e referências de recovery. Remover da lista não apaga
-					dados; excluir é uma ação separada e protegida.
+					Remover só tira da lista; excluir apaga a pasta.
 				</p>
 				{#if catalogLoading}
-					<p class="feedback" role="status" aria-busy="true">Carregando workspaces…</p>
+					<p class="feedback" role="status" aria-busy="true">Carregando espaços de estudo…</p>
 				{:else if catalogEntries.length === 0}
 					<p class="feedback" role="status">
-						Nenhum workspace cadastrado. Crie um novo ou adicione uma pasta pelo seletor no topo da
-						barra lateral.
+						Nenhum espaço de estudo cadastrado. Crie um novo ou adicione uma pasta pelo seletor no
+						topo da barra lateral.
 					</p>
 				{:else}
 					<ul class="vault-list">
@@ -599,73 +620,99 @@
 								<div class="vault-identity">
 									<strong class="vault-name">{entry.nameCache}</strong>
 									<span class="vault-meta">
-										<code class="vault-id" title={entry.workspaceId}>{entry.workspaceId}</code>
-										<span aria-hidden="true">·</span>
 										<span>{kindLabel(entry.storageKind)}</span>
 										<span aria-hidden="true">·</span>
-										<span>{storageBackendLabel(entry.backend)}</span>
-										<span aria-hidden="true">·</span>
-										<span>{isActive ? 'ativo' : entry.status}</span>
-										<span aria-hidden="true">·</span>
-										<span>último acesso: {lastOpenedLabel(entry.lastOpenedAt)}</span>
+										<span>{isActive ? 'em uso' : catalogStatusLabel(entry.status)}</span>
 									</span>
+									<details class="vault-details">
+										<summary>Detalhes técnicos</summary>
+										<dl>
+											<div>
+												<dt>Identificador</dt>
+												<dd><code>{entry.workspaceId}</code></dd>
+											</div>
+											<div>
+												<dt>Armazenamento</dt>
+												<dd>{storageKindLabel(entry.storageKind)}</dd>
+											</div>
+											<div>
+												<dt>Banco operacional</dt>
+												<dd>{storageBackendLabel(entry.backend)}</dd>
+											</div>
+											<div>
+												<dt>Último acesso</dt>
+												<dd>{lastOpenedLabel(entry.lastOpenedAt)}</dd>
+											</div>
+										</dl>
+									</details>
 								</div>
-								<div class="actions vault-actions">
-									{#if !isActive}
+								<div class="vault-actions">
+									<div
+										class="actions workspace-row-actions"
+										aria-label="Gerenciar este espaço de estudo"
+									>
+										{#if !isActive}
+											<button
+												class="secondary vault-button"
+												type="button"
+												onclick={() => activateEntry(entry)}
+												disabled={busy || manageBusy}
+											>
+												Tornar ativo
+											</button>
+										{/if}
+										{#if isActive && workspace?.storage}
+											{#if renameId === entry.workspaceId}
+												<button
+													class="secondary vault-button"
+													type="button"
+													onclick={cancelRename}
+													disabled={renameSaving}
+												>
+													Cancelar
+												</button>
+											{:else}
+												<button
+													class="secondary vault-button"
+													type="button"
+													onclick={() => startRename(entry)}
+													disabled={busy || manageBusy}
+												>
+													Renomear
+												</button>
+											{/if}
+										{/if}
 										<button
 											class="secondary vault-button"
 											type="button"
-											onclick={() => activateEntry(entry)}
+											onclick={() => relocateEntry(entry)}
 											disabled={busy || manageBusy}
 										>
-											Tornar ativo
+											Localizar novamente
 										</button>
-									{/if}
-									{#if isActive && workspace?.storage}
-										{#if renameId === entry.workspaceId}
-											<button
-												class="secondary vault-button"
-												type="button"
-												onclick={cancelRename}
-												disabled={renameSaving}
-											>
-												Cancelar
-											</button>
-										{:else}
-											<button
-												class="secondary vault-button"
-												type="button"
-												onclick={() => startRename(entry)}
-												disabled={busy || manageBusy}
-											>
-												Renomear
-											</button>
-										{/if}
-									{/if}
-									<button
-										class="secondary vault-button"
-										type="button"
-										onclick={() => relocateEntry(entry)}
-										disabled={busy || manageBusy}
-									>
-										Localizar novamente
-									</button>
-									<button
-										class="secondary vault-button"
-										type="button"
-										onclick={() => (removeTarget = entry)}
-										disabled={busy || manageBusy}
-									>
-										Remover da lista
-									</button>
-									<button
-										class="danger vault-button"
-										type="button"
-										onclick={() => openDeleteDialog(entry)}
-										disabled={busy || manageBusy}
-									>
-										Excluir workspace
-									</button>
+										<button
+											class="secondary vault-button"
+											type="button"
+											onclick={() => (removeTarget = entry)}
+											disabled={busy || manageBusy}
+										>
+											Remover da lista
+										</button>
+									</div>
+									<div class="destructive-zone">
+										<div>
+											<h4>Exclusão permanente</h4>
+											<p>Apaga a pasta inteira e não pode ser desfeito.</p>
+										</div>
+										<button
+											class="danger vault-button"
+											type="button"
+											onclick={() => openDeleteDialog(entry)}
+											disabled={busy || manageBusy}
+										>
+											Excluir espaço de estudo
+										</button>
+									</div>
 								</div>
 								{#if renameId === entry.workspaceId && isActive}
 									<form
@@ -689,7 +736,7 @@
 											aria-describedby={`rename-help-${entry.workspaceId}`}
 										/>
 										<p class="switch-hint" id={`rename-help-${entry.workspaceId}`}>
-											Não renomeia a pasta física; só o nome portátil do workspace.
+											A pasta não muda; apenas o nome mostrado pelo OpenBible será alterado.
 										</p>
 										{#if renameError}
 											<p class="error" role="alert">{renameError}</p>
@@ -711,20 +758,18 @@
 				{/if}
 				{#if detachedCatalogEntries.length > 0}
 					<div class="detached-block">
-						<h4 class="switch-title">Removidos da lista</h4>
+						<h4 class="switch-title">Fora da lista</h4>
 						<p class="switch-hint">
-							Esses registros continuam preservados e podem voltar ao seletor. Restaurar não abre a
-							raiz automaticamente.
+							Esses espaços continuam preservados e podem voltar ao seletor. Restaurar não abre a
+							pasta automaticamente.
 						</p>
-						<ul class="vault-list" aria-label="Workspaces removidos da lista">
+						<ul class="vault-list" aria-label="Espaços de estudo fora da lista">
 							{#each detachedCatalogEntries as entry (entry.workspaceId)}
 								<li class="vault-row vault-row-detached">
 									<div class="vault-identity">
 										<strong class="vault-name">{entry.nameCache}</strong>
 										<span class="vault-meta">
-											<code class="vault-id" title={entry.workspaceId}>{entry.workspaceId}</code>
-											<span aria-hidden="true">·</span>
-											<span>{storageBackendLabel(entry.backend)}</span>
+											<span>{kindLabel(entry.storageKind)}</span>
 											<span aria-hidden="true">·</span>
 											<span>dados preservados</span>
 										</span>
@@ -744,11 +789,11 @@
 					</div>
 				{/if}
 				{#if collision}
-					<div class="collision-box" role="group" aria-label="Colisão de identidade do workspace">
+					<div class="collision-box" role="group" aria-label="Pasta já cadastrada">
 						<p class="switch-confirm">
-							A raiz escolhida (“{collision.foundName}”) já está cadastrada com outro apontamento.
-							Atualize a localização preservando o ID ou crie uma cópia independente com novo ID —
-							nunca duas raízes para o mesmo ID.
+							A pasta escolhida (“{collision.foundName}”) já está cadastrada de outra forma.
+							Atualize a localização para continuar usando este espaço ou crie uma cópia
+							independente.
 						</p>
 						<div class="actions">
 							<button
@@ -788,9 +833,8 @@
 				{#snippet removeDialogBody()}
 					<p class="vault-dialog-lead">
 						{#if removeTarget}
-							“{removeTarget.nameCache}” sai só do catálogo deste dispositivo. Nenhum arquivo,
-							manifesto ou diretório da raiz é apagado, e a mesma raiz pode ser adicionada de novo
-							depois.
+							“{removeTarget.nameCache}” sai só da lista deste dispositivo. Nenhum arquivo ou pasta
+							é apagado, e o mesmo espaço pode ser adicionado de novo depois.
 						{/if}
 					</p>
 					<div class="actions vault-dialog-actions">
@@ -840,7 +884,7 @@
 							<Dialog.Content class="vault-dialog">
 								<Dialog.Title>Remover da lista</Dialog.Title>
 								<Dialog.Description>
-									Ação não destrutiva: só a referência local sai do catálogo.
+									Ação não destrutiva: só este espaço sai da lista.
 								</Dialog.Description>
 								{@render removeDialogBody()}
 							</Dialog.Content>
@@ -851,13 +895,13 @@
 				{#snippet deleteDialogBody()}
 					<p class="vault-dialog-lead">
 						{#if deleteTarget}
-							Apaga a raiz inteira de “{deleteTarget.nameCache}” — arquivos, manifesto e diretórios.
-							Não há como desfazer.
+							Apaga a pasta inteira de “{deleteTarget.nameCache}” — arquivos e subpastas. Não há
+							como desfazer.
 						{/if}
 					</p>
 					{#if deleteLoading}
 						<p class="feedback" role="status" aria-busy="true">
-							Verificando manifesto, propriedade, varredura e capability…
+							Verificando se a pasta pode ser excluída com segurança…
 						</p>
 					{:else if deleteError && !deletePreview?.ok}
 						<p class="error" role="alert" aria-live="assertive">{deleteError}</p>
@@ -868,22 +912,22 @@
 					{:else if deletePreview && deleteTarget}
 						<ul class="guard-list" aria-label="Verificações de segurança">
 							<li data-ok={deletePreview.manifestValid}>
-								{deletePreview.manifestValid ? '✓' : '✗'} Manifesto v2 com ID comprovado
+								{deletePreview.manifestValid ? '✓' : '✗'} Identidade do espaço confirmada
 							</li>
 							<li data-ok={deletePreview.managedRoot}>
-								{deletePreview.managedRoot ? '✓' : '✗'} Raiz dedicada gerenciada
+								{deletePreview.managedRoot ? '✓' : '✗'} Pasta criada pelo OpenBible
 							</li>
 							<li data-ok={deletePreview.capability}>
-								{deletePreview.capability ? '✓' : '✗'} Capability de exclusão do backend
+								{deletePreview.capability ? '✓' : '✗'} Exclusão segura disponível
 							</li>
 							<li data-ok={!deletePreview.scanError && deletePreview.unknownFiles.length === 0}>
-								{!deletePreview.scanError && deletePreview.unknownFiles.length === 0 ? '✓' : '✗'} Varredura
-								sem arquivos desconhecidos
+								{!deletePreview.scanError && deletePreview.unknownFiles.length === 0 ? '✓' : '✗'} Nenhum
+								arquivo desconhecido encontrado
 								{#if deletePreview.unknownFiles.length > 0}
 									<span class="guard-detail">({deletePreview.unknownFiles.join(', ')})</span>
 								{/if}
 							</li>
-							<li data-ok={true}>✓ Lock de escritor verificado na abertura da raiz</li>
+							<li data-ok={true}>✓ Nenhuma outra janela está usando a pasta</li>
 						</ul>
 						{#if deletePreview.ok}
 							<div class="workspace-dialog-field">
@@ -930,7 +974,7 @@
 								onclick={() => void confirmDelete()}
 								disabled={deleteBusy || deleteConfirmName.trim() !== deleteTarget.nameCache}
 							>
-								{deleteBusy ? 'Excluindo…' : 'Excluir workspace'}
+								{deleteBusy ? 'Excluindo…' : 'Excluir espaço de estudo'}
 							</button>
 						{/if}
 					</div>
@@ -949,7 +993,7 @@
 						>
 							<Drawer.Content class="vault-dialog-drawer">
 								<Drawer.Header>
-									<Drawer.Title>Excluir workspace</Drawer.Title>
+									<Drawer.Title>Excluir espaço de estudo</Drawer.Title>
 								</Drawer.Header>
 								<div class="vault-dialog-body">
 									{@render deleteDialogBody()}
@@ -967,9 +1011,9 @@
 							}}
 						>
 							<Dialog.Content class="vault-dialog">
-								<Dialog.Title>Excluir workspace</Dialog.Title>
+								<Dialog.Title>Excluir espaço de estudo</Dialog.Title>
 								<Dialog.Description>
-									Ação destrutiva e irreversível sobre a raiz dedicada.
+									Ação destrutiva e irreversível sobre a pasta escolhida.
 								</Dialog.Description>
 								{@render deleteDialogBody()}
 							</Dialog.Content>
@@ -998,16 +1042,12 @@
 		line-height: 1.55;
 	}
 
-	.sr-only {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		padding: 0;
-		margin: -1px;
-		overflow: hidden;
-		clip: rect(0, 0, 0, 0);
-		white-space: nowrap;
-		border: 0;
+	.config-panel-heading {
+		margin: 0 0 8px;
+		font-size: clamp(1.25rem, 3vw, 1.65rem);
+		font-weight: 600;
+		letter-spacing: -0.03em;
+		line-height: 1.15;
 	}
 
 	.eyebrow {
@@ -1036,6 +1076,42 @@
 	code {
 		font-family: var(--font-mono);
 		font-size: 0.86em;
+	}
+
+	.storage-location {
+		display: grid;
+		gap: 4px;
+		margin-top: 24px;
+		padding-bottom: 16px;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.fact-label {
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+	}
+
+	.storage-location strong {
+		font-size: 0.95rem;
+		font-weight: 600;
+	}
+
+	.technical-details {
+		margin-top: 16px;
+		border: 1px solid var(--border);
+		padding: 10px 12px;
+	}
+
+	.technical-details summary,
+	.vault-details summary {
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.technical-details .facts {
+		margin: 16px 0 2px;
 	}
 
 	.facts {
@@ -1151,10 +1227,6 @@
 		letter-spacing: -0.01em;
 	}
 
-	.index-recovery .eyebrow {
-		margin-bottom: 6px;
-	}
-
 	.index-actions {
 		margin-top: 0;
 	}
@@ -1174,8 +1246,10 @@
 	.progress-track span {
 		display: block;
 		height: 100%;
+		width: 100%;
+		transform-origin: left center;
 		background: var(--foreground);
-		transition: width 160ms ease;
+		transition: transform 160ms ease;
 	}
 
 	.switch-title {
@@ -1202,7 +1276,6 @@
 	.vault-block {
 		margin-top: 28px;
 		padding-top: 24px;
-		border-top: 1px solid var(--border);
 	}
 
 	.detached-block {
@@ -1268,17 +1341,75 @@
 		font-size: 0.75rem;
 	}
 
-	.vault-id {
-		overflow: hidden;
-		max-width: 220px;
-		font-family: var(--font-mono);
+	.vault-details {
+		margin-top: 4px;
+	}
+
+	.vault-details dl {
+		display: grid;
+		gap: 8px;
+		margin: 10px 0 0;
+		border-top: 1px solid var(--border);
+		padding-top: 10px;
+	}
+
+	.vault-details dl > div {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.vault-details dt,
+	.vault-details dd {
 		font-size: 0.72rem;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+	}
+
+	.vault-details dt {
+		min-width: 110px;
+	}
+
+	.vault-details dd {
+		margin: 0;
 	}
 
 	.vault-actions {
 		margin-top: 12px;
+	}
+
+	.workspace-row-actions {
+		margin-top: 0;
+	}
+
+	.destructive-zone {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 16px;
+		margin-top: 16px;
+		border-top: 1px solid var(--border);
+		padding-top: 14px;
+	}
+
+	.destructive-zone h4,
+	.destructive-zone p {
+		margin: 0;
+	}
+
+	.destructive-zone h4 {
+		color: var(--destructive);
+		font-size: 0.78rem;
+		font-weight: 650;
+	}
+
+	.destructive-zone p {
+		margin-top: 4px;
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+		line-height: 1.45;
+	}
+
+	.destructive-zone .danger {
+		flex-shrink: 0;
 	}
 
 	.vault-button {
@@ -1406,6 +1537,18 @@
 		.secondary,
 		.danger {
 			width: 100%;
+		}
+
+		.destructive-zone {
+			align-items: stretch;
+			flex-direction: column;
+			gap: 10px;
+		}
+	}
+
+	@media (max-width: 767px) {
+		.config-panel-heading {
+			display: none;
 		}
 	}
 

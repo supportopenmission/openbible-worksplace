@@ -29,25 +29,29 @@
 			<div class="section-heading">
 				<p class="eyebrow">Backup</p>
 				<h2 id="workspace-backups-heading">Backup e restauração</h2>
-				<p class="intro">
-					Leve o conteúdo autoral para outro dispositivo ou restaure uma cópia sem substituir o
-					workspace atual antes da confirmação.
+			<p class="intro">
+				Leve suas notas e destaques para outro dispositivo ou restaure uma cópia sem substituir o
+				espaço de estudo atual antes da confirmação.
 				</p>
 			</div>
 		{:else}
-			<h2 id="workspace-backups-heading" class="sr-only">Backup e restauração</h2>
+			<h2 id="workspace-backups-heading" class="config-panel-heading">Backup e restauração</h2>
 			<p class="panel-lead">
-				Crie uma cópia portátil ou restaure um pacote em um workspace novo. O conteúdo permanece no
-				backend do ambiente: {backendLabel()}.
+				Crie uma cópia dos seus dados ou restaure uma cópia em um novo espaço de estudo. Nada é
+				substituído sem sua confirmação.
 			</p>
+			<details class="technical-details">
+				<summary>Ver detalhes técnicos</summary>
+				<p>Este dispositivo usa {backendLabel()} para guardar os dados localmente.</p>
+			</details>
 		{/if}
 
 		<section class="backup-actions" aria-labelledby="backup-actions-heading">
 			<div>
-				<p class="eyebrow">Operações do workspace ativo</p>
+				<p class="eyebrow">Ações deste espaço de estudo</p>
 				<h3 id="backup-actions-heading">Levar ou restaurar seus dados</h3>
 				<p class="switch-hint">
-					Bíblias SQLite/WASM são opcionais e ficam separadas do conteúdo autoral por padrão.
+					Bíblias importadas são opcionais e ficam separadas das suas notas e destaques por padrão.
 				</p>
 			</div>
 			<div class="actions backup-action-buttons" aria-label="Ações de backup">
@@ -72,7 +76,7 @@
 			</div>
 			{#if !storage}
 				<p class="feedback" role="status" aria-live="polite">
-					Configure um workspace antes de iniciar um backup.
+					Configure um espaço de estudo antes de criar uma cópia.
 				</p>
 			{/if}
 		</section>
@@ -94,16 +98,12 @@
 		line-height: 1.55;
 	}
 
-	.sr-only {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		padding: 0;
-		margin: -1px;
-		overflow: hidden;
-		clip: rect(0, 0, 0, 0);
-		white-space: nowrap;
-		border: 0;
+	.config-panel-heading {
+		margin: 0 0 8px;
+		font-size: clamp(1.25rem, 3vw, 1.65rem);
+		font-weight: 600;
+		letter-spacing: -0.03em;
+		line-height: 1.15;
 	}
 
 	.eyebrow {
@@ -168,6 +168,22 @@
 		line-height: 1.55;
 	}
 
+	.technical-details {
+		margin-top: 12px;
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+		line-height: 1.5;
+	}
+
+	.technical-details summary {
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.technical-details p {
+		margin: 8px 0 0;
+	}
+
 	.backup-actions > .feedback {
 		grid-column: 1 / -1;
 	}
@@ -185,6 +201,12 @@
 
 		.backup-action-buttons :global(button) {
 			width: 100%;
+		}
+	}
+
+	@media (max-width: 767px) {
+		.config-panel-heading {
+			display: none;
 		}
 	}
 </style>

@@ -86,7 +86,7 @@
 	>
 		<div class="server-title-group">
 			<Server size={16} aria-hidden="true" />
-			<span class="server-title">Servidor de Sincronização (Self-hosted)</span>
+			<span class="server-title">Servidor alternativo de sincronização</span>
 		</div>
 		<div class="server-badge-group">
 			{#if isCustom}
@@ -101,8 +101,7 @@
 	{#if isExpanded}
 		<form class="server-body" onsubmit={handleSave}>
 			<p class="server-desc">
-				Você pode apontar o OpenBible para a sua própria instância do servidor de sincronização.
-				O valor padrão pode ser definido via variável de ambiente <code>PUBLIC_SYNC_SERVER_URL</code>.
+				Use um servidor próprio se sua equipe ou instalação precisar de um endereço diferente do padrão.
 			</p>
 
 			{#if message}
@@ -121,7 +120,7 @@
 
 			<div class="form-group">
 				<label for="sync-server-url" class="form-label">
-					URL do Servidor
+					Endereço do servidor
 					{#if defaultUrl}
 						<span class="label-hint">(padrão: {defaultUrl})</span>
 					{/if}
@@ -151,7 +150,7 @@
 				{/if}
 				<Button type="submit" size="sm" disabled={saving}>
 					<Check size={13} aria-hidden="true" />
-					<span>{saving ? 'Salvando...' : 'Salvar servidor'}</span>
+					<span>{saving ? 'Salvando...' : 'Salvar endereço'}</span>
 				</Button>
 			</div>
 		</form>
@@ -245,14 +244,6 @@
 		color: var(--muted-foreground, #6b7280);
 		line-height: 1.4;
 		margin: 0;
-	}
-
-	.server-desc code {
-		font-family: var(--font-mono, monospace);
-		background: var(--muted, #f3f4f6);
-		padding: 1px 4px;
-		border-radius: 4px;
-		font-size: 0.75rem;
 	}
 
 	.server-alert {

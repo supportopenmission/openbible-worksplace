@@ -147,6 +147,7 @@
 
 		.shell-main {
 			padding-bottom: calc(84px + env(safe-area-inset-bottom));
+			max-height: 100svh;
 		}
 
 		.shell-main.note-editor-shell,

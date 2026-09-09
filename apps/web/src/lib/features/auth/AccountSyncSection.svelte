@@ -6,12 +6,11 @@
 		setStoredAuthUser,
 		setStoredAuthToken
 	} from './auth-client';
-	import AccountAuthCard from './AccountAuthCard.svelte';
+	import AccountAuthOverlay from './AccountAuthOverlay.svelte';
 	import ConnectedAccountPanel from './ConnectedAccountPanel.svelte';
 	import SyncServerConfigCard from './SyncServerConfigCard.svelte';
 	import CloudWorkspacesList from '../sync/CloudWorkspacesList.svelte';
 	import SyncSettings from '../sync/SyncSettings.svelte';
-	import { Cloud, ShieldCheck } from '@lucide/svelte';
 
 	interface SessionUser {
 		id?: string;
@@ -21,6 +20,7 @@
 
 	let user = $state<SessionUser | null>(getStoredAuthUser());
 	let loading = $state(false);
+	let authOpen = $state(false);
 
 	async function refreshSession() {
 		try {
@@ -52,17 +52,13 @@
 	});
 </script>
 
-<div class="account-sync-section">
-	<div class="section-intro">
-		<div class="intro-header">
-			<Cloud size={20} class="intro-icon" aria-hidden="true" />
-			<h3 class="intro-title">Conta e Sincronização em Nuvem</h3>
+	<div class="account-sync-section">
+		<div class="section-intro">
+			<h3 class="intro-title">Conta e sincronização</h3>
+			<p class="intro-desc">
+				A conta é opcional. Seus dados ficam locais até você ativar a sincronização.
+			</p>
 		</div>
-		<p class="intro-desc">
-			Conecte sua conta para manter seus workspaces e notas sincronizados entre seus dispositivos
-			de forma automática e privada.
-		</p>
-	</div>
 
 	{#if loading}
 		<div class="loading-panel" role="status">
@@ -80,23 +76,30 @@
 		</div>
 	{:else}
 		<div class="unauthenticated-content">
-			<AccountAuthCard
-				onsuccess={() => {
-					void refreshSession();
-				}}
-			/>
+			<div class="auth-prompt">
+				<div class="auth-prompt-copy">
+					<strong>Conecte sua conta</strong>
+					<p>Sincronize notas e espaços de estudo entre dispositivos.</p>
+				</div>
+				<button
+					type="button"
+					class="auth-prompt-action"
+					aria-haspopup="dialog"
+					onclick={() => (authOpen = true)}
+				>
+					Entrar ou criar conta
+				</button>
+			</div>
 		</div>
 	{/if}
+
+	<AccountAuthOverlay bind:open={authOpen} onsucceed={() => void refreshSession()} />
 
 	<SyncServerConfigCard
 		onchange={() => {
 			void refreshSession();
 		}}
 	/>
-
-	<div class="workspace-sync-divider">
-		<span class="divider-text">Sincronização do Workspace</span>
-	</div>
 
 	<SyncSettings />
 </div>
@@ -105,7 +108,7 @@
 	.account-sync-section {
 		display: flex;
 		flex-direction: column;
-		gap: 24px;
+		gap: 20px;
 		width: 100%;
 		font-family: inherit;
 	}
@@ -116,18 +119,8 @@
 		gap: 6px;
 	}
 
-	.intro-header {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	:global(.intro-icon) {
-		color: var(--foreground, #111827);
-	}
-
 	.intro-title {
-		font-size: 1.125rem;
+		font-size: 1rem;
 		font-weight: 600;
 		color: var(--foreground, #111827);
 		margin: 0;
@@ -154,20 +147,71 @@
 		gap: 20px;
 	}
 
-	.workspace-sync-divider {
-		display: flex;
+	.auth-prompt {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
 		align-items: center;
-		margin-top: 12px;
-		margin-bottom: -8px;
-		border-top: 1px solid var(--border, #e5e7eb);
-		padding-top: 16px;
+		gap: 12px;
+		border-block: 1px solid var(--border, #e5e7eb);
+		padding: 14px 0;
 	}
 
-	.divider-text {
+	.auth-prompt-copy {
+		display: flex;
+		min-width: 0;
+		flex-direction: column;
+		gap: 3px;
+	}
+
+	.auth-prompt-copy strong {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--foreground, #111827);
+	}
+
+	.auth-prompt-copy p {
+		margin: 0;
+		color: var(--muted-foreground, #6b7280);
+		font-size: 0.8125rem;
+		line-height: 1.45;
+	}
+
+	.auth-prompt-action {
+		min-height: 36px;
+		border: 1px solid var(--foreground, #111827);
+		border-radius: 8px;
+		background: var(--foreground, #111827);
+		padding: 8px 12px;
+		color: var(--background, #fff);
+		font: inherit;
 		font-size: 0.8125rem;
 		font-weight: 600;
-		color: var(--muted-foreground, #6b7280);
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	.auth-prompt-action:hover {
+		opacity: 0.9;
+	}
+
+	.auth-prompt-action:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	@media (max-width: 640px) {
+		.auth-prompt {
+			grid-template-columns: 1fr;
+		}
+
+		.auth-prompt-action {
+			width: 100%;
+		}
+	}
+
+	@media (max-width: 767px) {
+		.intro-title {
+			display: none;
+		}
 	}
 </style>

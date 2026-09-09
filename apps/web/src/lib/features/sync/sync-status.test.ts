@@ -11,8 +11,8 @@ describe('SyncStatus interface contract', () => {
 		expect(source).toContain("'connecting'");
 		expect(source).toContain("'syncing'");
 		expect(source).toContain("'synced'");
-		expect(source).toContain('Fila local');
-		expect(source).toContain('Último sucesso');
+		expect(source).toContain('Alterações pendentes');
+		expect(source).toContain('Última sincronização');
 	});
 
 	it('expõe falha recuperável e respeita acessibilidade', () => {

@@ -69,15 +69,15 @@
 <section class="workspace-stats" aria-labelledby="workspace-stats-heading">
 	<div class="stats-head">
 		<p class="eyebrow">Uso</p>
-		<h2 id="workspace-stats-heading">Estatísticas do workspace</h2>
+		<h2 id="workspace-stats-heading">Uso do espaço de estudo</h2>
 		<p class="intro">
-			Contagens calculadas neste dispositivo, sem rede. Valores de tamanho são estimativas.
+			Resumo calculado neste dispositivo, sem enviar dados pela rede. Os tamanhos são estimativas.
 		</p>
 	</div>
 
 	{#if !effectiveScope}
 		<p class="state-message" role="status">
-			Workspace indisponível. Configure o armazenamento para ver estatísticas.
+			Espaço de estudo indisponível. Configure o armazenamento para ver o resumo de uso.
 		</p>
 	{:else if loading}
 		<p class="state-message" role="status" aria-live="polite">Calculando estatísticas…</p>
@@ -111,7 +111,7 @@
 		</dl>
 		{#if isEmpty}
 			<p class="state-message" role="status">
-				Workspace novo: importe uma Bíblia ou crie a primeira nota para começar.
+				Espaço de estudo novo: importe uma Bíblia ou crie a primeira nota para começar.
 			</p>
 		{/if}
 	{/if}

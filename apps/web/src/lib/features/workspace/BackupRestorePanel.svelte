@@ -624,7 +624,7 @@
 						aria-valuenow={progress}
 						aria-label="Progresso do backup"
 					>
-						<span style={`width: ${progress}%`}></span>
+						<span style={`transform: scaleX(${progress / 100})`}></span>
 					</div>
 					<p class="backup-status" role="status" aria-live="polite">{statusMessage}</p>
 				</div>
@@ -730,7 +730,7 @@
 						aria-valuenow={progress}
 						aria-label="Progresso da restauração"
 					>
-						<span style={`width: ${progress}%`}></span>
+						<span style={`transform: scaleX(${progress / 100})`}></span>
 					</div>
 					<p class="backup-status" role="status" aria-live="polite">{statusMessage}</p>
 				</div>
@@ -888,8 +888,10 @@
 	.progress-track span {
 		display: block;
 		height: 100%;
+		width: 100%;
+		transform-origin: left center;
 		background: var(--foreground);
-		transition: width 180ms ease;
+		transition: transform 180ms ease;
 	}
 
 	.backup-status,

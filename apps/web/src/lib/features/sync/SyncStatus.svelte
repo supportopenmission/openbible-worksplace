@@ -1,13 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
 
-	export type SyncStatusKind =
-		| 'local'
-		| 'offline'
-		| 'connecting'
-		| 'syncing'
-		| 'synced'
-		| 'error';
+	export type SyncStatusKind = 'local' | 'offline' | 'connecting' | 'syncing' | 'synced' | 'error';
 
 	interface SyncStatusProps {
 		status?: SyncStatusKind;
@@ -26,8 +20,8 @@
 
 	const statusLabels: Record<SyncStatusKind, string> = {
 		local: 'Somente local',
-		offline: 'Offline',
-		connecting: 'Conectando',
+		offline: 'Sem conexão',
+		connecting: 'Conectando…',
 		syncing: 'Sincronizando',
 		synced: 'Sincronizado',
 		error: 'Erro de sincronização'
@@ -35,11 +29,11 @@
 
 	const statusDescriptions: Record<SyncStatusKind, string> = {
 		local: 'As notas permanecem disponíveis neste dispositivo.',
-		offline: 'A rede está indisponível; mudanças locais continuam permitidas.',
-		connecting: 'Tentando alcançar o endpoint configurado.',
-		syncing: 'Enviando e recebendo somente as mudanças pendentes.',
-		synced: 'A réplica local está alinhada com o último sucesso.',
-		error: 'A edição local continua disponível e a tentativa pode ser repetida.'
+		offline: 'Sem internet no momento; as mudanças continuam salvas neste dispositivo.',
+		connecting: 'Tentando conectar ao servidor configurado.',
+		syncing: 'Enviando e recebendo apenas as mudanças pendentes.',
+		synced: 'Este dispositivo está atualizado com a última sincronização.',
+		error: 'As edições continuam disponíveis e você pode tentar novamente.'
 	};
 
 	const statusLabel = $derived(statusLabels[status]);
@@ -58,10 +52,15 @@
 	}
 </script>
 
-<section class="sync-status" data-state={status} aria-labelledby="sync-status-title" role="status" aria-live="polite">
+<section
+	class="sync-status"
+	data-state={status}
+	aria-labelledby="sync-status-title"
+	role="status"
+	aria-live="polite"
+>
 	<div class="status-heading">
 		<div>
-			<p class="status-eyebrow">Estado da sincronização</p>
 			<h3 id="sync-status-title">{statusLabel}</h3>
 		</div>
 		<span class="status-dot" aria-hidden="true"></span>
@@ -71,20 +70,27 @@
 
 	<dl class="status-details">
 		<div>
-			<dt>Fila local</dt>
+			<dt>Alterações pendentes</dt>
 			<dd>{hasPending ? `${pendingCount} pendente${pendingCount === 1 ? '' : 's'}` : 'Vazia'}</dd>
 		</div>
 		<div>
-			<dt>Último sucesso</dt>
+			<dt>Última sincronização</dt>
 			<dd>{lastSuccessLabel}</dd>
 		</div>
 	</dl>
 
 	{#if status === 'error'}
 		<div class="status-error" role="alert">
-			<span>{lastErrorCode ? `Código: ${lastErrorCode}` : 'A última tentativa falhou.'}</span>
+			<span>A última tentativa falhou.</span>
+			{#if lastErrorCode}
+				<details class="technical-details">
+					<summary>Ver detalhes técnicos</summary>
+					<code>{lastErrorCode}</code>
+				</details>
+			{/if}
 			{#if onRetry}
-				<Button type="button" variant="outline" size="sm" onclick={onRetry}>Tentar novamente</Button>
+				<Button type="button" variant="outline" size="sm" onclick={onRetry}>Tentar novamente</Button
+				>
 			{/if}
 		</div>
 	{/if}
@@ -107,25 +113,18 @@
 		gap: 16px;
 	}
 
-	.status-eyebrow,
 	.status-description,
 	.status-details,
 	.status-error {
 		margin: 0;
 	}
 
-	.status-eyebrow,
 	.status-description,
 	dt,
 	.status-error {
 		color: var(--muted-foreground);
 		font-size: 0.78rem;
 		line-height: 1.45;
-	}
-
-	.status-eyebrow {
-		margin-bottom: 3px;
-		font-weight: 600;
 	}
 
 	h3 {
@@ -179,6 +178,25 @@
 		justify-content: flex-start;
 		flex-wrap: wrap;
 		color: var(--destructive);
+	}
+
+	.technical-details {
+		margin: 0;
+		color: var(--muted-foreground);
+		font-size: 0.72rem;
+		line-height: 1.45;
+	}
+
+	.technical-details summary {
+		cursor: pointer;
+		font-weight: 600;
+	}
+
+	.technical-details code {
+		display: block;
+		margin-top: 4px;
+		font-family: var(--font-mono, ui-monospace, monospace);
+		font-size: 0.72rem;
 	}
 
 	@media (max-width: 640px) {

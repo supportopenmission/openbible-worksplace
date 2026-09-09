@@ -6,12 +6,12 @@ describe('WorkspaceSelector forms contract', () => {
 	it('mantém criar, adicionar e abrir como ações distintas', () => {
 		const source = readFileSync(new URL('./WorkspaceSelector.svelte', import.meta.url), 'utf8');
 
-		expect(source).toContain('Criar workspace');
+		expect(source).toContain('Criar espaço de estudo');
 		expect(source).toContain('Adicionar pasta existente');
 		expect(source).toContain('submitCreate');
 		expect(source).toContain('submitAdd');
 		expect(source).toContain('selectWorkspace');
-		expect(source).toContain('aria-label="Ações de workspace"');
+		expect(source).toContain('aria-label="Ações do espaço de estudo"');
 		expect(source).toContain('selector-avatar');
 		expect(source).not.toContain('ArrowLeftRight');
 	});

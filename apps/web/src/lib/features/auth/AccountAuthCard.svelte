@@ -58,7 +58,8 @@
 				});
 
 				if (response.error) {
-					errorMessage = response.error.message || 'Erro ao realizar cadastro. Verifique se o email já existe.';
+					errorMessage =
+						response.error.message || 'Erro ao realizar cadastro. Verifique se o email já existe.';
 				} else {
 					if (response.data?.token) {
 						setStoredAuthToken(response.data.token);
@@ -101,7 +102,10 @@
 				}
 			}
 		} catch (err) {
-			errorMessage = err instanceof Error ? err.message : 'Falha na comunicação com o servidor de sincronização.';
+			errorMessage =
+				err instanceof Error
+					? err.message
+					: 'Falha na comunicação com o servidor de sincronização.';
 		} finally {
 			loading = false;
 		}
@@ -195,7 +199,9 @@
 					}}
 				>
 					<Sparkles size={13} class="sparkle-icon" aria-hidden="true" />
-					<span>Você quis dizer <strong>{emailTypo.suggestedEmail}</strong>? Clique para corrigir.</span>
+					<span
+						>Você quis dizer <strong>{emailTypo.suggestedEmail}</strong>? Clique para corrigir.</span
+					>
 				</button>
 			{/if}
 		</div>
@@ -232,8 +238,8 @@
 		</div>
 
 		<p class="auth-note">
-			O OpenBible é 100% offline-first. A conta serve apenas para sincronizar seus dados
-			entre seus próprios dispositivos com privacidade e controle total.
+			O OpenBible funciona sem internet. A conta serve apenas para sincronizar seus dados entre seus
+			próprios dispositivos com privacidade e controle total.
 		</p>
 	</form>
 </div>
@@ -269,7 +275,9 @@
 		border: none;
 		border-bottom: 2px solid transparent;
 		cursor: pointer;
-		transition: color 0.15s ease, border-color 0.15s ease;
+		transition:
+			color 0.15s ease,
+			border-color 0.15s ease;
 	}
 
 	.auth-tab:hover {
@@ -338,7 +346,9 @@
 		color: var(--foreground, #111827);
 		font-size: 0.875rem;
 		outline: none;
-		transition: border-color 0.15s ease, box-shadow 0.15s ease;
+		transition:
+			border-color 0.15s ease,
+			box-shadow 0.15s ease;
 	}
 
 	.form-input:focus-visible {

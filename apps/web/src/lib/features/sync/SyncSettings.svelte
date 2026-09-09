@@ -32,7 +32,9 @@
 			? 'app.sqlite'
 			: 'IndexedDB · openbible-workspace'
 	);
-	const workspaceLabel = $derived(workspace?.workspaceId ?? 'Workspace ativo');
+	const workspaceLabel = $derived(
+		workspace?.config?.label ?? workspace?.storage?.label ?? 'Espaço de estudo atual'
+	);
 	let syncStatus = $state<SyncStatusKind>('local');
 	let lastSuccessAt = $state<string | null>(null);
 	let lastErrorCode = $state<string | null>(null);
@@ -75,10 +77,10 @@
 			if (workspace?.workspaceId) configureHttpSync(workspace.workspaceId, null);
 			syncStatus = 'local';
 			lastErrorCode = null;
-			message = 'Sincronização remota desabilitada. As notas continuam somente neste dispositivo.';
+			message = 'Sincronização em nuvem desativada. As notas continuam somente neste dispositivo.';
 		} else {
 			message =
-				'Sincronização remota habilitada. Clique em "Sincronizar agora" para sincronizar com o servidor.';
+				'Sincronização em nuvem ativada. Clique em "Sincronizar agora" para enviar as mudanças.';
 		}
 	}
 
@@ -92,7 +94,8 @@
 				persistSettings();
 				syncStatus = 'local';
 				lastErrorCode = null;
-				message = 'Sincronização desabilitada. As notas continuam somente neste dispositivo.';
+				message =
+					'Sincronização em nuvem desativada. As notas continuam somente neste dispositivo.';
 				return;
 			}
 			if (!workspace?.storage) throw new Error('workspace_storage_unavailable');
@@ -123,7 +126,7 @@
 			message =
 				lastErrorCode === 'unauthorized' ||
 				(caught instanceof Error && caught.message.includes('401'))
-					? 'Conecte sua conta para sincronizar este workspace com o servidor.'
+					? 'Conecte sua conta para sincronizar este espaço de estudo com o servidor.'
 					: 'A conexão com o servidor falhou; as alterações locais continuam salvas com segurança.';
 		} finally {
 			saving = false;
@@ -141,7 +144,7 @@
 			message = `${result.conflicts} conflito(s) foram preservados para revisão; as notas locais continuam disponíveis.`;
 		} else {
 			syncStatus = 'synced';
-			message = 'Sincronização com o servidor concluída. As notas continuam disponíveis localmente.';
+			message = 'Sincronização concluída. As notas continuam disponíveis neste dispositivo.';
 		}
 		persistSettings();
 		if (typeof window !== 'undefined') {
@@ -167,11 +170,11 @@
 				syncEnabled = true;
 				syncStatus = 'synced';
 				lastSuccessAt = new Date().toISOString();
-				message = `Workspace "${cw.name}" vinculado com sucesso! As notas foram sincronizadas neste aparelho.`;
+				message = `Espaço de estudo "${cw.name}" vinculado com sucesso! As notas foram sincronizadas neste aparelho.`;
 				persistSettings();
 			}
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Erro ao vincular workspace da nuvem.';
+			error = err instanceof Error ? err.message : 'Erro ao vincular o espaço de estudo da nuvem.';
 		} finally {
 			linkingWorkspaceId = null;
 		}
@@ -186,32 +189,29 @@
 <section class="sync-settings" aria-labelledby="sync-settings-title">
 	<div class="sync-heading">
 		<div>
-			<p class="sync-eyebrow">Storage / Workspace</p>
-			<h2 id="sync-settings-title">Sincronização</h2>
+			<h2 id="sync-settings-title">Sincronização deste espaço</h2>
 			<p class="sync-description">
-				Escolha se este workspace pode sincronizar documentos entre dispositivos. A rede é opcional;
-				as notas continuam disponíveis localmente.
+				Ative para manter este espaço atualizado em outros dispositivos.
 			</p>
 		</div>
-		<span
-			class:active={syncEnabled}
-			class="sync-state"
-			aria-label={syncEnabled ? 'Sincronização ativa' : 'Sincronização local'}
-		>
-			{syncEnabled ? 'Ativa' : 'Somente local'}
-		</span>
 	</div>
 
-	<div class="sync-summary" aria-label="Resumo do armazenamento">
-		<div>
-			<span>Backend das notas</span>
-			<strong>{backendLabel}</strong>
-		</div>
-		<div>
-			<span>Workspace</span>
-			<strong class="technical-value">{workspaceLabel}</strong>
-		</div>
-	</div>
+	<p class="workspace-context">
+		<span>Espaço atual</span>
+		<strong>{workspaceLabel}</strong>
+	</p>
+	<details class="technical-details">
+		<summary>Ver detalhes técnicos</summary>
+		<p>Armazenamento local: <code>{backendLabel}</code>.</p>
+	</details>
+
+	<label class="toggle-row">
+		<input type="checkbox" bind:checked={syncEnabled} onchange={handleToggleSync} />
+		<span>
+			<strong>Permitir sincronização em nuvem</strong>
+			<small>Desative para manter este espaço apenas neste dispositivo.</small>
+		</span>
+	</label>
 
 	<SyncStatus
 		status={syncStatus}
@@ -219,18 +219,13 @@
 		{lastErrorCode}
 		onRetry={syncEnabled ? saveSettings : undefined}
 	/>
-	<label class="toggle-row">
-		<input type="checkbox" bind:checked={syncEnabled} onchange={handleToggleSync} />
-		<span>
-			<strong>Permitir sincronização em nuvem</strong>
-			<small>Desative para manter as notas deste workspace apenas neste dispositivo.</small>
-		</span>
-	</label>
 
 	<div class="sync-actions">
-		<Button type="button" onclick={() => saveSettings()} disabled={saving}>
-			{saving ? 'Sincronizando…' : 'Sincronizar agora'}
-		</Button>
+		{#if syncEnabled}
+			<Button type="button" onclick={() => saveSettings()} disabled={saving}>
+				{saving ? 'Sincronizando…' : 'Sincronizar agora'}
+			</Button>
+		{/if}
 		{#if message}
 			<p class="feedback success" role="status">{message}</p>
 		{/if}
@@ -241,9 +236,11 @@
 
 	<Dialog.Root bind:open={linkDialogOpen}>
 		<Dialog.Content class="cloud-link-dialog">
-			<Dialog.Title>Vincular a um workspace na nuvem</Dialog.Title>
+			<Dialog.Title>Vincular a um espaço de estudo na nuvem</Dialog.Title>
 			<Dialog.Description>
-				Sua conta possui {availableCloudWorkspaces.length} workspace(s) salvo(s) na nuvem. Você pode vincular este aparelho a um deles para puxar suas notas, ou sincronizar este workspace como um novo na nuvem.
+				Sua conta possui {availableCloudWorkspaces.length} espaço(s) de estudo salvo(s) na nuvem. Você
+				pode vincular este aparelho a um deles para trazer suas notas, ou sincronizar este espaço como
+				um novo na nuvem.
 			</Dialog.Description>
 
 			<div class="cloud-workspaces-picker">
@@ -252,7 +249,10 @@
 					<div class="cloud-picker-card">
 						<div class="picker-info">
 							<span class="picker-name">{cw.name}</span>
-							<span class="picker-id">{cw.workspaceId}</span>
+							<details class="picker-details">
+								<summary>Detalhes técnicos</summary>
+								<code>{cw.workspaceId}</code>
+							</details>
 						</div>
 						<Button
 							size="sm"
@@ -273,7 +273,7 @@
 
 			<label class="merge-checkbox">
 				<input type="checkbox" bind:checked={importLocalNotes} />
-				<span>Copiar notas deste aparelho para o workspace vinculado</span>
+				<span>Copiar notas deste aparelho para o espaço vinculado</span>
 			</label>
 
 			<div class="dialog-separator">
@@ -288,7 +288,7 @@
 					onclick={handleSyncAsNew}
 				>
 					<PlusCircle size={14} class="mr-1" aria-hidden="true" />
-					<span>Sincronizar como novo workspace na nuvem</span>
+					<span>Sincronizar como novo espaço na nuvem</span>
 				</Button>
 				<Button
 					variant="ghost"
@@ -311,19 +311,27 @@
 	}
 
 	.sync-heading {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 24px;
-		padding: 12px 0 24px;
+		padding: 8px 0 18px;
 	}
 
-	.sync-eyebrow {
-		margin: 0 0 6px;
+	.workspace-context {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 8px;
+		margin: 0;
+		border-bottom: 1px solid var(--border);
+		padding: 0 0 14px;
+		font-size: 0.85rem;
+	}
+
+	.workspace-context span {
 		color: var(--muted-foreground);
 		font-size: 0.75rem;
+	}
+
+	.workspace-context strong {
 		font-weight: 600;
-		letter-spacing: 0.02em;
 	}
 
 	h2,
@@ -349,50 +357,20 @@
 		margin-top: 8px;
 	}
 
-	.sync-state {
-		flex-shrink: 0;
-		border: 1px solid var(--border);
-		border-radius: 999px;
-		padding: 5px 9px;
+	.technical-details {
+		margin: 10px 0 0;
 		color: var(--muted-foreground);
 		font-size: 0.75rem;
+		line-height: 1.5;
+	}
+
+	.technical-details summary {
 		font-weight: 600;
-		white-space: nowrap;
+		cursor: pointer;
 	}
 
-	.sync-state.active {
-		border-color: var(--foreground);
-		color: var(--foreground);
-	}
-
-	.sync-summary {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 1px;
-		border-block: 1px solid var(--border);
-		background: var(--border);
-	}
-
-	.sync-summary > div {
-		display: grid;
-		gap: 5px;
-		background: var(--background);
-		padding: 14px 0;
-	}
-
-	.sync-summary span {
-		color: var(--muted-foreground);
-		font-size: 0.76rem;
-	}
-
-	.sync-summary strong {
-		font-size: 0.85rem;
-		font-weight: 600;
-	}
-
-	.technical-value {
-		font-family: var(--font-mono, ui-monospace, monospace);
-		font-size: 0.78rem;
+	.technical-details p {
+		margin: 8px 0 0;
 	}
 
 	.toggle-row {
@@ -427,7 +405,7 @@
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 12px;
-		padding-top: 20px;
+		padding-top: 16px;
 	}
 
 	.feedback {
@@ -441,16 +419,6 @@
 
 	.feedback.error {
 		color: var(--destructive);
-	}
-
-	@media (max-width: 640px) {
-		.sync-heading {
-			gap: 12px;
-		}
-
-		.sync-summary > div {
-			padding: 12px 0;
-		}
 	}
 
 	:global(.cloud-link-dialog) {
@@ -493,10 +461,21 @@
 		color: var(--foreground);
 	}
 
-	.picker-id {
+	.picker-details {
+		margin-top: 2px;
+		color: var(--muted-foreground);
+		font-size: 0.68rem;
+	}
+
+	.picker-details summary {
+		cursor: pointer;
+	}
+
+	.picker-details code {
+		display: block;
+		margin-top: 3px;
 		font-family: var(--font-mono, monospace);
 		font-size: 0.68rem;
-		color: var(--muted-foreground);
 	}
 
 	.merge-checkbox {
