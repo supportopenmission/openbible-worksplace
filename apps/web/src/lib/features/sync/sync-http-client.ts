@@ -7,6 +7,7 @@ import type {
 	WorkspaceContentRecord
 } from '$lib/storage/workspace-content-repository';
 import type { WorkspaceStorage } from '$lib/storage/types';
+import { extractTitleFromMarkdown } from '$lib/features/notes/portable-markdown';
 
 export interface HttpSyncSettings {
 	endpoint: string;
@@ -198,19 +199,41 @@ function payloadFingerprint(payload: Record<string, unknown> | null): string {
 
 function toRecord(change: HttpSyncChange, workspaceId: string): WorkspaceContentRecord {
 	const payload = change.payload ?? {};
-	const meta =
+	const rawMeta =
 		payload.meta && typeof payload.meta === 'object' && !Array.isArray(payload.meta)
 			? (payload.meta as Record<string, unknown>)
-			: undefined;
-	const schemaVersion = Number(payload.schemaVersion ?? meta?.schemaVersion ?? 1);
+			: {};
+	const body = typeof payload.body === 'string' ? payload.body : '';
+	const title =
+		typeof rawMeta.title === 'string' && rawMeta.title.trim()
+			? rawMeta.title.trim()
+			: extractTitleFromMarkdown(body) || 'Nova nota';
+	const meta: Record<string, unknown> = {
+		...rawMeta,
+		id: typeof rawMeta.id === 'string' && rawMeta.id.trim() ? rawMeta.id.trim() : change.documentId,
+		title,
+		type: typeof rawMeta.type === 'string' && rawMeta.type.trim() ? rawMeta.type.trim() : 'note',
+		createdAt:
+			typeof rawMeta.createdAt === 'string' && rawMeta.createdAt
+				? rawMeta.createdAt
+				: change.createdAt ?? change.updatedAt,
+		updatedAt:
+			typeof rawMeta.updatedAt === 'string' && rawMeta.updatedAt
+				? rawMeta.updatedAt
+				: change.updatedAt
+	};
+	const schemaVersion = Number(payload.schemaVersion ?? meta.schemaVersion ?? 1);
 	return {
 		workspaceId,
 		kind: change.kind,
 		id: change.documentId,
 		schemaVersion: Number.isInteger(schemaVersion) ? schemaVersion : 1,
-		payload,
-		...(typeof meta?.createdAt === 'string' ? { createdAt: meta.createdAt } : {}),
-		updatedAt: typeof meta?.updatedAt === 'string' ? meta.updatedAt : change.updatedAt
+		payload: {
+			...payload,
+			meta
+		},
+		createdAt: String(meta.createdAt),
+		updatedAt: String(meta.updatedAt)
 	};
 }
 
@@ -400,6 +423,14 @@ export async function syncWorkspaceHttp(
 		state.cursor = page.nextCursor;
 		hasMore = page.hasMore;
 		writeState(workspaceId, state);
+	}
+
+	if (typeof window !== 'undefined' && (pulled > 0 || acceptedCount > 0)) {
+		window.dispatchEvent(
+			new CustomEvent('openbible:workspace-content-changed', {
+				detail: { workspaceId, pulled, accepted: acceptedCount }
+			})
+		);
 	}
 
 	return { cursor: state.cursor, accepted: acceptedCount, conflicts: conflictCount, pulled };

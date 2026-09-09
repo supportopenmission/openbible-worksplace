@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type Snippet } from 'svelte';
+	import { onMount, type Snippet } from 'svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -21,6 +21,36 @@
 		lastStorage = storage;
 		notesState.resetForWorkspace();
 		if (storage) void notesState.loadNotes(storage, true);
+	});
+
+	onMount(() => {
+		const onContentChanged = (e: Event) => {
+			const storage = workspace?.storage;
+			if (!storage) return;
+			const detail = (e as CustomEvent<{ workspaceId?: string }>).detail;
+			if (!detail?.workspaceId || detail.workspaceId === workspace?.workspaceId) {
+				void notesState.loadNotes(storage, true);
+			}
+		};
+
+		const onWorkspaceActivated = () => {
+			const storage = workspace?.storage;
+			lastStorage = storage ?? null;
+			notesState.resetForWorkspace();
+			if (storage) void notesState.loadNotes(storage, true);
+		};
+
+		window.addEventListener('openbible:workspace-content-changed', onContentChanged);
+		window.addEventListener('openbible:workspace-activated', onWorkspaceActivated);
+
+		if (workspace?.storage) {
+			void notesState.loadNotes(workspace.storage, true);
+		}
+
+		return () => {
+			window.removeEventListener('openbible:workspace-content-changed', onContentChanged);
+			window.removeEventListener('openbible:workspace-activated', onWorkspaceActivated);
+		};
 	});
 
 	function handleSelectNote(id: string) {

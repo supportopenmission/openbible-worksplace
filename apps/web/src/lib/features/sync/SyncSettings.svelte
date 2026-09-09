@@ -144,6 +144,13 @@
 			message = 'Sincronização com o servidor concluída. As notas continuam disponíveis localmente.';
 		}
 		persistSettings();
+		if (typeof window !== 'undefined') {
+			window.dispatchEvent(
+				new CustomEvent('openbible:workspace-content-changed', {
+					detail: { workspaceId: workspace.workspaceId }
+				})
+			);
+		}
 	}
 
 	async function handleChooseCloudWorkspace(cw: CloudWorkspaceItem) {

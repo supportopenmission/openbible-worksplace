@@ -5,7 +5,7 @@ import {
 } from '$lib/storage/workspace-content-storage';
 import type { WorkspaceContentRecord } from '$lib/storage/workspace-content-repository';
 import type { Note, NoteMeta } from './note-types';
-import { parseNoteFile } from './note-markdown';
+import { extractTitleFromMarkdown, parseNoteFile } from './portable-markdown';
 import { queueHttpSyncTombstone, scheduleHttpSync } from '$lib/features/sync/sync-http-client';
 
 const defaultStorage: WorkspaceStorage = {
@@ -56,51 +56,57 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function parseMeta(
 	value: unknown,
 	id: string,
-	fallback: { createdAt: string; updatedAt: string }
-): NoteMeta | null {
-	if (!isRecord(value)) return null;
-	if (typeof value.id !== 'string' || typeof value.title !== 'string' || value.type !== 'note') {
-		return null;
-	}
-	const schemaVersion = Number.isInteger(value.schemaVersion)
-		? Number(value.schemaVersion)
+	fallback: { createdAt: string; updatedAt: string; title?: string }
+): NoteMeta {
+	const raw = isRecord(value) ? value : {};
+	const schemaVersion = Number.isInteger(raw.schemaVersion)
+		? Number(raw.schemaVersion)
 		: undefined;
-	const pinned = typeof value.pinned === 'boolean' ? value.pinned : undefined;
-	const description = typeof value.description === 'string' ? value.description : undefined;
-	const unknownFields = isRecord(value.unknownFields)
+	const pinned = typeof raw.pinned === 'boolean' ? raw.pinned : undefined;
+	const description = typeof raw.description === 'string' ? raw.description : undefined;
+	const unknownFields = isRecord(raw.unknownFields)
 		? (Object.fromEntries(
-				Object.entries(value.unknownFields).filter(
+				Object.entries(raw.unknownFields).filter(
 					([, field]) => field === null || ['string', 'number', 'boolean'].includes(typeof field)
 				)
 			) as NoteMeta['unknownFields'])
 		: undefined;
+
+	const resolvedId = typeof raw.id === 'string' && raw.id.trim() ? raw.id.trim() : id;
+	const resolvedTitle =
+		typeof raw.title === 'string' && raw.title.trim()
+			? raw.title.trim()
+			: fallback.title?.trim() || 'Sem título';
+
 	return {
-		id,
-		title: value.title,
+		id: resolvedId,
+		title: resolvedTitle,
 		description,
 		pinned,
 		schemaVersion,
 		...(unknownFields ? { unknownFields } : {}),
-		createdAt: typeof value.createdAt === 'string' ? value.createdAt : fallback.createdAt,
-		updatedAt: typeof value.updatedAt === 'string' ? value.updatedAt : fallback.updatedAt,
+		createdAt: typeof raw.createdAt === 'string' && raw.createdAt ? raw.createdAt : fallback.createdAt,
+		updatedAt: typeof raw.updatedAt === 'string' && raw.updatedAt ? raw.updatedAt : fallback.updatedAt,
 		type: 'note',
-		path: virtualNotePath(id)
+		path: virtualNotePath(resolvedId)
 	};
 }
 
 function toNote(record: WorkspaceContentRecord): Note | null {
 	if (record.kind !== 'note' || !isRecord(record.payload)) return null;
 	const now = new Date().toISOString();
+	const body = typeof record.payload.body === 'string' ? record.payload.body : '';
+	const fallbackTitle = extractTitleFromMarkdown(body);
 	const meta = parseMeta(record.payload.meta, record.id, {
 		createdAt: record.createdAt ?? now,
-		updatedAt: record.updatedAt ?? now
+		updatedAt: record.updatedAt ?? now,
+		title: fallbackTitle ?? undefined
 	});
-	if (!meta || typeof record.payload.body !== 'string') return null;
 	return {
 		...meta,
 		meta,
-		body: record.payload.body,
-		content: record.payload.body,
+		body,
+		content: body,
 		path: virtualNotePath(record.id),
 		id: record.id,
 		title: meta.title,
@@ -112,15 +118,21 @@ function toNote(record: WorkspaceContentRecord): Note | null {
 }
 
 function noteRecord(storage: WorkspaceStorage, note: Note): WorkspaceContentRecord {
+	const now = new Date().toISOString();
+	const body = note.body ?? note.content ?? '';
+	const fallbackTitle = extractTitleFromMarkdown(body);
+	const title = (note.title || note.meta?.title || fallbackTitle || 'Nova nota').trim();
+	const createdAt = note.createdAt ?? note.meta?.createdAt ?? now;
+	const updatedAt = note.updatedAt ?? note.meta?.updatedAt ?? now;
 	const meta: NoteMeta = {
 		...note.meta,
 		id: note.id,
 		path: virtualNotePath(note.id),
-		title: note.title,
-		description: note.description,
-		pinned: note.pinned,
-		createdAt: note.createdAt,
-		updatedAt: note.updatedAt,
+		title,
+		description: note.description ?? note.meta?.description,
+		pinned: note.pinned ?? note.meta?.pinned,
+		createdAt,
+		updatedAt,
 		type: 'note'
 	};
 	return {
@@ -128,9 +140,9 @@ function noteRecord(storage: WorkspaceStorage, note: Note): WorkspaceContentReco
 		id: note.id,
 		workspaceId: workspaceContentContext(storage).workspaceId,
 		schemaVersion: meta.schemaVersion ?? 1,
-		payload: { meta, body: note.body ?? note.content ?? '' },
-		createdAt: meta.createdAt,
-		updatedAt: meta.updatedAt
+		payload: { meta, body },
+		createdAt,
+		updatedAt
 	};
 }
 

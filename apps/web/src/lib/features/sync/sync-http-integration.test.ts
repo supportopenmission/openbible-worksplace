@@ -77,4 +77,67 @@ describe('HTTP sync integration', () => {
 		expect(requests[0].url).toContain('/sync/pull?after=7');
 		expect(note.id).toBeTruthy();
 	});
+
+	it('puxa alterações remotas com metadados parciais e disponibiliza nas notas', async () => {
+		const workspaceId = `workspace-pull-${Date.now()}`;
+		const storage = createStorage(workspaceId);
+		const localStorageValues = new Map<string, string>();
+		vi.stubGlobal('localStorage', {
+			getItem: (key: string) => localStorageValues.get(key) ?? null,
+			setItem: (key: string, value: string) => localStorageValues.set(key, value),
+			removeItem: (key: string) => localStorageValues.delete(key)
+		});
+
+		const fetcher: typeof fetch = async () => {
+			return new Response(
+				JSON.stringify({
+					changes: [
+						{
+							workspaceId,
+							documentId: 'remote-note-abc',
+							kind: 'note',
+							revision: 2,
+							payload: {
+								body: '# Nota Remota da Nuvem\n\nConteúdo sincronizado com sucesso.',
+								meta: {
+									createdAt: '2026-09-08T03:05:13.402Z'
+								}
+							},
+							deletedAt: null,
+							updatedAt: '2026-09-08T21:53:06.738Z',
+							cursor: 2
+						}
+					],
+					nextCursor: 2,
+					hasMore: false
+				}),
+				{ status: 200, headers: { 'content-type': 'application/json' } }
+			);
+		};
+
+		const settings = {
+			endpoint: 'https://sync.example.test',
+			token: 'session-token',
+			deviceId: 'device-test',
+			fetcher
+		};
+
+		let eventFired = false;
+		const target = new EventTarget();
+		vi.stubGlobal('window', target);
+		target.addEventListener('openbible:workspace-content-changed', () => {
+			eventFired = true;
+		});
+
+		const result = await syncWorkspaceHttp(storage, settings);
+		expect(result.pulled).toBe(1);
+		expect(eventFired).toBe(true);
+
+		const { listNotes } = await import('$lib/features/notes/notes-repository');
+		const notes = await listNotes(storage);
+		expect(notes.map((n) => n.id)).toContain('remote-note-abc');
+		const remoteNote = notes.find((n) => n.id === 'remote-note-abc');
+		expect(remoteNote?.title).toBe('Nota Remota da Nuvem');
+		expect(remoteNote?.body).toContain('Conteúdo sincronizado');
+	});
 });

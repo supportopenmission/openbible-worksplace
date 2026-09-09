@@ -118,6 +118,13 @@
 				successMessage = `Workspace "${ws.name}" sincronizado com sucesso (${res.pulled} alteraçõe(s) recebidas, ${res.accepted} enviadas).`;
 			}
 			await fetchWorkspaces();
+			if (typeof window !== 'undefined') {
+				window.dispatchEvent(
+					new CustomEvent('openbible:workspace-content-changed', {
+						detail: { workspaceId: ws.workspaceId }
+					})
+				);
+			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Falha na sincronização do workspace.';
 		} finally {
@@ -340,6 +347,7 @@
 									{/if}
 								</div>
 								<span class="ws-id">{ws.workspaceId}</span>
+								<span class="ws-mobile-date">Última alteração: {formatDate(ws.updatedAt)}</span>
 							</td>
 							<td class="cell-date hide-mobile">
 								{formatDate(ws.updatedAt)}
@@ -568,6 +576,12 @@
 		color: var(--muted-foreground, #6b7280);
 	}
 
+	.ws-mobile-date {
+		display: none;
+		font-size: 0.6875rem;
+		color: var(--muted-foreground, #6b7280);
+	}
+
 	.badge {
 		font-size: 0.65rem;
 		font-weight: 600;
@@ -712,6 +726,11 @@
 	@media (max-width: 640px) {
 		.hide-mobile {
 			display: none;
+		}
+
+		.ws-mobile-date {
+			display: block;
+			margin-top: 2px;
 		}
 
 		.workspaces-table th,
