@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy, onMount, untrack, type Snippet } from 'svelte';
+	import { onDestroy, onMount, tick, untrack, type Snippet } from 'svelte';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import type { WorkspaceStorage } from '$lib/storage/types';
@@ -20,25 +20,20 @@
 	import MilkdownMobileToolbar from './MilkdownMobileToolbar.svelte';
 	import SelectionFormatPopover from './SelectionFormatPopover.svelte';
 	import ReferenceHoverCard from './ReferenceHoverCard.svelte';
+	import { shouldShowFormatPopover, type FormatPopoverAction } from './selection-popover';
+	import { loadHoverPassage, type LoadedHoverCard } from './reference-hover';
+	import { collectEditorHeadings, type NoteHeading } from './note-index';
+	import { toggleMark } from '@milkdown/prose/commands';
 	import {
-		shouldShowFormatPopover,
-		type FormatPopoverAction
-	} from './selection-popover';
-	import {
-		loadHoverPassage,
-		type LoadedHoverCard
-	} from './reference-hover';
-import { collectEditorHeadings, type NoteHeading } from './note-index';
-import { toggleMark } from '@milkdown/prose/commands';
-import {
-	formatActionMarkName,
-	highlightInputRule,
-	highlightMarkSchema,
-	markRemarkPlugin,
-	underlineInputRule,
-	underlineMarkSchema
-} from './milkdown-mark-node';
-import { resolveToolbarVisibility } from './note-toolbar';
+		DEFAULT_HIGHLIGHT_COLOR,
+		formatActionMarkName,
+		highlightInputRule,
+		highlightMarkSchema,
+		markRemarkPlugin,
+		underlineInputRule,
+		underlineMarkSchema
+	} from './milkdown-mark-node';
+	import { resolveToolbarVisibility } from './note-toolbar';
 	import { videoNodeSchema, buildVideoInsertTransaction } from './milkdown-video-node';
 	import YouTubeBlockView from './YouTubeBlockView.svelte';
 	import { parseYouTubeUrl } from './youtube-embed';
@@ -90,6 +85,8 @@ import { resolveToolbarVisibility } from './note-toolbar';
 		untrack(() => note?.title || extractTitleFromMarkdown(markdown ?? '') || 'Nova nota')
 	);
 	let noteDescription = $state(untrack(() => note?.description || ''));
+	let titleDirty = $state(false);
+	let descriptionDirty = $state(false);
 
 	let editor: import('@milkdown/kit/core').Editor | null = null;
 	let coreModule: typeof import('@milkdown/kit/core') | null = null;
@@ -110,13 +107,13 @@ import { resolveToolbarVisibility } from './note-toolbar';
 		maxHeight: number;
 	} | null>(null);
 	let toolbarActive = $state<Record<string, boolean>>({});
-let toolbarResolved = $derived(
-	resolveToolbarVisibility({
-		mode: readOnly ? 'view' : 'edit',
-		alwaysVisible: toolbarPinned,
-		viewport: mobile ? 'mobile' : 'desktop'
-	})
-);
+	let toolbarResolved = $derived(
+		resolveToolbarVisibility({
+			mode: readOnly ? 'view' : 'edit',
+			alwaysVisible: toolbarPinned,
+			viewport: mobile ? 'mobile' : 'desktop'
+		})
+	);
 	let formatPopover = $state<{ top: number; left: number } | null>(null);
 	let formatPressed = $state<Partial<Record<FormatPopoverAction, boolean>>>({});
 	let hoverCard = $state<{
@@ -155,7 +152,7 @@ let toolbarResolved = $derived(
 	$effect(() => {
 		if (note) {
 			const externalTitle = note.title ?? '';
-			if (externalTitle !== noteTitle && document.activeElement !== titleEl) {
+			if (externalTitle !== noteTitle && !titleDirty && !fieldIsFocused(titleEl)) {
 				noteTitle = externalTitle;
 				if (titleEl && titleEl.innerText !== externalTitle) {
 					// eslint-disable-next-line svelte/no-dom-manipulating -- synchronize external contenteditable content without stealing focus
@@ -163,7 +160,7 @@ let toolbarResolved = $derived(
 				}
 			}
 			const externalDesc = note.description ?? '';
-			if (externalDesc !== noteDescription && document.activeElement !== descriptionEl) {
+			if (externalDesc !== noteDescription && !descriptionDirty && !fieldIsFocused(descriptionEl)) {
 				noteDescription = externalDesc;
 				if (descriptionEl && descriptionEl.innerText !== externalDesc) {
 					// eslint-disable-next-line svelte/no-dom-manipulating -- synchronize external contenteditable content without stealing focus
@@ -173,14 +170,23 @@ let toolbarResolved = $derived(
 		}
 	});
 
+	function fieldIsFocused(element: HTMLElement | null) {
+		return Boolean(
+			element && (document.activeElement === element || element.contains(document.activeElement))
+		);
+	}
+
 	function handleTitleInput(event: Event) {
 		const target = event.currentTarget as HTMLElement;
 		const text = target.innerText.replace(/\r?\n/g, ' ');
+		titleDirty = true;
 		noteTitle = text;
-		if (note) {
-			note.title = text.trim() || 'Sem título';
-		}
 		saveService?.updateTitle(text);
+	}
+
+	function handleTitleBlur() {
+		titleDirty = false;
+		void saveService?.flush();
 	}
 
 	function handleTitleKeydown(event: KeyboardEvent) {
@@ -197,11 +203,14 @@ let toolbarResolved = $derived(
 	function handleDescriptionInput(event: Event) {
 		const target = event.currentTarget as HTMLElement;
 		const text = target.innerText.replace(/\r?\n/g, ' ');
+		descriptionDirty = true;
 		noteDescription = text;
-		if (note) {
-			note.description = text.trim() || undefined;
-		}
 		saveService?.updateDescription(text);
+	}
+
+	function handleDescriptionBlur() {
+		descriptionDirty = false;
+		void saveService?.flush();
 	}
 
 	function handleDescriptionKeydown(event: KeyboardEvent) {
@@ -247,6 +256,30 @@ let toolbarResolved = $derived(
 		slashQuery = '';
 		slashIndex = 0;
 		slashPosition = null;
+	}
+
+	function removeSlashTrigger() {
+		if (!editor || !coreModule) return;
+		const { editorViewCtx } = coreModule;
+		editor.action((ctx) => {
+			const view = ctx.get(editorViewCtx);
+			const { $from: resolvedFrom, from } = view.state.selection;
+			const textBefore = view.state.doc.textBetween(
+				Math.max(resolvedFrom.start(), from - 80),
+				from,
+				' ',
+				' '
+			);
+			const trigger = textBefore.match(/\/[^\s]*$/)?.[0];
+			if (trigger) {
+				view.dispatch(view.state.tr.delete(from - trigger.length, from));
+			}
+		});
+	}
+
+	function dismissSlash() {
+		removeSlashTrigger();
+		closeSlash();
 	}
 
 	function blurEditorBeforeMobileSlash() {
@@ -416,7 +449,11 @@ let toolbarResolved = $derived(
 			const view = ctx.get(editorViewCtx);
 			const markType = view.state.schema.marks[formatActionMarkName(action)];
 			if (!markType) return;
-			toggleMark(markType)(view.state, view.dispatch);
+			if (action === 'highlight') {
+				toggleMark(markType, { color: DEFAULT_HIGHLIGHT_COLOR })(view.state, view.dispatch);
+			} else {
+				toggleMark(markType)(view.state, view.dispatch);
+			}
 		});
 		focusEditor();
 		updateToolbarState();
@@ -477,6 +514,7 @@ let toolbarResolved = $derived(
 	}
 
 	function handleReferenceMouseOver(event: MouseEvent) {
+		if (!event.ctrlKey && !event.metaKey) return;
 		const target = event.target;
 		if (!(target instanceof HTMLElement)) return;
 		const reference = target.closest<HTMLElement>('.bible-reference');
@@ -521,12 +559,11 @@ let toolbarResolved = $derived(
 			const tr = buildVideoInsertTransaction(view.state, { videoId, url });
 			if (tr) view.dispatch(tr);
 		});
-		focusEditor();
 		updateToolbarState();
 		refreshHeadings();
 	}
 
-	function confirmVideoInsert() {
+	async function confirmVideoInsert() {
 		const parsed = parseYouTubeUrl(videoUrl);
 		if (!parsed.ok) {
 			videoUrlError =
@@ -539,6 +576,8 @@ let toolbarResolved = $derived(
 		videoDialogOpen = false;
 		videoUrl = '';
 		videoUrlError = '';
+		await tick();
+		focusEditor();
 	}
 
 	function activateVideoFacade(target: HTMLElement) {
@@ -568,9 +607,7 @@ let toolbarResolved = $derived(
 				});
 			}
 			if (!node || pos == null) return;
-			view.dispatch(
-				view.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, loaded: true })
-			);
+			view.dispatch(view.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, loaded: true }));
 		});
 	}
 
@@ -758,13 +795,15 @@ let toolbarResolved = $derived(
 			view.focus();
 		});
 		verseSelectorOpen = false;
+		await tick();
+		focusEditor();
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
 		if (!slashOpen) return;
 		if (event.key === 'Escape') {
 			event.preventDefault();
-			closeSlash();
+			dismissSlash();
 		}
 		if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
 			event.preventDefault();
@@ -787,7 +826,10 @@ let toolbarResolved = $derived(
 			return;
 		}
 		const target = event.target;
-		if (target instanceof HTMLElement && target.closest('.ProseMirror, .milkdown-toolbar, .format-popover, .reference-hover-card')) {
+		if (
+			target instanceof HTMLElement &&
+			target.closest('.ProseMirror, .milkdown-toolbar, .format-popover, .reference-hover-card')
+		) {
 			editingActive = true;
 			if (!mobile) toolbarOpen = true;
 		} else {
@@ -799,7 +841,9 @@ let toolbarResolved = $derived(
 		const next = event.relatedTarget;
 		if (
 			next instanceof HTMLElement &&
-			next.closest('.ProseMirror, .milkdown-toolbar, .milkdown-toolbar-toggle, .format-popover, .reference-hover-card')
+			next.closest(
+				'.ProseMirror, .milkdown-toolbar, .milkdown-toolbar-toggle, .format-popover, .reference-hover-card'
+			)
 		) {
 			return;
 		}
@@ -1091,6 +1135,7 @@ let toolbarResolved = $derived(
 					data-empty={!noteTitle.trim()}
 					oninput={handleTitleInput}
 					onkeydown={handleTitleKeydown}
+					onblur={handleTitleBlur}
 				>
 					{noteTitle}
 				</h1>
@@ -1106,6 +1151,7 @@ let toolbarResolved = $derived(
 					aria-label="Descrição da nota"
 					oninput={handleDescriptionInput}
 					onkeydown={handleDescriptionKeydown}
+					onblur={handleDescriptionBlur}
 				>
 					{noteDescription}
 				</p>
@@ -1141,8 +1187,17 @@ let toolbarResolved = $derived(
 	</div>
 
 	{#if mobile}
-		<Sheet.Root bind:open={slashOpen}>
-			<Sheet.Content side="bottom" class="slash-drawer">
+		<Sheet.Root
+			bind:open={slashOpen}
+			onOpenChange={(open) => {
+				if (!open) dismissSlash();
+			}}
+		>
+			<Sheet.Content
+				side="bottom"
+				class="slash-drawer"
+				onOpenAutoFocus={(event) => event.preventDefault()}
+			>
 				<Sheet.Header>
 					<Sheet.Title>Comandos</Sheet.Title>
 					<Sheet.Description>Busque e insira um bloco na nota.</Sheet.Description>
@@ -1153,9 +1208,12 @@ let toolbarResolved = $derived(
 				</label>
 				<div class="drawer-items">
 					{#each filteredItems as item (item.id)}
-						<Button class="drawer-command" variant="ghost" onclick={() => runSlash(item)}
-							>{item.label}</Button
-						>
+						<Button class="drawer-command" variant="ghost" onclick={() => runSlash(item)}>
+							<span class="drawer-command-copy">
+								<strong>{item.label}</strong>
+								<span>{item.description}</span>
+							</span>
+						</Button>
 					{/each}
 				</div>
 			</Sheet.Content>
@@ -1585,7 +1643,7 @@ let toolbarResolved = $derived(
 		font-style: italic;
 	}
 	:global(.milkdown-host .ProseMirror mark) {
-		background-color: color-mix(in srgb, var(--primary) 22%, transparent);
+		background-color: color-mix(in srgb, #eab308 35%, transparent);
 		border-radius: 2px;
 		padding: 0 1px;
 	}
@@ -1696,7 +1754,9 @@ let toolbarResolved = $derived(
 		height: 100%;
 		object-fit: cover;
 		opacity: 0.85;
-		transition: transform 0.25s ease, opacity 0.25s ease;
+		transition:
+			transform 0.25s ease,
+			opacity 0.25s ease;
 	}
 	:global(.milkdown-host .ProseMirror .video-facade:hover .video-facade-thumb) {
 		opacity: 1;
@@ -1747,25 +1807,32 @@ let toolbarResolved = $derived(
 		justify-content: flex-end;
 		gap: 8px;
 	}
-	:global(.milkdown-host .verse-block-callout) {
+	:global(.milkdown-host .ProseMirror .verse-block-callout) {
 		margin: 24px 0;
-		padding: 18px 20px;
-		border-left: 2px solid var(--border);
-		background: transparent;
+		border-inline-start: 1px solid color-mix(in oklch, var(--foreground) 24%, transparent);
+		background: color-mix(in oklch, var(--foreground) 3%, transparent);
+		padding: 14px 16px 14px 18px;
+		color: var(--foreground);
 	}
-	:global(.milkdown-host .verse-block-ref) {
+	:global(.milkdown-host .ProseMirror .verse-block-callout .verse-block-ref) {
 		margin: 0 0 10px;
 		color: var(--muted-foreground);
 		font-family: var(--font-mono);
-		font-size: 0.75rem;
+		font-size: 0.72rem;
+		font-weight: 500;
+		line-height: 1.4;
 	}
-	:global(.milkdown-host .verse-snapshot) {
+	:global(.milkdown-host .ProseMirror .verse-block-callout .verse-snapshot) {
 		margin: 0;
+		border: 0;
+		border-radius: 0;
+		background: transparent;
+		padding: 0;
 		white-space: pre-wrap;
 		color: var(--foreground);
-		font-family: Georgia, serif;
-		font-size: 1rem;
-		line-height: 1.75;
+		font-family: var(--font-serif, Georgia, 'Times New Roman', serif);
+		font-size: 0.95rem;
+		line-height: 1.65;
 	}
 	.slash-menu {
 		position: fixed;
@@ -1833,12 +1900,36 @@ let toolbarResolved = $derived(
 		width: 100%;
 		justify-content: flex-start;
 		min-height: 44px;
+		padding: 9px 10px;
+		text-align: start;
+	}
+	.drawer-command-copy {
+		display: flex;
+		min-width: 0;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 2px;
+		line-height: 1.25;
+	}
+	.drawer-command-copy strong {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--foreground);
+	}
+	.drawer-command-copy span {
+		font-size: 0.75rem;
+		color: var(--muted-foreground);
+	}
+	:global(.drawer-items .drawer-command[data-state='open']),
+	:global(.drawer-items .drawer-command:hover) {
+		background: var(--muted);
 	}
 	:global(.slash-drawer) {
 		display: flex;
 		min-height: 0;
 		height: 90dvh;
 		overflow: hidden;
+		overscroll-behavior: contain;
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.slash-menu {

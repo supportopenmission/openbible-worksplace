@@ -13,10 +13,10 @@
 
 <div class="empty-note-pane" role="region" aria-label="Nenhuma nota selecionada">
 	<div class="empty-content">
-		<div class="empty-icon-box">
+		<div class="empty-title-row">
 			<NotebookPen size={36} strokeWidth={1.5} aria-hidden="true" />
+			<h3 class="empty-title">Nenhuma nota selecionada</h3>
 		</div>
-		<h3 class="empty-title">Nenhuma nota selecionada</h3>
 		<p class="empty-description">
 			Selecione uma nota na barra lateral para visualizar e editar, ou crie uma nova para começar a
 			escrever.
@@ -51,15 +51,11 @@
 		gap: 16px;
 	}
 
-	.empty-icon-box {
+	.empty-title-row {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 64px;
-		height: 64px;
-		border-radius: 12px;
-		background: color-mix(in srgb, var(--muted) 70%, transparent);
-		border: 1px solid var(--border);
+		gap: 10px;
 		color: var(--muted-foreground);
 	}
 

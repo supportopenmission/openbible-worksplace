@@ -39,6 +39,7 @@
 		class="reference-hover-card"
 		role="dialog"
 		aria-label={reference ? `Prévia de ${reference}` : 'Prévia bíblica'}
+		aria-live="polite"
 		tabindex="-1"
 		style:top={`${top}px`}
 		style:left={`${left}px`}
@@ -61,10 +62,22 @@
 			<p class="hover-status" role="status">Não foi possível carregar este texto agora.</p>
 		{/if}
 		<div class="hover-actions">
-			<Button type="button" variant="ghost" size="sm" onclick={onOpen} onmousedown={(e) => e.preventDefault()}>
+			<Button
+				type="button"
+				variant="ghost"
+				size="sm"
+				onclick={onOpen}
+				onmousedown={(e) => e.preventDefault()}
+			>
 				Abrir no leitor
 			</Button>
-			<Button type="button" variant="ghost" size="sm" onclick={onClose} onmousedown={(e) => e.preventDefault()}>
+			<Button
+				type="button"
+				variant="ghost"
+				size="sm"
+				onclick={onClose}
+				onmousedown={(e) => e.preventDefault()}
+			>
 				Fechar
 			</Button>
 		</div>
@@ -80,7 +93,9 @@
 		background-color: var(--background);
 		border: 1px solid var(--border);
 		border-radius: var(--radius-lg);
+		box-shadow: 0 12px 28px color-mix(in srgb, var(--foreground) 14%, transparent);
 		transform: translate(-50%, 8px);
+		animation: reference-card-in 140ms ease-out;
 	}
 
 	.hover-reference {
@@ -117,5 +132,22 @@
 		display: flex;
 		gap: 4px;
 		justify-content: flex-end;
+	}
+
+	@keyframes reference-card-in {
+		from {
+			opacity: 0;
+			transform: translate(-50%, 4px);
+		}
+		to {
+			opacity: 1;
+			transform: translate(-50%, 8px);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.reference-hover-card {
+			animation: none;
+		}
 	}
 </style>

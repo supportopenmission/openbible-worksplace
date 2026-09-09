@@ -5,6 +5,8 @@ import { serializeNoteFile } from '$lib/features/notes/note-markdown';
 import type { WorkspaceStorage } from '$lib/storage/types';
 import NotesEditorPage from './notes/[id]/+page.svelte';
 
+// SPECSFY: US-008 US-009 US-010 US-011 US-012 FR-010 FR-011 FR-012 FR-013 FR-014 FR-015 FR-016 AC-028 AC-029 AC-030 AC-031 AC-032 AC-033 AC-034 AC-035 AC-036 AC-037 AC-038 AC-039
+
 function noteStorage(noteId: string, body: string): WorkspaceStorage {
 	const files = new Map<string, Uint8Array>();
 	const encoder = new TextEncoder();
@@ -44,6 +46,24 @@ function noteStorage(noteId: string, body: string): WorkspaceStorage {
 	};
 }
 
+function emptyStorage(): WorkspaceStorage {
+	return {
+		kind: 'opfs',
+		label: 'Memória de teste vazia',
+		async ensureDirectory() {},
+		async writeFile() {},
+		async readFile() {
+			return null;
+		},
+		async fileExists() {
+			return false;
+		},
+		async listFiles() {
+			return [];
+		}
+	};
+}
+
 async function getNoteEditor() {
 	const editor = page.getByTestId('note-canvas').getByRole('textbox');
 	await expect.element(editor).toBeInTheDocument();
@@ -51,6 +71,21 @@ async function getNoteEditor() {
 }
 
 describe('notes editor Milkdown canvas controls', () => {
+	// SPECSFY: US-008 FR-010 NFR-001 AC-028 AC-037 AC-039
+	it('shows a contextual 404 without mounting an editor for a missing note', async () => {
+		render(NotesEditorPage, {
+			props: { data: { noteId: 'missing-note' }, storageOverride: emptyStorage() }
+		});
+
+		await expect.element(page.getByTestId('note-not-found')).toBeInTheDocument();
+		await expect.element(page.getByText('404', { exact: true })).toBeInTheDocument();
+		await expect
+			.element(page.getByRole('heading', { name: 'Nota não encontrada' }))
+			.toBeInTheDocument();
+		await expect.element(page.getByRole('link', { name: /todas as notas/i })).toBeInTheDocument();
+		await expect.element(page.getByTestId('note-canvas')).not.toBeInTheDocument();
+	});
+
 	// SPECSFY: US-001 FR-001 NFR-001 NFR-003 AC-005 AC-012 AC-015
 	it('opens a saved note with colon ranges and remains editable', async () => {
 		const noteId = 'parser-reference-note';
@@ -81,9 +116,9 @@ describe('notes editor Milkdown canvas controls', () => {
 		const menu = page.getByRole('menu');
 		await expect.element(menu).toBeInTheDocument();
 		await expect.element(menu.getByText('Markdown', { exact: true })).toBeInTheDocument();
-		await expect.element(menu.getByText(/arquivo derivado/i)).toBeInTheDocument();
+		await expect.element(menu.getByText(/arquivo editável/i)).toBeInTheDocument();
 		await expect.element(menu.getByText('PDF', { exact: true })).toBeInTheDocument();
-		await expect.element(menu.getByText(/salvar em pdf/i)).toBeInTheDocument();
+		await expect.element(menu.getByText(/impressão local/i)).toBeInTheDocument();
 	});
 
 	// SPECSFY: US-003 FR-006 NFR-003 AC-007 AC-014
@@ -183,7 +218,43 @@ describe('notes editor Milkdown canvas controls', () => {
 		const drawer = page.getByRole('dialog', { name: 'Comandos' });
 		await expect.element(drawer).toBeInTheDocument();
 		await expect.element(drawer.getByPlaceholder('Buscar comandos')).toBeInTheDocument();
+		await expect.element(drawer.getByText('Itens numerados', { exact: true })).toBeInTheDocument();
 		expect(drawer.element().getBoundingClientRect().height).toBeGreaterThanOrEqual(750);
+	});
+
+	// SPECSFY: US-010 FR-012 NFR-001 AC-032 AC-037 AC-039
+	it('removes the slash trigger when Escape cancels the command', async () => {
+		await page.viewport(1440, 900);
+		render(NotesEditorPage, { props: { data: { noteId: 'slash-escape-note' } } });
+		const editor = await getNoteEditor();
+		await editor.click();
+		await userEvent.keyboard('{End}{Enter}/task');
+		await expect
+			.element(page.getByRole('listbox', { name: 'Comandos de bloco' }))
+			.toBeInTheDocument();
+		await userEvent.keyboard('{Escape}');
+		await expect
+			.element(page.getByRole('listbox', { name: 'Comandos de bloco' }))
+			.not.toBeInTheDocument();
+		expect(editor.element().textContent).not.toContain('/task');
+	});
+
+	// SPECSFY: US-002 FR-003 NFR-002 AC-002 AC-013
+	it('keeps focus out of the search input and scroll inside the mobile drawer', async () => {
+		await page.viewport(390, 844);
+		render(NotesEditorPage, { props: { data: { noteId: 'mobile-slash-scroll-note' } } });
+		const editor = await getNoteEditor();
+		await editor.click();
+		await userEvent.keyboard('{End}{Enter}/');
+
+		const drawer = page.getByRole('dialog', { name: 'Comandos' });
+		const search = drawer.getByPlaceholder('Buscar comandos');
+		await expect.element(search).toBeInTheDocument();
+		expect(document.activeElement).not.toBe(search.element());
+		expect(getComputedStyle(drawer.element()).overflowY).toBe('hidden');
+		expect(getComputedStyle(drawer.element().querySelector('.drawer-items')!).overflowY).toBe(
+			'auto'
+		);
 	});
 
 	// SPECSFY: US-002 FR-003 NFR-002 AC-002 AC-013
@@ -276,5 +347,25 @@ describe('notes editor Milkdown canvas controls', () => {
 		expect(dialog.element().textContent).toContain('Gênesis 3:1');
 		expect(dialog.element().textContent).toContain('ARA');
 		await expect.poll(() => dialog.element().textContent).toContain('serpente');
+	});
+
+	// SPECSFY: US-009 FR-011 NFR-001 AC-031 AC-037 AC-038
+	it('only opens the reference preview for modified hover or keyboard focus', async () => {
+		await page.viewport(1440, 900);
+		render(NotesEditorPage, { props: { data: { noteId: 'bible-hover-intent-note' } } });
+		const editor = await getNoteEditor();
+		await editor.click();
+		await userEvent.keyboard('{End}{Enter}Estudando Gn 3.1 (ARA).');
+		await expect.poll(() => editor.element().querySelector('.bible-reference')).toBeTruthy();
+		const reference = editor.element().querySelector<HTMLElement>('.bible-reference')!;
+
+		reference.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		expect(document.querySelector('.reference-hover-card')).toBeNull();
+
+		reference.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, ctrlKey: true }));
+		await expect
+			.element(page.getByRole('dialog', { name: /prévia de gn 3\.1/i }))
+			.toBeInTheDocument();
 	});
 });

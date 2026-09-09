@@ -8,7 +8,8 @@ import { extractVerseFencesFromMarkdown } from './verse-block-extension';
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 const H1_PATTERN = /^(?:\s*)#\s+(.+?)\s*$/m;
-const DEBOUNCE_MS = 650;
+const BODY_DEBOUNCE_MS = 650;
+const METADATA_DEBOUNCE_MS = 1200;
 
 function titleFromBody(body: string): string | null {
 	const match = body.match(H1_PATTERN);
@@ -98,26 +99,31 @@ export function createNoteEditorService(options: NoteEditorServiceOptions) {
 		}
 	}
 
-	function scheduleSave(body: string) {
+	function scheduleSave(body: string, delay = BODY_DEBOUNCE_MS) {
 		latestBody = body;
 		pendingChanges = true;
 		if (debounceTimer) clearTimeout(debounceTimer);
 		setStatus('saving');
 		debounceTimer = setTimeout(() => {
 			void saveNow(body);
-		}, DEBOUNCE_MS);
+		}, delay);
 	}
 
 	function updateTitle(title: string) {
 		latestTitle = title.trim() || options.note.title || 'Nova nota';
 		options.note.title = latestTitle;
-		scheduleSave(latestBody);
+		scheduleSave(latestBody, METADATA_DEBOUNCE_MS);
 	}
 
 	function updateDescription(description: string) {
 		latestDescription = description.trim() || undefined;
 		options.note.description = latestDescription;
-		scheduleSave(latestBody);
+		scheduleSave(latestBody, METADATA_DEBOUNCE_MS);
+	}
+
+	function flush() {
+		if (disposed || !pendingChanges) return Promise.resolve(null);
+		return saveNow();
 	}
 
 	function dispose() {
@@ -133,6 +139,7 @@ export function createNoteEditorService(options: NoteEditorServiceOptions) {
 		saveNow,
 		updateTitle,
 		updateDescription,
+		flush,
 		dispose,
 		getStatus: () => latestBody
 	};

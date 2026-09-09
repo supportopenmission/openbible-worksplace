@@ -9,6 +9,8 @@ import {
 } from './note-export';
 import { markdownBodyToHtml } from './verse-block-extension';
 
+// SPECSFY: US-008 US-009 US-010 US-011 US-012 FR-010 FR-011 FR-012 FR-013 FR-014 FR-015 FR-016 AC-028 AC-029 AC-030 AC-031 AC-032 AC-033 AC-034 AC-035 AC-036 AC-037 AC-038 AC-039
+
 const NOTE =
 	'# Estudo\n\n:::verse {version="nvi.sqlite" book="Gn" chapter="3" verseStart="1" verseEnd="1"}\nSnapshot antigo\n:::\n';
 
@@ -104,7 +106,7 @@ describe('print without literal tags', () => {
 	});
 });
 
-// SPECSFY: US-005 FR-009 NFR-002 AC-026
+// SPECSFY: US-005 US-011 FR-009 FR-014 NFR-002 AC-026 AC-035
 describe('editorial print stylesheet', () => {
 	it('wraps the document with title, verse and margin rules', () => {
 		const doc = buildPrintDocument(
@@ -115,7 +117,10 @@ describe('editorial print stylesheet', () => {
 		expect(doc).not.toContain('<h1>Estudo</h1>');
 		expect(doc).toContain('max-width');
 		expect(doc).toContain('blockquote');
-		expect(doc).toContain('Georgia');
+		expect(doc).toContain('Geist');
+		expect(doc).toContain('Geist Mono');
+		expect(doc).toContain('@page');
+		expect(doc).toContain('print-color-adjust');
 	});
 });
 

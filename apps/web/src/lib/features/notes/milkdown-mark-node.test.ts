@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	DEFAULT_HIGHLIGHT_COLOR,
 	extractMarkSpans,
 	formatActionMarkName,
 	serializeMarkedSpan
@@ -33,6 +34,7 @@ describe('underline guard', () => {
 // SPECSFY: US-007 FR-007 NFR-003 AC-021
 describe('popover mark mapping', () => {
 	it('maps actions to schema marks and keeps the legacy color', () => {
+		expect(DEFAULT_HIGHLIGHT_COLOR).toBe('yellow');
 		expect(formatActionMarkName('bold')).toBe('strong');
 		expect(formatActionMarkName('italic')).toBe('emphasis');
 		expect(formatActionMarkName('highlight')).toBe('highlight');

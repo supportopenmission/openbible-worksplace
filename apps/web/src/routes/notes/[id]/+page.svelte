@@ -33,7 +33,7 @@
 		type PortableExportSnapshot
 	} from '$lib/features/notes/note-export';
 	import { notePageChrome } from '$lib/features/notes/note-page-chrome.svelte';
-	import { createNote, readNote, saveNote } from '$lib/features/notes/notes-repository';
+	import { readNote, saveNote } from '$lib/features/notes/notes-repository';
 	import {
 		NOTE_EDITOR_WIDTHS,
 		readNoteToolbarEnabled,
@@ -62,7 +62,7 @@
 	let activeStorage = $state<WorkspaceStorage | null>(null);
 	let loading = $state(true);
 	let error = $state('');
-	let currentLoadedId = $state<string | null>(null);
+	let notFound = $state(false);
 	let deleteDialogOpen = $state(false);
 	let deleting = $state(false);
 	let saveStatus = $state<SaveStatus>('idle');
@@ -84,9 +84,15 @@
 			label: 'Memória local',
 			async ensureDirectory() {},
 			async writeFile() {},
-			async readFile() { return null; },
-			async fileExists() { return false; },
-			async listFiles() { return []; }
+			async readFile() {
+				return null;
+			},
+			async fileExists() {
+				return false;
+			},
+			async listFiles() {
+				return [];
+			}
 		};
 
 		const now = new Date().toISOString();
@@ -114,9 +120,9 @@
 		const request = ++loadRequest;
 		loading = true;
 		error = '';
+		notFound = false;
 		note = null;
 		activeStorage = null;
-		currentLoadedId = null;
 		try {
 			if (resolvedStorage) {
 				const nextNote = await readNote(resolvedStorage, id);
@@ -130,10 +136,7 @@
 				activeStorage = fallbackStorage;
 				note = nextNote;
 			} else {
-				let loaded = await readNote(id);
-				if (!loaded) {
-					loaded = await createNote();
-				}
+				const loaded = await readNote(id);
 				if (request !== loadRequest) return;
 				note = loaded;
 				activeStorage = resolvedStorage;
@@ -141,9 +144,8 @@
 			if (request !== loadRequest) return;
 
 			if (!note) {
-				error = 'Nota não encontrada';
+				notFound = true;
 			} else {
-				currentLoadedId = id;
 				if (note.updatedAt) {
 					lastSavedAt = new Date(note.updatedAt);
 				}
@@ -243,7 +245,7 @@
 		try {
 			const artifact = exportPortableMarkdown(await createExportSnapshot());
 			downloadText(artifact.markdown, 'text/markdown;charset=utf-8', 'md', note.title);
-		} catch (error) {
+		} catch {
 			exportError = 'Não foi possível exportar: um versículo não tem texto disponível.';
 		} finally {
 			exporting = false;
@@ -393,14 +395,14 @@
 							<FileDown size={14} strokeWidth={1.8} aria-hidden="true" class="mr-2" />
 							<div class="export-menu-copy">
 								<span>Markdown</span>
-								<span class="export-menu-desc">Arquivo derivado para leitura e compartilhamento</span>
+								<span class="export-menu-desc">Arquivo editável</span>
 							</div>
 						</DropdownMenu.Item>
 						<DropdownMenu.Item disabled={exporting} onclick={() => void exportPdfFile()}>
 							<Printer size={14} strokeWidth={1.8} aria-hidden="true" class="mr-2" />
 							<div class="export-menu-copy">
 								<span>PDF</span>
-								<span class="export-menu-desc">Abrir impressão offline para salvar em PDF</span>
+								<span class="export-menu-desc">Impressão local</span>
 							</div>
 						</DropdownMenu.Item>
 
@@ -454,7 +456,27 @@
 
 	<div class="note-pane-body">
 		{#if loading}
-			<p class="state-message" role="status">Carregando nota…</p>
+			<div class="note-loading-state" role="status" aria-label="Carregando nota">
+				<span class="loading-line loading-title" aria-hidden="true"></span>
+				<span class="loading-line loading-description" aria-hidden="true"></span>
+				<div class="loading-body" aria-hidden="true">
+					<span class="loading-line"></span>
+					<span class="loading-line loading-line-short"></span>
+					<span class="loading-line"></span>
+				</div>
+				<span class="sr-only">Carregando nota…</span>
+			</div>
+		{:else if notFound}
+			<section
+				class="note-not-found"
+				data-testid="note-not-found"
+				aria-labelledby="note-not-found-title"
+			>
+				<p class="not-found-code" aria-hidden="true">404</p>
+				<h1 id="note-not-found-title">Nota não encontrada</h1>
+				<p>Esse endereço não corresponde a uma nota disponível neste workspace.</p>
+				<a class="not-found-link" href={resolve('/notes')}>Voltar para todas as notas</a>
+			</section>
 		{:else if error || !note || !activeStorage}
 			<p class="state-message error" role="alert">{error || 'Nota não encontrada'}</p>
 		{:else}
@@ -485,7 +507,11 @@
 									title={currentStatusTooltip}
 								>
 									{#if saveStatus === 'saving'}
-										<Loader2 size={12} class="animate-spin text-muted-foreground" aria-hidden="true" />
+										<Loader2
+											size={12}
+											class="animate-spin text-muted-foreground"
+											aria-hidden="true"
+										/>
 										<span class="status-text saving">Salvando…</span>
 									{:else if saveStatus === 'error'}
 										<AlertCircle size={12} class="text-destructive" aria-hidden="true" />
@@ -627,7 +653,10 @@
 		line-height: 1;
 		cursor: pointer;
 		user-select: none;
-		transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+		transition:
+			background-color 0.15s ease,
+			color 0.15s ease,
+			border-color 0.15s ease;
 	}
 
 	.save-status-indicator:hover {
@@ -817,6 +846,117 @@
 
 	.state-message.error {
 		color: var(--destructive);
+	}
+
+	.note-loading-state {
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+		width: min(760px, calc(100% - 48px));
+		margin: 48px auto 0;
+	}
+
+	.loading-line {
+		display: block;
+		width: 100%;
+		height: 14px;
+		border-radius: 4px;
+		background: color-mix(in srgb, var(--muted) 78%, var(--background));
+		animation: note-loading-pulse 1.35s ease-in-out infinite;
+	}
+
+	.loading-line.loading-title {
+		width: min(62%, 420px);
+		height: 42px;
+		margin-bottom: 4px;
+	}
+
+	.loading-line.loading-description {
+		width: min(38%, 260px);
+		height: 16px;
+	}
+
+	.loading-body {
+		display: grid;
+		gap: 14px;
+		margin-top: 18px;
+	}
+
+	.loading-line-short {
+		width: 76%;
+	}
+
+	.note-not-found {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		width: min(560px, calc(100% - 48px));
+		margin: clamp(64px, 14vh, 140px) auto 0;
+	}
+
+	.not-found-code {
+		margin: 0 0 12px;
+		font-family: var(--font-mono);
+		font-size: 0.75rem;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		color: var(--muted-foreground);
+	}
+
+	.note-not-found h1 {
+		margin: 0;
+		font-size: clamp(1.75rem, 4vw, 2.5rem);
+		letter-spacing: -0.035em;
+	}
+
+	.note-not-found p:not(.not-found-code) {
+		max-width: 42rem;
+		margin: 12px 0 24px;
+		color: var(--muted-foreground);
+		line-height: 1.55;
+	}
+
+	.not-found-link {
+		display: inline-flex;
+		align-items: center;
+		min-height: 40px;
+		padding: 0 14px;
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		color: var(--foreground);
+		font-size: 0.875rem;
+		font-weight: 500;
+		text-decoration: none;
+		transition:
+			background-color 0.15s ease,
+			border-color 0.15s ease;
+	}
+
+	.not-found-link:hover {
+		background: var(--muted);
+		border-color: var(--ring);
+	}
+
+	.not-found-link:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	@keyframes note-loading-pulse {
+		0%,
+		100% {
+			opacity: 0.52;
+		}
+		50% {
+			opacity: 0.86;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.loading-line {
+			animation: none;
+			opacity: 0.68;
+		}
 	}
 
 	.dialog-actions {

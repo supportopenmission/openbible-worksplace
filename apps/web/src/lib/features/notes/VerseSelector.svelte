@@ -522,7 +522,7 @@
 			</div>
 
 			<div class="preview-section" aria-live="polite">
-				<p class="preview-label">Pré-visualização</p>
+			<p class="preview-label">Texto do versículo</p>
 				{#if previewLoading}
 					<p class="status-message">Carregando texto…</p>
 				{:else if previewError}
@@ -591,7 +591,8 @@
 	}
 
 	:global(.verse-selector-drawer) {
-		height: min(90dvh, 720px);
+		height: auto;
+		max-height: min(90dvh, 720px);
 		padding-inline: max(16px, env(safe-area-inset-left, 0px));
 		padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
 	}
@@ -828,10 +829,8 @@
 	.preview-label {
 		margin: 0;
 		color: var(--muted-foreground);
-		font-size: 0.72rem;
+		font-size: 0.75rem;
 		font-weight: 500;
-		letter-spacing: 0.02em;
-		text-transform: uppercase;
 	}
 
 	.status-message {
@@ -921,6 +920,19 @@
 		:global(.verse-selector-drawer .selector-actions > button) {
 			width: 100%;
 			min-height: 44px;
+		}
+	}
+
+	@media (pointer: coarse) {
+		:global(.verse-selector-drawer .selector-trigger),
+		:global(.verse-selector-drawer .chapter-trigger),
+		:global(.verse-selector-drawer .catalog-trigger),
+		:global(.verse-selector-drawer input) {
+			min-height: 44px;
+		}
+
+		:global(.verse-selector-drawer input) {
+			font-size: 1rem;
 		}
 	}
 

@@ -465,152 +465,152 @@
 	ondropcapture={handleCanvasDrop}
 >
 	<div class="note-canvas-inner">
-	<p class="save-status" aria-live="polite" aria-atomic="true">
-		{#if saveLabel}
-			<span class:status-error={saveStatus === 'error'}>{saveLabel}</span>
-		{/if}
-	</p>
+		<p class="save-status" aria-live="polite" aria-atomic="true">
+			{#if saveLabel}
+				<span class:status-error={saveStatus === 'error'}>{saveLabel}</span>
+			{/if}
+		</p>
 
-	<Tipex
-		body={initialBody}
-		bind:tipex={editor}
-		{extensions}
-		!focal
-		autofocus={false}
-		controlComponent={null}
-		class="note-tipex"
-		oncreate={handleCreate}
-		onupdate={handleUpdate}
-	/>
+		<Tipex
+			body={initialBody}
+			bind:tipex={editor}
+			{extensions}
+			!focal
+			autofocus={false}
+			controlComponent={null}
+			class="note-tipex"
+			oncreate={handleCreate}
+			onupdate={handleUpdate}
+		/>
 
-	{#if formatOpen && formatPos && editor}
-		<div
-			bind:this={formatBubble}
-			class="format-bubble"
-			style:top="{formatPos.top}px"
-			style:left="{formatPos.left}px"
-			style:max-width="{formatPos.maxWidth}px"
-			role="toolbar"
-			aria-label="Formatação"
-		>
-			<button
-				type="button"
-				class:active={editor.isActive('bold')}
-				aria-pressed={editor.isActive('bold')}
-				onclick={() => editor?.chain().focus().toggleBold().run()}
+		{#if formatOpen && formatPos && editor}
+			<div
+				bind:this={formatBubble}
+				class="format-bubble"
+				style:top="{formatPos.top}px"
+				style:left="{formatPos.left}px"
+				style:max-width="{formatPos.maxWidth}px"
+				role="toolbar"
+				aria-label="Formatação"
 			>
-				Negrito
-			</button>
-			<button
-				type="button"
-				class:active={editor.isActive('italic')}
-				aria-pressed={editor.isActive('italic')}
-				onclick={() => editor?.chain().focus().toggleItalic().run()}
-			>
-				Itálico
-			</button>
-			<button
-				type="button"
-				class:active={editor.isActive('underline')}
-				aria-pressed={editor.isActive('underline')}
-				onclick={() => editor?.chain().focus().toggleUnderline().run()}
-			>
-				Sublinhado
-			</button>
-			<div class="highlight-colors" role="group" aria-label="Cor de destaque">
-				{#each NOTE_HIGHLIGHTS as option (option.color)}
-					<button
-						type="button"
-						class="color-swatch"
-						class:active={editor.isActive('highlight', { color: option.color })}
-						data-color={option.color}
-						aria-label={`Cor de destaque: ${option.label}`}
-						aria-pressed={editor.isActive('highlight', { color: option.color })}
-						onclick={() => applyHighlight(option.color)}
-					>
-						<span class="sr-only">{option.label}</span>
-					</button>
-				{/each}
 				<button
 					type="button"
-					class="clear-highlight"
-					aria-label="Remover destaque"
-					onclick={() => editor?.chain().focus().unsetHighlight().run()}
+					class:active={editor.isActive('bold')}
+					aria-pressed={editor.isActive('bold')}
+					onclick={() => editor?.chain().focus().toggleBold().run()}
 				>
-					Sem cor
+					Negrito
 				</button>
-			</div>
-		</div>
-	{/if}
-
-	{#if blockHandle}
-		<div
-			class="block-handle"
-			class:dragging={draggedBlockPos !== null}
-			style:top="{blockHandle.top}px"
-			style:left="{blockHandle.left}px"
-		>
-			<button
-				type="button"
-				draggable="true"
-				aria-label="Selecionar e mover bloco"
-				title="Selecionar e mover bloco"
-				onpointerdown={selectCurrentBlock}
-				onclick={selectCurrentBlock}
-				onkeydown={handleBlockKeydown}
-				ondragstart={handleBlockDragStart}
-				ondragend={finishBlockDrag}
-			>
-				<GripVertical size={16} aria-hidden="true" />
-			</button>
-		</div>
-	{/if}
-
-	{#if dropTarget}
-		<div
-			class="block-drop-indicator"
-			style:top="{dropTarget.top}px"
-			style:left="{dropTarget.left}px"
-			style:width="{dropTarget.width}px"
-			aria-hidden="true"
-		></div>
-	{/if}
-
-	{#if slashOpen && slashPos}
-		<div
-			bind:this={slashMenu}
-			class="slash-menu"
-			style:top="{slashPos.top}px"
-			style:left="{slashPos.left}px"
-			style:width="{slashPos.width}px"
-			style:max-height="{slashPos.maxHeight}px"
-		>
-			<p class="slash-heading">Blocos básicos</p>
-			<ul class="slash-options" role="listbox" aria-label="Blocos">
-				{#each filteredCommands as command, index (command.id)}
-					<li role="option" aria-selected={index === slashIndex}>
+				<button
+					type="button"
+					class:active={editor.isActive('italic')}
+					aria-pressed={editor.isActive('italic')}
+					onclick={() => editor?.chain().focus().toggleItalic().run()}
+				>
+					Itálico
+				</button>
+				<button
+					type="button"
+					class:active={editor.isActive('underline')}
+					aria-pressed={editor.isActive('underline')}
+					onclick={() => editor?.chain().focus().toggleUnderline().run()}
+				>
+					Sublinhado
+				</button>
+				<div class="highlight-colors" role="group" aria-label="Cor de destaque">
+					{#each NOTE_HIGHLIGHTS as option (option.color)}
 						<button
 							type="button"
-							class:active={index === slashIndex}
-							onclick={() => applySlashCommand(command)}
+							class="color-swatch"
+							class:active={editor.isActive('highlight', { color: option.color })}
+							data-color={option.color}
+							aria-label={`Cor de destaque: ${option.label}`}
+							aria-pressed={editor.isActive('highlight', { color: option.color })}
+							onclick={() => applyHighlight(option.color)}
 						>
-							<span class="slash-label">{command.label}</span>
-							<span class="slash-desc">{command.description}</span>
+							<span class="sr-only">{option.label}</span>
 						</button>
-					</li>
-				{/each}
-				{#if filteredCommands.length === 0}
-					<li class="slash-empty">Nenhum bloco encontrado</li>
-				{/if}
-			</ul>
-			<div class="slash-footer">
-				<span>Fechar menu</span>
-				<kbd>esc</kbd>
+					{/each}
+					<button
+						type="button"
+						class="clear-highlight"
+						aria-label="Remover destaque"
+						onclick={() => editor?.chain().focus().unsetHighlight().run()}
+					>
+						Sem cor
+					</button>
+				</div>
 			</div>
-		</div>
-	{/if}
+		{/if}
 
-	<VerseSelector bind:open={verseSelectorOpen} {storage} onConfirm={handleVerseConfirm} />
+		{#if blockHandle}
+			<div
+				class="block-handle"
+				class:dragging={draggedBlockPos !== null}
+				style:top="{blockHandle.top}px"
+				style:left="{blockHandle.left}px"
+			>
+				<button
+					type="button"
+					draggable="true"
+					aria-label="Selecionar e mover bloco"
+					title="Selecionar e mover bloco"
+					onpointerdown={selectCurrentBlock}
+					onclick={selectCurrentBlock}
+					onkeydown={handleBlockKeydown}
+					ondragstart={handleBlockDragStart}
+					ondragend={finishBlockDrag}
+				>
+					<GripVertical size={16} aria-hidden="true" />
+				</button>
+			</div>
+		{/if}
+
+		{#if dropTarget}
+			<div
+				class="block-drop-indicator"
+				style:top="{dropTarget.top}px"
+				style:left="{dropTarget.left}px"
+				style:width="{dropTarget.width}px"
+				aria-hidden="true"
+			></div>
+		{/if}
+
+		{#if slashOpen && slashPos}
+			<div
+				bind:this={slashMenu}
+				class="slash-menu"
+				style:top="{slashPos.top}px"
+				style:left="{slashPos.left}px"
+				style:width="{slashPos.width}px"
+				style:max-height="{slashPos.maxHeight}px"
+			>
+				<p class="slash-heading">Blocos básicos</p>
+				<ul class="slash-options" role="listbox" aria-label="Blocos">
+					{#each filteredCommands as command, index (command.id)}
+						<li role="option" aria-selected={index === slashIndex}>
+							<button
+								type="button"
+								class:active={index === slashIndex}
+								onclick={() => applySlashCommand(command)}
+							>
+								<span class="slash-label">{command.label}</span>
+								<span class="slash-desc">{command.description}</span>
+							</button>
+						</li>
+					{/each}
+					{#if filteredCommands.length === 0}
+						<li class="slash-empty">Nenhum bloco encontrado</li>
+					{/if}
+				</ul>
+				<div class="slash-footer">
+					<span>Fechar menu</span>
+					<kbd>esc</kbd>
+				</div>
+			</div>
+		{/if}
+
+		<VerseSelector bind:open={verseSelectorOpen} {storage} onConfirm={handleVerseConfirm} />
 	</div>
 </div>
 
@@ -709,7 +709,7 @@
 
 	:global(.note-canvas .note-highlight),
 	:global(.note-canvas mark) {
-		background: color-mix(in oklch, var(--foreground) 12%, transparent);
+		background: color-mix(in oklch, #f5d90a 45%, transparent);
 		color: inherit;
 		border-radius: 2px;
 		padding: 0 0.12em;

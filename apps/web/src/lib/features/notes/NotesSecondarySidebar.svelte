@@ -217,7 +217,7 @@
 					type="button"
 					variant="ghost"
 					size="sm"
-					class="text-xs h-7 px-2"
+					class="text-sm h-8 px-2"
 					onclick={() => notesState.toggleSelectionMode()}
 				>
 					Concluir
@@ -274,7 +274,7 @@
 				<Button
 					type="button"
 					variant="destructive"
-					size="xs"
+					size="sm"
 					disabled={notesState.selectedNoteIds.length === 0}
 					onclick={() => (bulkDeleteDialogOpen = true)}
 				>
@@ -287,8 +287,14 @@
 
 	<div class="sidebar-notes" role="listbox" aria-label="Lista de notas">
 		{#if notesState.loading && notesState.notes.length === 0}
-			<div class="sidebar-state">
-				<p>Carregando notas…</p>
+			<div class="sidebar-state sidebar-loading" role="status" aria-label="Carregando notas">
+				<span class="sr-only">Carregando notas…</span>
+				{#each [0, 1, 2, 3] as index (index)}
+					<div class="sidebar-skeleton" aria-hidden="true">
+						<span class="sidebar-skeleton-title"></span>
+						<span class="sidebar-skeleton-line"></span>
+					</div>
+				{/each}
 			</div>
 		{:else if notesState.error && notesState.notes.length === 0}
 			<div class="sidebar-state error">
@@ -608,7 +614,7 @@
 		background: transparent;
 		border: 0;
 		padding: 0;
-		font-size: 0.75rem;
+		font-size: 0.875rem;
 		color: var(--foreground);
 		font-weight: 500;
 		cursor: pointer;
@@ -661,7 +667,7 @@
 		background: transparent;
 		color: var(--foreground);
 		font-family: inherit;
-		font-size: 0.8125rem;
+		font-size: 0.875rem;
 		outline: none;
 	}
 
@@ -835,7 +841,7 @@
 	}
 
 	.note-item-title {
-		font-size: 0.84rem;
+		font-size: 0.875rem;
 		font-weight: 600;
 		color: var(--foreground);
 		white-space: nowrap;
@@ -883,6 +889,57 @@
 		text-align: center;
 		color: var(--muted-foreground);
 		font-size: 0.8125rem;
+	}
+
+	.sidebar-state.sidebar-loading {
+		align-items: stretch;
+		justify-content: flex-start;
+		gap: 8px;
+		padding: 12px 10px;
+	}
+
+	.sidebar-skeleton {
+		display: grid;
+		gap: 8px;
+		padding: 12px 10px;
+		border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+		border-radius: var(--radius);
+		background: color-mix(in srgb, var(--muted) 30%, transparent);
+		animation: sidebar-loading-pulse 1.35s ease-in-out infinite;
+	}
+
+	.sidebar-skeleton-title,
+	.sidebar-skeleton-line {
+		display: block;
+		height: 10px;
+		border-radius: 3px;
+		background: color-mix(in srgb, var(--muted-foreground) 20%, transparent);
+	}
+
+	.sidebar-skeleton-title {
+		width: 62%;
+		height: 12px;
+	}
+
+	.sidebar-skeleton-line {
+		width: 84%;
+	}
+
+	@keyframes sidebar-loading-pulse {
+		0%,
+		100% {
+			opacity: 0.58;
+		}
+		50% {
+			opacity: 0.9;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.sidebar-skeleton {
+			animation: none;
+			opacity: 0.72;
+		}
 	}
 
 	.sidebar-state.empty {

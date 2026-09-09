@@ -10,6 +10,8 @@ import { InputRule } from '@milkdown/prose/inputrules';
  */
 export type EditorMarkAction = 'bold' | 'italic' | 'highlight' | 'underline';
 
+export const DEFAULT_HIGHLIGHT_COLOR = 'yellow';
+
 export interface MarkedSpan {
 	text: string;
 	mark: 'highlight' | 'underline' | null;
@@ -77,7 +79,11 @@ export function extractMarkSpans(text: string): MarkedSpan[] {
 }
 
 /** Serialize one span back to its Markdown convention. */
-export function serializeMarkedSpan(span: { text: string; mark: 'highlight' | 'underline' | null; color?: string }): string {
+export function serializeMarkedSpan(span: {
+	text: string;
+	mark: 'highlight' | 'underline' | null;
+	color?: string;
+}): string {
 	if (span.mark === 'underline') return `++${span.text}++`;
 	if (span.mark === 'highlight') {
 		return span.color ? `=={${span.color}}${span.text}==` : `==${span.text}==`;
@@ -87,7 +93,9 @@ export function serializeMarkedSpan(span: { text: string; mark: 'highlight' | 'u
 
 /** ProseMirror mark name for each popover action. */
 export function formatActionMarkName(action: EditorMarkAction): string {
-	return { bold: 'strong', italic: 'emphasis', highlight: 'highlight', underline: 'underline' }[action];
+	return { bold: 'strong', italic: 'emphasis', highlight: 'highlight', underline: 'underline' }[
+		action
+	];
 }
 
 interface MarkMdastNode {
@@ -159,11 +167,7 @@ function serializeMarkNode(
 	const data = node.data ?? {};
 	const color = typeof data.color === 'string' && data.color ? data.color : '';
 	const [open, close] =
-		data.kind === 'underline'
-			? ['++', '++']
-			: color
-				? [`=={${color}}`, '==']
-				: ['==', '=='];
+		data.kind === 'underline' ? ['++', '++'] : color ? [`=={${color}}`, '=='] : ['==', '=='];
 	const exit = state.enter('mark');
 	const tracker = state.createTracker(info);
 	let value = tracker.move(open);
@@ -206,9 +210,7 @@ export const highlightMarkSchema = $markSchema('highlight', () => ({
 		}
 	],
 	toDOM: (mark) =>
-		mark.attrs.color
-			? ['mark', { 'data-color': mark.attrs.color }, 0]
-			: (['mark', 0] as const),
+		mark.attrs.color ? ['mark', { 'data-color': mark.attrs.color }, 0] : (['mark', 0] as const),
 	parseMarkdown: {
 		match: (node) => node.type === 'mark' && markData(node).kind !== 'underline',
 		runner: (state, node, markType) => {
