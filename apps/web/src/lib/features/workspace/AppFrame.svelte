@@ -1,18 +1,38 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/state';
+	import { resolveStorageKind } from '$lib/storage/environment';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import AppSidebar from '$lib/features/navigation/AppSidebar.svelte';
 	import UpdateDialog from '$lib/features/config/UpdateDialog.svelte';
 	import NetworkStatus from '$lib/features/navigation/NetworkStatus.svelte';
 	import PermissionRecovery from './PermissionRecovery.svelte';
 	import WorkspaceBootSplash from './WorkspaceBootSplash.svelte';
+	import WorkspaceStartScreen from './WorkspaceStartScreen.svelte';
+	import {
+		WORKSPACE_STARTUP_SCREEN_EVENT,
+		readWorkspaceStartupScreen
+	} from './workspace-startup-preference';
 	import { getWorkspaceState } from './workspace-state.svelte';
 
 	let { children }: { children: Snippet } = $props();
 
 	const workspace = getWorkspaceState();
 	let sidebarOpen = $state(false);
+	let startupScreenOpen = $state(false);
+
+	onMount(() => {
+		if (resolveStorageKind() === 'native') {
+			startupScreenOpen = readWorkspaceStartupScreen();
+		}
+
+		const openStartupScreen = () => {
+			startupScreenOpen = true;
+		};
+		window.addEventListener(WORKSPACE_STARTUP_SCREEN_EVENT, openStartupScreen);
+		return () => window.removeEventListener(WORKSPACE_STARTUP_SCREEN_EVENT, openStartupScreen);
+	});
 
 	const isHighlightsList = $derived(page.url.pathname === '/highlights');
 	const isBible = $derived(page.url.pathname === '/bible');
@@ -33,6 +53,8 @@
 		onResumeMigration={() => workspace.boot({ requestPermission: true, requestPersist: true })}
 		onRestoreLegacy={() => workspace.reconnectFolder()}
 	/>
+{:else if workspace?.showShell && startupScreenOpen}
+	<WorkspaceStartScreen onContinue={() => (startupScreenOpen = false)} />
 {:else if workspace?.showShell}
 	<Sidebar.Provider bind:open={sidebarOpen} class="app-sidebar-provider">
 		<AppSidebar currentPath={page.url.pathname} />

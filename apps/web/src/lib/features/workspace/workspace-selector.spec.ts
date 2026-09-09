@@ -12,6 +12,9 @@ describe('WorkspaceSelector forms contract', () => {
 		expect(source).toContain('submitAdd');
 		expect(source).toContain('selectWorkspace');
 		expect(source).toContain('aria-label="Ações do espaço de estudo"');
+		expect(source).toContain("variant === 'start'");
+		expect(source).toContain('Criar novo workspace');
+		expect(source).toContain('Abrir pasta existente');
 		expect(source).toContain('selector-avatar');
 		expect(source).not.toContain('ArrowLeftRight');
 	});

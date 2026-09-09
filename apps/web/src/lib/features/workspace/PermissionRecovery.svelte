@@ -1,14 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { ArrowLeftRight, FolderOpen, FolderSearch, RefreshCw } from '@lucide/svelte';
+	import { FolderOpen, FolderSearch, RefreshCw } from '@lucide/svelte';
 	import { getWorkspaceState } from './workspace-state.svelte';
-	import {
-		getActiveWorkspace,
-		listCatalog,
-		storageKindLabel,
-		type WorkspaceCatalogEntry
-	} from '$lib/storage/workspace-catalog';
 	import { nativeWorkspaceStates, type NativeWorkspaceReason } from './native-workspace-states';
+	import WorkspaceSelector from './WorkspaceSelector.svelte';
 
 export type RecoveryReason =
 	| 'permission'
@@ -28,7 +23,6 @@ export type RecoveryReason =
 		onRetry,
 		onReconnect,
 		onDiscard,
-		onChooseOther,
 		onResumeMigration,
 		onRestoreLegacy
 	}: {
@@ -38,7 +32,6 @@ export type RecoveryReason =
 		onRetry?: () => void | Promise<void>;
 		onReconnect?: () => void | Promise<void>;
 		onDiscard?: () => void | Promise<void>;
-		onChooseOther?: (entry: WorkspaceCatalogEntry) => void | Promise<void>;
 		onResumeMigration?: () => void | Promise<void>;
 		onRestoreLegacy?: () => void | Promise<void>;
 	} = $props();
@@ -82,9 +75,6 @@ export type RecoveryReason =
 	let busyAction = $state<string | null>(null);
 	let announcement = $state('');
 	let pageError = $state('');
-	let others = $state<WorkspaceCatalogEntry[]>([]);
-	let activeId = $state<string | null>(null);
-	let openingId = $state<string | null>(null);
 	let heading = $state<HTMLHeadingElement | null>(null);
 	let retryButton = $state<HTMLButtonElement | null>(null);
 	let reconnectButton = $state<HTMLButtonElement | null>(null);
@@ -240,59 +230,8 @@ export type RecoveryReason =
 		announce('Fonte legada restaurada para uma nova tentativa.');
 	}
 
-	async function openOther(entry: WorkspaceCatalogEntry) {
-		if (busy) return;
-		if (onChooseOther) return run(`open-${entry.workspaceId}`, () => onChooseOther(entry));
-		if (!workspace) return;
-		openingId = entry.workspaceId;
-		pageError = '';
-		announce(`Abrindo workspace ${entry.nameCache}…`);
-		try {
-			await workspace.activateEntry(entry);
-			announce(`Workspace ${entry.nameCache} ativo.`);
-		} catch (failure) {
-			const code =
-				failure instanceof Error && 'code' in failure
-					? String((failure as { code?: unknown }).code)
-					: '';
-			pageError =
-				code === 'AUTOSAVE_FAILED'
-					? 'Há alterações não salvas. Resolva-as antes de trocar.'
-					: code === 'permission' || code === 'needs-reconnect'
-						? `“${entry.nameCache}” precisa de reconexão antes de abrir.`
-						: `Não foi possível abrir “${entry.nameCache}”. O cadastro foi preservado.`;
-			announce(pageError);
-			focusRecoveryTarget();
-		} finally {
-			openingId = null;
-		}
-	}
-
-	function refreshOthers() {
-		try {
-			activeId = getActiveWorkspace().workspaceId;
-			others = listCatalog();
-		} catch {
-			others = [];
-		}
-	}
-
 	onMount(() => {
-		refreshOthers();
 		focusHeading();
-		const listener = () => refreshOthers();
-		try {
-			window.addEventListener('openbible:workspace-activated', listener);
-		} catch {
-			// Sem window em SSR.
-		}
-		return () => {
-			try {
-				window.removeEventListener('openbible:workspace-activated', listener);
-			} catch {
-				// Ignora teardown sem window.
-			}
-		};
 	});
 </script>
 
@@ -414,37 +353,7 @@ export type RecoveryReason =
 		<section class="choose-other" aria-labelledby="choose-other-heading">
 			<h2 id="choose-other-heading">Escolher outro workspace</h2>
 			<p class="choose-hint">O registro atual é preservado em qualquer escolha.</p>
-			{#if others.length === 0}
-				<p class="choose-empty" role="status">Nenhum outro workspace cadastrado neste dispositivo.</p>
-			{:else}
-				<ul class="choose-list">
-					{#each others as entry (entry.workspaceId)}
-						<li class="choose-row" aria-current={entry.workspaceId === activeId ? 'true' : undefined}>
-							<div class="choose-identity">
-								<strong class="choose-name">{entry.nameCache}</strong>
-								<span class="choose-meta">
-									<span>{storageKindLabel(entry.storageKind)}</span>
-									<span aria-hidden="true">·</span>
-									<span>{entry.workspaceId === activeId ? 'selecionado' : entry.status}</span>
-								</span>
-							</div>
-							<button
-								class="secondary choose-button"
-								type="button"
-								onclick={() => void openOther(entry)}
-								disabled={busy || openingId !== null || entry.workspaceId === activeId}
-							>
-								<ArrowLeftRight size={14} strokeWidth={2} aria-hidden="true" />
-								{openingId === entry.workspaceId
-									? 'Abrindo…'
-									: entry.workspaceId === activeId
-										? 'Atual'
-										: 'Abrir'}
-							</button>
-						</li>
-					{/each}
-				</ul>
-			{/if}
+			<WorkspaceSelector variant="start" />
 		</section>
 	{/if}
 	<p class="escape-hint">Pressione Escape para voltar ao início desta página.</p>
@@ -496,8 +405,7 @@ export type RecoveryReason =
 	}
 
 	.primary,
-	.secondary,
-	.choose-button {
+	.secondary {
 		display: inline-flex;
 		min-height: 46px;
 		align-items: center;
@@ -516,28 +424,20 @@ export type RecoveryReason =
 		color: var(--primary-foreground);
 	}
 
-	.secondary,
-	.choose-button {
+	.secondary {
 		border: 1px solid var(--border);
 		background: transparent;
 		color: var(--foreground);
 	}
 
-	.choose-button {
-		min-height: 40px;
-		font-size: 0.82rem;
-	}
-
 	.primary:focus-visible,
-	.secondary:focus-visible,
-	.choose-button:focus-visible {
+	.secondary:focus-visible {
 		outline: 2px solid var(--ring);
 		outline-offset: 3px;
 	}
 
 	.primary:disabled,
-	.secondary:disabled,
-	.choose-button:disabled {
+	.secondary:disabled {
 		cursor: not-allowed;
 		opacity: 0.55;
 	}
@@ -565,53 +465,6 @@ export type RecoveryReason =
 		margin: 8px 0 0;
 		color: var(--muted-foreground);
 		font-size: 0.82rem;
-	}
-
-	.choose-empty {
-		margin: 12px 0 0;
-		color: var(--muted-foreground);
-		font-size: 0.85rem;
-	}
-
-	.choose-list {
-		list-style: none;
-		margin: 16px 0 0;
-		padding: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.choose-row {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		border: 1px solid var(--border);
-		border-radius: 12px;
-		padding: 12px 12px 12px 14px;
-	}
-
-	.choose-identity {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		min-width: 0;
-		flex: 1;
-	}
-
-	.choose-name {
-		overflow: hidden;
-		font-size: 0.88rem;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.choose-meta {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-		color: var(--muted-foreground);
-		font-size: 0.75rem;
 	}
 
 	.escape-hint {
@@ -647,21 +500,11 @@ export type RecoveryReason =
 			justify-content: center;
 		}
 
-		.choose-row {
-			flex-direction: column;
-			align-items: stretch;
-		}
-
-		.choose-button {
-			width: 100%;
-			justify-content: center;
-		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
 		.primary,
-		.secondary,
-		.choose-button {
+		.secondary {
 			transition: none;
 		}
 	}

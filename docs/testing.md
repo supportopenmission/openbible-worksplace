@@ -3,7 +3,7 @@
 <!-- specsfy:documentator:start -->
 ## Resumo
 
-- Arquivos de teste: 130.
+- Arquivos de teste: 131.
 - Runner: não identificado.
 - Scripts: build: turbo run build; check-types: turbo run check-types; dev: turbo run dev; lint: turbo run lint; format: prettier --write .; format:check: prettier --check ..
 
@@ -124,6 +124,7 @@
 | apps/web/src/lib/features/workspace/workspace-recovery.test.ts |
 | apps/web/src/lib/features/workspace/workspace-selector.spec.ts |
 | apps/web/src/lib/features/workspace/workspace-settings.spec.ts |
+| apps/web/src/lib/features/workspace/workspace-startup-preference.spec.ts |
 | apps/web/src/lib/features/workspace/workspace-state.test.ts |
 | apps/web/src/lib/features/workspace/workspace-stats.test.ts |
 | apps/web/src/lib/features/workspace/workspace-switching.test.ts |

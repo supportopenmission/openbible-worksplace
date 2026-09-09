@@ -37,6 +37,11 @@
 	import { getWorkspaceLifecycle } from '$lib/storage/workspace-lifecycle';
 	import type { StorageKind, WorkspaceStorage } from '$lib/storage/types';
 	import { getWorkspaceState } from './workspace-state.svelte';
+	import {
+		readWorkspaceStartupScreen,
+		requestWorkspaceStartupScreen,
+		saveWorkspaceStartupScreen
+	} from './workspace-startup-preference';
 
 	const workspace = getWorkspaceState();
 	const isMobile = new IsMobile();
@@ -78,6 +83,7 @@
 	let manageBusy = $state(false);
 	let manageMessage = $state('');
 	let manageError = $state('');
+	let showStartupScreen = $state(true);
 	let collision = $state<{
 		entryId: string;
 		entryName: string;
@@ -414,6 +420,7 @@
 
 	onMount(() => {
 		refreshCatalog();
+		showStartupScreen = readWorkspaceStartupScreen();
 		const listener = () => refreshCatalog();
 		try {
 			window.addEventListener('openbible:workspace-activated', listener);
@@ -430,6 +437,16 @@
 	});
 
 	const kind = $derived(workspace?.storage?.kind ?? detectStorageKind());
+
+	function updateStartupScreenPreference() {
+		saveWorkspaceStartupScreen(showStartupScreen);
+	}
+
+	function openStartupScreen() {
+		showStartupScreen = true;
+		saveWorkspaceStartupScreen(true);
+		requestWorkspaceStartupScreen();
+	}
 
 	async function reconnectFolder() {
 		if (!workspace || busy) return;
@@ -524,6 +541,29 @@
 					</div>
 				</dl>
 			</details>
+			{#if kind === 'native'}
+				<section class="startup-preference" aria-labelledby="startup-screen-heading">
+					<div>
+						<h3 id="startup-screen-heading">Tela inicial do workspace</h3>
+						<p class="switch-hint">
+							Escolha o workspace antes de entrar no OpenBible ou abra direto o último espaço usado.
+						</p>
+					</div>
+					<div class="startup-preference-actions">
+						<label class="startup-toggle">
+							<input
+								type="checkbox"
+								bind:checked={showStartupScreen}
+								onchange={updateStartupScreenPreference}
+							/>
+							<span>Sempre mostrar ao iniciar</span>
+						</label>
+						<button class="secondary" type="button" onclick={openStartupScreen}>
+							Abrir tela agora
+						</button>
+					</div>
+				</section>
+			{/if}
 
 			<div class="actions">
 				{#if workspace.storage?.kind === 'local' || workspace.storage?.kind === 'native'}
@@ -1114,6 +1154,50 @@
 		margin: 16px 0 2px;
 	}
 
+	.startup-preference {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 20px;
+		margin-top: 20px;
+		border-block: 1px solid var(--border);
+		padding: 16px 0;
+	}
+
+	.startup-preference h3 {
+		margin: 0;
+		font-size: 0.9rem;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+	}
+
+	.startup-preference-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 14px;
+	}
+
+	.startup-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		color: var(--foreground);
+		font-size: 0.8rem;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+
+	.startup-toggle input {
+		accent-color: var(--primary);
+	}
+
+	.startup-toggle input:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 3px;
+	}
+
 	.facts {
 		display: grid;
 		gap: 14px;
@@ -1543,6 +1627,20 @@
 			align-items: stretch;
 			flex-direction: column;
 			gap: 10px;
+		}
+
+		.startup-preference {
+			align-items: stretch;
+			flex-direction: column;
+		}
+
+		.startup-preference-actions {
+			align-items: stretch;
+			flex-direction: column;
+		}
+
+		.startup-toggle {
+			white-space: normal;
 		}
 	}
 

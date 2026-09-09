@@ -5,8 +5,8 @@
 
 | Tipo | Quantidade |
 | --- | --- |
-| Código | 931 |
-| Testes | 130 |
+| Código | 933 |
+| Testes | 131 |
 
 ## Diagramas
 

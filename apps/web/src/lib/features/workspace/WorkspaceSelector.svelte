@@ -48,7 +48,7 @@
 		onAction
 	}: {
 		manageLabel?: string;
-		variant?: 'desktop' | 'mobile';
+		variant?: 'desktop' | 'mobile' | 'start';
 		onManage?: () => void;
 		onCreate?: () => void;
 		onAdd?: () => void;
@@ -116,7 +116,11 @@
 	}
 
 	async function selectWorkspace(id: string) {
-		if (id === activeId || switchingId) return;
+		if (switchingId) return;
+		if (id === activeId) {
+			onAction?.();
+			return;
+		}
 		error = '';
 		switchingId = id;
 		let target = entries.find((entry) => entry.workspaceId === id) ?? null;
@@ -622,7 +626,7 @@
 		openCreate();
 		// No mobile o formulário abre em um Drawer aninhado; manter este
 		// componente montado evita que o drawer da lista destrua o formulário.
-		if (variant !== 'mobile') onAction?.();
+		if (variant !== 'mobile' && variant !== 'start') onAction?.();
 	}
 
 	function handleAdd() {
@@ -632,7 +636,7 @@
 		}
 		openAdd();
 		// O drawer externo permanece montado enquanto o formulário aninhado abre.
-		if (variant !== 'mobile') onAction?.();
+		if (variant !== 'mobile' && variant !== 'start') onAction?.();
 	}
 
 	onMount(() => {
@@ -651,7 +655,54 @@
 </script>
 
 <div class="workspace-selector" data-variant={variant} aria-busy={loading || undefined}>
-	{#if variant === 'mobile'}
+		{#if variant === 'start'}
+			<div class="start-list" role="list" aria-label="Espaços de estudo" aria-busy={loading || undefined}>
+				{#if loading}
+					<p class="menu-status" role="status">Abrindo espaço de estudo…</p>
+				{:else if entries.length === 0}
+					<p class="menu-status" role="status">Nenhum workspace cadastrado neste dispositivo.</p>
+				{:else}
+					{#each entries as entry (entry.workspaceId)}
+						<button
+							type="button"
+							class="start-item"
+							class:active={entry.workspaceId === activeId}
+							aria-current={entry.workspaceId === activeId ? 'true' : undefined}
+							aria-label={`${entry.nameCache}, ${storageLocationLabel(entry.storageKind)}${entry.workspaceId === activeId ? ', atual' : ''}`}
+							disabled={switchingId !== null}
+							onclick={() => selectWorkspace(entry.workspaceId)}
+						>
+							<span class="start-item-avatar" aria-hidden="true">
+								{entry.nameCache.trim().charAt(0).toUpperCase() || 'W'}
+							</span>
+							<span class="start-item-copy">
+								<strong>{entry.nameCache}</strong>
+								<span>{storageLocationLabel(entry.storageKind)}</span>
+							</span>
+							<span class="start-item-state">
+								{#if switchingId === entry.workspaceId}
+									Abrindo…
+								{:else if entry.workspaceId === activeId}
+									Atual
+								{:else}
+									Abrir
+								{/if}
+							</span>
+						</button>
+					{/each}
+				{/if}
+				<div class="start-actions" role="group" aria-label="Ações do workspace">
+					<button type="button" class="start-action" onclick={handleCreate}>
+						<Plus size={15} strokeWidth={2} aria-hidden="true" />
+						<span>Criar novo workspace</span>
+					</button>
+					<button type="button" class="start-action" onclick={handleAdd}>
+						<FolderPlus size={15} strokeWidth={2} aria-hidden="true" />
+						<span>Abrir pasta existente</span>
+					</button>
+				</div>
+			</div>
+		{:else if variant === 'mobile'}
 		<div class="mobile-list" role="menu" aria-label="Espaços de estudo" aria-busy={loading || undefined}>
 			{#if loading}
 				<p class="menu-status" role="status">Abrindo espaço de estudo…</p>
@@ -1174,6 +1225,124 @@
 		border-top: 1px solid var(--border);
 		margin-top: 6px;
 		padding-top: 8px;
+	}
+
+	.start-list {
+		display: grid;
+		gap: 8px;
+		width: 100%;
+	}
+
+	.start-item {
+		display: flex;
+		width: 100%;
+		min-height: 64px;
+		align-items: center;
+		gap: 12px;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		background: transparent;
+		padding: 10px 12px;
+		color: var(--foreground);
+		font: inherit;
+		text-align: start;
+		cursor: pointer;
+	}
+
+	.start-item:hover,
+	.start-item.active {
+		background: color-mix(in oklch, var(--foreground) 5%, transparent);
+		border-color: color-mix(in oklch, var(--foreground) 24%, var(--border));
+	}
+
+	.start-item:focus-visible,
+	.start-action:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	.start-item:disabled {
+		cursor: wait;
+		opacity: 0.68;
+	}
+
+	.start-item-avatar {
+		display: inline-flex;
+		width: 34px;
+		height: 34px;
+		flex: 0 0 auto;
+		align-items: center;
+		justify-content: center;
+		border-radius: 9px;
+		background: color-mix(in oklch, var(--foreground) 9%, transparent);
+		font-size: 0.9rem;
+		font-weight: 650;
+	}
+
+	.start-item-copy {
+		display: grid;
+		min-width: 0;
+		flex: 1;
+		gap: 3px;
+	}
+
+	.start-item-copy strong,
+	.start-item-copy span {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.start-item-copy strong {
+		font-size: 0.875rem;
+		font-weight: 600;
+	}
+
+	.start-item-copy span,
+	.start-item-state {
+		color: var(--muted-foreground);
+		font-size: 0.72rem;
+	}
+
+	.start-item-state {
+		flex: 0 0 auto;
+		font-weight: 600;
+	}
+
+	.start-actions {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 8px;
+		border-top: 1px solid var(--border);
+		margin-top: 8px;
+		padding-top: 16px;
+	}
+
+	.start-action {
+		display: inline-flex;
+		min-height: 38px;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: transparent;
+		padding: 7px 8px;
+		color: var(--foreground);
+		font: inherit;
+		font-size: 0.75rem;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.start-action:hover {
+		background: color-mix(in oklch, var(--foreground) 6%, transparent);
+	}
+
+	@media (max-width: 520px) {
+		.start-actions {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	.mobile-action {
