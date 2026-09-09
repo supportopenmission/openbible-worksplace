@@ -49,10 +49,9 @@
 	<div class="offline-guarantee">
 		<ShieldCheck size={16} class="guarantee-icon" aria-hidden="true" />
 		<div class="guarantee-text">
-			<strong>Filosofia Files Over Apps</strong>
+			<strong>Seus dados sempre com você</strong>
 			<p>
-				Seus dados e notas locais continuam 100% seguros e independentes neste dispositivo,
-				mesmo se você se desconectar ou estiver sem internet.
+				Suas notas e estudos ficam salvos com segurança neste aparelho. Você continua com acesso total mesmo se estiver sem internet ou desconectar sua conta.
 			</p>
 		</div>
 	</div>

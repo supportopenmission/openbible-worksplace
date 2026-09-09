@@ -81,6 +81,22 @@
 		activeBackend ? storageBackendLabel(activeBackend) : 'Banco local'
 	);
 
+	function formatSelectorName(name: string): string {
+		const trimmed = name.trim();
+		if (!trimmed) return 'Workspace';
+		if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed)) {
+			return `${trimmed.slice(0, 8)}…`;
+		}
+		if (trimmed.length > 24) {
+			return `${trimmed.slice(0, 22)}…`;
+		}
+		return trimmed;
+	}
+
+	const displayActiveName = $derived(
+		loading ? 'Abrindo workspace…' : formatSelectorName(activeName)
+	);
+
 	function announce(message: string) {
 		announcement = message;
 	}
@@ -685,7 +701,7 @@
 							{activeName.trim().charAt(0).toUpperCase() || 'W'}
 						</span>
 						<span class="selector-copy">
-							<span class="selector-name">{loading ? 'Abrindo workspace…' : activeName}</span>
+							<span class="selector-name">{displayActiveName}</span>
 							{#if !loading && activeBackend}
 								<span class="selector-backend">{activeBackendLabel}</span>
 							{/if}
@@ -1009,6 +1025,11 @@
 
 	.workspace-selector :global(.selector-trigger) {
 		width: 100%;
+		max-width: 100%;
+		min-width: 0;
+		overflow: hidden;
+		display: flex;
+		align-items: center;
 		justify-content: flex-start;
 		min-height: 34px;
 		border-radius: 8px;
@@ -1018,9 +1039,25 @@
 		color: color-mix(in oklch, var(--sidebar-foreground) 80%, transparent);
 	}
 
+	.selector-avatar {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 20px;
+		height: 20px;
+		border-radius: 4px;
+		background: color-mix(in oklch, var(--sidebar-foreground) 10%, transparent);
+		font-size: 0.75rem;
+		font-weight: 600;
+		flex-shrink: 0;
+		margin-right: 8px;
+	}
+
 	.selector-copy {
 		display: flex;
 		min-width: 0;
+		max-width: calc(100% - 28px);
+		overflow: hidden;
 		flex: 1;
 		flex-direction: column;
 		align-items: flex-start;
@@ -1029,6 +1066,14 @@
 
 	.selector-backend,
 	.workspace-item-backend {
+		display: block;
+		width: 100%;
+		max-width: 100%;
+		overflow: hidden;
+		min-width: 0;
+		text-align: start;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 		color: var(--muted-foreground);
 		font-family: var(--font-mono);
 		font-size: 0.65rem;
@@ -1105,6 +1150,9 @@
 	}
 
 	.selector-name {
+		display: block;
+		width: 100%;
+		max-width: 100%;
 		overflow: hidden;
 		min-width: 0;
 		flex: 1;

@@ -215,21 +215,30 @@ export async function renameCloudWorkspace(
 		credentials: 'include'
 	});
 
-	if (response.status === 404 || response.status === 405) {
-		response = await fetcher(`${baseUrl}/v1/workspaces`, {
-			method: 'POST',
-			headers: {
-				'content-type': 'application/json',
-				...(token ? { authorization: `Bearer ${token}` } : {})
-			},
-			body: JSON.stringify({ workspaceId, name: trimmedName }),
-			credentials: 'include'
-		});
+	// Se PATCH não for suportado ou falhar (ex: 404, 405 ou 500 em servidor sem rota dedicada),
+	// tenta via POST /v1/workspaces (bind/update compatível com qualquer versão do sync-server)
+	if (!response.ok) {
+		try {
+			const fallbackResponse = await fetcher(`${baseUrl}/v1/workspaces`, {
+				method: 'POST',
+				headers: {
+					'content-type': 'application/json',
+					...(token ? { authorization: `Bearer ${token}` } : {})
+				},
+				body: JSON.stringify({ workspaceId, name: trimmedName }),
+				credentials: 'include'
+			});
+			if (fallbackResponse.ok) {
+				response = fallbackResponse;
+			}
+		} catch {
+			// Mantém a resposta original caso o fallback também falhe na rede
+		}
 	}
 
 	if (!response.ok) {
-		const errData = (await response.json().catch(() => ({}))) as { message?: string };
-		throw new Error(errData.message || `Falha ao renomear workspace (status ${response.status}).`);
+		const errData = (await response.json().catch(() => ({}))) as { message?: string; error?: string };
+		throw new Error(errData.message || `Falha ao renomear workspace (${response.status}).`);
 	}
 
 	const localEntry = getCatalogEntry(workspaceId);

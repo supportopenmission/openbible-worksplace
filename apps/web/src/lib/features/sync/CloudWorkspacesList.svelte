@@ -11,6 +11,10 @@
 	} from './cloud-workspace-service';
 	import { syncWorkspaceWithAccount } from './sync-client';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import * as Drawer from '$lib/components/ui/drawer/index.js';
+	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 	import {
 		FolderSync,
 		RefreshCw,
@@ -20,20 +24,21 @@
 		Link2,
 		Pencil,
 		Trash2,
-		Check,
-		X,
 		Sparkles
 	} from '@lucide/svelte';
 
 	const workspaceState = getWorkspaceState();
+	const isMobile = new IsMobile();
 
 	let workspaces = $state<CloudWorkspaceItem[]>([]);
 	let loading = $state(false);
 	let error = $state('');
 	let successMessage = $state('');
 	let processingId = $state<string | null>(null);
-	let editingId = $state<string | null>(null);
-	let editName = $state('');
+	let renameTarget = $state<CloudWorkspaceItem | null>(null);
+	let renameName = $state('');
+	let renameError = $state('');
+	let renameSubmitting = $state(false);
 
 	const hasUnlinkedCloudWorkspaces = $derived(
 		workspaces.length > 0 &&
@@ -133,30 +138,37 @@
 	}
 
 	function handleStartRename(ws: CloudWorkspaceItem) {
-		editingId = ws.workspaceId;
-		editName = ws.name;
+		renameTarget = ws;
+		renameName = ws.name;
+		renameError = '';
 	}
 
-	async function handleSaveRename(ws: CloudWorkspaceItem) {
-		const trimmed = editName.trim();
-		if (!trimmed || trimmed === ws.name) {
-			editingId = null;
+	async function handleSaveRename() {
+		if (!renameTarget) return;
+		const trimmed = renameName.trim();
+		if (!trimmed) {
+			renameError = 'O nome do workspace não pode ser vazio.';
+			return;
+		}
+		if (trimmed === renameTarget.name) {
+			renameTarget = null;
 			return;
 		}
 
-		processingId = ws.workspaceId;
+		renameSubmitting = true;
+		renameError = '';
 		error = '';
 		successMessage = '';
 
 		try {
-			await renameCloudWorkspace(ws.workspaceId, trimmed);
+			await renameCloudWorkspace(renameTarget.workspaceId, trimmed);
 			successMessage = `Workspace renomeado para "${trimmed}".`;
-			editingId = null;
+			renameTarget = null;
 			await fetchWorkspaces();
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Falha ao renomear workspace.';
+			renameError = err instanceof Error ? err.message : 'Falha ao renomear workspace.';
 		} finally {
-			processingId = null;
+			renameSubmitting = false;
 		}
 	}
 
@@ -296,50 +308,17 @@
 						<tr>
 							<td class="cell-primary">
 								<div class="ws-name-row">
-									{#if editingId === ws.workspaceId}
-										<form
-											class="rename-inline-form"
-											onsubmit={(e) => {
-												e.preventDefault();
-												void handleSaveRename(ws);
-											}}
-										>
-											<input
-												type="text"
-												class="rename-input"
-												bind:value={editName}
-												disabled={isBusy}
-												required
-											/>
-											<button
-												type="submit"
-												class="icon-action-btn check-btn"
-												title="Salvar nome"
-												disabled={isBusy || !editName.trim()}
-											>
-												<Check size={13} aria-hidden="true" />
-											</button>
-											<button
-												type="button"
-												class="icon-action-btn cancel-btn"
-												title="Cancelar"
-												disabled={isBusy}
-												onclick={() => (editingId = null)}
-											>
-												<X size={13} aria-hidden="true" />
-											</button>
-										</form>
-									{:else}
-										<span class="ws-name">{ws.name}</span>
-										<button
-											type="button"
-											class="icon-action-btn rename-btn"
-											title="Renomear workspace"
-											onclick={() => handleStartRename(ws)}
-										>
-											<Pencil size={11} aria-hidden="true" />
-										</button>
-									{/if}
+									<span class="ws-name">{ws.name}</span>
+									<button
+										type="button"
+										class="icon-action-btn rename-btn"
+										title="Renomear workspace"
+										aria-label={`Renomear workspace ${ws.name}`}
+										disabled={isBusy}
+										onclick={() => handleStartRename(ws)}
+									>
+										<Pencil size={12} aria-hidden="true" />
+									</button>
 									{#if isActive}
 										<span class="badge badge-active" title="Workspace atualmente ativo e em uso">Ativo</span>
 									{:else if isLocal}
@@ -416,6 +395,93 @@
 				</tbody>
 			</table>
 		</div>
+	{/if}
+
+	{#snippet renameModalBody()}
+		<form
+			onsubmit={(e) => {
+				e.preventDefault();
+				void handleSaveRename();
+			}}
+			class="rename-modal-form"
+		>
+			<div class="rename-field">
+				<label for="rename-cloud-ws-input" class="rename-label">Nome do workspace</label>
+				<Input
+					id="rename-cloud-ws-input"
+					type="text"
+					bind:value={renameName}
+					disabled={renameSubmitting}
+					placeholder="Ex.: Meu Estudo Bíblico"
+					required
+				/>
+				{#if renameError}
+					<p class="rename-error" role="alert">{renameError}</p>
+				{/if}
+				<p class="rename-hint">
+					O nome será atualizado na nuvem e refletido em todos os aparelhos sincronizados.
+				</p>
+			</div>
+
+			<div class="rename-actions">
+				<Button
+					type="button"
+					variant="outline"
+					size="sm"
+					disabled={renameSubmitting}
+					onclick={() => {
+						renameTarget = null;
+					}}
+				>
+					Cancelar
+				</Button>
+				<Button
+					type="submit"
+					size="sm"
+					disabled={renameSubmitting || !renameName.trim()}
+				>
+					{renameSubmitting ? 'Salvando…' : 'Salvar nome'}
+				</Button>
+			</div>
+		</form>
+	{/snippet}
+
+	{#if renameTarget}
+		{#if isMobile.current}
+			<Drawer.Root
+				open={true}
+				onOpenChange={(open) => {
+					if (!open) renameTarget = null;
+				}}
+			>
+				<Drawer.Content class="p-4">
+					<Drawer.Header class="text-left px-0">
+						<Drawer.Title>Renomear workspace</Drawer.Title>
+						<Drawer.Description>
+							Altere o nome deste workspace para identificá-lo em seus aparelhos.
+						</Drawer.Description>
+					</Drawer.Header>
+					<div class="py-2">
+						{@render renameModalBody()}
+					</div>
+				</Drawer.Content>
+			</Drawer.Root>
+		{:else}
+			<Dialog.Root
+				open={true}
+				onOpenChange={(open) => {
+					if (!open) renameTarget = null;
+				}}
+			>
+				<Dialog.Content class="sm:max-w-[425px]">
+					<Dialog.Title>Renomear workspace</Dialog.Title>
+					<Dialog.Description>
+						Altere o nome deste workspace para identificá-lo em seus aparelhos.
+					</Dialog.Description>
+					{@render renameModalBody()}
+				</Dialog.Content>
+			</Dialog.Root>
+		{/if}
 	{/if}
 </div>
 
@@ -657,25 +723,41 @@
 		margin-top: 4px;
 	}
 
-	.rename-inline-form {
+	.rename-modal-form {
 		display: flex;
-		align-items: center;
-		gap: 4px;
+		flex-direction: column;
+		gap: 16px;
 	}
 
-	.rename-input {
-		height: 26px;
-		padding: 0 6px;
-		border: 1px solid var(--border);
-		border-radius: 4px;
+	.rename-field {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.rename-label {
 		font-size: 0.8125rem;
-		background: var(--background);
+		font-weight: 500;
 		color: var(--foreground);
-		outline: none;
 	}
 
-	.rename-input:focus {
-		border-color: var(--foreground);
+	.rename-hint {
+		font-size: 0.75rem;
+		color: var(--muted-foreground);
+		margin: 0;
+	}
+
+	.rename-error {
+		font-size: 0.75rem;
+		color: var(--destructive);
+		margin: 0;
+	}
+
+	.rename-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 8px;
+		margin-top: 4px;
 	}
 
 	.icon-action-btn {
@@ -699,19 +781,6 @@
 	.icon-action-btn:disabled {
 		opacity: 0.4;
 		cursor: not-allowed;
-	}
-
-	.check-btn {
-		color: #16a34a;
-	}
-
-	.check-btn:hover:not(:disabled) {
-		color: #15803d;
-		background: #f0fdf4;
-	}
-
-	.cancel-btn:hover:not(:disabled) {
-		color: var(--foreground);
 	}
 
 	.delete-btn {
