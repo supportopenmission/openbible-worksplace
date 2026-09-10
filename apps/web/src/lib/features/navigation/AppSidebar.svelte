@@ -628,6 +628,10 @@
 		display: none;
 	}
 
+	:global([data-collapsible='icon'] .update-badge) {
+		display: none;
+	}
+
 	:global(.group[data-collapsible='icon'] .sidebar-group) {
 		padding-inline: 4px;
 	}

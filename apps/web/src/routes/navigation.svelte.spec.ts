@@ -3,6 +3,7 @@ import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import AppSidebarTestHost from '$lib/features/navigation/AppSidebar.test-host.svelte';
 import { nativeRouteRegistry } from '$lib/storage/tauri-runtime';
+import { markPwaUpdateAvailable } from '$lib/updates/app-updates.svelte';
 
 describe('AppSidebar', () => {
 	beforeEach(() => {
@@ -91,5 +92,41 @@ describe('AppSidebar', () => {
 		await expect
 			.element(mobileNavigation.getByRole('link', { name: 'Notas' }))
 			.toHaveAttribute('aria-current', 'page');
+	});
+
+	it('leaves Ctrl+B to the focused editor when the sidebar is collapsed', async () => {
+		await page.viewport(1440, 900);
+		await render(AppSidebarTestHost, { props: { currentPath: '/notes' } });
+
+		const editorTarget = document.createElement('div');
+		editorTarget.contentEditable = 'true';
+		document.body.append(editorTarget);
+		const sidebar = document.querySelector('[data-slot="sidebar"]');
+		const shortcut = new KeyboardEvent('keydown', {
+			bubbles: true,
+			cancelable: true,
+			key: 'b',
+			ctrlKey: true
+		});
+
+		try {
+			editorTarget.dispatchEvent(shortcut);
+			expect(sidebar?.getAttribute('data-state')).toBe('collapsed');
+			expect(shortcut.defaultPrevented).toBe(false);
+		} finally {
+			editorTarget.remove();
+		}
+	});
+
+	it('keeps the update action inside the collapsed icon rail', async () => {
+		markPwaUpdateAvailable();
+		await page.viewport(1440, 900);
+		await render(AppSidebarTestHost, { props: { currentPath: '/' } });
+
+		const updateButton = document.querySelector('.update-link');
+		const updateBadge = updateButton?.querySelector('.update-badge');
+		expect(updateButton).not.toBeNull();
+		expect(updateBadge).not.toBeNull();
+		expect(updateBadge && getComputedStyle(updateBadge).display).toBe('none');
 	});
 });

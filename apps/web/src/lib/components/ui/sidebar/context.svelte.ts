@@ -20,6 +20,22 @@ export type SidebarStateProps = {
 	setOpen: (open: boolean) => void;
 };
 
+/**
+ * The sidebar shortcut is global, but text editing shortcuts belong to the
+ * focused editor or form control. Keep those targets out of the shell-level
+ * shortcut handler.
+ */
+export function isTextEditingTarget(target: EventTarget | null): boolean {
+	if (!target || typeof target !== 'object' || !('closest' in target)) return false;
+
+	const element = target as Element;
+	return Boolean(
+		element.closest(
+			'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'
+		)
+	);
+}
+
 class SidebarState {
 	readonly props: SidebarStateProps;
 	open = $derived.by(() => this.props.open());
@@ -42,6 +58,8 @@ class SidebarState {
 
 	// Event handler to apply to the `<svelte:window>`
 	handleShortcutKeydown = (e: KeyboardEvent) => {
+		if (e.defaultPrevented || isTextEditingTarget(e.target)) return;
+
 		if (e.key === SIDEBAR_KEYBOARD_SHORTCUT && (e.metaKey || e.ctrlKey)) {
 			e.preventDefault();
 			this.toggle();
