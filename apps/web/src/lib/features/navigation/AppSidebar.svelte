@@ -27,6 +27,7 @@
 		authClient,
 		getStoredAuthToken,
 		getStoredAuthUser,
+		hasLocalAuthContext,
 		setStoredAuthUser,
 		type AuthUserInfo
 	} from '$lib/features/auth/auth-client';
@@ -82,23 +83,27 @@
 
 		window.addEventListener('openbible:auth-changed', authListener);
 
-		authClient
-			.getSession()
-			.then((session) => {
-				if (session?.data?.user) {
-					const updated = {
-						id: session.data.user.id,
-						name: session.data.user.name,
-						email: session.data.user.email
-					};
-					setStoredAuthUser(updated);
-					user = updated;
-				} else if (getStoredAuthToken()) {
-					setStoredAuthUser(null);
-					user = null;
-				}
-			})
-			.catch(() => {});
+		// Sem conta usada neste dispositivo, não há sessão a renovar:
+		// evita fetch contra o sync-server e o erro de conexão no console.
+		if (hasLocalAuthContext()) {
+			authClient
+				.getSession()
+				.then((session) => {
+					if (session?.data?.user) {
+						const updated = {
+							id: session.data.user.id,
+							name: session.data.user.name,
+							email: session.data.user.email
+						};
+						setStoredAuthUser(updated);
+						user = updated;
+					} else if (getStoredAuthToken()) {
+						setStoredAuthUser(null);
+						user = null;
+					}
+				})
+				.catch(() => {});
+		}
 
 		// iOS can keep a fixed layer at the old visual-viewport position after
 		// the standalone PWA or its system chrome settles. Toggle only the

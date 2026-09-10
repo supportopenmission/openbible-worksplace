@@ -167,6 +167,11 @@
 			display: none;
 		}
 
+		:global(.app-sidebar-provider) {
+			height: 100svh;
+			height: 100dvh;
+		}
+
 		.shell-main {
 			padding-bottom: calc(84px + env(safe-area-inset-bottom));
 			max-height: 100svh;

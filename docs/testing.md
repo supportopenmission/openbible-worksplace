@@ -3,7 +3,7 @@
 <!-- specsfy:documentator:start -->
 ## Resumo
 
-- Arquivos de teste: 138.
+- Arquivos de teste: 141.
 - Runner: não identificado.
 - Scripts: build: turbo run build; check-types: turbo run check-types; dev: turbo run dev; lint: turbo run lint; format: prettier --write .; format:check: prettier --check ..
 
@@ -60,6 +60,7 @@
 | apps/web/src/lib/features/home/quick-actions.spec.ts |
 | apps/web/src/lib/features/home/recent-lists.spec.ts |
 | apps/web/src/lib/features/navigation/app-sidebar.spec.ts |
+| apps/web/src/lib/features/navigation/auth-session-gating.spec.ts |
 | apps/web/src/lib/features/navigation/sidebar.test.ts |
 | apps/web/src/lib/features/notes/EdraNoteEditor.svelte.test.ts |
 | apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts |
@@ -67,6 +68,7 @@
 | apps/web/src/lib/features/notes/edra-editor-smoke.test.ts |
 | apps/web/src/lib/features/notes/edra-full-roundtrip.test.ts |
 | apps/web/src/lib/features/notes/edra-markdown-roundtrip.test.ts |
+| apps/web/src/lib/features/notes/edra-mobile-layout.svelte.test.ts |
 | apps/web/src/lib/features/notes/highlight-file-repository.test.ts |
 | apps/web/src/lib/features/notes/index-rebuilder.benchmark.test.ts |
 | apps/web/src/lib/features/notes/index-rebuilder.test.ts |
@@ -79,6 +81,7 @@
 | apps/web/src/lib/features/notes/milkdown-verse-node.test.ts |
 | apps/web/src/lib/features/notes/milkdown-video-node.test.ts |
 | apps/web/src/lib/features/notes/note-block-interactions.test.ts |
+| apps/web/src/lib/features/notes/note-editor-layout.test.ts |
 | apps/web/src/lib/features/notes/note-editor-service.test.ts |
 | apps/web/src/lib/features/notes/note-editor-switch.spec.ts |
 | apps/web/src/lib/features/notes/note-editor-viewport.test.ts |

@@ -2,7 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	getDefaultSyncServerBaseUrl,
 	getSyncServerBaseUrl,
+	hasLocalAuthContext,
 	isCustomSyncServerConfigured,
+	setStoredAuthToken,
+	setStoredAuthUser,
 	setSyncServerBaseUrl,
 	PROD_SYNC_SERVER_URL,
 	DEV_SYNC_SERVER_URL
@@ -25,7 +28,8 @@ describe('auth-client sync server configuration', () => {
 				setItem: (key: string, val: string) => storage.set(key, val),
 				removeItem: (key: string) => storage.delete(key),
 				clear: () => storage.clear()
-			}
+			},
+			dispatchEvent: () => true
 		});
 	});
 
@@ -55,5 +59,18 @@ describe('auth-client sync server configuration', () => {
 		setSyncServerBaseUrl(null);
 		expect(isCustomSyncServerConfigured()).toBe(false);
 		expect(getSyncServerBaseUrl()).toBe(getDefaultSyncServerBaseUrl());
+	});
+
+	it('só indica contexto de conta quando há token ou usuário guardado', () => {
+		expect(hasLocalAuthContext()).toBe(false);
+
+		setStoredAuthToken('token-123');
+		expect(hasLocalAuthContext()).toBe(true);
+
+		setStoredAuthToken(null);
+		expect(hasLocalAuthContext()).toBe(false);
+
+		setStoredAuthUser({ id: 'u1', name: 'Pessoa', email: 'pessoa@example.com' });
+		expect(hasLocalAuthContext()).toBe(true);
 	});
 });

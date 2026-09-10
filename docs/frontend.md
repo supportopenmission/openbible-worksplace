@@ -9,7 +9,7 @@
 
 | Arquivo |
 | --- |
-| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/0.B2lShDBi.css |
+| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/0.CmWfWLaN.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/2.Du5FAY_n.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/3.jid9lS8Z.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/4.CaoymHN_.css |
@@ -24,8 +24,8 @@
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/RemoteBibleImport.DuNZ_Ptb.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/daily-reminder.DczyGYES.css |
 | apps/web/.svelte-kit/cloudflare/_app/immutable/assets/drawer.gmmBdIMB.css |
-| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/note-editor-layout.BhovEQ-y.css |
-| apps/web/.svelte-kit/output/client/_app/immutable/assets/0.B2lShDBi.css |
+| apps/web/.svelte-kit/cloudflare/_app/immutable/assets/note-editor-layout.BaqiS0Pt.css |
+| apps/web/.svelte-kit/output/client/_app/immutable/assets/0.CmWfWLaN.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/2.Du5FAY_n.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/3.jid9lS8Z.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/4.CaoymHN_.css |
@@ -40,14 +40,14 @@
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/RemoteBibleImport.DuNZ_Ptb.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/daily-reminder.DczyGYES.css |
 | apps/web/.svelte-kit/output/client/_app/immutable/assets/drawer.gmmBdIMB.css |
-| apps/web/.svelte-kit/output/client/_app/immutable/assets/note-editor-layout.BhovEQ-y.css |
+| apps/web/.svelte-kit/output/client/_app/immutable/assets/note-editor-layout.BaqiS0Pt.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/HighlightsList.CKWb2Yvo.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/LocalBibleImport.XD-HZ-08.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/PageHeader.D4E2QHx-.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/ProductPage.Bt54Nk6E.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/RemoteBibleImport.DuNZ_Ptb.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_layout.4aCmEHkW.css |
-| apps/web/.svelte-kit/output/server/_app/immutable/assets/_layout.BRo47cbm.css |
+| apps/web/.svelte-kit/output/server/_app/immutable/assets/_layout.CYlN_LLC.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.8MGe69Sj.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.BPVQ69jw.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.Bddg3sph.css |
@@ -56,7 +56,7 @@
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/_page.jid9lS8Z.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/daily-reminder.DczyGYES.css |
 | apps/web/.svelte-kit/output/server/_app/immutable/assets/drawer.Dfn3BCaV.css |
-| apps/web/.svelte-kit/output/server/_app/immutable/assets/note-editor-layout.CzQ5ctM4.css |
+| apps/web/.svelte-kit/output/server/_app/immutable/assets/note-editor-layout.BcL1NZal.css |
 | apps/web/.svelte-kit/tauri/_app/immutable/assets/0.BkfsOC6k.css |
 | apps/web/.svelte-kit/tauri/_app/immutable/assets/2.SrOwNqhZ.css |
 | apps/web/.svelte-kit/tauri/_app/immutable/assets/3.uKK-3Ivt.css |

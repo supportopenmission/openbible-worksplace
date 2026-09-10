@@ -52,6 +52,15 @@ export function isCustomSyncServerConfigured(): boolean {
 const TOKEN_STORAGE_KEY = 'openbible:auth-token';
 const USER_STORAGE_KEY = 'openbible:auth-user';
 
+/**
+ * True quando há motivo para falar com o servidor (a pessoa já usou uma
+ * conta neste dispositivo). Sem opt-in, nenhum fetch de sessão é feito —
+ * o app segue 100% local sem erros de conexão no console.
+ */
+export function hasLocalAuthContext(): boolean {
+	return getStoredAuthToken() !== null || getStoredAuthUser() !== null;
+}
+
 export function getStoredAuthToken(): string | null {
 	if (typeof window !== 'undefined') {
 		const token = window.localStorage.getItem(TOKEN_STORAGE_KEY);

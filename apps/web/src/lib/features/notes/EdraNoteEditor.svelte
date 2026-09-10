@@ -325,7 +325,7 @@ Título e descrição vivem nos metadados, fora do conteúdo.
 				</div>
 
 				{#if chromeVisible}
-					<Edra.BubbleMenu />
+					<Edra.BubbleMenu class="edra-bubble-bar" />
 				{/if}
 			</Edra>
 		{/if}
@@ -374,6 +374,7 @@ Título e descrição vivem nos metadados, fora do conteúdo.
 			flex: 1;
 			flex-direction: column;
 			overflow-y: auto;
+			overflow-x: clip;
 			overscroll-behavior: contain;
 			-webkit-overflow-scrolling: touch;
 		}
@@ -390,6 +391,7 @@ Título e descrição vivem nos metadados, fora do conteúdo.
 		top: 0;
 		z-index: 20;
 		width: 100%;
+		overflow: hidden;
 		background: var(--background);
 		border-bottom: 1px solid var(--border);
 	}
@@ -399,7 +401,28 @@ Título e descrição vivem nos metadados, fora do conteúdo.
 		margin-inline: auto;
 		padding: 4px clamp(16px, 5vw, 48px);
 		overflow-x: auto;
-		scrollbar-width: thin;
+		overscroll-behavior-x: contain;
+		scrollbar-width: none;
+	}
+
+	.edra-toolbar-full :global(.edra-toolbar-bar::-webkit-scrollbar) {
+		display: none;
+	}
+
+	@media (max-width: 767px) {
+		/* No mobile a barra quebra em linhas em vez de rolar: nenhuma
+		ferramenta fica presa fora da tela e a página nunca rola na
+		horizontal. */
+		.edra-toolbar-full :global(.edra-toolbar-bar) {
+			max-width: none;
+			overflow-x: hidden;
+			flex-wrap: wrap;
+			row-gap: 2px;
+		}
+
+		:global(.edra-bubble-bar) {
+			flex-wrap: wrap;
+		}
 	}
 
 	.note-container {
@@ -511,6 +534,56 @@ Título e descrição vivem nos metadados, fora do conteúdo.
 		flex: 1;
 		width: 100%;
 		min-height: 0;
+	}
+
+	.edra-canvaswrap > :global(.edra-content) {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		width: 100%;
+		min-height: 0;
+	}
+
+	/* O `.tiptap` do Edra centraliza com `margin-inline: auto`; dentro do
+	nosso flex isso encolheria o editor ao conteúdo. Coluna cheia aqui. */
+	.edra-canvaswrap > :global(.edra-content.tiptap) {
+		margin-inline: 0;
+	}
+
+	:global(.edra-content .ProseMirror) {
+		flex: 1;
+		margin-inline: 0;
+		overflow-wrap: anywhere;
+	}
+
+	:global(.edra-content .ProseMirror:focus),
+	:global(.edra-content .ProseMirror:focus-visible) {
+		outline: none;
+		box-shadow: none;
+	}
+
+	/* A bolha de formatação é mais larga que o viewport mobile: rolagem
+	horizontal invisível contida nela, nunca na página. */
+	:global(.edra-bubble-bar) {
+		max-width: calc(100vw - 32px);
+		overflow-x: auto;
+		overscroll-behavior-x: contain;
+		scrollbar-width: none;
+	}
+
+	:global(.edra-bubble-bar::-webkit-scrollbar) {
+		display: none;
+	}
+
+	@media (max-width: 767px) {
+		:global(.edra-content .ProseMirror .tableWrapper) {
+			padding-inline: 0;
+		}
+
+		:global(.edra-content .ProseMirror table td),
+		:global(.edra-content .ProseMirror table th) {
+			min-width: 0;
+		}
 	}
 
 	/* Nós próprios do OpenBible (versículo, vídeo, callout) e a paleta de

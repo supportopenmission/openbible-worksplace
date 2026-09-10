@@ -26,6 +26,7 @@
 	} from '$lib/storage/workspace-catalog';
 	import {
 		getStoredAuthUser,
+		hasLocalAuthContext,
 		setStoredAuthUser,
 		authClient,
 		type AuthUserInfo
@@ -80,6 +81,9 @@
 	async function refreshUser() {
 		try {
 			user = getStoredAuthUser();
+			// Sem conta usada neste dispositivo, não há sessão a renovar:
+			// evita fetch contra o sync-server e o erro de conexão no console.
+			if (!hasLocalAuthContext()) return;
 			const session = await authClient.getSession();
 			if (session.data?.user) {
 				user = {

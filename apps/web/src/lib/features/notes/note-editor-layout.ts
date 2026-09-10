@@ -1,5 +1,6 @@
 const NOTE_EDITOR_WIDTH_KEY = 'openbible:note-editor-width';
 const NOTE_TOOLBAR_ENABLED_KEY = 'openbible:note-toolbar-enabled';
+const NOTE_TOOLBAR_MIGRATED_KEY = 'openbible:note-toolbar-migrated';
 
 export type NoteEditorWidth = 'default' | 'wide' | 'full';
 
@@ -35,6 +36,14 @@ export function saveNoteEditorWidth(width: NoteEditorWidth): void {
 export function readNoteToolbarEnabled(): boolean {
 	if (typeof window === 'undefined') return true;
 	try {
+		// Migração do motor Edra: a barra estática nova começa visível mesmo
+		// para quem havia ocultado a popup antiga; ocultar de novo no menu
+		// da nota continua valendo.
+		if (window.localStorage.getItem(NOTE_TOOLBAR_MIGRATED_KEY) === null) {
+			window.localStorage.setItem(NOTE_TOOLBAR_MIGRATED_KEY, '1');
+			window.localStorage.setItem(NOTE_TOOLBAR_ENABLED_KEY, 'true');
+			return true;
+		}
 		return window.localStorage.getItem(NOTE_TOOLBAR_ENABLED_KEY) !== 'false';
 	} catch {
 		return true;
