@@ -1,4 +1,4 @@
-import { getSchema, type Editor } from '@tiptap/core';
+import { getSchema, type Editor, type Extensions } from '@tiptap/core';
 import { EditorState, type Transaction } from '@tiptap/pm/state';
 import { describe, expect, it } from 'vitest';
 import { defaultExtensions } from '@friendofsvelte/tipex';
@@ -23,7 +23,9 @@ describe('note editor block interactions', () => {
 
 	// SPECSFY: US-002 US-003 FR-002 FR-005 NFR-001 AC-018
 	it('moves a selected top-level block while preserving its content', () => {
-		const schema = getSchema(defaultExtensions);
+		// Migração Edra: o tipex fixa o TipTap v2 e o getSchema resolve o v3;
+		// o cast preserva o runtime do teste de caracterização legado.
+		const schema = getSchema(defaultExtensions as unknown as Extensions);
 		let state = EditorState.create({
 			schema,
 			doc: schema.nodeFromJSON({

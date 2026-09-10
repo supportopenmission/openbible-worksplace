@@ -25,18 +25,43 @@
 | Terceiro | produção | @automerge/automerge | 3.4.1 | Javascript implementation of automerge, backed by @automerge/automerge-wasm | github:automerge/automerge | — |
 | Terceiro | produção | @automerge/automerge-repo | 2.5.6 | A repository object to manage a collection of automerge documents | https://github.com/automerge/automerge-repo/tree/master/packages/automerge-repo | https://github.com/automerge/automerge-repo/tree/master/packages/automerge-repo |
 | Terceiro | produção | @automerge/automerge-repo-network-websocket | 2.5.6 | isomorphic node/browser Websocket network adapter for Automerge Repo | https://github.com/automerge/automerge-repo/tree/master/packages/automerge-repo-network-websocket | https://github.com/automerge/automerge-repo/tree/master/packages/automerge-repo-network-websocket |
+| Terceiro | produção | @floating-ui/dom | ^1.8.0 | Floating UI for the web | https://github.com/floating-ui/floating-ui | https://github.com/floating-ui/floating-ui |
 | Terceiro | produção | @friendofsvelte/tipex | 0.2.0 | Finalidade não descrita nos metadados locais. | https://github.com/friendofsvelte/tipex | https://github.com/friendofsvelte/tipex |
 | Terceiro | produção | @milkdown/kit | 7.22.1 | Finalidade não descrita nos metadados locais. | https://github.com/Milkdown/milkdown | https://github.com/Milkdown/milkdown |
 | Terceiro | produção | @tauri-apps/api | ^2.11.1 | Tauri API definitions | https://github.com/tauri-apps/tauri | https://github.com/tauri-apps/tauri |
 | Terceiro | produção | @tauri-apps/plugin-dialog | ^2.7.3 | Finalidade não descrita nos metadados locais. | https://github.com/tauri-apps/plugins-workspace | https://github.com/tauri-apps/plugins-workspace |
 | Terceiro | produção | @tauri-apps/plugin-process | ^2.3.1 | Finalidade não descrita nos metadados locais. | https://github.com/tauri-apps/plugins-workspace | https://github.com/tauri-apps/plugins-workspace |
 | Terceiro | produção | @tauri-apps/plugin-updater | ^2.11.0 | Finalidade não descrita nos metadados locais. | https://github.com/tauri-apps/plugins-workspace | https://github.com/tauri-apps/plugins-workspace |
-| Terceiro | produção | @tiptap/extension-highlight | 2.27.2 | highlight extension for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/core | ^3.29.2 | headless rich text editor | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/extension-bubble-menu | ^3.29.2 | bubble-menu extension for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/extension-code-block-lowlight | ^3.31.3 | code block extension for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/extension-drag-handle | ^3.31.3 | drag handle extension for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/extension-highlight | ^3.29.2 | highlight extension for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/extension-image | ^3.29.2 | image extension for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/extension-list | ^3.31.3 | List extension for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/extension-mathematics | ^3.29.2 | latex math extension for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/extension-subscript | ^3.29.2 | subscript extension for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/extension-superscript | ^3.29.2 | superscript extension for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/extension-table | ^3.29.2 | table extension for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/extension-table-of-contents | ^3.29.2 | table of contents extension for Tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/extension-text-align | ^3.29.2 | text align extension for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/extension-text-style | ^3.29.2 | text style extension for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/extension-typography | ^3.29.2 | typography extension for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/extension-unique-id | ^3.29.2 | unique id extension for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/extensions | ^3.29.2 | various extensions for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/markdown | ^3.29.2 | markdown parser and serializer for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/pm | ^3.29.2 | prosemirror wrapper package for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/starter-kit | ^3.29.2 | starter kit for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
+| Terceiro | produção | @tiptap/suggestion | ^3.29.2 | suggestion plugin for tiptap | https://github.com/ueberdosis/tiptap | https://github.com/ueberdosis/tiptap |
 | Terceiro | produção | bible-passage-reference-parser | ^4.0.0 | Identifies and parses Bible references (like John 3:16) in 50 languages. | git://github.com/openbibleinfo/Bible-Passage-Reference-Parser | git://github.com/openbibleinfo/Bible-Passage-Reference-Parser |
 | Terceiro | produção | bs58check | 3.0.1 | A straightforward implementation of base58-check encoding | https://github.com/bitcoinjs/bs58check | https://github.com/bitcoinjs/bs58check |
 | Terceiro | produção | clsx | ^2.1.1 | A tiny (239B) utility for constructing className strings conditionally. | lukeed/clsx | — |
+| Terceiro | produção | katex | ^0.18.7 | Fast math typesetting for the web. | https://github.com/KaTeX/KaTeX | https://github.com/KaTeX/KaTeX |
+| Terceiro | produção | lowlight | ^3.3.0 | Virtual syntax highlighting for virtual DOMs and non-HTML things | wooorm/lowlight | — |
+| Terceiro | produção | mermaid | ^11.17.2 | Markdown-ish syntax for generating flowcharts, mindmaps, sequence diagrams, class diagrams, gantt charts, git graphs and more. | https://github.com/mermaid-js/mermaid | https://github.com/mermaid-js/mermaid |
 | Terceiro | produção | remark-directive | ^4.0.0 | remark plugin to support directives | remarkjs/remark-directive | — |
 | Terceiro | produção | sql.js | ^1.14.2 | SQLite library with support for opening and writing databases, prepared statements, and more. This SQLite library is in pure javascript (compiled with emscripten). | http://github.com/sql-js/sql.js | http://github.com/sql-js/sql.js |
+| Terceiro | produção | svelte-sonner | ^1.2.1 | An opinionated toast component for Svelte. | https://github.com/wobsoriano/svelte-sonner | https://github.com/wobsoriano/svelte-sonner |
 | Terceiro | produção | tailwind-merge | ^3.6.0 | Merge Tailwind CSS classes without style conflicts | https://github.com/dcastil/tailwind-merge | https://github.com/dcastil/tailwind-merge |
 | Terceiro | desenvolvimento | @internationalized/date | ^3.12.0 | Internationalized calendar, date, and time manipulation utilities | https://github.com/adobe/react-spectrum/tree/main/packages/@internationalized/date | https://github.com/adobe/react-spectrum/tree/main/packages/@internationalized/date |
 | Terceiro | desenvolvimento | @lucide/svelte | ^1.39.0 | A Lucide icon library package for Svelte applications. | https://github.com/lucide-icons/lucide | https://github.com/lucide-icons/lucide |
@@ -50,6 +75,7 @@
 | Terceiro | desenvolvimento | @vitest/browser-playwright | 4.1.10 | Browser running for Vitest using playwright | https://github.com/vitest-dev/vitest | https://github.com/vitest-dev/vitest |
 | Terceiro | desenvolvimento | bits-ui | ^2.16.3 | The headless components for Svelte. | github:huntabyte/bits-ui | — |
 | Terceiro | desenvolvimento | eslint | 10.8.1 | An AST-based pattern checker for JavaScript. | eslint/eslint | — |
+| Terceiro | desenvolvimento | happy-dom | ^20.14.3 | Happy DOM is a JavaScript implementation of a web browser without its graphical user interface. It includes many web standards from WHATWG DOM and HTML. | https://github.com/capricorn86/happy-dom | https://github.com/capricorn86/happy-dom |
 | Terceiro | desenvolvimento | tailwind-variants | ^3.3.0 | 🦄 Tailwindcss first-class variant API | https://github.com/heroui-inc/tailwind-variants | https://github.com/heroui-inc/tailwind-variants |
 | Terceiro | desenvolvimento | tailwindcss | ^4.3.3 | A utility-first CSS framework for rapidly building custom user interfaces. | https://github.com/tailwindlabs/tailwindcss | https://github.com/tailwindlabs/tailwindcss |
 | Terceiro | desenvolvimento | tslib | 2.8.1 | Runtime library for TypeScript helper functions | https://github.com/Microsoft/tslib | https://github.com/Microsoft/tslib |

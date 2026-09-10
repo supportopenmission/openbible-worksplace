@@ -102,6 +102,22 @@ export function expandVideoFences(markdown: string): { markdown: string; warning
 }
 
 /**
+ * Replace every Edra `$callout<emoji>` fence with a plain blockquote
+ * citation. The source file is never touched; the result is a derived
+ * export document readable outside the app.
+ */
+const CALLOUT_FENCE_PATTERN = /^\$callout(.*)\n([\s\S]*?)\n\$$/gm;
+
+export function expandCalloutFences(markdown: string): string {
+	return markdown.replace(CALLOUT_FENCE_PATTERN, (_match, _emoji: string, body: string) => {
+		const lines = String(body ?? '')
+			.split('\n')
+			.map((line) => (line.trim() ? `> ${line.trim()}` : '>'));
+		return lines.join('\n');
+	});
+}
+
+/**
  * Replace every `:::verse` fence with blockquote citations. The source file
  * is never touched; the result is a derived export document.
  */
@@ -129,17 +145,23 @@ export function expandVerseFences(markdown: string, resolve: VerseTextResolver):
 export function buildExportMarkdown(markdown: string, resolve: VerseTextResolver): string {
 	const expanded = expandVerseFences(markdown, resolve);
 	if (!expanded.ok) throw new Error('missing-verse-text');
-	return sanitizeBreakTags(expandVideoFences(expanded.markdown).markdown);
+	const withCallouts = expandCalloutFences(expanded.markdown);
+	return sanitizeBreakTags(expandVideoFences(withCallouts).markdown);
 }
 
 /** Exporta um snapshot do backend sem escrever Markdown de volta na fonte. */
 export function exportPortableMarkdown(snapshot: PortableExportSnapshot): PortableMarkdownExport {
 	const markdown = buildExportMarkdown(snapshot.markdown, snapshot.resolveVerse ?? (() => []));
+	const title = snapshot.title?.trim() ?? '';
+	// O corpo não carrega mais o `# título` (título vive nos metadados);
+	// o artefato derivado o inclui quando ainda não abre com um heading.
+	const titled =
+		title && !/^\s*#{1,6}\s+/.test(markdown) ? `# ${title}\n\n${markdown}` : markdown;
 	return {
 		format: 'markdown',
 		derived: true,
 		source: 'workspace-snapshot',
-		markdown,
+		markdown: titled,
 		warnings: []
 	};
 }
@@ -187,7 +209,8 @@ export async function buildExportMarkdownAsync(
 	}
 	parts.push(markdown.slice(cursor));
 	if (missing) throw new Error('missing-verse-text');
-	return sanitizeBreakTags(expandVideoFences(parts.join('')).markdown);
+	const withCallouts = expandCalloutFences(parts.join(''));
+	return sanitizeBreakTags(expandVideoFences(withCallouts).markdown);
 }
 
 const BR_TAG_PATTERN = /<br\s*\/?>/gi;

@@ -24,7 +24,7 @@ As capacidades principais planejadas são:
 - biblioteca de estudos e sermões;
 - construtor estruturado de sermões, inspirado em Sermonary e Logos Sermon Builder;
 - múltiplos workspaces no modelo de vaults: vários registros escopados por `workspaceId`, exatamente um workspace ativo por janela, seletor no shell desktop e mobile, SQLite `app.sqlite` no Tauri, IndexedDB por origem no PWA e catálogo local de reencontro;
-- leitor da Bíblia, com seleção de versículos, destaques persistidos, consulta workspace-wide em sheet e em `/highlights`, ícone de nota no versículo, cópia e criação de nota ao lado da leitura;
+- leitor da Bíblia, com seleção de versículos, destaques persistidos com aparência e cor independentes, consulta workspace-wide em sheet e em `/highlights`, ícone de nota no versículo, cópia e criação de nota ao lado da leitura;
 - notas simples;
 - importação de bancos SQLite compatíveis com o padrão do OpenLP por arrastar e soltar;
 - acesso a bancos SQLite por URL de distribuição, como uma URL do Cloudflare R2;
@@ -76,7 +76,8 @@ Detalhes verificáveis ficam em `.specsfy/STACK.md` e `.specsfy/DATABASE.md`.
 
 O código mantém a importação local de bancos SQLite e o leitor bíblico em `/bible`.
 A partir do capítulo aberto a pessoa seleciona um intervalo contínuo de versículos,
-aplica destaques no backend operacional (SQLite no Tauri ou IndexedDB no PWA),
+aplica sublinhado, sublinhado ondulado, caixa ou marca-texto com uma cor escolhida
+no backend operacional (SQLite no Tauri ou IndexedDB no PWA),
 consulta a projeção em `/highlights`, copia a referência ou o texto e cria uma nota
 com fence `:::verse` sem sair da rota. O workspace legado pode ser reencontrado por
 File System Access API ou OPFS, com `.openbible/config.json`,
@@ -91,3 +92,6 @@ são gravados no workspace e cacheados no `localStorage` só para o primeiro pai
 Cada janela trabalha sobre exatamente um workspace ativo (barreira de autosave e
 token de geração na troca); o catálogo de vaults é local ao dispositivo e não
 sincronizável, enquanto o manifesto `.openbible/config.json` viaja com a raiz.
+As notas usam o editor Edra (motor padrão) ou o Milkdown (motor clássico,
+opt-in em Configurações → Aparência → Editor de notas); ambos persistem o
+mesmo Markdown canônico no backend operacional, sem migração de dados.

@@ -3,7 +3,7 @@
 <!-- specsfy:documentator:start -->
 ## Resumo
 
-- Arquivos de teste: 131.
+- Arquivos de teste: 138.
 - Runner: não identificado.
 - Scripts: build: turbo run build; check-types: turbo run check-types; dev: turbo run dev; lint: turbo run lint; format: prettier --write .; format:check: prettier --check ..
 
@@ -49,6 +49,7 @@
 | apps/web/src/lib/features/bible-remote/remote-install.test.ts |
 | apps/web/src/lib/features/bible-remote/remote-manifest.test.ts |
 | apps/web/src/lib/features/config/config-page.spec.ts |
+| apps/web/src/lib/features/config/editor-settings.spec.ts |
 | apps/web/src/lib/features/config/t024-backup.svelte.spec.ts |
 | apps/web/src/lib/features/home/continue-reading-card.spec.ts |
 | apps/web/src/lib/features/home/home-continuation.spec.ts |
@@ -60,8 +61,12 @@
 | apps/web/src/lib/features/home/recent-lists.spec.ts |
 | apps/web/src/lib/features/navigation/app-sidebar.spec.ts |
 | apps/web/src/lib/features/navigation/sidebar.test.ts |
+| apps/web/src/lib/features/notes/EdraNoteEditor.svelte.test.ts |
 | apps/web/src/lib/features/notes/MilkdownMobileToolbar.test.ts |
 | apps/web/src/lib/features/notes/MilkdownNoteEditor.test.ts |
+| apps/web/src/lib/features/notes/edra-editor-smoke.test.ts |
+| apps/web/src/lib/features/notes/edra-full-roundtrip.test.ts |
+| apps/web/src/lib/features/notes/edra-markdown-roundtrip.test.ts |
 | apps/web/src/lib/features/notes/highlight-file-repository.test.ts |
 | apps/web/src/lib/features/notes/index-rebuilder.benchmark.test.ts |
 | apps/web/src/lib/features/notes/index-rebuilder.test.ts |
@@ -75,6 +80,7 @@
 | apps/web/src/lib/features/notes/milkdown-video-node.test.ts |
 | apps/web/src/lib/features/notes/note-block-interactions.test.ts |
 | apps/web/src/lib/features/notes/note-editor-service.test.ts |
+| apps/web/src/lib/features/notes/note-editor-switch.spec.ts |
 | apps/web/src/lib/features/notes/note-editor-viewport.test.ts |
 | apps/web/src/lib/features/notes/note-export.test.ts |
 | apps/web/src/lib/features/notes/note-index.test.ts |
@@ -97,6 +103,7 @@
 | apps/web/src/lib/features/notes/youtube-embed.test.ts |
 | apps/web/src/lib/features/onboarding/onboarding-errors.test.ts |
 | apps/web/src/lib/features/onboarding/storage-choice.svelte.spec.ts |
+| apps/web/src/lib/features/onboarding/welcome-preference.test.ts |
 | apps/web/src/lib/features/sync/account-sync.test.ts |
 | apps/web/src/lib/features/sync/cloud-workspace-service.test.ts |
 | apps/web/src/lib/features/sync/external-edit-bridge.test.ts |

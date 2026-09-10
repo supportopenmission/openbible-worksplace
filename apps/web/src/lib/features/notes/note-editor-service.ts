@@ -1,5 +1,4 @@
 import type { WorkspaceStorage } from '$lib/storage/types';
-import { syncTitleWithH1 } from './note-markdown';
 import { persistNoteVerseRefsToWorkspace, type VerseReferenceInput } from './note-verse-index';
 import type { Note } from './note-types';
 import { saveNote } from './notes-repository';
@@ -7,14 +6,8 @@ import { extractVerseFencesFromMarkdown } from './verse-block-extension';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
-const H1_PATTERN = /^(?:\s*)#\s+(.+?)\s*$/m;
 const BODY_DEBOUNCE_MS = 650;
 const METADATA_DEBOUNCE_MS = 1200;
-
-function titleFromBody(body: string): string | null {
-	const match = body.match(H1_PATTERN);
-	return match ? match[1].trim() : null;
-}
 
 function verseRefsFromMarkdown(body: string): VerseReferenceInput[] {
 	return extractVerseFencesFromMarkdown(body).map((fence, blockIndex) => ({
@@ -49,33 +42,23 @@ export function createNoteEditorService(options: NoteEditorServiceOptions) {
 	}
 
 	async function persist(body: string): Promise<Note> {
-		const extractedTitle = titleFromBody(body);
-		const effectiveTitle = extractedTitle ?? latestTitle ?? options.note.title;
-		const noteFile = syncTitleWithH1(
-			{
-				meta: {
-					id: options.note.id,
-					title: effectiveTitle,
-					description: latestDescription,
-					createdAt: options.note.createdAt,
-					updatedAt: options.note.updatedAt,
-					type: 'note',
-					path: options.note.path
-				},
-				body
-			},
-			effectiveTitle
-		);
+		// Título e descrição vivem nos metadados, fora do conteúdo: o corpo é
+		// salvo como está, sem extrair H1 nem forçar `# título` na primeira linha.
+		const title = latestTitle ?? options.note.title;
 		const saved = await saveNote(options.storage, {
 			...options.note,
-			title: noteFile.meta.title,
-			description: noteFile.meta.description,
-			body: noteFile.body,
-			content: noteFile.body,
-			meta: noteFile.meta,
-			updatedAt: noteFile.meta.updatedAt
+			title,
+			description: latestDescription,
+			body,
+			content: body,
+			meta: {
+				...options.note.meta,
+				title,
+				description: latestDescription
+			},
+			updatedAt: options.note.updatedAt
 		});
-		const refs = verseRefsFromMarkdown(noteFile.body);
+		const refs = verseRefsFromMarkdown(saved.body);
 		await persistNoteVerseRefsToWorkspace(options.storage, saved.path, refs);
 		options.note = saved;
 		return saved;

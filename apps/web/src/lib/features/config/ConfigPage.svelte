@@ -22,6 +22,7 @@
 	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import AppearanceSettings from './AppearanceSettings.svelte';
+	import EditorSettings from './EditorSettings.svelte';
 	import UpdateSettings from './UpdateSettings.svelte';
 	import BibleSettings from '$lib/features/bible/BibleSettings.svelte';
 	import AccountSyncSection from '$lib/features/auth/AccountSyncSection.svelte';
@@ -108,6 +109,8 @@
 	}
 
 	function navigateToSection(id: ConfigSectionId | null, replaceState = false) {
+		// sectionHref already resolves the route and appends the section query.
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		void goto(sectionHref(id), { keepFocus: true, noScroll: true, replaceState });
 	}
 
@@ -287,7 +290,10 @@
 						{:else if mobileSection === 'reminder'}
 							{@render reminderSettings()}
 						{:else if mobileSection === 'appearance'}
-							<AppearanceSettings />
+							<div class="settings-stack">
+								<AppearanceSettings />
+								<EditorSettings />
+							</div>
 						{:else if mobileSection === 'updates'}
 							<UpdateSettings />
 						{:else if mobileSection === 'about'}
@@ -412,7 +418,10 @@
 						role="region"
 						aria-labelledby="config-tab-appearance"
 					>
-						<AppearanceSettings />
+						<div class="settings-stack">
+							<AppearanceSettings />
+							<EditorSettings />
+						</div>
 					</div>
 				{:else if activeSection === 'updates'}
 					<div
@@ -500,6 +509,15 @@
 				<span>Repositório no GitHub</span>
 				<ExternalLink size={14} strokeWidth={1.8} aria-hidden="true" />
 			</a>
+			<button
+				class="about-welcome-link"
+				type="button"
+				onclick={() => void goto(resolve('/?welcome=1'))}
+			>
+				<Sparkles size={14} strokeWidth={1.8} aria-hidden="true" />
+				<span>Conheça o OpenBible</span>
+				<ChevronRight size={14} strokeWidth={1.8} aria-hidden="true" />
+			</button>
 		</div>
 		<p class="about-hint">
 			Seus dados ficam guardados neste dispositivo, no espaço de estudo que você configurou. Conta e
@@ -617,6 +635,11 @@
 	.config-panel {
 		min-width: 0;
 		outline: none;
+	}
+
+	.settings-stack {
+		display: grid;
+		gap: 32px;
 	}
 
 	.storage-section-divider {
@@ -814,6 +837,33 @@
 
 	.about-repository-link:hover {
 		color: var(--muted-foreground);
+	}
+
+	.about-welcome-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		margin-top: 2px;
+		border: 0;
+		padding: 0;
+		background: transparent;
+		color: var(--foreground);
+		font: inherit;
+		font-size: 0.84rem;
+		font-weight: 600;
+		text-decoration: underline;
+		text-underline-offset: 3px;
+		cursor: pointer;
+	}
+
+	.about-welcome-link:hover {
+		color: var(--muted-foreground);
+	}
+
+	.about-welcome-link:focus-visible {
+		border-radius: 4px;
+		outline: 2px solid var(--ring);
+		outline-offset: 4px;
 	}
 
 	.about-hint {

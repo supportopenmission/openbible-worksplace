@@ -9,6 +9,7 @@
 	} from '$lib/pwa/service-worker-registration';
 	import { markPwaUpdateAvailable, openAppUpdateDialog } from '$lib/updates/app-updates.svelte';
 	import { ensureClientDataReset, reloadAfterClientReset } from '$lib/pwa/client-reset';
+	import { Toaster } from 'svelte-sonner';
 	import { dev } from '$app/environment';
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
@@ -79,4 +80,5 @@
 	<AppFrame>
 		{@render children()}
 	</AppFrame>
+	<Toaster theme="system" position="bottom-center" />
 </WorkspaceProvider>

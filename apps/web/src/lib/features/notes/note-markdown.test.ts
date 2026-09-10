@@ -109,6 +109,15 @@ type: "note"
 		expect(extractContentFromNoteBody('')).toBe('');
 	});
 
+	it('strips a leading H1 only when it duplicates the metadata title', () => {
+		expect(extractContentFromNoteBody('# Minha nota\n\nCorpo', 'Minha nota')).toBe('Corpo');
+		expect(extractContentFromNoteBody('# Minha nota\n', 'Minha nota')).toBe('');
+		expect(extractContentFromNoteBody('# Outro rumo\n\nCorpo', 'Minha nota')).toBe(
+			'# Outro rumo\n\nCorpo'
+		);
+		expect(extractContentFromNoteBody('## Seção\n\nCorpo', 'Minha nota')).toBe('## Seção\n\nCorpo');
+	});
+
 	it('extracts note title from markdown', () => {
 		expect(extractTitleFromMarkdown('# Minha Nota\n\ntexto')).toBe('Minha Nota');
 		expect(extractTitleFromMarkdown('texto sem título')).toBeNull();

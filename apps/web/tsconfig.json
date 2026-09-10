@@ -1,6 +1,8 @@
 {
 	"extends": ["@repo/typescript-config/svelte.json", "./.svelte-kit/tsconfig.json"],
 	"compilerOptions": {
-		"strictNullChecks": true
+		"strictNullChecks": true,
+		// Código vendorado do Edra usa imports com extensão `.ts` explícita.
+		"allowImportingTsExtensions": true
 	}
 }

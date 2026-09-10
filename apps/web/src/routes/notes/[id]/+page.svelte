@@ -21,7 +21,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
-	import MilkdownNoteEditor from '$lib/features/notes/MilkdownNoteEditor.svelte';
+	import NoteEditorSwitch from '$lib/features/notes/NoteEditorSwitch.svelte';
 	import type { SaveStatus } from '$lib/features/notes/note-editor-service';
 	import { scrollToHeadingAnchor, type NoteHeading } from '$lib/features/notes/note-index';
 	import {
@@ -481,7 +481,7 @@
 			<p class="state-message error" role="alert">{error || 'Nota não encontrada'}</p>
 		{:else}
 			{#key activeStorage}
-				<MilkdownNoteEditor
+				<NoteEditorSwitch
 					{note}
 					{readOnly}
 					{toolbarEnabled}
@@ -535,7 +535,7 @@
 							</div>
 						{/if}
 					{/snippet}
-				</MilkdownNoteEditor>
+				</NoteEditorSwitch>
 			{/key}
 		{/if}
 	</div>

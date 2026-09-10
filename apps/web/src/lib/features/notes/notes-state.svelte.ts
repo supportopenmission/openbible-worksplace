@@ -1,7 +1,6 @@
 import type { Note } from './note-types';
 import type { WorkspaceStorage } from '$lib/storage/types';
 import { listNotes, trashNote, saveNote } from './notes-repository';
-import { syncTitleWithH1 } from './note-markdown';
 import { deleteNoteVerseRefs } from './note-verse-index';
 
 export function getNoteSnippet(content?: string, title?: string, description?: string): string {
@@ -280,23 +279,12 @@ class NotesState {
 		if (!note) return false;
 		const trimmedTitle = newTitle.trim();
 		if (!trimmedTitle) return false;
-		const noteFile = syncTitleWithH1(
-			{
-				meta: {
-					...note.meta,
-					title: trimmedTitle
-				},
-				body: note.body || note.content || ''
-			},
-			trimmedTitle
-		);
+		// O título vive nos metadados; renomear não reescreve o conteúdo.
 		try {
 			const saved = await saveNote(storage, {
 				...note,
 				title: trimmedTitle,
-				body: noteFile.body,
-				content: noteFile.body,
-				meta: noteFile.meta
+				meta: { ...note.meta, title: trimmedTitle }
 			});
 			this.updateNote(saved);
 			return true;

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	buildExportMarkdown,
 	buildPrintDocument,
+	expandCalloutFences,
 	expandVerseFences,
 	expandVideoFences,
 	exportPdfFallback,
@@ -172,6 +173,30 @@ describe('backend snapshot export contract', () => {
 		});
 		expect(exported.markdown).toContain('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
 		expect(snapshot.markdown).toBe(VIDEO_NOTE);
+	});
+
+	it('prepends the metadata title when the body no longer carries an H1', () => {
+		const exported = exportPortableMarkdown({ title: 'Estudo novo', markdown: 'Corpo puro.\n' });
+
+		expect(exported.markdown).toBe('# Estudo novo\n\nCorpo puro.\n');
+	});
+
+	it('converts Edra callout fences to plain quote blocks', () => {
+		expect(expandCalloutFences('$callout💡\nAviso importante.\n$')).toBe('> Aviso importante.');
+		expect(expandCalloutFences('$callout\nPrimeira.\n\nSegunda.\n$')).toBe(
+			'> Primeira.\n>\n> Segunda.'
+		);
+		expect(expandCalloutFences('Sem callout aqui.')).toBe('Sem callout aqui.');
+	});
+
+	it('exports callouts as quotes in markdown and print artifacts', () => {
+		const exported = exportPortableMarkdown({
+			title: 'Nota',
+			markdown: `$callout💡\nAviso importante.\n$\n`
+		});
+
+		expect(exported.markdown).toContain('> Aviso importante.');
+		expect(exported.markdown).not.toContain('$callout');
 	});
 
 	it('returns an offline print/PDF fallback derived from the same snapshot', () => {

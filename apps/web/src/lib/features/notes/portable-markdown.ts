@@ -190,10 +190,20 @@ export function syncTitleWithH1(note: NoteFile, title: string): NoteFile {
 	return { ...note, meta: { ...note.meta, title: normalizedTitle }, body };
 }
 
-export function extractContentFromNoteBody(body: string, _title?: string): string {
+export function extractContentFromNoteBody(body: string, title?: string): string {
 	if (!body) return '';
 	let content = body.replace(FRONTMATTER, '');
-	content = content.replace(/^\s*#\s+[^\r\n]*(?:\r?\n)*/, '');
+	const h1 = content.match(/^\s*#\s+([^\r\n]*)(?:\r?\n)*/);
+	if (h1) {
+		const heading = normalizeNoteTitle(h1[1] ?? '');
+		const reference = title === undefined ? '' : normalizeNoteTitle(title);
+		// Sem título de referência (pré-visualização legada), remove o H1 inicial.
+		// Com título, remove somente a duplicata do padrão sincronizado antigo:
+		// título e descrição vivem nos metadados, fora do conteúdo.
+		if (title === undefined || (reference !== '' && heading === reference)) {
+			content = content.slice(h1[0].length);
+		}
+	}
 	return content.replace(/^\n+/, '');
 }
 

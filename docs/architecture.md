@@ -5,8 +5,8 @@
 
 | Tipo | Quantidade |
 | --- | --- |
-| Código | 934 |
-| Testes | 131 |
+| Código | 1223 |
+| Testes | 138 |
 
 ## Diagramas
 

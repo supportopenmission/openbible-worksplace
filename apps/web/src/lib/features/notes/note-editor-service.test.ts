@@ -55,16 +55,17 @@ const NOTE: Note = {
 
 // SPECSFY: US-001 FR-005 NFR-001 AC-006
 describe('milkdown autosave to yaml and index', () => {
-	it('syncs edited H1 into YAML and reindexes verse refs in Milkdown order', async () => {
+	it('keeps a body H1 as content without overriding the metadata title', async () => {
 		const storage = memoryStorage();
 		const service = createNoteEditorService({ storage, note: NOTE });
-		const body = `# Título novo
+		const body = `# Título no conteúdo
 
 :::verse{versionId="n" bookId="1" book="Gênesis" chapter="1" verseStart="1" verseEnd="1"}
 1 No princípio
 :::`;
 		const saved = await service.saveNow(body);
-		expect(saved?.title).toBe('Título novo');
+		expect(saved?.title).toBe('Nova nota');
+		expect(saved?.body).toBe(body);
 		expect(
 			splitMarkdownByVerseFences(body).filter((part) => part.type === 'verse')
 		).toHaveLength(1);
@@ -79,15 +80,14 @@ describe('milkdown autosave to yaml and index', () => {
 		expect(saved?.meta.description).toBe('Minha nova descrição de teste');
 	});
 
-	it('updates note title and persists into frontmatter and H1 on save', async () => {
+	it('updates note title in metadata without rewriting the body', async () => {
 		const storage = memoryStorage();
 		const service = createNoteEditorService({ storage, note: NOTE });
 		service.updateTitle('Meu título renomeado');
 		const saved = await service.saveNow('Apenas o conteúdo sem H1');
 		expect(saved?.title).toBe('Meu título renomeado');
 		expect(saved?.meta.title).toBe('Meu título renomeado');
-		expect(saved?.body).toContain('# Meu título renomeado');
-		expect(saved?.body).toContain('Apenas o conteúdo sem H1');
+		expect(saved?.body).toBe('Apenas o conteúdo sem H1');
 	});
 });
 

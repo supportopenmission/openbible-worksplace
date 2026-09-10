@@ -24,6 +24,10 @@ uma. Preserve decisões humanas nas seções livres deste arquivo.
 | CSS | Tailwind CSS 4.3.3 | `apps/web/package.json`, `apps/web/vite.config.ts` e `apps/web/src/app.css` |
 | Primitives de interface | shadcn-svelte local, estilo Nova | `apps/web/components.json` e `apps/web/src/lib/components/ui/` |
 | Editor Markdown principal | @milkdown/kit 7.22.1 | `apps/web/package.json`, `bun.lock` e `apps/web/src/lib/features/notes/MilkdownNoteEditor.svelte` |
+| Motor do novo editor de notas (migração gradual, opt-in) | TipTap v3 (@tiptap/core, pm, starter-kit, extensions, markdown, highlight, list, table, image, typography, mathematics, text-style/align, subscript/superscript, bubble-menu, suggestion, unique-id, drag-handle, code-block-lowlight) 3.31.3 | `apps/web/package.json`, `bun.lock` e `apps/web/src/lib/edra/shadcn/openbible-editor.ts` |
+| Núcleo do novo editor (vendorado, MIT) | Edra 3.1.3: Editor reativo, useEditor, variante shadcn (Toolbar, BubbleMenu, DragHandle, slash, Mermaid, mídia, tabelas), renderers Svelte | `apps/web/src/lib/edra/` (proveniência e adaptações em `apps/web/src/lib/edra/README.md`) |
+| Diagramas e código no editor | mermaid 11.17.2 (sob demanda), lowlight 3.3.0, katex 0.18.7 | `apps/web/package.json` e `apps/web/src/lib/edra/shadcn/components/Mermaid.svelte` |
+| UI do editor (toasts, posicionamento) | svelte-sonner 1.2.1, @floating-ui/dom 1.8.0; primitives locais `command` e `popover` | `apps/web/package.json`, `apps/web/src/routes/+layout.svelte` e `apps/web/src/lib/components/ui/{command,popover}/` |
 | Parser de diretivas Markdown | remark-directive 4.0.0 | `apps/web/package.json`, `bun.lock` e `apps/web/src/lib/features/notes/milkdown-verse-node.ts` |
 | Editor legado (compatibilidade transitória) | @friendofsvelte/tipex 0.2.0 | `apps/web/package.json` e testes de caracterização legados |
 | Extensão legada do editor | @tiptap/extension-highlight 2.27.2 | `apps/web/package.json`, `bun.lock` e utilitário legado `verse-block-extension.ts` |
@@ -80,8 +84,26 @@ maskable`.
   `@tauri-apps/plugin-dialog` no shell nativo e não altera a stack web.
 - A SPEC-0013 tornou `@milkdown/kit` 7.22.1 o motor principal de `/notes/[id]`
   e do split de notas no leitor, com `remark-directive` para roundtrip do fence
-  `:::verse`. Tipex/TipTap permanecem temporariamente apenas em arquivos e
+  `:::verse`. Tipex/TipTap v2 permanecem temporariamente apenas em arquivos e
   testes legados até sua remoção segura após a regressão completa.
+- A migração gradual para o Edra adicionou o TipTap v3 (`@tiptap/core`,
+  `@tiptap/pm`, `@tiptap/starter-kit`, `@tiptap/extensions`,
+  `@tiptap/extension-highlight`, `@tiptap/extension-list`, `@tiptap/markdown`)
+  como dependências diretas de `apps/web`, com o núcleo reativo do
+  Edra 3.1.3 vendorado em `apps/web/src/lib/edra/` (ver `README.md` local).
+  O Bun isola o TipTap v2 transitivo do Tipex (`@friendofsvelte/tipex`)
+  sob `node_modules/@friendofsvelte/tipex/node_modules`, sem conflito.
+  A preferência `editorEngine` (`milkdown`, padrão, ou `edra`) vive em
+  `.openbible/preferences.json` com cache em `localStorage` e seletor em
+  Configurações → Aparência → Editor de notas; `NoteEditorSwitch.svelte`
+  escolhe o motor. Ambos persistem o mesmo Markdown canônico em
+  `workspace_notes.body`, sem mudança de schema. O motor Edra é o PADRÃO
+  (opt-in legado para o Milkdown) e segue o exemplo oficial (`Toolbar`,
+  `BubbleMenu`, `DragHandle`, `Content`) com a montagem
+  `createOpenBibleEditor`; o versículo entra pelo slash e segue somente-leitura
+  (fence preservado byte-idêntico); callout NATIVO do Edra (`$callout`+emoji,
+  exportado como quote); diagramas `:::mermaid`; `happy-dom`
+  serve de DOM aos testes do Editor real e o Chromium aos de componente.
 - O seletor de versículos usa os primitives locais `Select` e `Drawer` do
   shadcn-svelte; o Drawer depende de `vaul-svelte` para a interação móvel.
 - A SPEC-0016 não adicionou dependências: reutiliza `vaul-svelte`/`Drawer` para

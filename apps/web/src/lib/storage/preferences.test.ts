@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { loadWorkspacePreferences, patchWorkspacePreferences } from './preferences';
+import {
+	loadWorkspacePreferences,
+	patchWorkspacePreferences,
+	resolveEditorEngine
+} from './preferences';
 import type { StorageKind, WorkspaceStorage } from './types';
 
 class MemoryStorage implements WorkspaceStorage {
@@ -34,7 +38,8 @@ describe('workspace preferences', () => {
 			theme: 'light',
 			initialRoute: null,
 			readerSelection: null,
-			defaultBibleVersionId: null
+			defaultBibleVersionId: null,
+			editorEngine: 'edra'
 		});
 		expect(storage.files.has('.openbible/preferences.json')).toBe(true);
 	});
@@ -70,5 +75,55 @@ describe('workspace preferences', () => {
 		expect(
 			JSON.parse(new TextDecoder().decode(storage.files.get('.openbible/preferences.json')))
 		).toMatchObject({ theme: 'system' });
+	});
+
+	it('defaults the note editor engine to edra', async () => {
+		const storage = new MemoryStorage();
+
+		const preferences = await loadWorkspacePreferences(storage);
+
+		expect(preferences.editorEngine).toBe('edra');
+		expect(
+			JSON.parse(new TextDecoder().decode(storage.files.get('.openbible/preferences.json')))
+		).toMatchObject({ editorEngine: 'edra' });
+	});
+
+	it('patches the note editor engine in the workspace file', async () => {
+		const storage = new MemoryStorage();
+
+		const preferences = await patchWorkspacePreferences(storage, { editorEngine: 'milkdown' });
+
+		expect(preferences.editorEngine).toBe('milkdown');
+		expect(
+			JSON.parse(new TextDecoder().decode(storage.files.get('.openbible/preferences.json')))
+		).toMatchObject({ editorEngine: 'milkdown' });
+	});
+
+	it('normalizes legacy preferences files without the engine field', async () => {
+		const storage = new MemoryStorage();
+		await storage.writeFile(
+			'.openbible/preferences.json',
+			JSON.stringify({
+				version: 1,
+				theme: 'dark',
+				initialRoute: null,
+				readerSelection: null,
+				defaultBibleVersionId: null
+			})
+		);
+
+		const preferences = await loadWorkspacePreferences(storage);
+
+		expect(preferences.editorEngine).toBe('edra');
+		expect(preferences.theme).toBe('dark');
+	});
+
+	it('resolves unknown engine values to the default engine', () => {
+		expect(resolveEditorEngine(null)).toBe('edra');
+		expect(resolveEditorEngine(undefined)).toBe('edra');
+		expect(resolveEditorEngine({})).toBe('edra');
+		expect(resolveEditorEngine({ editorEngine: 'edra' })).toBe('edra');
+		expect(resolveEditorEngine({ editorEngine: 'milkdown' })).toBe('milkdown');
+		expect(resolveEditorEngine({ editorEngine: 'tipex' })).toBe('edra');
 	});
 });

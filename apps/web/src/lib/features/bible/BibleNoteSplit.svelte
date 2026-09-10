@@ -6,7 +6,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
-	import MilkdownNoteEditor from '$lib/features/notes/MilkdownNoteEditor.svelte';
+	import NoteEditorSwitch from '$lib/features/notes/NoteEditorSwitch.svelte';
 	import NoteCardList from '$lib/features/notes/NoteCardList.svelte';
 	import type { Note } from '$lib/features/notes/note-types';
 	import {
@@ -209,7 +209,7 @@
 				</Button>
 			</div>
 		</div>
-		<MilkdownNoteEditor note={openNote} storage={openStorage} {onSaved} {toolbarEnabled} />
+		<NoteEditorSwitch note={openNote} storage={openStorage} {onSaved} {toolbarEnabled} />
 	</section>
 {/snippet}
 
@@ -388,7 +388,8 @@
 		overflow: hidden;
 	}
 
-	.note-pane-editor :global(.milkdown-editor) {
+	.note-pane-editor :global(.milkdown-editor),
+	.note-pane-editor :global(.edra-editor) {
 		display: flex;
 		min-height: 0;
 		height: 100%;
@@ -414,6 +415,13 @@
 		min-height: 0;
 	}
 
+	.note-pane-editor :global(.edra-content) {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+	}
+
 	.note-pane-editor :global(.milkdown-host .milkdown) {
 		display: flex;
 		flex-direction: column;
@@ -422,6 +430,11 @@
 	}
 
 	.note-pane-editor :global(.milkdown-host .ProseMirror) {
+		flex: 1;
+		min-height: 280px;
+	}
+
+	.note-pane-editor :global(.edra-content .ProseMirror) {
 		flex: 1;
 		min-height: 280px;
 	}

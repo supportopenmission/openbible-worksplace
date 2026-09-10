@@ -8,6 +8,7 @@ export type ImportRejectionReason = 'invalid-sqlite' | 'duplicate' | 'copy-faile
 export type WorkspacePermission = PermissionState | 'unsupported';
 export type WorkspaceStatus = 'unconfigured' | 'permission-needed' | 'ready' | 'error';
 export type HomeRoutePreference = 'bible' | 'sermons';
+export type NoteEditorEngine = 'milkdown' | 'edra';
 
 export interface WorkspaceStorageEntry {
 	name: string;
@@ -35,6 +36,8 @@ export interface WorkspacePreferences {
 	initialRoute: HomeRoutePreference | null;
 	readerSelection: ReaderSelectionPreference | null;
 	defaultBibleVersionId?: string | null;
+	/** Motor do editor de notas. `milkdown` é o padrão estável; `edra` é o novo motor em migração gradativa. */
+	editorEngine: NoteEditorEngine;
 }
 
 export interface ImportResult {
