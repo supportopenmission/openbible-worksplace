@@ -12,6 +12,15 @@
 	const mediaType = $derived(node.attrs.mediaType);
 	let url = $state('');
 	let files = $state<FileList | undefined>();
+	const acceptedFormats = $derived(
+		mediaType === 'image'
+			? 'image/png,image/jpeg,image/webp,image/gif'
+			: mediaType === 'video'
+				? 'video/mp4,video/webm'
+				: mediaType === 'audio'
+					? 'audio/mpeg,audio/mp4,audio/ogg'
+					: undefined
+	);
 
 	function handleFileSubmit(e: SubmitEvent) {
 		e.preventDefault();
@@ -94,7 +103,12 @@
 					{#if mediaType !== 'iframe'}
 						<Tabs.Content value="file">
 							<form class="flex flex-col gap-2" onsubmit={handleFileSubmit}>
-								<Input type="file" bind:files />
+								<Input
+									type="file"
+									accept={acceptedFormats}
+									bind:files
+									aria-label={`Arquivo de ${mediaType}`}
+								/>
 								<Button type="submit" class="capitalize">Insert {mediaType}</Button>
 							</form>
 						</Tabs.Content>

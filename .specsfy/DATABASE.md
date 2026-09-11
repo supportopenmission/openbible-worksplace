@@ -12,6 +12,7 @@ do conteúdo autoral e do índice reconstruível.
 | Estrutura | Schema/migration | `apps/desktop/src-tauri/migrations/001_create_workspaces.sql` |
 | Estrutura | Schema/migration | `apps/desktop/src-tauri/migrations/002_create_workspace_content.sql` |
 | Estrutura | Schema/migration | `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` |
+| Estrutura | Schema/migration | `apps/desktop/src-tauri/migrations/004_create_media_catalog.sql` |
 | Estrutura | Schema/migration | `apps/sync-api/migrations/0001_sync.sql` |
 | Estrutura | Schema/migration | `apps/sync-server/drizzle/0000_skinny_puck.sql` |
 
@@ -34,6 +35,8 @@ do conteúdo autoral e do índice reconstruível.
 | sync_peers | Tabela SQL | workspace_id:TEXT, peer_id:TEXT, scope_json:TEXT, status:TEXT, created_at:TEXT, revoked_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` |
 | sync_endpoints | Tabela SQL | workspace_id:TEXT, endpoint_id:TEXT, transport:TEXT, url:TEXT, status:TEXT, created_at:TEXT, updated_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` |
 | sync_conflicts | Tabela SQL | workspace_id:TEXT, conflict_id:TEXT, document_id:TEXT, local_generation:INTEGER, external_generation:INTEGER, status:TEXT, recovery_ref:TEXT, created_at:TEXT, updated_at:TEXT | Não detectadas | `apps/desktop/src-tauri/migrations/003_create_sync_operational.sql` |
+| media_assets | Tabela SQL | workspace_id:TEXT, media_id:TEXT, original_name:TEXT, media_type:TEXT, format:TEXT, byte_size:INTEGER, imported_at:TEXT, last_used_at:TEXT, state:TEXT, sha256:TEXT, storage_key:TEXT | `workspace_id` referencia `workspaces`; chave `(workspace_id, media_id)`; estados `available/missing/corrupt` | `apps/desktop/src-tauri/migrations/004_create_media_catalog.sql` |
+| media_references | Tabela SQL | workspace_id:TEXT, media_id:TEXT, reference_id:TEXT, note_id:TEXT, block_id:TEXT, created_at:TEXT, last_seen_at:TEXT | FK `(workspace_id, media_id)` para `media_assets`; índices por workspace/nota e workspace/mídia | `apps/desktop/src-tauri/migrations/004_create_media_catalog.sql` |
 | sync_documents | Tabela SQL | workspace_id:TEXT, document_id:TEXT, kind:TEXT, revision:INTEGER, payload_json:TEXT, deleted_at:TEXT, updated_at:TEXT, updated_by:TEXT | Não detectadas | `apps/sync-api/migrations/0001_sync.sql` |
 | sync_changes | Tabela SQL | id:INTEGER, workspace_id:TEXT, document_id:TEXT, kind:TEXT, revision:INTEGER, operation_id:TEXT, payload_json:TEXT, deleted_at:TEXT, updated_by:TEXT, created_at:TEXT, UNIQUE:(workspace_id | Não detectadas | `apps/sync-api/migrations/0001_sync.sql` |
 | sync_conflicts | Tabela SQL | id:INTEGER, workspace_id:TEXT, document_id:TEXT, operation_id:TEXT, base_revision:INTEGER, current_revision:INTEGER, payload_json:TEXT, deleted_at:TEXT, device_id:TEXT, created_at:TEXT, UNIQUE:(workspace_id | Não detectadas | `apps/sync-api/migrations/0001_sync.sql` |
@@ -75,7 +78,7 @@ IndexedDB nesta fatia.
 
 | Banco/estrutura | Onde vive | Campos/escopo | Relações e regras |
 | --- | --- | --- | --- |
-| `app.sqlite` | `~/.openbible/app.sqlite` na instalação Tauri | `workspaces`, `active_workspace_pointer`, `legacy_workspace_migrations`, `workspace_notes`, `workspace_highlights`, `workspace_index_state`, `note_verse_ref`, `reader_highlight`, `sync_documents`, `sync_snapshots`, `sync_changes`, `sync_queue`, `sync_peers`, `sync_endpoints`, `sync_conflicts`; schema v3 | abertura e migrations transacionais; conteúdo autoral operacional, estado CRDT, fila e projeções são escopados por `workspace_id` |
+| `app.sqlite` | `~/.openbible/app.sqlite` na instalação Tauri | `workspaces`, `active_workspace_pointer`, `legacy_workspace_migrations`, `workspace_notes`, `workspace_highlights`, `workspace_index_state`, `note_verse_ref`, `reader_highlight`, `sync_documents`, `sync_snapshots`, `sync_changes`, `sync_queue`, `sync_peers`, `sync_endpoints`, `sync_conflicts`, `media_assets`, `media_references`; schema v4 | abertura e migrations transacionais; conteúdo autoral, catálogo de mídias, estado CRDT, fila e projeções são escopados por `workspace_id`; bytes de mídia continuam em `media/` |
 | `workspaces` | `app.sqlite` | `workspace_id`, `name`, `status`, `schema_version`, timestamps, `metadata_json` | `workspace_id` é a identidade única e a chave de escopo das operações |
 | `active_workspace_pointer` | `app.sqlite` | ponteiro único, `workspace_id`, `generation`, `updated_at` | aponta para `workspaces`; geração invalida resultados assíncronos antigos |
 | `legacy_workspace_migrations` | `app.sqlite` | origem, cursor, estado, erro e workspace associado | somente progresso/recovery; não transforma a fonte legada em backend ativo |
@@ -227,6 +230,19 @@ Essas decisões preservam a separação entre dados portáteis do workspace,
 projeções descartáveis, credenciais do dispositivo e estado transitório de
 agentes.
 
+### Persistência efetiva das mídias do Edra
+
+Na implementação atual, a mídia usa a fronteira `WorkspaceStorage`. No PWA, o
+catálogo descritivo fica em `media/catalog.json`; no Tauri, os metadados ficam
+em `media_assets`/`media_references` do `app.sqlite`. Em ambos os runtimes cada
+payload fica em `media/<mediaId>.<format>`. O conteúdo da nota guarda somente
+`media:<mediaId>` no registro primário de nota, e URLs `blob:` são criadas e
+revogadas apenas durante a renderização. O catálogo registra hash SHA-256,
+estado, tamanho e referências por `noteId`; a exclusão exige zero referências.
+O enumerador de backup inclui `media/` como papel `media`; para o Tauri ele
+materializa o catálogo SQLite em `media/catalog.json` dentro do archive, sem
+criar esse arquivo no workspace. O conteúdo não é enviado para a rede.
+
 <!-- specsfy:conversation-data:start -->
 ## Informações a guardar confirmadas
 
@@ -243,4 +259,6 @@ agentes.
 | Bloco semântico portátil da nota | Manter versículos e vídeos legíveis em qualquer editor e ainda editáveis como bloco no OpenBible. | ID do bloco, tipo, referência ou URL, versão bíblica/provedor e snapshot textual visível. | Conteúdo CommonMark/GFM visível em blockquote ou link, envolvido por comentários HTML com JSON versionado de metadados. | O ID liga metadados invisíveis ao conteúdo visível; perder comentários preserva leitura, mas perde edição enriquecida. | A pessoa lê e edita o conteúdo; o OpenBible valida metadados e nunca sobrescreve divergência externa silenciosamente. | Criado pelo comando do editor, atualizado ao editar o bloco, migrado de fence válido ao salvar e removido com o bloco. | specs/backlog/0018-formatos-portateis-indice-reconstruivel.md; conversa de 2026-09-05; documentação CommonMark/GFM/Obsidian |
 | Destaque autoral do leitor bíblico | Preservar cada destaque no backend ativo e permitir exportação/intercâmbio sem sidecar obrigatório. | `workspaceId`, `highlightId`, versão e intervalo bíblico, estilo, datas e versão do schema. | Registro em `workspace_highlights` no SQLite/IndexedDB; `reader_highlight` é projeção; JSON é opcional. | Cada registro aponta para uma referência bíblica e nunca cruza `workspaceId`. | Somente a pessoa usuária e as ferramentas locais que ela escolher. | Criado/atualizado atomicamente no backend, projetado novamente quando necessário e exportado sem mutar a fonte. | SPEC-0017; conversa de 2026-09-06 sobre SQLite/IndexedDB e Markdown/PDF |
 | Índice reconstruível do workspace | Acelerar buscas e relações sem se tornar fonte exclusiva de informação da pessoa. | Projeções de referências, destaques e metadados derivados, versão do schema, estado e origem do rebuild. | `workspace_index_state`, `note_verse_ref` e `reader_highlight` no SQLite/IndexedDB operacional. | Cada linha referencia registros primários por `workspaceId`; nenhuma projeção é autoridade e a Bíblia fica fora do rebuild. | Somente os motores do OpenBible no aparelho. | Pode ser apagado ou substituído; é recriado sob demanda quando ausente, incompatível ou corrompido. | SPEC-0017; conversa de 2026-09-06 sobre SQLite/IndexedDB e Markdown/PDF |
+| Mídia anexada à nota | Permitir que o editor Edra reabra mídias offline e que a área de Uso e armazenamento liste, filtre, diagnostique e gerencie os arquivos usados nas notas. | Nome original, tipo, formato, tamanho, data de importação, data da última utilização, identificador estável, estado disponível/ausente/corrompida e vínculos com todas as notas que usam a mídia. | Metadados descritivos, datas, tamanho numérico, identificador estável, estado entre opções e vínculos consultáveis entre mídia e nota; quantidade de notas e uso podem ser derivados desses vínculos. | Cada mídia permanece ligada a zero ou mais notas por uma referência estável; a quantidade de notas que usam o arquivo é derivada desses vínculos. | A pessoa usuária do workspace ativo consulta e gerencia essas informações localmente; não há compartilhamento entre pessoas nesta fatia. | A mídia nasce após upload validado e cópia bem-sucedida, muda de estado quando é usada ou fica ausente/corrompida, e poderá ser apagada conforme a regra confirmada para mídias sem uso. | specs/inbox/2026-09-10-125413-armazenamento-e-gerenciamento-de-midias-no-editor-edra.md; specs/backlog/0023-armazenamento-gerenciamento-midias-editor-edra.md; PROJECT.md |
+| Mídia sem uso | Preservar arquivos quando deixam de ser usados por notas até que a pessoa escolha removê-los no gerenciador. | Estado sem uso e a ausência de vínculos ativos com notas, mantendo os metadados e o arquivo disponíveis para consulta e exclusão manual. | Estado entre usada e sem uso, derivado dos vínculos atuais com notas; os metadados e o arquivo permanecem até uma ação explícita de exclusão. | Uma mídia passa a sem uso quando não existe mais nenhuma nota vinculada; continua relacionada ao workspace e pode voltar a ser usada por uma nova referência. | A pessoa usuária do workspace ativo pode consultar e apagar mídias sem uso pela área de Uso e armazenamento. | A mídia não é apagada automaticamente ao perder a última referência; permanece até exclusão manual. Mídias em uso continuam protegidas contra exclusão. | specs/backlog/0023-armazenamento-gerenciamento-midias-editor-edra.md; PROJECT.md |
 <!-- specsfy:conversation-data:end -->

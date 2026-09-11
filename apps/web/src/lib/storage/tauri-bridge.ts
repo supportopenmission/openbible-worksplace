@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { WorkspaceContentRecord } from './workspace-content-repository';
+import type { WorkspaceMediaCatalogEntry } from './types';
 
 export type WorkspaceCommand =
 	| { name: 'database.initialize' }
@@ -15,6 +16,8 @@ export type WorkspaceCommand =
 	| { name: 'database.listContent'; workspaceId: string }
 	| { name: 'database.writeContent'; record: WorkspaceContentRecord }
 	| { name: 'database.deleteContent'; workspaceId: string; kind: 'note' | 'highlight'; id: string }
+	| { name: 'media.listCatalog'; workspaceId: string }
+	| { name: 'media.replaceCatalog'; workspaceId: string; entries: WorkspaceMediaCatalogEntry[] }
 	| {
 			name: 'agent.profile.save';
 			profileId: string;
@@ -184,6 +187,20 @@ function payload(command: WorkspaceCommand | UnknownWorkspaceCommand): Record<st
 				kind: command.kind,
 				id: validateSyncKey(String(command.id ?? ''), 'content_id_required')
 			};
+		case 'media.listCatalog':
+			return {
+				workspaceId: validateSyncKey(String(command.workspaceId ?? ''), 'workspace_id_required')
+			};
+		case 'media.replaceCatalog': {
+				const workspaceId = validateSyncKey(
+					String(command.workspaceId ?? ''),
+					'workspace_id_required'
+				);
+				if (!Array.isArray(command.entries)) {
+					throw new TauriCommandError({ code: 'media_catalog_required', recoverable: false });
+				}
+				return { workspaceId, entries: command.entries };
+			}
 		case 'agent.profile.save': {
 			const profileId = validateSyncKey(
 				String(command.profileId ?? ''),
@@ -312,6 +329,8 @@ function tauriCommandName(command: WorkspaceCommand): string {
 		'database.listContent': 'list_workspace_content',
 		'database.writeContent': 'write_workspace_content',
 		'database.deleteContent': 'delete_workspace_content',
+		'media.listCatalog': 'list_media_catalog',
+		'media.replaceCatalog': 'replace_media_catalog',
 		'agent.profile.save': 'agent_profile_save',
 		'agent.profile.revoke': 'agent_profile_revoke',
 		'agent.profile.capability': 'agent_profile_capability',

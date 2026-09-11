@@ -15,6 +15,40 @@ export interface WorkspaceStorageEntry {
 	kind: 'file' | 'directory';
 }
 
+/**
+ * Catálogo de mídia opcional do backend. O PWA permanece livre para usar seu
+ * catálogo no próprio workspace; o adaptador nativo projeta estes registros no
+ * app.sqlite sem acoplar o storage genérico ao editor Edra.
+ */
+export interface WorkspaceMediaReferenceEntry {
+	referenceId: string;
+	mediaId: string;
+	noteId?: string;
+	blockId?: string;
+	createdAt: string;
+	lastSeenAt: string;
+}
+
+export interface WorkspaceMediaCatalogEntry {
+	workspaceId: string;
+	mediaId: string;
+	originalName: string;
+	mediaType: 'image' | 'video' | 'audio';
+	format: string;
+	byteSize: number;
+	importedAt: string;
+	lastUsedAt: string;
+	state: 'available' | 'missing' | 'corrupt';
+	sha256: string;
+	storageKey: string;
+	references: WorkspaceMediaReferenceEntry[];
+}
+
+export interface WorkspaceMediaCatalogPort {
+	list(): Promise<WorkspaceMediaCatalogEntry[]>;
+	replace(entries: WorkspaceMediaCatalogEntry[]): Promise<void>;
+}
+
 export interface ReaderSelectionPreference {
 	versionId: string;
 	bookId: number;
@@ -53,6 +87,8 @@ export interface WorkspaceStorage {
 	label: string;
 	/** Identidade do workspace para conteúdo autoral no backend operacional. */
 	workspaceId?: string;
+	/** Catálogo transacional de mídia fornecido por backends nativos. */
+	mediaCatalog?: WorkspaceMediaCatalogPort;
 	/** Handle da pasta local; a referência fica no IndexedDB local e nunca no catálogo/sync. */
 	localHandle?: FileSystemDirectoryHandle;
 	ensureDirectory(path: string): Promise<void>;

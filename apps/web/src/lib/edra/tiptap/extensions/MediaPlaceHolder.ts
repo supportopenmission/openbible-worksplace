@@ -2,6 +2,7 @@ import { mergeAttributes, Node, type NodeViewProps } from '@tiptap/core';
 import { SvelteNodeViewRenderer } from '../index.ts';
 import type { Component } from 'svelte';
 import { NodeSelection } from '@tiptap/pm/state';
+import { toast } from 'svelte-sonner';
 
 export interface MediaPlaceholderOptions {
 	HTMLAttributes: Record<string, unknown>;
@@ -132,6 +133,9 @@ export const MediaPlaceholder = (component: Component<NodeViewProps>) =>
 
 						void onUpload(file)
 							.then((src) => {
+								if (!/^media:[^\s/]+$/.test(src)) {
+									throw new Error('Não foi possível salvar a mídia no espaço de estudo.');
+								}
 								editor.view.focus();
 								if (mediaType === 'audio') {
 									editor.commands.setAudio({ src });
@@ -143,6 +147,17 @@ export const MediaPlaceholder = (component: Component<NodeViewProps>) =>
 							})
 							.catch((error) => {
 								console.error('Failed to upload media:', error);
+								if (
+									editor.state.selection instanceof NodeSelection &&
+									editor.state.selection.node.type.name === this.name
+								) {
+									editor.commands.deleteNode(this.name);
+								}
+								toast.error(
+									error instanceof Error
+										? error.message
+										: 'Não foi possível salvar a mídia no espaço de estudo.'
+								);
 							});
 
 						return true;

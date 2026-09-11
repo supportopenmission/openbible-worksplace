@@ -42,6 +42,7 @@
 		requestWorkspaceStartupScreen,
 		saveWorkspaceStartupScreen
 	} from './workspace-startup-preference';
+	import MediaInventory from './MediaInventory.svelte';
 
 	const workspace = getWorkspaceState();
 	const isMobile = new IsMobile();
@@ -593,6 +594,9 @@
 							? 'precisa ser repetida'
 							: 'não iniciada'}.
 				</p>
+			{/if}
+			{#if workspace.storage}
+				<MediaInventory storage={workspace.storage} />
 			{/if}
 		{/if}
 

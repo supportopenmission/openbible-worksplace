@@ -10,8 +10,9 @@ use tauri::AppHandle;
 const MIGRATION_001: &str = include_str!("../migrations/001_create_workspaces.sql");
 const MIGRATION_002: &str = include_str!("../migrations/002_create_workspace_content.sql");
 const MIGRATION_003: &str = include_str!("../migrations/003_create_sync_operational.sql");
+const MIGRATION_004: &str = include_str!("../migrations/004_create_media_catalog.sql");
 pub const APP_DATABASE_FILE: &str = "app.sqlite";
-pub const CURRENT_SCHEMA_VERSION: i64 = 3;
+pub const CURRENT_SCHEMA_VERSION: i64 = 4;
 
 #[derive(Debug, thiserror::Error)]
 pub enum DatabaseError {
@@ -42,6 +43,34 @@ pub struct WorkspaceRecord {
     pub updated_at: String,
     pub last_opened_at: Option<String>,
     pub metadata_json: String,
+}
+
+#[derive(Debug, Clone, Serialize, serde::Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaCatalogReference {
+    pub reference_id: String,
+    pub media_id: String,
+    pub note_id: Option<String>,
+    pub block_id: Option<String>,
+    pub created_at: String,
+    pub last_seen_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, serde::Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaCatalogEntry {
+    pub workspace_id: String,
+    pub media_id: String,
+    pub original_name: String,
+    pub media_type: String,
+    pub format: String,
+    pub byte_size: i64,
+    pub imported_at: String,
+    pub last_used_at: String,
+    pub state: String,
+    pub sha256: String,
+    pub storage_key: String,
+    pub references: Vec<MediaCatalogReference>,
 }
 
 pub struct WorkspaceDatabase {
@@ -166,6 +195,9 @@ impl WorkspaceDatabase {
         if version < 3 {
             transaction.execute_batch(MIGRATION_003)?;
         }
+        if version < 4 {
+            transaction.execute_batch(MIGRATION_004)?;
+        }
         transaction.pragma_update(None, "user_version", CURRENT_SCHEMA_VERSION)?;
         transaction.commit()?;
         Ok(())
@@ -195,6 +227,8 @@ impl WorkspaceDatabase {
     pub fn reset_local_data(&mut self) -> Result<(), DatabaseError> {
         let transaction = self.connection.transaction()?;
         for table in [
+            "media_references",
+            "media_assets",
             "sync_queue",
             "sync_changes",
             "sync_snapshots",
@@ -219,6 +253,123 @@ impl WorkspaceDatabase {
              WHERE pointer_id = 1",
             [],
         )?;
+        transaction.commit()?;
+        Ok(())
+    }
+
+    pub fn list_media_catalog(
+        &self,
+        workspace_id: &str,
+    ) -> Result<Vec<MediaCatalogEntry>, DatabaseError> {
+        validate_sync_key(workspace_id)?;
+        let mut assets = Vec::new();
+        let mut asset_query = self.connection.prepare(
+            "SELECT media_id, original_name, media_type, format, byte_size,
+                    imported_at, last_used_at, state, sha256, storage_key
+             FROM media_assets
+             WHERE workspace_id = ?1
+             ORDER BY last_used_at DESC, media_id",
+        )?;
+        let rows = asset_query.query_map(params![workspace_id], |row| {
+            Ok(MediaCatalogEntry {
+                workspace_id: workspace_id.to_string(),
+                media_id: row.get(0)?,
+                original_name: row.get(1)?,
+                media_type: row.get(2)?,
+                format: row.get(3)?,
+                byte_size: row.get(4)?,
+                imported_at: row.get(5)?,
+                last_used_at: row.get(6)?,
+                state: row.get(7)?,
+                sha256: row.get(8)?,
+                storage_key: row.get(9)?,
+                references: Vec::new(),
+            })
+        })?;
+        for row in rows {
+            assets.push(row?);
+        }
+        drop(asset_query);
+
+        let mut reference_query = self.connection.prepare(
+            "SELECT media_id, reference_id, note_id, block_id, created_at, last_seen_at
+             FROM media_references
+             WHERE workspace_id = ?1
+             ORDER BY media_id, reference_id",
+        )?;
+        let references = reference_query.query_map(params![workspace_id], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                MediaCatalogReference {
+                    reference_id: row.get(1)?,
+                    media_id: row.get(0)?,
+                    note_id: row.get(2)?,
+                    block_id: row.get(3)?,
+                    created_at: row.get(4)?,
+                    last_seen_at: row.get(5)?,
+                },
+            ))
+        })?;
+        for reference in references {
+            let (media_id, reference) = reference?;
+            if let Some(asset) = assets.iter_mut().find(|asset| asset.media_id == media_id) {
+                asset.references.push(reference);
+            }
+        }
+        Ok(assets)
+    }
+
+    pub fn replace_media_catalog(
+        &mut self,
+        workspace_id: &str,
+        entries: &[MediaCatalogEntry],
+    ) -> Result<(), DatabaseError> {
+        validate_sync_key(workspace_id)?;
+        let transaction = self.connection.transaction()?;
+        for entry in entries {
+            validate_media_catalog_entry(workspace_id, entry)?;
+        }
+        transaction.execute(
+            "DELETE FROM media_assets WHERE workspace_id = ?1",
+            params![workspace_id],
+        )?;
+        for entry in entries {
+            transaction.execute(
+                "INSERT INTO media_assets
+                   (workspace_id, media_id, original_name, media_type, format, byte_size,
+                    imported_at, last_used_at, state, sha256, storage_key)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+                params![
+                    workspace_id,
+                    entry.media_id,
+                    entry.original_name,
+                    entry.media_type,
+                    entry.format,
+                    entry.byte_size,
+                    entry.imported_at,
+                    entry.last_used_at,
+                    entry.state,
+                    entry.sha256,
+                    entry.storage_key
+                ],
+            )?;
+            for reference in &entry.references {
+                transaction.execute(
+                    "INSERT INTO media_references
+                       (workspace_id, media_id, reference_id, note_id, block_id, created_at, last_seen_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                    params![
+                        workspace_id,
+                        entry.media_id,
+                        reference.reference_id,
+                        reference.note_id,
+                        reference.block_id,
+                        reference.created_at,
+                        reference.last_seen_at
+                    ],
+                )?;
+            }
+        }
         transaction.commit()?;
         Ok(())
     }
@@ -926,6 +1077,44 @@ fn validate_sync_key(value: &str) -> Result<(), DatabaseError> {
     Ok(())
 }
 
+fn validate_media_catalog_entry(
+    workspace_id: &str,
+    entry: &MediaCatalogEntry,
+) -> Result<(), DatabaseError> {
+    if entry.workspace_id != workspace_id
+        || entry.original_name.trim().is_empty()
+        || entry.format.trim().is_empty()
+        || entry.imported_at.trim().is_empty()
+        || entry.last_used_at.trim().is_empty()
+        || entry.sha256.trim().is_empty()
+        || entry.byte_size < 0
+        || !matches!(entry.media_type.as_str(), "image" | "video" | "audio")
+        || !matches!(entry.state.as_str(), "available" | "missing" | "corrupt")
+        || !entry.storage_key.starts_with("media/")
+        || entry.storage_key.contains("..")
+        || entry.storage_key.contains('\\')
+    {
+        return Err(DatabaseError::Path);
+    }
+    validate_sync_key(&entry.media_id)?;
+    for reference in &entry.references {
+        validate_sync_key(&reference.reference_id)?;
+        if reference.media_id != entry.media_id {
+            return Err(DatabaseError::Path);
+        }
+        if let Some(note_id) = reference.note_id.as_deref() {
+            validate_sync_key(note_id)?;
+        }
+        if let Some(block_id) = reference.block_id.as_deref() {
+            validate_sync_key(block_id)?;
+        }
+        if reference.created_at.trim().is_empty() || reference.last_seen_at.trim().is_empty() {
+            return Err(DatabaseError::Path);
+        }
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub fn initialize_workspace_database(
     app: AppHandle,
@@ -1064,11 +1253,44 @@ pub fn delete_workspace_content(
         .map_err(|_| CommandError::new("persistence_conflict", true))
 }
 
+#[tauri::command]
+pub fn list_media_catalog(
+    workspace_id: String,
+    state: tauri::State<'_, std::sync::Mutex<Option<WorkspaceDatabase>>>,
+) -> Result<Vec<MediaCatalogEntry>, CommandError> {
+    let mut database_state = state
+        .lock()
+        .map_err(|_| CommandError::new("database_state_error", true))?;
+    let database = database_state
+        .as_mut()
+        .ok_or_else(|| CommandError::new("database_unavailable", true))?;
+    database
+        .list_media_catalog(&workspace_id)
+        .map_err(|_| CommandError::new("persistence_conflict", true))
+}
+
+#[tauri::command]
+pub fn replace_media_catalog(
+    workspace_id: String,
+    entries: Vec<MediaCatalogEntry>,
+    state: tauri::State<'_, std::sync::Mutex<Option<WorkspaceDatabase>>>,
+) -> Result<(), CommandError> {
+    let mut database_state = state
+        .lock()
+        .map_err(|_| CommandError::new("database_state_error", true))?;
+    let database = database_state
+        .as_mut()
+        .ok_or_else(|| CommandError::new("database_unavailable", true))?;
+    database
+        .replace_media_catalog(&workspace_id, &entries)
+        .map_err(|_| CommandError::new("persistence_conflict", true))
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        migrate_legacy_database, WorkspaceDatabase, APP_DATABASE_FILE, CURRENT_SCHEMA_VERSION,
-        MIGRATION_001,
+        migrate_legacy_database, MediaCatalogEntry, MediaCatalogReference, WorkspaceDatabase,
+        APP_DATABASE_FILE, CURRENT_SCHEMA_VERSION, MIGRATION_001,
     };
     use rusqlite::{params, Connection};
     use serde_json::json;
@@ -1113,6 +1335,8 @@ mod tests {
             "sync_peers",
             "sync_endpoints",
             "sync_conflicts",
+            "media_assets",
+            "media_references",
         ] {
             assert!(
                 database
@@ -1272,6 +1496,22 @@ mod tests {
                 |row| row.get::<_, String>(0)
             )
             .is_ok());
+        assert!(database
+            .connection
+            .query_row(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'media_assets'",
+                [],
+                |row| row.get::<_, String>(0)
+            )
+            .is_ok());
+        assert!(database
+            .connection
+            .query_row(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'media_references'",
+                [],
+                |row| row.get::<_, String>(0)
+            )
+            .is_ok());
         drop(database);
         let _ = fs::remove_dir_all(path.parent().expect("test database has a parent"));
     }
@@ -1312,6 +1552,58 @@ mod tests {
                 .expect("workspace content is readable");
             assert_eq!(payload, format!(r#"{{"title":"{expected}"}}"#));
         }
+        drop(database);
+        let _ = fs::remove_dir_all(path.parent().expect("test database has a parent"));
+    }
+
+    #[test]
+    fn media_catalog_is_transactional_and_scoped_by_workspace_id() {
+        let path = test_path();
+        let mut database = WorkspaceDatabase::open(&path).expect("database opens");
+        database
+            .ensure_workspace("workspace-media", "Mídias", "ready")
+            .expect("workspace exists");
+        let entry = MediaCatalogEntry {
+            workspace_id: "workspace-media".to_string(),
+            media_id: "media-1".to_string(),
+            original_name: "foto.png".to_string(),
+            media_type: "image".to_string(),
+            format: "png".to_string(),
+            byte_size: 4,
+            imported_at: "2026-09-10T00:00:00.000Z".to_string(),
+            last_used_at: "2026-09-10T00:00:00.000Z".to_string(),
+            state: "available".to_string(),
+            sha256: "abcd".to_string(),
+            storage_key: "media/media-1.png".to_string(),
+            references: vec![MediaCatalogReference {
+                reference_id: "note-1:block-1".to_string(),
+                media_id: "media-1".to_string(),
+                note_id: Some("note-1".to_string()),
+                block_id: Some("block-1".to_string()),
+                created_at: "2026-09-10T00:00:00.000Z".to_string(),
+                last_seen_at: "2026-09-10T00:00:00.000Z".to_string(),
+            }],
+        };
+        database
+            .replace_media_catalog("workspace-media", std::slice::from_ref(&entry))
+            .expect("media catalog replaces");
+        assert_eq!(
+            database
+                .list_media_catalog("workspace-media")
+                .expect("media catalog lists"),
+            vec![entry]
+        );
+        assert!(database
+            .list_media_catalog("other-workspace")
+            .expect("other workspace lists")
+            .is_empty());
+        database
+            .replace_media_catalog("workspace-media", &[])
+            .expect("media catalog clears transactionally");
+        assert!(database
+            .list_media_catalog("workspace-media")
+            .expect("media catalog lists after clear")
+            .is_empty());
         drop(database);
         let _ = fs::remove_dir_all(path.parent().expect("test database has a parent"));
     }

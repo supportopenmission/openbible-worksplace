@@ -15,7 +15,7 @@ export const BACKUP_LIMITS = {
 	maxPathBytes: 4_096
 } as const;
 
-export type BackupFileRole = 'authorial' | 'bible';
+export type BackupFileRole = 'authorial' | 'bible' | 'media';
 export type BackupBiblePolicy = 'excluded' | 'included';
 export type BackupContentBackend = 'indexeddb' | 'sqlite';
 
@@ -238,7 +238,7 @@ function validateManifestValue(value: unknown): BackupValidationResult {
 			if (typeof file.mediaType !== 'string' || !/^[^\s/]+\/[^\s]+$/.test(file.mediaType)) {
 				addError(errors, `manifest_file_${index}_media_type_invalid`);
 			}
-			if (file.role !== 'authorial' && file.role !== 'bible') {
+			if (file.role !== 'authorial' && file.role !== 'bible' && file.role !== 'media') {
 				addError(errors, `manifest_file_${index}_role_invalid`);
 			}
 		}

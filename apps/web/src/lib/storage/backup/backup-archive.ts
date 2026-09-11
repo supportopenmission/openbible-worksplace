@@ -53,10 +53,20 @@ function mediaTypeFor(path: string): string {
 	if (path.endsWith('.md')) return 'text/markdown';
 	if (path.endsWith('.json')) return 'application/json';
 	if (path.endsWith('.sqlite')) return 'application/vnd.sqlite3';
+	if (/\.png$/i.test(path)) return 'image/png';
+	if (/\.(jpe?g)$/i.test(path)) return 'image/jpeg';
+	if (/\.webp$/i.test(path)) return 'image/webp';
+	if (/\.gif$/i.test(path)) return 'image/gif';
+	if (/\.mp4$/i.test(path)) return 'video/mp4';
+	if (/\.webm$/i.test(path)) return 'video/webm';
+	if (/\.mp3$/i.test(path)) return 'audio/mpeg';
+	if (/\.m4a$/i.test(path)) return 'audio/mp4';
+	if (/\.ogg$/i.test(path)) return 'audio/ogg';
 	return 'application/octet-stream';
 }
 
 function roleFor(path: string): BackupFileRole {
+	if (path.startsWith('media/')) return 'media';
 	return path.startsWith('bibles/') ? 'bible' : 'authorial';
 }
 

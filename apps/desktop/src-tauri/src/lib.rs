@@ -22,6 +22,8 @@ pub fn run() {
             database::list_workspace_content,
             database::write_workspace_content,
             database::delete_workspace_content,
+            database::list_media_catalog,
+            database::replace_media_catalog,
             commands::workspace::initialize_workspace,
             commands::workspace::read_workspace_file,
             commands::workspace::list_workspace_files,

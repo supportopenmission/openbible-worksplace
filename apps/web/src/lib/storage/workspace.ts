@@ -114,7 +114,8 @@ export const WORKSPACE_DIRECTORIES = [
 	'attachments/images',
 	'attachments/audio',
 	'attachments/pdf',
-	'attachments/files'
+	'attachments/files',
+	'media'
 ] as const;
 
 const template = (type: string, heading: string) =>

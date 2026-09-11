@@ -155,6 +155,7 @@ pub fn initialize(
     fs::create_dir_all(root.join(".openbible"))?;
     fs::create_dir_all(root.join("bibles"))?;
     fs::create_dir_all(root.join("notes"))?;
+    fs::create_dir_all(root.join("media"))?;
     let lock = lock::acquire(&root)?;
     context.root = Some(root.clone());
     context.lock = Some(lock);
@@ -307,6 +308,7 @@ const MANAGED_TOP_LEVEL: &[&str] = &[
     "studies",
     "templates",
     "attachments",
+    "media",
     "trash",
 ];
 

@@ -4,7 +4,12 @@ import {
 	type NativeDatabaseStatus,
 	type NativeWorkspaceRecord
 } from './tauri-bridge';
-import type { FileContent, WorkspaceStorage, WorkspaceStorageEntry } from './types';
+import type {
+	FileContent,
+	WorkspaceMediaCatalogEntry,
+	WorkspaceStorage,
+	WorkspaceStorageEntry
+} from './types';
 import {
 	capabilitiesForKind,
 	generateWorkspaceId,
@@ -42,10 +47,26 @@ function toBytes(value: unknown): Uint8Array | null {
 export function createTauriStorage(
 	options: { workspaceId?: string; label?: string } = {}
 ): WorkspaceStorage {
-	return {
+	const storage: WorkspaceStorage = {
 		kind: 'native',
 		label: options.label ?? 'Meu workspace',
 		workspaceId: options.workspaceId,
+		mediaCatalog: {
+			list: async (): Promise<WorkspaceMediaCatalogEntry[]> => {
+				const result = await invokeWorkspaceCommand<WorkspaceMediaCatalogEntry[]>({
+					name: 'media.listCatalog',
+					workspaceId: storage.workspaceId ?? ''
+				});
+				return Array.isArray(result.value) ? result.value : [];
+			},
+			replace: async (entries) => {
+				await invokeWorkspaceCommand({
+					name: 'media.replaceCatalog',
+					workspaceId: storage.workspaceId ?? '',
+					entries
+				});
+			}
+		},
 		ensureDirectory: async () => undefined,
 		writeFile: async (path, content) => {
 			await invokeWorkspaceCommand({
@@ -129,6 +150,7 @@ export function createTauriStorage(
 			return result.value;
 		}
 	};
+	return storage;
 }
 
 export async function initializeNativeWorkspace(options: { path?: string } = {}) {

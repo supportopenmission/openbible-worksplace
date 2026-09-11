@@ -11,7 +11,8 @@ import type {
 	WorkspaceContentRepository
 } from '../workspace-content-repository';
 
-const BACKUP_ROOTS = ['bibles', 'notes', 'sermons', 'studies', 'templates', 'attachments', 'trash'] as const;
+const BACKUP_ROOTS = ['bibles', 'notes', 'sermons', 'studies', 'templates', 'attachments', 'trash', 'media'] as const;
+const MEDIA_CATALOG_BACKUP_PATH = 'media/catalog.json';
 
 type RecursiveStorage = WorkspaceStorage & {
 	listEntries?: (path: string) => Promise<WorkspaceStorageEntry[]>;
@@ -26,7 +27,7 @@ export type BackupEntry = {
 	size: number;
 	sha256: string;
 	mediaType: string;
-	role: 'authorial' | 'bible';
+	role: 'authorial' | 'bible' | 'media';
 	bytes: Uint8Array;
 };
 
@@ -140,8 +141,36 @@ async function collectFiles(storage: WorkspaceStorage): Promise<string[]> {
 	return sortPaths(files);
 }
 
+async function collectBackupFiles(storage: WorkspaceStorage): Promise<string[]> {
+	const files = await collectFiles(storage);
+	if (storage.mediaCatalog && !files.includes(MEDIA_CATALOG_BACKUP_PATH)) {
+		files.push(MEDIA_CATALOG_BACKUP_PATH);
+	}
+	return sortPaths(files);
+}
+
 function isBiblePath(path: string): boolean {
 	return path.startsWith('bibles/');
+}
+
+function isMediaPath(path: string): boolean {
+	return path.startsWith('media/');
+}
+
+function mediaTypeFor(path: string): string {
+	if (path.endsWith('.md')) return 'text/markdown';
+	if (path.endsWith('.json')) return 'application/json';
+	if (path.endsWith('.sqlite')) return 'application/vnd.sqlite3';
+	if (/\.png$/i.test(path)) return 'image/png';
+	if (/\.(jpe?g)$/i.test(path)) return 'image/jpeg';
+	if (/\.webp$/i.test(path)) return 'image/webp';
+	if (/\.gif$/i.test(path)) return 'image/gif';
+	if (/\.mp4$/i.test(path)) return 'video/mp4';
+	if (/\.webm$/i.test(path)) return 'video/webm';
+	if (/\.mp3$/i.test(path)) return 'audio/mpeg';
+	if (/\.m4a$/i.test(path)) return 'audio/mp4';
+	if (/\.ogg$/i.test(path)) return 'audio/ogg';
+	return 'application/octet-stream';
 }
 
 function isBibleSource(path: string): boolean {
@@ -223,7 +252,7 @@ export async function resolveBibleBackupPolicy(
 		return { included: [], omitted: includeBibles ? [] : [] };
 	}
 	const storage = storageOrSource;
-	const biblePaths = (await collectFiles(storage)).filter(isBiblePath);
+	const biblePaths = (await collectBackupFiles(storage)).filter(isBiblePath);
 	return {
 		included: includeBibles ? biblePaths.filter(isBibleSource) : [],
 		omitted: includeBibles ? biblePaths.filter((path) => !isBibleSource(path)) : biblePaths
@@ -270,12 +299,15 @@ export async function* enumerateBackupEntries(
 	let totalBytes = 0;
 	let count = 0;
 
-	for (const candidate of await collectFiles(storage)) {
+	for (const candidate of await collectBackupFiles(storage)) {
 		const path = normalizeBackupPath(candidate);
 		if (!path || path.startsWith('.openbible/')) continue;
 		if (isBiblePath(path) && (!includeBibles || !isBibleSource(path))) continue;
 
-		const bytes = await storage.readFile(path);
+		const bytes =
+			path === MEDIA_CATALOG_BACKUP_PATH && storage.mediaCatalog
+				? encodeJson(await storage.mediaCatalog.list())
+				: await storage.readFile(path);
 		if (!bytes) continue;
 		if (bytes.byteLength > BACKUP_LIMITS.maxEntryBytes) throw new Error('backup_entry_limit_exceeded');
 		if (count >= BACKUP_LIMITS.maxEntries) throw new Error('backup_entries_limit_exceeded');
@@ -289,14 +321,8 @@ export async function* enumerateBackupEntries(
 			path,
 			size: bytes.byteLength,
 			sha256: await sha256(bytes),
-			mediaType: path.endsWith('.md')
-				? 'text/markdown'
-				: path.endsWith('.json')
-					? 'application/json'
-					: path.endsWith('.sqlite')
-						? 'application/vnd.sqlite3'
-						: 'application/octet-stream',
-			role: isBiblePath(path) ? 'bible' : 'authorial',
+			mediaType: mediaTypeFor(path),
+			role: isBiblePath(path) ? 'bible' : isMediaPath(path) ? 'media' : 'authorial',
 			bytes
 		};
 	}

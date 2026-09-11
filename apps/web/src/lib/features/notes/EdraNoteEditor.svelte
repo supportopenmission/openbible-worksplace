@@ -22,6 +22,8 @@ Título e descrição vivem nos metadados, fora do conteúdo.
 		setNoteKeyboardInset
 	} from './note-editor-viewport';
 	import { extractContentFromNoteBody, extractTitleFromMarkdown } from './note-markdown';
+	import { createMediaService } from './media/media-service';
+	import { mountMediaRuntime } from './media/media-runtime';
 
 	let {
 		markdown,
@@ -74,6 +76,9 @@ Título e descrição vivem nos metadados, fora do conteúdo.
 			: extractContentFromNoteBody(rawContent);
 	});
 
+	const mediaService = untrack(() => (storage ? createMediaService(storage) : null));
+	let stopMediaRuntime: (() => void) | null = null;
+
 	const saveService =
 		note && storage
 			? createNoteEditorService({
@@ -94,10 +99,17 @@ Título e descrição vivem nos metadados, fora do conteúdo.
 				content: initialContent,
 				contentType: 'markdown',
 				editable: !readOnly,
+				onFileUpload: mediaService
+					? async (file) => (await mediaService.upload(file, note?.id)).src
+					: undefined,
 				onUpdate: ({ editor: updated }) => {
 					// Transações da construção (conversão Markdown inicial) não são edição.
 					if (!updatesArmed) return;
-					saveService?.scheduleSave(normalizeSavedMarkdown(updated.getMarkdown()));
+					const nextMarkdown = normalizeSavedMarkdown(updated.getMarkdown());
+					saveService?.scheduleSave(nextMarkdown);
+					if (note?.id && mediaService) {
+						void mediaService.syncNoteReferences(note.id, nextMarkdown).catch(() => undefined);
+					}
 					refreshHeadings();
 				}
 			});
@@ -247,6 +259,7 @@ Título e descrição vivem nos metadados, fora do conteúdo.
 		editorRoot.addEventListener('keydown', handleEditorKeydown, true);
 		window.addEventListener('openbible:insert-verse', handleInsertVerseEvent);
 		if (editor?.view.dom) applyIosEditorInputAttributes(editor.view.dom);
+		if (mediaService) stopMediaRuntime = mountMediaRuntime(editorRoot, mediaService);
 		refreshHeadings();
 		updatesArmed = true;
 		const stopKeyboardInset = createKeyboardInsetTracker((inset) => {
@@ -258,6 +271,8 @@ Título e descrição vivem nos metadados, fora do conteúdo.
 	});
 
 	onDestroy(() => {
+		stopMediaRuntime?.();
+		stopMediaRuntime = null;
 		editorRoot?.removeEventListener('keydown', handleEditorKeydown, true);
 		window.removeEventListener('openbible:insert-verse', handleInsertVerseEvent);
 		saveService?.dispose();
@@ -384,6 +399,20 @@ Título e descrição vivem nos metadados, fora do conteúdo.
 		margin: 8px clamp(16px, 5vw, 48px);
 		color: var(--destructive);
 		font-family: var(--font-sans);
+	}
+
+	:global(.openbible-media-placeholder) {
+		display: flex;
+		min-height: 72px;
+		align-items: center;
+		justify-content: center;
+		padding: 16px;
+		border: 1px dashed var(--border);
+		border-radius: 6px;
+		background: var(--muted);
+		color: var(--muted-foreground);
+		font-size: 0.875rem;
+		text-align: center;
 	}
 
 	.edra-toolbar-full {

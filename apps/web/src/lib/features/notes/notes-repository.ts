@@ -7,6 +7,7 @@ import type { WorkspaceContentRecord } from '$lib/storage/workspace-content-repo
 import type { Note, NoteMeta } from './note-types';
 import { extractTitleFromMarkdown, parseNoteFile } from './portable-markdown';
 import { queueHttpSyncTombstone, scheduleHttpSync } from '$lib/features/sync/sync-http-client';
+import { createMediaService } from './media/media-service';
 
 const defaultStorage: WorkspaceStorage = {
 	kind: 'opfs',
@@ -321,5 +322,14 @@ export async function trashNote(
 	const current = await findNote(storage, noteId);
 	if (current) await removeFromSync(storage, noteRecord(storage, current));
 	await getWorkspaceContentRepository(storage, context).remove(context, 'note', noteId);
+	const mediaService = createMediaService(storage);
+	try {
+		await mediaService.detachNoteReferences(noteId);
+	} catch {
+		// A falha no catálogo não reverte a exclusão da nota; a mídia continua
+		// protegida até a próxima verificação do inventário.
+	} finally {
+		mediaService.dispose();
+	}
 	scheduleHttpSync(storage);
 }
